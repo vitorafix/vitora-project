@@ -6,20 +6,35 @@
     <section class="my-16 p-8">
         <h1 class="text-4xl font-bold text-center text-brown-900 mb-10 section-heading">سبد خرید شما</h1>
 
+        {{-- نوار وضعیت سفارش (مراحل) --}}
+        <div class="order-steps-container mb-10">
+            <div class="order-step active">
+                <i class="fas fa-shopping-basket"></i>
+                <span>تایید سفارش</span>
+            </div>
+            <div class="order-step">
+                <i class="fas fa-shipping-fast"></i>
+                <span>انتخاب شیوه ارسال</span>
+            </div>
+            <div class="order-step">
+                <i class="fas fa-credit-card"></i>
+                <span>انتخاب شیوه پرداخت</span>
+            </div>
+            <div class="order-step">
+                <i class="fas fa-check-circle"></i>
+                <span>تکمیل سفارش</span>
+            </div>
+        </div>
+
         <div id="cart-content"> {{-- این div همیشه شامل جدول و خلاصه سفارش خواهد بود --}}
             <div class="overflow-x-auto bg-white rounded-xl shadow-lg border border-gray-100">
                 <table class="w-full cart-table text-gray-700">
                     <thead>
                         <tr>
-                            {{-- عنوان محصول: تراز به راست --}}
                             <th class="py-4 px-3 text-right rounded-tr-xl">عنوان محصول</th>
-                            {{-- قیمت واحد: تراز به راست --}}
                             <th class="py-4 px-3 text-right">قیمت واحد</th>
-                            {{-- تعداد / واحد: تراز به مرکز --}}
                             <th class="py-4 px-3 text-center">تعداد / واحد</th>
-                            {{-- جمع جزء: تراز به راست --}}
                             <th class="py-4 px-3 text-right">جمع جزء</th>
-                            {{-- حذف: تراز به مرکز --}}
                             <th class="py-4 px-3 text-center rounded-tl-xl">حذف</th>
                         </tr>
                     </thead>

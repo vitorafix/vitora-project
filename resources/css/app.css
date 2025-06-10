@@ -92,11 +92,6 @@ body {
     margin-left: 0.75rem; /* Space between icon and text */
 }
 
-/* Specific colors for message types (managed in JS now) */
-/* .message-box.success { background-color: #1e5a20; } */
-/* .message-box.error { background-color: #dc2626; } */
-/* .message-box.info { background-color: #2563eb; } */
-
 
 /* Hero Section Specific Styles */
 #hero-section {
@@ -632,10 +627,11 @@ nav .container > div.flex.flex-wrap.justify-center {
 /* Product Cell Styles */
 .cart-product-cell {
     display: flex;
+    flex-direction: row-reverse; /* Put image on the right in RTL */
     align-items: center;
     gap: 1rem; /* Space between image and text */
     padding: 1rem 0.75rem;
-    text-align: right;
+    text-align: right; /* Ensure cell text is right-aligned */
 }
 
 .cart-product-image {
@@ -645,12 +641,13 @@ nav .container > div.flex.flex-wrap.justify-center {
     border-radius: 0.75rem; /* Rounded corners for image */
     border: 1px solid #ddd;
     flex-shrink: 0; /* Prevent image from shrinking */
+    margin-right: 0.5rem; /* Space between image and text in RTL */
 }
 
 .product-info {
     display: flex;
     flex-direction: column;
-    align-items: flex-start; /* Align text to the start (right for RTL) */
+    align-items: flex-end; /* Align text to the end (right for RTL) within its flex container */
     text-align: right;
 }
 
@@ -674,22 +671,29 @@ nav .container > div.flex.flex-wrap.justify-center {
     color: #1e5a20; /* Green for price */
     font-size: 1.05rem;
     white-space: nowrap; /* Prevent price from wrapping */
+    text-align: right; /* Explicitly align right */
 }
 
 /* Quantity Cell */
 .cart-quantity-cell {
-    text-align: center;
+    display: flex; /* Make it a flex container */
+    flex-direction: column; /* Stack children vertically */
+    align-items: center; /* Center horizontally */
+    justify-content: center; /* Center vertically */
+    text-align: center; /* Fallback for older browsers, though flex handles it */
+    vertical-align: middle; /* Vertical alignment for cell content */
 }
 
 .quantity-control-cart {
     display: inline-flex; /* Use inline-flex to keep it inline but allow flex properties */
     align-items: center;
+    justify-content: center; /* Center the quantity control horizontally */
     gap: 0.25rem;
     border: 1px solid #ddd;
     border-radius: 0.75rem;
     padding: 0.3rem; /* Adjusted padding to match image */
     width: fit-content; /* Make the box fit its content */
-    margin: 0 auto; /* Center the control in the cell */
+    /* margin: 0 auto; Removed margin-auto, let parent flex center it */
     background-color: white; /* Ensure white background */
 }
 
@@ -726,6 +730,7 @@ nav .container > div.flex.flex-wrap.justify-center {
     color: #6b7280;
     margin-top: 0.4rem; /* Space between quantity control and "بسته" */
     text-align: center; /* Center "بسته" text */
+    width: 100%; /* Ensure it takes full width of the cell to center properly */
 }
 
 
@@ -735,11 +740,13 @@ nav .container > div.flex.flex-wrap.justify-center {
     color: #1e5a20; /* Green for subtotal */
     font-size: 1.2rem;
     white-space: nowrap; /* Prevent subtotal from wrapping */
+    text-align: right; /* Explicitly align right */
 }
 
 /* Remove Button Cell */
 .cart-remove-cell {
     text-align: center;
+    vertical-align: middle; /* Vertical alignment for cell content */
 }
 
 .remove-item-btn-cart {
@@ -788,16 +795,22 @@ nav .container > div.flex.flex-wrap.justify-center {
 }
 
 /* Adjust the bottom section (buttons) */
-#cart-content > .flex.flex-col.md\:flex-row {
-    background-color: transparent; /* Ensure no background here if sum row has it */
-    box-shadow: none; /* Remove shadow */
-    border: none; /* Remove border */
-    padding: 0; /* Remove padding */
+#cart-content > div.flex.flex-col.md\:flex-row { /* Specific selector for the bottom container */
+    background-color: #f8f8f8; /* Changed to match the light gray background in the image */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); /* Added subtle shadow */
+    border: 1px solid #e0e0e0; /* Added light border */
+    padding: 1.5rem; /* Consistent padding */
     margin-top: 2rem; /* Give more space from the table */
+    border-radius: 0.75rem; /* Match other rounded elements */
+    /* Ensure the content inside (order ID and buttons) respects the flex layout */
+    display: flex; /* Explicitly set display flex */
+    flex-direction: row; /* Default to row on desktop */
+    justify-content: space-between; /* Space out content */
+    align-items: center; /* Vertically align items */
 }
 
 /* Update btn-primary and btn-secondary for cart page footer */
-#cart-content > .flex.flex-col.md\:flex-row .btn-primary {
+#cart-content > div.flex.flex-col.md\:flex-row .btn-primary {
     /* Larger, more prominent button "تایید سفارش" as per image */
     font-size: 1.1rem;
     padding: 0.75rem 2rem;
@@ -808,8 +821,8 @@ nav .container > div.flex.flex-wrap.justify-center {
     min-width: 180px; /* Ensure a minimum width for the button */
 }
 
-#cart-content > .flex.flex-col.md\:flex-row .btn-secondary {
-    /* For "بازگشت به صفحه اصلی" link */
+#cart-content > div.flex.flex-col.md\:flex-row .btn-secondary {
+    /* For "بازگشت به صفحه اصلی" link (though removed from HTML, keeping style for reference) */
     font-size: 1rem;
     padding: 0.6rem 1.5rem;
     /* Apply existing btn-secondary styles defined at the top */
@@ -819,64 +832,194 @@ nav .container > div.flex.flex-wrap.justify-center {
 }
 
 
-/* Media Queries for responsiveness */
-@media (max-width: 768px) {
-    /* ... (existing mobile styles) */
+/* Order Steps / Progress Bar Styles */
+.order-steps-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #3a251c; /* Brown background as in image */
+    color: white;
+    border-radius: 0.75rem; /* Rounded corners */
+    overflow: hidden; /* Important for arrow shaping */
+    margin: 2rem auto; /* Center the container with margin */
+    width: 100%; /* Full width */
+    max-width: 900px; /* Limit max width for desktop */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2); /* Subtle shadow */
+}
 
-    /* Ensure product image and info stack correctly */
+.order-step {
+    flex-grow: 1; /* Each step takes equal width */
+    position: relative;
+    padding: 1.2rem 1.5rem; /* Increased padding for better appearance */
+    text-align: center;
+    font-size: 1.1rem; /* Larger font size */
+    font-weight: 600;
+    white-space: nowrap; /* Prevent text wrapping */
+    display: flex;
+    flex-direction: row-reverse; /* Icons on the right, text on the left */
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem; /* Space between icon and text */
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.order-step i {
+    font-size: 1.5rem; /* Larger icons */
+}
+
+/* Arrow separator using pseudo-elements */
+.order-step:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    right: -1.5rem; /* Half of the arrow width */
+    top: 0;
+    width: 3rem; /* Width of the arrow notch */
+    height: 100%;
+    background-color: #3a251c; /* Match container background */
+    transform: skewX(-15deg); /* Create the arrow shape */
+    z-index: 1;
+    border-right: 1px solid rgba(255, 255, 255, 0.2); /* Light separator line */
+}
+
+.order-step:not(:first-child)::after {
+    content: '';
+    position: absolute;
+    left: -1.5rem; /* Half of the arrow width */
+    top: 0;
+    width: 3rem; /* Width of the arrow notch */
+    height: 100%;
+    background-color: #3a251c; /* Match container background */
+    transform: skewX(-15deg); /* Create the arrow shape */
+    z-index: 1;
+    border-left: 1px solid rgba(255, 255, 255, 0.2); /* Light separator line */
+}
+
+
+/* Active step styling */
+.order-step.active {
+    background-color: #1e5a20; /* Green background for active step */
+    color: white;
+}
+
+/* Arrow for active step */
+.order-step.active:not(:last-child)::before {
+    background-color: #1e5a20; /* Green background for active arrow */
+    border-right-color: #1e5a20; /* Hide white line if active */
+}
+
+.order-step.active + .order-step::after { /* The arrow *before* the next step if current is active */
+    background-color: #1e5a20; /* This makes the receiving side of the arrow also green */
+    border-left-color: transparent; /* Remove border if next step is also green */
+}
+
+
+/* Responsive adjustments for Order Steps */
+@media (max-width: 768px) {
+    .order-steps-container {
+        flex-direction: column; /* Stack steps vertically on mobile */
+        border-radius: 0.75rem; /* Keep rounded corners for the container */
+        padding: 0.5rem; /* Add some padding around stacked steps */
+        background-color: transparent; /* Remove background on mobile to allow steps to have their own background */
+        box-shadow: none; /* Remove shadow on mobile */
+    }
+
+    .order-step {
+        width: 100%; /* Each step takes full width */
+        margin-bottom: 0.5rem; /* Space between stacked steps */
+        border-radius: 0.5rem; /* Rounded corners for individual steps */
+        padding: 1rem; /* Adjust padding for mobile */
+        font-size: 1rem; /* Smaller font on mobile */
+        gap: 0.5rem; /* Smaller gap between icon and text */
+        background-color: #3a251c; /* Apply brown background to each step */
+        color: white; /* Ensure text is white */
+    }
+
+    .order-step:last-child {
+        margin-bottom: 0; /* No margin after the last step */
+    }
+
+    /* Remove arrows on mobile as they are stacked */
+    .order-step::before,
+    .order-step::after {
+        content: none;
+    }
+
+    .order-step.active {
+        background-color: #1e5a20; /* Active step is green on mobile */
+    }
+
+    /* General Cart Table mobile adjustments for a cleaner look */
+    .cart-table tbody tr {
+        /* When stacking on mobile, make cells independent blocks */
+        display: flex;
+        flex-direction: column; /* Stack cells vertically */
+        align-items: stretch; /* Stretch to fill width */
+        padding: 0.5rem;
+        border-bottom: 1px solid #e0e0e0; /* Add border between rows on mobile */
+    }
+    .cart-table td {
+        border-bottom: none; /* Remove default td border, handled by tr */
+        padding: 0.5rem; /* Adjust padding for mobile cells */
+        width: 100%; /* Each cell takes full width when stacked */
+        display: flex; /* Make td a flex container too for better internal alignment */
+        justify-content: space-between; /* Space out content for "label: value" display */
+        align-items: center; /* Vertically center content */
+    }
+    .cart-table td:last-child {
+        border-bottom: none; /* No border for the very last td in a mobile row */
+    }
+    /* Add labels for mobile table cells to mimic a key-value pair */
+    .cart-table td::before {
+        content: attr(data-label) ": "; /* Display data-label as a prefix */
+        font-weight: 600;
+        color: #3a251c;
+        margin-left: 0.5rem; /* Space between label and value */
+        flex-shrink: 0; /* Prevent label from shrinking */
+    }
+    /* Specific adjustments for cells that should not have a label or special layout */
+    .cart-product-cell::before,
+    .cart-remove-cell::before {
+        content: none; /* No label for product image/info or remove button */
+    }
+    .cart-remove-cell {
+        justify-content: center; /* Center the remove button */
+    }
+
+    /* Mobile adjustments for product cell alignment (overrides previous changes) */
     .cart-product-cell {
-        flex-direction: row; /* Keep image and text side-by-side on mobile */
+        flex-direction: row-reverse; /* Keep image on right, text on left on mobile RTL */
         align-items: center; /* Vertically center */
-        justify-content: flex-end; /* Align to right */
-        gap: 0.75rem;
-        padding-left: 0; /* Adjust padding for mobile */
-        padding-right: 0; /* Adjust padding for mobile */
+        justify-content: flex-start; /* Align to left (visual left) to ensure content starts from the right edge */
     }
     .cart-product-cell img {
-        width: 60px; /* Smaller image on mobile */
-        height: 60px;
-        order: 2; /* Move image to left for RTL */
-        margin-left: 0;
-        margin-right: 0;
+        order: 2; /* Move image to right for RTL in HTML flow */
+        margin-left: 0; /* No margin-left */
+        margin-right: 0.5rem; /* Add margin-right to separate from text */
     }
     .cart-product-cell .product-info {
         align-items: flex-end; /* Align text to right on mobile */
-        order: 1; /* Move text to right for RTL */
+        order: 1; /* Move text to left for RTL in HTML flow */
         flex-grow: 1; /* Allow text to take available space */
     }
-    
     .product-code {
         font-size: 0.8rem; /* Even smaller product code on mobile */
     }
 
+    /* Mobile adjustments for quantity cell alignment (overrides previous changes) */
     .cart-quantity-cell {
-        flex-direction: row; /* Keep quantity inline on mobile */
-        align-items: center;
-        justify-content: space-between; /* Space out quantity controls and "بسته" */
-        text-align: right;
-        padding-left: 0; /* Adjust padding for mobile */
-        padding-right: 0; /* Adjust padding for mobile */
+        flex-direction: column; /* Stack quantity control and "بسته" vertically on mobile */
+        align-items: center; /* Center horizontally */
+        justify-content: center;
+        text-align: center;
     }
     .quantity-control-cart {
-        margin: 0; /* Remove auto margin on mobile to align to right */
+        margin: 0 auto; /* Center the control on mobile */
     }
     .unit-text {
-        display: inline; /* Keep "بسته" inline with quantity control for mobile */
-        margin-top: 0;
-        margin-right: 0.5rem; /* Space from quantity control */
-    }
-
-    .cart-table tbody tr {
-        flex-direction: column; /* Stack table rows vertically */
-        align-items: stretch;
-        padding: 0.5rem;
-    }
-    .cart-table td {
-        border-bottom: 1px solid #eee; /* Re-add borders between sections on mobile row */
-        padding: 0.5rem;
-    }
-    .cart-table td:last-child {
-        border-bottom: none; /* No border for the very last td in a mobile row */
+        display: block; /* Make "بسته" go to the next line */
+        margin-top: 0.4rem; /* Space between quantity control and "بسته" */
+        margin-right: 0; /* Remove right margin */
+        width: 100%; /* Ensure it takes full width of the cell to center properly */
     }
 
     /* Tfoot mobile adjustments for a cleaner look */
@@ -909,13 +1052,13 @@ nav .container > div.flex.flex-wrap.justify-center {
     }
 
     /* Adjust bottom buttons for mobile */
-    .flex.flex-col.md\:flex-row.justify-between.items-center.mt-8 {
-        flex-direction: column;
+    #cart-content > div.flex.flex-col.md\:flex-row {
+        flex-direction: column; /* Stack vertically on mobile */
         gap: 1rem; /* Space between buttons */
-        padding: 0; /* Remove padding */
+        padding: 1.5rem; /* Keep padding */
         margin-top: 1.5rem; /* Smaller margin */
     }
-    .flex.flex-col.sm\:flex-row.gap-4.w-full.md\:w-auto.ml-auto {
+    #cart-content > div.flex.flex-col.md\:flex-row > div.flex.flex-col.sm\:flex-row.gap-4 { /* Target the button wrapper */
         flex-direction: column; /* Ensure buttons stack on mobile */
         width: 100%;
         margin-left: 0; /* Remove auto margin */
@@ -925,5 +1068,4 @@ nav .container > div.flex.flex-wrap.justify-center {
         font-size: 1rem !important; /* Adjust font size */
         padding: 0.75rem 1rem !important;
     }
-    /* This rule for .hidden.md\:block is no longer needed since it's controlled in cart.blade.php now */
 }
