@@ -3,21 +3,22 @@
 @section('title', 'صفحه اصلی - چای ابراهیم')
 
 @section('content')
-    <header class="hero-section text-white relative z-10">
-        <div class="hero-overlay"></div>
-        <div class="relative z-10 text-center p-6 max-w-4xl mx-auto">
-            <h1 class="text-6xl md:text-7xl font-extrabold mb-6 leading-tight drop-shadow-lg">
-                عطر و طعم اصیل <br>چای ابراهیم
-            </h1>
-            <p class="text-xl md:text-2xl mb-10 leading-relaxed drop-shadow-md">
-                از مزارع سرسبز لاهیجان تا فنجان شما، تجربه‌ای ناب از چای ایرانی.
-            </p>
-            <a href="{{ url('/products') }}" class="bg-brown-900 text-white px-10 py-4 rounded-full text-lg font-semibold hover:bg-brown-800 transition-all duration-300 shadow-xl transform hover:scale-105">
-                مشاهده محصولات
-            </a>
+    {{-- NEW Hero Section (Fixed) --}}
+    <section id="hero-section" class="relative overflow-hidden h-screen md:h-60vh flex flex-col items-center justify-center text-center text-white p-8">
+        {{-- Background Image Overlay (using inline style for direct image path) --}}
+        <div class="absolute inset-0 w-full h-full bg-cover bg-center" style="background-image: url('https://placehold.co/1920x1080/3a251c/F0F4C3?text=Hero+Image');">
+            <div class="absolute inset-0 bg-brown-900 opacity-60"></div> {{-- Dark overlay --}}
         </div>
-    </header>
 
+        {{-- Content --}}
+        <div class="relative z-10 max-w-4xl mx-auto">
+            <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 animate-fade-in-up">عطر و طعم اصیل <br> چای ابراهیم</h1>
+            <p class="text-lg md:text-xl lg:text-2xl mb-8 animate-fade-in-up delay-100">از مزارع سرسبز لاهیجان تا فنجان شما، شمیم ناب چای ایرانی</p>
+            <a href="{{ url('/products') }}" class="btn-primary animate-fade-in-up delay-200">مشاهده محصولات</a>
+        </div>
+    </section>
+
+    {{-- انواع چای ابراهیم (Original Carousel Section) --}}
     <section class="my-16 p-8 relative">
         <h2 class="text-4xl font-bold text-center text-brown-900 mb-10 section-heading">انواع چای ابراهیم</h2>
 
@@ -81,6 +82,7 @@
         </div>
     </section>
 
+    {{-- چرا چای ابراهیم را انتخاب کنید؟ (Section 2 - Features) --}}
     <section class="bg-gradient-to-r from-green-800 to-green-700 py-16 rounded-3xl mx-auto container px-8 shadow-2xl">
         <h2 class="text-4xl font-bold text-center text-white mb-10 section-heading after:bg-white">چرا چای ابراهیم را انتخاب کنید؟</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-10 text-white text-center">
@@ -102,6 +104,7 @@
         </div>
     </section>
 
+    {{-- جدیدترین محصولات (Original Latest Products Section) --}}
     <section class="my-16 p-8 bg-white shadow-2xl rounded-3xl">
         <h2 class="text-4xl font-bold text-center text-brown-900 mb-10 section-heading">جدیدترین محصولات</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
@@ -147,6 +150,7 @@
         </div>
     </section>
 
+    {{-- همین حالا چای خود را انتخاب کنید (Original CTA Section) --}}
     <section class="my-16 p-8 text-center bg-white shadow-2xl rounded-3xl">
         <h2 class="text-4xl font-bold text-brown-900 mb-6 section-heading">همین حالا چای خود را انتخاب کنید</h2>
         <p class="text-gray-700 leading-loose max-w-3xl mx-auto mb-10 text-lg">
@@ -157,6 +161,7 @@
         </a>
     </section>
 
+    {{-- داستان ما (Original About Us Section) --}}
     <section class="my-16 p-8 bg-white shadow-2xl rounded-3xl">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div class="text-center md:text-right">

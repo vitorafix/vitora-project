@@ -96,38 +96,20 @@ body {
 }
 
 
-/* Hero Section Specific Styles */
+/* Hero Section Styles - SIMPLIFIED HERE for direct Tailwind application in Blade */
 #hero-section {
     position: relative;
     overflow: hidden;
-    height: 60vh; /* Make it more responsive */
+    height: 60vh; /* Make it responsive */
     display: flex;
+    flex-direction: column; /* Stack text and button */
     align-items: center;
     justify-content: center;
     text-align: center;
-    color: white;
+    color: white; /* Ensure text is white for contrast */
     padding: 2rem;
-    background-color: #3a251c; /* Fallback background */
-}
-
-#hero-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: url('https://placehold.co/1920x1080/3a251c/F0F4C3?text=Hero+Image');
-    background-size: cover;
-    background-position: center;
-    filter: brightness(0.6); /* Darken the background image */
-    z-index: 0;
-}
-
-#hero-section .container {
-    position: relative;
-    z-index: 1;
-    max-width: 800px;
+    /* Only basic styles for positioning and text, background image handled in Blade */
+    z-index: 1; 
 }
 
 #hero-section h1 {
@@ -854,7 +836,7 @@ nav .container > div.flex.flex-wrap.justify-center {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #3a251c; /* Brown background as in image */
+    background-color: #3a251c; /* قهوه‌ای تیره برای پس‌زمینه کلی نوار وضعیت */
     color: white;
     border-radius: 0.75rem; /* Rounded corners */
     overflow: hidden; /* Important for arrow shaping */
@@ -893,7 +875,7 @@ nav .container > div.flex.flex-wrap.justify-center {
     top: 0;
     width: 3rem; /* Width of the arrow notch */
     height: 100%;
-    background-color: #3a251c; /* Match container background */
+    background-color: #3a251c; /* Match container background - قهوه‌ای تیره */
     transform: skewX(-15deg); /* Create the arrow shape */
     z-index: 1;
     border-right: 1px solid rgba(255, 255, 255, 0.2); /* Light separator line */
@@ -906,7 +888,7 @@ nav .container > div.flex.flex-wrap.justify-center {
     top: 0;
     width: 3rem; /* Width of the arrow notch */
     height: 100%;
-    background-color: #3a251c; /* Match container background */
+    background-color: #3a251c; /* Match container background - قهوه‌ای تیره */
     transform: skewX(-15deg); /* Create the arrow shape */
     z-index: 1;
     border-left: 1px solid rgba(255, 255, 255, 0.2); /* Light separator line */
@@ -915,18 +897,18 @@ nav .container > div.flex.flex-wrap.justify-center {
 
 /* Active step styling */
 .order-step.active {
-    background-color: #1e5a20; /* Green background for active step */
+    background-color: #1e5a20; /* سبز تیره برای مرحله فعال */
     color: white;
 }
 
 /* Arrow for active step */
 .order-step.active:not(:last-child)::before {
-    background-color: #1e5a20; /* Green background for active arrow */
+    background-color: #1e5a20; /* سبز تیره برای پیکان مرحله فعال */
     border-right-color: #1e5a20; /* Hide white line if active */
 }
 
 .order-step.active + .order-step::after { /* The arrow *before* the next step if current is active */
-    background-color: #1e5a20; /* This makes the receiving side of the arrow also green */
+    background-color: #1e5a20; /* این باعث می‌شود سمت دریافت‌کننده پیکان نیز سبز شود */
     border-left-color: transparent; /* Remove border if next step is also green */
 }
 
