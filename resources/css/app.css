@@ -80,6 +80,8 @@ body {
     z-index: 10000; /* Ensure it's on top of everything */
     max-width: 90%; /* Responsive width */
     color: white; /* Default text color */
+    left: auto; /* Override left-1/2 from JS to use right for RTL */
+    right: 1.5rem; /* Explicit right positioning for RTL */
 }
 
 .message-box.show {
@@ -90,6 +92,7 @@ body {
 .message-box i {
     font-size: 1.5rem; /* Larger icon */
     margin-left: 0.75rem; /* Space between icon and text */
+    margin-right: 0; /* Ensure no conflicting margin-right */
 }
 
 
@@ -260,6 +263,7 @@ nav .container > div.flex.flex-wrap.justify-center {
     overflow-y: auto;
     z-index: 90; /* Higher than other elements, but lower than modals */
     display: none; /* Controlled by JS show/hide class */
+    direction: rtl; /* Ensure results are RTL */
 }
 
 #live-search-results-container.show {
@@ -272,6 +276,7 @@ nav .container > div.flex.flex-wrap.justify-center {
     padding: 0.75rem 0;
     border-bottom: 1px solid #eee;
     gap: 1rem;
+    text-decoration: none; /* Remove underline from <a> */
 }
 .search-result-item:last-child {
     border-bottom: none;
@@ -282,9 +287,13 @@ nav .container > div.flex.flex-wrap.justify-center {
     object-fit: cover;
     border-radius: 0.5rem;
     border: 1px solid #ddd;
+    flex-shrink: 0;
+    margin-right: 0; /* Remove default margin-right */
+    margin-left: 0.75rem; /* Space between image and text in RTL */
 }
 .search-result-item-details {
     flex-grow: 1;
+    text-align: right;
 }
 .search-result-item-details h4 {
     font-weight: 600;
@@ -297,7 +306,7 @@ nav .container > div.flex.flex-wrap.justify-center {
     color: #1e5a20;
     font-weight: 500;
 }
-.search-result-item .add-to-cart-btn {
+.search-result-item .add-to-cart-btn { /* This style is for the button if it were still there */
     background-color: #1e5a20;
     color: white;
     padding: 0.4rem 0.8rem;
@@ -307,6 +316,7 @@ nav .container > div.flex.flex-wrap.justify-center {
     align-items: center;
     gap: 0.25rem;
     transition: background-color 0.2s;
+    white-space: nowrap;
 }
 .search-result-item .add-to-cart-btn:hover {
     background-color: #164317;
@@ -333,6 +343,7 @@ nav .container > div.flex.flex-wrap.justify-center {
     max-height: 400px; /* Limit height for scrollability */
     overflow-y: auto;
     overflow-x: hidden;
+    direction: rtl; /* Ensure content is RTL */
 }
 
 #cart-icon-container:hover .mini-cart-dropdown,
@@ -360,10 +371,13 @@ nav .container > div.flex.flex-wrap.justify-center {
     border-radius: 0.5rem;
     border: 1px solid #ddd;
     flex-shrink: 0;
+    margin-right: 0; /* Remove default margin-right */
+    margin-left: 0.5rem; /* Space between image and text in RTL */
 }
 .mini-cart-details {
     flex-grow: 1;
     margin-left: 0.5rem;
+    text-align: right; /* Ensure text aligns right */
 }
 .mini-cart-name {
     font-weight: 600;
@@ -385,6 +399,7 @@ nav .container > div.flex.flex-wrap.justify-center {
     border-radius: 0.5rem;
     padding: 0.2rem;
     flex-shrink: 0;
+    direction: ltr; /* Quantity control in LTR for numbers */
 }
 .mini-cart-quantity-control button {
     background-color: #f0f0f0;
@@ -641,7 +656,8 @@ nav .container > div.flex.flex-wrap.justify-center {
     border-radius: 0.75rem; /* Rounded corners for image */
     border: 1px solid #ddd;
     flex-shrink: 0; /* Prevent image from shrinking */
-    margin-right: 0.5rem; /* Space between image and text in RTL */
+    margin-right: 0; /* Remove default margin-right */
+    margin-left: 0.5rem; /* Space between image and text in RTL */
 }
 
 .product-info {
@@ -695,6 +711,7 @@ nav .container > div.flex.flex-wrap.justify-center {
     width: fit-content; /* Make the box fit its content */
     /* margin: 0 auto; Removed margin-auto, let parent flex center it */
     background-color: white; /* Ensure white background */
+    direction: ltr; /* For numerical display */
 }
 
 .quantity-btn-cart {
@@ -845,6 +862,7 @@ nav .container > div.flex.flex-wrap.justify-center {
     width: 100%; /* Full width */
     max-width: 900px; /* Limit max width for desktop */
     box-shadow: 0 4px 15px rgba(0,0,0,0.2); /* Subtle shadow */
+    direction: rtl; /* Ensure RTL for steps */
 }
 
 .order-step {
