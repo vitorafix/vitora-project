@@ -29,10 +29,17 @@ const liveSearchResultsContainer = document.getElementById('live-search-results-
 const authToggleButton = document.getElementById('auth-toggle-btn');
 const authModalOverlay = document.getElementById('auth-modal-overlay');
 const authModalCloseBtn = document.getElementById('auth-modal-close-btn');
-// registerForm and loginForm are now handled differently due to dedicated registration page
-const loginForm = document.getElementById('login-form');
-const showLoginBtn = document.getElementById('show-login-btn'); // For modal switch
-// The showRegisterBtn in modal will now directly link to /register page
+
+// New Auth Modal Elements
+const mobileLoginStep = document.getElementById('mobile-login-step');
+const smsVerifyStep = document.getElementById('sms-verify-step');
+const mobileNumberInput = document.getElementById('mobile-number');
+const otpCodeInput = document.getElementById('otp-code');
+const getOtpBtn = document.getElementById('get-otp-btn');
+const verifyOtpBtn = document.getElementById('verify-otp-btn');
+const resendOtpBtn = document.getElementById('resend-otp-btn');
+const changeMobileBtn = document.getElementById('change-mobile-btn');
+const displayMobileNumberSpan = document.getElementById('display-mobile-number');
 
 // Initialize cart from Local Storage
 let cart = JSON.parse(localStorage.getItem('teaCart')) || [];
@@ -741,19 +748,26 @@ function showAuthModal() {
     if (!authModalOverlay) return; // Ensure authModalOverlay exists
 
     authModalOverlay.classList.add('show');
-    // By default, only show login form as registration is now a dedicated page
-    // The conditional check for loginForm is already present implicitly when accessing its properties.
-    // Explicitly setting hidden class ensures it's only shown when desired.
-    if (loginForm) {
-        loginForm.classList.remove('hidden');
+    // Initially show the mobile login step
+    if (mobileLoginStep) {
+        mobileLoginStep.classList.remove('hidden');
+    }
+    if (smsVerifyStep) {
+        smsVerifyStep.classList.add('hidden');
+    }
+    if (mobileNumberInput) { // Clear input on modal show
+        mobileNumberInput.value = '';
     }
 }
 
 // Hide Auth Modal
 function hideAuthModal() {
     if (authModalOverlay) { authModalOverlay.classList.remove('show'); }
-    // registerForm is now handled by a separate page, so no need to reset it here
-    if (loginForm) { loginForm.reset(); }    // Clear login form fields
+    if (mobileLoginStep) { mobileLoginStep.reset(); }
+    if (smsVerifyStep) { smsVerifyStep.reset(); }
+    // Ensure only one step is visible when modal is shown next time
+    if (mobileLoginStep) { mobileLoginStep.classList.remove('hidden'); }
+    if (smsVerifyStep) { smsVerifyStep.classList.add('hidden'); }
 }
 
 // Event listener for Auth Toggle Button
@@ -763,6 +777,8 @@ if (authToggleButton) { // Check if authToggleButton exists before adding listen
         if (loggedInUser) {
             // Perform Logout
             sessionStorage.removeItem('loggedInUser');
+            // Remove user data from localStorage that was stored by registration form
+            localStorage.removeItem('loggedInUserFullData'); // Clear full user data too
             updateAuthButtonState();
             showMessage('با موفقیت از حساب کاربری خود خارج شدید.', 'success');
         } else {
@@ -791,37 +807,208 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
-// Event listener for switching forms inside modal (only login remains here)
-// The showLoginBtn from the old modal logic is now largely redundant in this modal-only login setup.
-// If it refers to a button that explicitly switches to login, it should just close the modal.
-if (showLoginBtn) {
-    showLoginBtn.addEventListener('click', () => {
-        // No actual form switch needed as only login form remains in modal
-        // This button, if clicked, would primarily close the modal if it was open for some reason.
-        hideAuthModal(); // Close the modal if login is clicked
+// --- New Multi-step Auth Modal Logic ---
+
+// Simulated OTP (One-Time Password) for demonstration
+let simulatedOtp = '';
+let currentMobileNumber = ''; // Store mobile number during OTP process
+
+// Mock User Data (in a real app, this would be handled by a backend database)
+// We'll use localStorage for persistent storage across sessions for demo purposes.
+// isProfileComplete will track if user has filled out address, etc.
+const defaultUsers = [
+    { username: "testuser", password: "password", role: "کاربر" }, // Legacy user
+    { username: "admin", password: "adminpassword", role: "مدیر کل" }, // Legacy admin
+];
+
+// Function to get users from localStorage, merge with default, or return default
+function getStoredUsers() {
+    const storedUsers = JSON.parse(localStorage.getItem('registeredUsers')) || {};
+    // Merge default users (like admin) with dynamically registered users
+    const allUsers = { ...storedUsers };
+    defaultUsers.forEach(user => {
+        if (!allUsers[user.username]) { // Add if not already present by username
+            allUsers[user.username] = user;
+        }
+    });
+    return allUsers;
+}
+
+
+// Step 1: Mobile Number Submission
+if (mobileLoginStep) {
+    mobileLoginStep.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const mobileNumber = mobileNumberInput.value.trim();
+
+        if (!mobileNumber) {
+            showMessage('لطفاً شماره موبایل را وارد کنید.', 'error');
+            return;
+        }
+        const phoneRegex = /^09[0-9]{9}$/;
+        if (!phoneRegex.test(mobileNumber)) {
+            showMessage('فرمت شماره موبایل صحیح نیست. (مثال: 09123456789)', 'error');
+            return;
+        }
+
+        // Simulate sending OTP
+        getOtpBtn.disabled = true;
+        getOtpBtn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال ارسال...';
+        showMessage(`در حال ارسال کد تایید به ${mobileNumber}...`, 'info');
+
+        try {
+            // In a real app, you would send a request to your backend here
+            // const response = await fetch('/api/send-otp', { method: 'POST', body: JSON.stringify({ mobileNumber }) });
+            // const data = await response.json();
+            await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call delay
+
+            // For demo: Generate a fixed OTP or a random one
+            simulatedOtp = '1234'; // Fixed OTP for easy testing
+            // simulatedOtp = Math.floor(1000 + Math.random() * 9000).toString(); // Random 4-digit OTP
+
+            currentMobileNumber = mobileNumber; // Store for verification step
+            displayMobileNumberSpan.textContent = mobileNumber;
+            
+            mobileLoginStep.classList.add('hidden');
+            smsVerifyStep.classList.remove('hidden');
+            otpCodeInput.value = ''; // Clear previous OTP input
+            otpCodeInput.focus();
+
+            showMessage(`کد تایید ${simulatedOtp} به شماره ${mobileNumber} ارسال شد.`, 'success');
+
+        } catch (error) {
+            console.error('Error sending OTP:', error);
+            showMessage('خطا در ارسال کد تایید. لطفاً دوباره تلاش کنید.', 'error');
+        } finally {
+            getOtpBtn.disabled = false;
+            getOtpBtn.innerHTML = 'دریافت کد تایید';
+        }
     });
 }
 
-// Note: showRegisterBtn reference at the top is largely unused in the current setup
-// as the modal's "register" link now directly navigates to /register page.
+// Step 2: SMS Verification
+if (smsVerifyStep) {
+    smsVerifyStep.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const otpCode = otpCodeInput.value.trim();
+
+        if (!otpCode) {
+            showMessage('لطفاً کد تایید را وارد کنید.', 'error');
+            return;
+        }
+
+        verifyOtpBtn.disabled = true;
+        verifyOtpBtn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال تایید...';
+
+        try {
+            // In a real app, send mobileNumber and otpCode to backend for verification
+            // const response = await fetch('/api/verify-otp', { method: 'POST', body: JSON.stringify({ mobileNumber: currentMobileNumber, otpCode }) });
+            // const data = await response.json();
+            await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call delay
+
+            if (otpCode === simulatedOtp) {
+                showMessage('تایید کد با موفقیت انجام شد.', 'success');
+
+                // Simulate user login/registration based on mobile number
+                let users = getStoredUsers(); // Get all users, including those registered via the registration form
+
+                // Check if this mobile number already has a profile (from registration page)
+                let foundUser = Object.values(users).find(user => user.phoneNumber === currentMobileNumber);
+
+                // For testing admin login via mobile, using a specific mock mobile number
+                if (currentMobileNumber === '09121234567') { // Mock mobile for admin
+                    foundUser = { username: 'admin', role: 'مدیر کل', phoneNumber: currentMobileNumber, isProfileComplete: true };
+                } else if (!foundUser) {
+                    // If mobile number is new, simulate a new user account
+                    foundUser = {
+                        username: `user_${currentMobileNumber}`, // Or a generated username
+                        role: 'کاربر',
+                        phoneNumber: currentMobileNumber,
+                        isProfileComplete: false, // New users need to complete profile
+                        id: Date.now().toString() // Simple unique ID
+                    };
+                    // Store the new user in localStorage (simulated backend)
+                    users[foundUser.username] = foundUser;
+                    localStorage.setItem('registeredUsers', JSON.stringify(users));
+                }
+
+                sessionStorage.setItem('loggedInUser', JSON.stringify({ username: foundUser.username, role: foundUser.role, phoneNumber: foundUser.phoneNumber }));
+                localStorage.setItem('loggedInUserFullData', JSON.stringify(foundUser)); // Store full user data for profile completion check
+                updateAuthButtonState();
+                hideAuthModal();
+
+                // *** تغییر مهم: همیشه به صفحه اصلی هدایت شود، مگر اینکه مدیر باشد ***
+                if (foundUser.role === 'مدیر کل') {
+                    setTimeout(() => {
+                        window.location.href = '/admin/dashboard'; // Redirect admin to admin panel
+                    }, 500);
+                } else {
+                    // برای کاربران عادی (جدید یا موجود)، همیشه پس از ورود به صفحه اصلی هدایت شود
+                    setTimeout(() => {
+                        window.location.href = '/'; 
+                    }, 500);
+                }
+
+            } else {
+                showMessage('کد تایید اشتباه است. لطفاً دوباره امتحان کنید.', 'error');
+                otpCodeInput.value = '';
+                otpCodeInput.focus();
+            }
+
+        } catch (error) {
+            console.error('Error verifying OTP:', error);
+            showMessage('خطا در تایید کد. لطفاً دوباره تلاش کنید.', 'error');
+        } finally {
+            verifyOtpBtn.disabled = false;
+            verifyOtpBtn.innerHTML = 'تایید و ورود';
+        }
+    });
+}
 
 
-// --- Registration Page Specific Logic ---
-// Get references to elements on the registration page (only runs if on that page)
-const registerForm = document.getElementById('register-form');
+// Event listeners for resend and change mobile buttons
+if (resendOtpBtn) {
+    resendOtpBtn.addEventListener('click', async () => {
+        showMessage('در حال ارسال مجدد کد تایید...', 'info');
+        resendOtpBtn.disabled = true;
+        try {
+            await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call delay
+            simulatedOtp = '1234'; // Regenerate OTP or keep same for demo
+            showMessage(`کد تایید جدید ${simulatedOtp} ارسال شد.`, 'success');
+        } catch (error) {
+            console.error('Error resending OTP:', error);
+            showMessage('خطا در ارسال مجدد کد.', 'error');
+        } finally {
+            resendOtpBtn.disabled = false;
+        }
+    });
+}
 
-if (registerForm) { // This block only executes if the register-form element is present (i.e., on the register page)
+if (changeMobileBtn) {
+    changeMobileBtn.addEventListener('click', () => {
+        mobileLoginStep.classList.remove('hidden');
+        smsVerifyStep.classList.add('hidden');
+        mobileNumberInput.value = '';
+        mobileNumberInput.focus();
+        showMessage('شماره موبایل را تغییر دهید.', 'info');
+    });
+}
+
+// --- Registration/Profile Completion Logic (for complete-profile.blade.php) ---
+const completeProfileForm = document.getElementById('complete-profile-form');
+
+if (completeProfileForm) { // This block only executes if the complete-profile-form element is present
     const fullNameInput = document.getElementById('full-name');
     const emailInput = document.getElementById('email');
-    const passwordInput = document.getElementById('password');
-    const confirmPasswordInput = document.getElementById('confirm-password');
-    const phoneNumberInput = document.getElementById('phone-number');
+    const passwordInput = document.getElementById('password'); // Can be hidden if user registered with OTP
+    const confirmPasswordInput = document.getElementById('confirm-password'); // Can be hidden
+    const phoneNumberInput = document.getElementById('phone-number'); // Should be pre-filled
     const nationalCodeInput = document.getElementById('national-code');
     const streetAddressInput = document.getElementById('street-address');
     const provinceInput = document.getElementById('province');
     const cityInput = document.getElementById('city');
     const postalCodeInput = document.getElementById('postal-code');
-    const togglePassword = document.getElementById('toggle-password');
+    const togglePassword = document.getElementById('toggle-password'); // If password fields are shown
 
     const formInputs = [
         fullNameInput, emailInput, passwordInput, confirmPasswordInput,
@@ -872,8 +1059,28 @@ if (registerForm) { // This block only executes if the register-form element is 
         }
     });
 
-    // Handle Registration Form Submission
-    registerForm.addEventListener('submit', async (event) => {
+    // Pre-fill phone number if available from loggedInUserFullData
+    const loggedInUserFullData = JSON.parse(localStorage.getItem('loggedInUserFullData'));
+    if (phoneNumberInput && loggedInUserFullData && loggedInUserFullData.phoneNumber) {
+        phoneNumberInput.value = loggedInUserFullData.phoneNumber;
+        phoneNumberInput.readOnly = true; // Make it read-only
+        phoneNumberInput.classList.add('bg-gray-100', 'cursor-not-allowed');
+    }
+
+    // Pre-fill existing data if user is editing their profile
+    if (loggedInUserFullData) {
+        if (fullNameInput) fullNameInput.value = loggedInUserFullData.fullName || '';
+        if (emailInput) emailInput.value = loggedInUserFullData.email || '';
+        // Passwords should never be pre-filled for security
+        if (nationalCodeInput) nationalCodeInput.value = loggedInUserFullData.nationalCode || '';
+        if (streetAddressInput && loggedInUserFullData.address) streetAddressInput.value = loggedInUserFullData.address.street || '';
+        if (provinceInput && loggedInUserFullData.address) provinceInput.value = loggedInUserFullData.address.province || '';
+        if (cityInput && loggedInUserFullData.address) cityInput.value = loggedInUserFullData.address.city || '';
+        if (postalCodeInput && loggedInUserFullData.address) postalCodeInput.value = loggedInUserFullData.address.postalCode || '';
+    }
+
+    // Handle Complete Profile Form Submission
+    completeProfileForm.addEventListener('submit', async (event) => {
         event.preventDefault(); // Prevent default form submission
 
         // Clear all existing error borders before new validation
@@ -882,16 +1089,18 @@ if (registerForm) { // This block only executes if the register-form element is 
         // Get current values from the form fields
         const fullName = fullNameInput.value.trim();
         const email = emailInput.value.trim();
-        const password = passwordInput.value.trim();
-        const confirmPassword = confirmPasswordInput.value.trim();
-        const phoneNumber = phoneNumberInput.value.trim();
+        // Password fields might be absent for OTP registered users
+        const password = passwordInput ? passwordInput.value.trim() : '';
+        const confirmPassword = confirmPasswordInput ? confirmPasswordInput.value.trim() : '';
+
+        const phoneNumber = phoneNumberInput.value.trim(); // This should be pre-filled
         const nationalCode = nationalCodeInput.value.trim();
         const streetAddress = streetAddressInput.value.trim();
         const province = provinceInput.value.trim();
         const city = cityInput.value.trim();
         const postalCode = postalCodeInput.value.trim();
 
-        const submitBtn = registerForm.querySelector('button[type="submit"]');
+        const submitBtn = completeProfileForm.querySelector('button[type="submit"]');
         const originalBtnText = submitBtn.innerHTML;
 
         // Set loading state for the submit button
@@ -902,7 +1111,6 @@ if (registerForm) { // This block only executes if the register-form element is 
         let isValid = true; // Flag to track overall form validity
 
         // Client-side Validation Checks and applying error borders
-        // Each check now calls addErrorBorder if validation fails for that specific field
         if (!fullName) {
             showMessage('لطفاً نام کامل را پر کنید.', 'error');
             addErrorBorder(fullNameInput);
@@ -926,40 +1134,45 @@ if (registerForm) { // This block only executes if the register-form element is 
             }
         }
 
-        if (!password) {
-            showMessage('لطفاً رمز عبور را پر کنید.', 'error');
-            addErrorBorder(passwordInput);
-            isValid = false;
-        } else if (password.length < 8) {
-            showMessage('رمز عبور باید حداقل 8 کاراکتر باشد.', 'error');
-            addErrorBorder(passwordInput);
-            isValid = false;
-        } else {
-            const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/; // At least one letter and one number
-            if (!passwordRegex.test(password)) {
-                showMessage('رمز عبور باید شامل حروف و اعداد باشد.', 'error');
+        // Only validate password if fields are present and not empty
+        if (passwordInput && passwordInput.offsetParent !== null) { // Check if element is visible
+            if (!password) {
+                showMessage('لطفاً رمز عبور را پر کنید.', 'error');
                 addErrorBorder(passwordInput);
+                isValid = false;
+            } else if (password.length < 8) {
+                showMessage('رمز عبور باید حداقل 8 کاراکتر باشد.', 'error');
+                addErrorBorder(passwordInput);
+                isValid = false;
+            } else {
+                const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/; // At least one letter and one number
+                if (!passwordRegex.test(password)) {
+                    showMessage('رمز عبور باید شامل حروف و اعداد باشد.', 'error');
+                    addErrorBorder(passwordInput);
+                    isValid = false;
+                }
+            }
+
+            if (!confirmPassword) {
+                showMessage('لطفاً تأیید رمز عبور را پر کنید.', 'error');
+                addErrorBorder(confirmPasswordInput);
+                isValid = false;
+            } else if (password !== confirmPassword) {
+                showMessage('رمز عبور و تایید آن مطابقت ندارند.', 'error');
+                addErrorBorder(passwordInput); // Highlight both if mismatch
+                addErrorBorder(confirmPasswordInput);
                 isValid = false;
             }
         }
 
-        if (!confirmPassword) {
-            showMessage('لطفاً تأیید رمز عبور را پر کنید.', 'error');
-            addErrorBorder(confirmPasswordInput);
-            isValid = false;
-        } else if (password !== confirmPassword) {
-            showMessage('رمز عبور و تایید آن مطابقت ندارند.', 'error');
-            addErrorBorder(passwordInput); // Highlight both if mismatch
-            addErrorBorder(confirmPasswordInput);
-            isValid = false;
-        }
 
+        // Phone Number is pre-filled, so just validate format if it was editable
         if (!phoneNumber) {
-            showMessage('لطفاً شماره تلفن را پر کنید.', 'error');
+            showMessage('شماره تلفن از قبل وارد شده است.', 'error'); // Should not happen if pre-filled
             addErrorBorder(phoneNumberInput);
             isValid = false;
         } else {
-            const phoneRegex = /^09[0-9]{9}$/; // Starts with 09 and 9 more digits
+            const phoneRegex = /^09[0-9]{9}$/;
             if (!phoneRegex.test(phoneNumber)) {
                 showMessage('فرمت شماره تلفن صحیح نیست. (مثال: 09123456789)', 'error');
                 addErrorBorder(phoneNumberInput);
@@ -972,7 +1185,7 @@ if (registerForm) { // This block only executes if the register-form element is 
             addErrorBorder(nationalCodeInput);
             isValid = false;
         } else {
-            const nationalCodeRegex = /^[0-9]{10}$/; // Exactly 10 digits
+            const nationalCodeRegex = /^[0-9]{10}$/;
             if (!nationalCodeRegex.test(nationalCode)) {
                 showMessage('کد ملی باید ۱۰ رقمی باشد.', 'error');
                 addErrorBorder(nationalCodeInput);
@@ -1003,7 +1216,7 @@ if (registerForm) { // This block only executes if the register-form element is 
             addErrorBorder(postalCodeInput);
             isValid = false;
         } else {
-            const postalCodeRegex = /^[0-9]{10}$/; // Exactly 10 digits
+            const postalCodeRegex = /^[0-9]{10}$/;
             if (!postalCodeRegex.test(postalCode)) {
                 showMessage('کد پستی باید ۱۰ رقمی باشد.', 'error');
                 addErrorBorder(postalCodeInput);
@@ -1020,26 +1233,33 @@ if (registerForm) { // This block only executes if the register-form element is 
         }
 
         // Simulate checking for existing users in localStorage (backend simulation)
-        let users = JSON.parse(localStorage.getItem('teaUsers')) || {};
-        const existingUserByEmail = Object.values(users).find(user => user.email === email);
-        const existingUserByPhone = Object.values(users).find(user => user.phoneNumber === phoneNumber);
-        const existingUserByNationalCode = Object.values(users).find(user => user.nationalCode === nationalCode);
+        let users = getStoredUsers(); // Get all users from storage
+        let isExistingUser = false;
+        let currentUserData = null;
 
-        // Check for duplicate data and apply error borders
-        if (existingUserByEmail) {
-            showMessage('این ایمیل قبلاً ثبت شده است.', 'error');
-            addErrorBorder(emailInput);
-            isValid = false;
+        if (loggedInUserFullData && loggedInUserFullData.phoneNumber === phoneNumber) {
+            isExistingUser = true;
+            currentUserData = loggedInUserFullData;
         }
-        if (existingUserByPhone) {
-            showMessage('این شماره تلفن قبلاً ثبت شده است.', 'error');
-            addErrorBorder(phoneNumberInput);
-            isValid = false;
+
+        // Check for duplicate data if email/nationalCode are being set for a new user
+        // Or if an existing user is changing their email/nationalCode to a conflicting one
+        if (!isExistingUser || (isExistingUser && currentUserData.email !== email)) {
+            const existingUserByEmail = Object.values(users).find(user => user.email === email && user.phoneNumber !== phoneNumber);
+            if (existingUserByEmail) {
+                showMessage('این ایمیل قبلاً توسط کاربر دیگری ثبت شده است.', 'error');
+                addErrorBorder(emailInput);
+                isValid = false;
+            }
         }
-        if (existingUserByNationalCode) {
-            showMessage('این کد ملی قبلاً ثبت شده است.', 'error');
-            addErrorBorder(nationalCodeInput);
-            isValid = false;
+        
+        if (!isExistingUser || (isExistingUser && currentUserData.nationalCode !== nationalCode)) {
+             const existingUserByNationalCode = Object.values(users).find(user => user.nationalCode === nationalCode && user.phoneNumber !== phoneNumber);
+            if (existingUserByNationalCode) {
+                showMessage('این کد ملی قبلاً توسط کاربر دیگری ثبت شده است.', 'error');
+                addErrorBorder(nationalCodeInput);
+                isValid = false;
+            }
         }
 
         // If any duplicate check failed, stop
@@ -1050,60 +1270,55 @@ if (registerForm) { // This block only executes if the register-form element is 
             return; // Exit here if not valid
         }
 
-        // If all validations pass, proceed with simulated registration
+        // If all validations pass, proceed with simulated registration/profile update
         try {
             // Simulate an async backend call (e.g., sending data to Laravel)
             await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
 
-            // Simulate successful registration data from backend
-            const backendResponse = { success: true, message: 'ثبت نام موفقیت‌آمیز بود.' };
-            // In a real application, 'data' would come from a fetch call to your Laravel backend.
-            // Example:
-            // const response = await fetch('/api/register', {
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json' },
-            //     body: JSON.stringify({ fullName, email, password, phoneNumber, nationalCode, streetAddress, province, city, postalCode })
-            // });
-            // const backendResponse = await response.json();
-
-
-            if (backendResponse.success) {
-                // Store user data in localStorage (simulated user database)
-                // IMPORTANT: In a real app, you would NEVER store plain text passwords in localStorage.
-                // Passwords should be hashed on the backend (e.g., by Laravel's bcrypt) and stored securely.
-                // The email is used as the key for simplicity in this simulation.
-                users[email] = {
-                    fullName: fullName,
-                    email: email,
-                    password: password, // Simulated plain text password for client-side demo
+            // Update user data for the current logged-in user in localStorage
+            if (!isExistingUser) {
+                 // This path should ideally not be hit if user is logged in via OTP
+                 // but as a fallback, create a new user if somehow not found
+                 loggedInUserFullData = { // This is a new user registering fully
+                    username: email.split('@')[0], // Simple username from email
+                    role: 'کاربر',
                     phoneNumber: phoneNumber,
-                    nationalCode: nationalCode,
-                    address: {
-                        street: streetAddress,
-                        province: province,
-                        city: city,
-                        postalCode: postalCode
-                    },
-                    isVerified: false // Simulated: User needs to verify via SMS
+                    isProfileComplete: true, // Now complete
+                    id: Date.now().toString(),
+                    fullName, email, password, nationalCode,
+                    address: { street: streetAddress, province, city, postalCode }
                 };
-                localStorage.setItem('teaUsers', JSON.stringify(users));
-
-                showMessage('ثبت نام با موفقیت انجام شد. لطفا منتظر کد فعال‌سازی بمانید (شبیه‌سازی شده).', 'success');
-
-                // Simulate redirection to home page after a short delay
-                setTimeout(() => {
-                    window.location.href = '/'; // Redirect to home page
-                    showMessage('شبیه‌سازی: به صفحه اصلی هدایت می‌شوید.', 'info');
-                }, 2000);
-
-                registerForm.reset(); // Clear the form fields after successful registration
             } else {
-                // Display backend error message if registration was not successful
-                showMessage(backendResponse.message || 'خطا در ثبت نام.', 'error');
+                // Update existing user data
+                loggedInUserFullData.fullName = fullName;
+                loggedInUserFullData.email = email;
+                if (password) loggedInUserFullData.password = password; // Only update if new password provided
+                loggedInUserFullData.nationalCode = nationalCode;
+                loggedInUserFullData.address = {
+                    street: streetAddress,
+                    province: province,
+                    city: city,
+                    postalCode: postalCode
+                };
+                loggedInUserFullData.isProfileComplete = true; // Mark as complete
             }
 
+            // Update the user in the main 'registeredUsers' object in localStorage
+            users[loggedInUserFullData.username] = loggedInUserFullData;
+            localStorage.setItem('registeredUsers', JSON.stringify(users));
+            localStorage.setItem('loggedInUserFullData', JSON.stringify(loggedInUserFullData)); // Update full data in session storage
+
+            showMessage('اطلاعات با موفقیت ثبت/بروزرسانی شد.', 'success');
+
+            // Simulate redirection to home page after a short delay
+            setTimeout(() => {
+                window.location.href = '/'; // Redirect to home page
+            }, 2000);
+
+            // No form reset here as it's a profile update, data should remain
+
         } catch (error) {
-            console.error('Registration submission error:', error);
+            console.error('Profile completion submission error:', error);
             showMessage('خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.', 'error');
         } finally {
             // Reset button state regardless of success or failure
@@ -1112,74 +1327,4 @@ if (registerForm) { // This block only executes if the register-form element is 
             submitBtn.classList.remove('opacity-70', 'cursor-not-allowed');
         }
     });
-} else {
-    // This block handles the login form submission if it's in a modal (e.g., on other pages)
-    // and the 'registerForm' element is NOT present on the current page.
-    if (loginForm) { // Ensure loginForm element exists
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const username = loginForm.elements['login-username'].value;
-            const password = loginForm.elements['login-password'].value;
-
-            // Mock User Data (in a real app, this would be handled by a backend database)
-            // Ensure roles are defined for users, especially 'مدیر کل' for admin
-            const users = [
-                { username: "testuser", password: "password", role: "کاربر" },
-                { username: "admin", password: "adminpassword", role: "مدیر کل" }, // Admin User
-                { username: "editor", password: "editorpassword", role: "کاربر" }, // Example of another role
-            ];
-
-            // In a real application, you'd send this to a backend API for verification
-            // For now, we simulate success/failure with mock data
-            const foundUser = users.find(u => u.username === username && u.password === password);
-
-            if (foundUser) {
-                sessionStorage.setItem('loggedInUser', JSON.stringify({ username: foundUser.username, role: foundUser.role })); // Store full user object
-                updateAuthButtonState();
-                hideAuthModal();
-                showMessage(`خوش آمدید، ${foundUser.username}!`, 'success');
-
-                // --- New Redirection Logic based on Role ---
-                if (foundUser.role === 'مدیر کل') {
-                    setTimeout(() => {
-                        window.location.href = '/admin/dashboard'; // Redirect admin to admin panel
-                    }, 1000); // Small delay for message to show
-                } else {
-                    setTimeout(() => {
-                        window.location.href = '/'; // Redirect regular users to home page
-                    }, 1000); // Small delay for message to show
-                }
-
-            } else {
-                showMessage('نام کاربری یا رمز عبور اشتباه است.', 'error');
-            }
-        });
-    }
 }
-
-
-// Initial render of mini cart on page load
-document.addEventListener('DOMContentLoaded', () => {
-    renderMiniCart(); // Render mini cart content
-    updateAuthButtonState(); // Update authentication button state
-
-    // Also render the main cart if we are on the cart page
-    if (cartItemsContainer) {
-        renderCart();
-    }
-
-    // Log warnings if critical search elements are missing
-    if (!searchAreaWrapper) {
-        console.warn('Search area wrapper element with ID "search-area-wrapper" not found. Search functionality may not work.');
-    }
-    if (!searchToggleButton) {
-        console.warn('Search toggle button element with ID "search-toggle-btn" not found. Search functionality may not work.');
-    }
-    if (!liveSearchInput) {
-        console.warn('Live search input element with ID "live-search-input" not found. Search functionality may not work.');
-    }
-    if (!liveSearchResultsContainer) {
-        console.warn('Live search results container element with ID "live-search-results-container" not found. Search functionality may not work.');
-    }
-});
-

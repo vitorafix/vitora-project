@@ -1,12 +1,15 @@
 @extends('layouts.app')
 
-@section('title', 'ثبت نام - چای ابراهیم')
+{{-- Change title to reflect profile completion --}}
+@section('title', 'تکمیل پروفایل - چای ابراهیم')
 
 @section('content')
     <main class="flex-grow flex items-center justify-center p-6">
         <div class="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 w-full max-w-lg">
-            <h2 class="text-4xl font-bold text-center text-brown-900 mb-10 section-heading">ثبت نام کاربر جدید</h2>
-            <form id="register-form" class="space-y-6">
+            {{-- Change heading to reflect profile completion --}}
+            <h2 class="text-4xl font-bold text-center text-brown-900 mb-10 section-heading">تکمیل اطلاعات پروفایل</h2>
+            {{-- IMPORTANT: Changed form ID from 'register-form' to 'complete-profile-form' to match app.js --}}
+            <form id="complete-profile-form" class="space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Full Name -->
                     <div>
@@ -49,6 +52,7 @@
                 <!-- Phone Number -->
                 <div>
                     <label for="phone-number" class="block text-lg font-semibold text-brown-900 mb-2">شماره تلفن:</label>
+                    {{-- Phone number input will be pre-filled and read-only by app.js --}}
                     <input type="tel" id="phone-number" name="phoneNumber"
                            class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-800 focus:border-transparent text-gray-800"
                            placeholder="مثال: 09123456789" required pattern="^09[0-9]{9}$">
@@ -97,8 +101,9 @@
                     </div>
                 </div>
 
+                {{-- Change button text to reflect profile completion/save --}}
                 <button type="submit" class="bg-green-800 text-white px-8 py-3 rounded-full text-lg font-semibold hover:bg-green-700 transition-all duration-300 shadow-lg w-full mt-8">
-                    ثبت نام
+                    تکمیل و ذخیره پروفایل
                 </button>
 
                 <div class="text-center mt-4">

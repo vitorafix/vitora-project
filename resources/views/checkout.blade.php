@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'تکمیل خرید - چای ابراهیم')
+@section('title', 'تکمیل خرید و پرداخت - چای ابراهیم')
 
 @section('content')
     <section class="my-16 p-8">
@@ -79,4 +79,91 @@
             </div>
         </div>
     </section>
+@endsection
+
+@section('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loggedInUserFullData = JSON.parse(localStorage.getItem('loggedInUserFullData'));
+            const loggedInUserSession = sessionStorage.getItem('loggedInUser');
+
+            if (loggedInUserSession) {
+                // User is logged in via session
+                if (!loggedInUserFullData || !loggedInUserFullData.isProfileComplete) {
+                    // Profile is not complete, redirect to complete-profile page
+                    showMessage('لطفاً ابتدا اطلاعات کاربری خود را تکمیل کنید.', 'info');
+                    setTimeout(() => {
+                        window.location.href = '{{ url("/complete-profile") }}';
+                    }, 2000); // Give user time to see the message
+                } else {
+                    // Profile is complete, pre-fill checkout form fields
+                    const fullNameInput = document.getElementById('full-name');
+                    const phoneInput = document.getElementById('phone');
+                    const addressInput = document.getElementById('address');
+                    const cityInput = document.getElementById('city');
+                    const postalCodeInput = document.getElementById('postal-code');
+                    
+                    if (fullNameInput) fullNameInput.value = loggedInUserFullData.fullName || '';
+                    if (phoneInput) phoneInput.value = loggedInUserFullData.phoneNumber || '';
+                    if (addressInput && loggedInUserFullData.address) addressInput.value = loggedInUserFullData.address.street || '';
+                    if (cityInput && loggedInUserFullData.address) cityInput.value = loggedInUserFullData.address.city || '';
+                    if (postalCodeInput && loggedInUserFullData.address) postalCodeInput.value = loggedInUserFullData.address.postalCode || '';
+                }
+            } else {
+                // User is not logged in, redirect to home or show auth modal (for this flow, we'll redirect to home)
+                showMessage('برای تکمیل خرید، لطفاً وارد شوید یا ثبت نام کنید.', 'info');
+                setTimeout(() => {
+                    window.location.href = '{{ url("/") }}'; // Redirect to home, where auth modal can be triggered
+                }, 2000);
+            }
+        });
+
+        // Function to display a temporary message (copied from app.js for consistency)
+        function showMessage(message, type = 'success') {
+            const existingMessageBox = document.getElementById('temp-message-box');
+            if (existingMessageBox) {
+                existingMessageBox.remove();
+            }
+
+            const messageBox = document.createElement('div');
+            messageBox.id = 'temp-message-box';
+            messageBox.className = 'message-box fixed top-20 right-20 text-white p-4 rounded-lg shadow-lg flex items-center transform -translate-y-full opacity-0 transition-all duration-300 z-[9999]';
+
+            let iconClass = '';
+            let bgColorClass = '';
+
+            if (type === 'success') {
+                iconClass = 'fa-check-circle';
+                bgColorClass = 'bg-green-800';
+            } else if (type === 'error') {
+                iconClass = 'fa-times-circle';
+                bgColorClass = 'bg-red-600';
+            } else if (type === 'info') {
+                iconClass = 'fa-info-circle';
+                bgColorClass = 'bg-blue-600';
+            } else {
+                iconClass = 'fa-check-circle';
+                bgColorClass = 'bg-green-800';
+            }
+
+            messageBox.classList.add(bgColorClass);
+            messageBox.innerHTML = `
+                <i class="fas ${iconClass} ml-2"></i>
+                <span>${message}</span>
+            `;
+
+            document.body.appendChild(messageBox);
+
+            setTimeout(() => {
+                messageBox.classList.remove('-translate-y-full', 'opacity-0');
+                messageBox.classList.add('translate-y-0', 'opacity-100');
+            }, 10);
+
+            setTimeout(() => {
+                messageBox.classList.remove('translate-y-0', 'opacity-100');
+                messageBox.classList.add('-translate-y-full', 'opacity-0');
+                messageBox.addEventListener('transitionend', () => messageBox.remove());
+            }, type === 'info' ? 5000 : 3000);
+        }
+    </script>
 @endsection

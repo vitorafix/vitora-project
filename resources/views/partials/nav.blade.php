@@ -63,9 +63,10 @@
                         <a href="{{ url('/cart') }}" class="btn-secondary">
                             <i class="fas fa-shopping-basket"></i> مشاهده سبد خرید
                         </a>
-                        <button class="btn-primary">
+                        {{-- Changed from <button> to <a> to enable direct navigation to checkout --}}
+                        <a href="{{ url('/checkout') }}" class="btn-primary">
                             <i class="fas fa-credit-card"></i> تکمیل خرید
-                        </button>
+                        </a>
                     </div>
                 </div>
             </div>
