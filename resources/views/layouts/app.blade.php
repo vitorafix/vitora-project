@@ -18,6 +18,7 @@
 <body class="flex flex-col min-h-screen">
 
     {{-- Navigation Bar Component --}}
+    {{-- باید اطمینان حاصل شود که محتوای ناوبار در partials.nav نیز از max-w-6xl یا container mx-auto استفاده کند --}}
     @include('partials.nav')
 
     {{-- Live search results container (outside nav for better absolute positioning) --}}
@@ -26,12 +27,18 @@
         {{-- محتوا توسط جاوااسکریپت به صورت پویا اضافه می‌شود --}}
     </div>
 
+    {{-- Hero Section - This section will now be full width --}}
+    {{-- نکته: این yield برای سکشن‌های تمام عرض مانند بنر صفحه اصلی استفاده می‌شود --}}
+    @yield('hero_section')
+
     {{-- Main content section, to be defined in child views --}}
-    <main class="max-w-full sm:max-w-screen-xl mx-auto mt-12 p-6 flex-grow bg-white shadow-xl rounded-3xl px-4 sm:px-6 md:px-8">
+    {{-- 'sm:max-w-6xl' برای اطمینان از عرض ثابت محتوا در اندازه های بزرگتر --}}
+    <main class="max-w-full sm:max-w-6xl mx-auto mt-12 p-6 flex-grow bg-off-white shadow-xl rounded-3xl px-4 sm:px-6 md:px-8">
         @yield('content')
     </main>
 
     {{-- Footer Component --}}
+    {{-- باید اطمینان حاصل شود که محتوای فوتر در partials.footer نیز از max-w-6xl یا container mx-auto استفاده کند --}}
     @include('partials.footer')
 
     {{-- Message box for notifications --}}
@@ -51,6 +58,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const navElement = document.querySelector('nav');
             if (navElement) {
+                // این متغیر CSS برای جبران ارتفاع ناوبار در مواقعی که نیاز باشد استفاده می شود.
                 document.documentElement.style.setProperty('--nav-height', `${navElement.offsetHeight}px`);
             }
         });

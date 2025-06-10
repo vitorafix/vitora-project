@@ -1,5 +1,6 @@
 <footer class="bg-brown-900 text-gray-200 p-8 rounded-t-3xl shadow-inner">
-    <div>
+    {{-- اضافه کردن یک div والد برای محدود کردن عرض کل محتوای فوتر به max-w-6xl --}}
+    <div class="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8"> {{-- Added responsive padding --}}
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8 gap-y-4">
             <div>
                 <h3 class="text-2xl font-bold mb-4 text-white">چای ابراهیم</h3>
@@ -34,7 +35,8 @@
             </div>
         </div>
 
-        <div class="bg-brown-800 py-12 px-8 rounded-2xl text-white text-center shadow-lg mt-8 mx-auto w-full max-w-4xl">
+        {{-- تغییر max-w-4xl به max-w-6xl برای هماهنگی با عرض کلی سایت --}}
+        <div class="bg-brown-800 py-12 px-8 rounded-2xl text-white text-center shadow-lg mt-8 mx-auto w-full max-w-6xl">
             <h2 class="text-3xl font-bold mb-6">در خبرنامه ما عضو شوید</h2>
             <p class="text-gray-200 leading-loose max-w-2xl mx-auto mb-8 text-base">
                 جدیدترین اخبار، تخفیف‌ها و مقالات جذاب چای را مستقیماً در ایمیل خود دریافت کنید.
@@ -46,9 +48,9 @@
                 </button>
             </form>
         </div>
-    </div>
 
-    <div class="text-center mt-12 pt-6 border-t border-gray-700">
-        <p>&copy; 2023 چای ابراهیم. تمامی حقوق محفوظ است.</p>
+        <div class="text-center mt-12 pt-6 border-t border-gray-700">
+            <p>&copy; 2023 چای ابراهیم. تمامی حقوق محفوظ است.</p>
+        </div>
     </div>
 </footer>

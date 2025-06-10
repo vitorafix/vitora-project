@@ -5,10 +5,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* تعریف رنگ سفارشی off-white در Tailwind Configuration (نیاز به تعریف در tailwind.config.js) */
+/* برای استفاده مستقیم در CSS، می‌توانیم متغیر CSS را اضافه کنیم */
+:root {
+    --color-off-white: #f9f9f9; /* یک رنگ کدرتر برای پس‌زمینه محتوا */
+}
+
 /* پایه */
 body {
     font-family: 'Vazirmatn', sans-serif;
-    background-color: #f0f0f0;
+    background-color: #ffffff; /* پس‌زمینه کلی body سفید */
     color: #5d5d5d;
     font-size: 13px;
     font-weight: 400;
@@ -24,6 +30,11 @@ body {
 .bg-green-800 { background-color: #1e5a20; }
 .border-green-800 { border-color: #1e5a20; }
 .hover\:bg-green-700:hover { background-color: #164317; }
+
+/* کلاس جدید برای پس‌زمینه کدر */
+.bg-off-white {
+    background-color: var(--color-off-white);
+}
 
 /* دکمه‌ها */
 .btn-primary {
@@ -100,7 +111,7 @@ body {
 #hero-section {
     position: relative;
     overflow: hidden;
-    height: 60vh; /* Make it responsive */
+    /* Removed height: 60vh; to allow h-screen in Blade to control height */
     display: flex;
     flex-direction: column; /* Stack text and button */
     align-items: center;
@@ -728,7 +739,7 @@ nav .container > div.flex.flex-wrap.justify-center {
     font-size: 0.85rem;
     color: #6b7280;
     margin-top: 0.4rem; /* Space between quantity control and "بسته" */
-    text-align: center; /* Center "بسته" text */
+    margin-right: 0; /* Remove right margin */
     width: 100%; /* Ensure it takes full width of the cell to center properly */
 }
 

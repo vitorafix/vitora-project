@@ -28,8 +28,17 @@ const liveSearchResultsContainer = document.getElementById('live-search-results-
 // liveSearchNoResults will be dynamically added inside liveSearchResultsContainer
 // and we'll manage its visibility directly through renderSearchResults function
 
-// Get references for auth modal functionality
-const authToggleButton = document.getElementById('auth-toggle-btn');
+// Get references for user area and auth modal functionality
+const userAreaWrapper = document.getElementById('user-area-wrapper'); // Wrapper for user area to handle dropdown hover
+const userAreaMainBtn = document.getElementById('user-area-main-btn'); // Main button for user area
+const userAreaIcon = document.getElementById('user-area-icon');       // Icon within the main user area button
+const userAreaText = document.getElementById('user-area-text');       // Text within the main user area button
+const userAreaArrowIcon = document.getElementById('user-area-arrow-icon'); // NEW: Arrow icon for logged in state
+const userAreaDropdown = document.getElementById('user-area-dropdown'); // User dropdown menu
+const userLogoutBtn = document.getElementById('user-logout-btn');     // Logout button inside dropdown
+const dropdownUsernameSpan = document.getElementById('dropdown-username'); // Span for username in dropdown
+const dropdownProfileLink = document.getElementById('dropdown-profile-link'); // New: Link for profile info
+
 const authModalOverlay = document.getElementById('auth-modal-overlay');
 const authModalCloseBtn = document.getElementById('auth-modal-close-btn');
 
@@ -790,28 +799,90 @@ document.addEventListener('keydown', (event) => {
 // --- Auth Modal Functionality ---
 let loggedInUser = sessionStorage.getItem('loggedInUser'); // Check if a user is already logged in
 
-// Function to update the auth button text (ورود/ثبت نام or خروج)
+// Function to update the auth button text (ورود/ثبت نام or خروج) and icon
 function updateAuthButtonState() {
-    if (!authToggleButton) return; // Ensure authToggleButton exists
+    // Ensure all necessary elements exist before proceeding
+    if (!userAreaMainBtn || !userAreaIcon || !userAreaText || !userAreaArrowIcon || !userAreaDropdown || !dropdownUsernameSpan || !dropdownProfileLink) {
+        console.warn("One or more user area elements not found. User area functionality may be limited.");
+        return;
+    }
 
-    loggedInUser = sessionStorage.getItem('loggedInUser');
-    if (loggedInUser) {
-        authToggleButton.textContent = 'خروج';
-        authToggleButton.classList.remove('bg-green-800');
-        authToggleButton.classList.add('bg-red-600');
-        authToggleButton.classList.add('hover:bg-red-700');
+    loggedInUser = sessionStorage.getItem('loggedInUser'); // Refresh status
+    const loggedInUserFullData = JSON.parse(localStorage.getItem('loggedInUserFullData'));
+
+    if (loggedInUser && loggedInUserFullData) {
+        // User is logged in
+        userAreaIcon.classList.remove('fa-user-circle', 'fa-sign-out-alt'); // Remove generic/logout icons
+        userAreaIcon.classList.add('fa-user'); // Add personal user icon
+
+        // Hide text and show arrow icon
+        userAreaText.textContent = ''; // Clear the text
+        userAreaText.classList.add('hidden'); // Hide the span for text
+
+        userAreaArrowIcon.classList.remove('hidden'); // Show the arrow icon
+        userAreaArrowIcon.classList.add('fa-chevron-down');
+
+
+        // Set dropdown username based on available data
+        let dropdownDisplayName = '';
+        if (loggedInUserFullData.fullName) {
+            dropdownDisplayName = loggedInUserFullData.fullName;
+        } else if (loggedInUserFullData.username) {
+            dropdownDisplayName = loggedInUserFullData.username;
+        } else if (loggedInUserFullData.phoneNumber) {
+            dropdownDisplayName = loggedInUserFullData.phoneNumber; // Display phone number if no full name/username
+        } else {
+            dropdownDisplayName = 'کاربر'; // Fallback
+        }
+
+        if (!loggedInUserFullData.isProfileComplete) {
+            dropdownUsernameSpan.textContent = `${dropdownDisplayName} (تکمیل پروفایل)`;
+            userAreaMainBtn.classList.add('bg-yellow-600', 'hover:bg-yellow-700'); // Example: warning color
+            userAreaMainBtn.classList.remove('bg-green-800', 'hover:bg-green-700'); // Remove normal green
+        } else {
+            dropdownUsernameSpan.textContent = dropdownDisplayName;
+            userAreaMainBtn.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
+            userAreaMainBtn.classList.add('bg-green-800', 'hover:bg-green-700');
+        }
+
+        // Show the profile link
+        dropdownProfileLink.classList.remove('hidden');
+
+        // Do NOT unhide the dropdown here. It should only be unhidden on click/hover.
+        userAreaDropdown.classList.add('opacity-0', 'scale-95', 'hidden', 'pointer-events-none');
+        userAreaDropdown.classList.remove('opacity-100', 'scale-100');
+
+
     } else {
-        authToggleButton.textContent = 'ورود/ثبت نام';
-        authToggleButton.classList.remove('bg-red-600');
-        authToggleButton.classList.remove('hover:bg-red-700');
-        authToggleButton.classList.add('bg-green-800');
-        authToggleButton.classList.add('hover:bg-green-700');
+        // User is logged out
+        userAreaText.textContent = 'ورود/ثبت نام';
+        userAreaText.classList.remove('hidden'); // Show text when logged out
+
+        userAreaIcon.classList.remove('fa-sign-out-alt', 'fa-user');
+        userAreaIcon.classList.add('fa-user-circle'); // Generic user icon
+
+        userAreaArrowIcon.classList.add('hidden'); // Hide the arrow icon
+        userAreaArrowIcon.classList.remove('fa-chevron-down');
+
+
+        // Change button color to green for logged out state
+        userAreaMainBtn.classList.remove('bg-yellow-600', 'hover:bg-yellow-700'); // Ensure warning color is removed
+        userAreaMainBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+        userAreaMainBtn.classList.add('bg-green-800', 'hover:bg-green-700');
+
+        // Hide dropdown and profile link
+        userAreaDropdown.classList.add('hidden', 'opacity-0', 'scale-95', 'pointer-events-none');
+        userAreaDropdown.classList.remove('opacity-100', 'scale-100');
+        dropdownProfileLink.classList.add('hidden');
     }
 }
 
 // Show Auth Modal
 function showAuthModal() {
-    if (!authModalOverlay) return; // Ensure authModalOverlay exists
+    if (!authModalOverlay) {
+        console.error("Auth modal overlay element with ID 'auth-modal-overlay' not found.");
+        return;
+    }
 
     authModalOverlay.classList.add('show');
     // Initially show the mobile login step
@@ -836,30 +907,44 @@ function hideAuthModal() {
     if (smsVerifyStep) { smsVerifyStep.classList.add('hidden'); }
 }
 
-// Event listener for Auth Toggle Button
-if (authToggleButton) { // Check if authToggleButton exists before adding listener
-    authToggleButton.addEventListener('click', (event) => {
+// Event listener for User Area Main Button
+if (userAreaMainBtn) {
+    userAreaMainBtn.addEventListener('click', (event) => {
         event.preventDefault();
+        loggedInUser = sessionStorage.getItem('loggedInUser'); // Refresh status
         if (loggedInUser) {
-            // Perform Logout
-            sessionStorage.removeItem('loggedInUser');
-            // Remove user data from localStorage that was stored by registration form
-            localStorage.removeItem('loggedInUserFullData'); // Clear full user data too
-            updateAuthButtonState();
-            showMessage('با موفقیت از حساب کاربری خود خارج شدید.', 'success');
+            // If logged in, toggle the dropdown visibility
+            userAreaDropdown.classList.toggle('opacity-0');
+            userAreaDropdown.classList.toggle('scale-95');
+            userAreaDropdown.classList.toggle('hidden');
+            userAreaDropdown.classList.toggle('pointer-events-none');
+            userAreaDropdown.classList.toggle('opacity-100'); // Ensure it becomes fully opaque
+            userAreaDropdown.classList.toggle('scale-100'); // Ensure it becomes full scale
         } else {
-            // Show Auth Modal
+            // If logged out, show Auth Modal
             showAuthModal();
         }
     });
 }
 
+// Event listener for Logout Button in Dropdown
+if (userLogoutBtn) {
+    userLogoutBtn.addEventListener('click', () => {
+        sessionStorage.removeItem('loggedInUser');
+        localStorage.removeItem('loggedInUserFullData');
+        updateAuthButtonState(); // This will hide the dropdown and reset main button text
+        hideAuthModal(); // Close modal if it's open (shouldn't be, but for safety)
+        showMessage('با موفقیت از حساب کاربری خود خارج شدید.', 'success');
+        // Optionally redirect to home or login page
+        // setTimeout(() => { window.location.href = '/'; }, 500);
+    });
+}
 
-// Event listener for closing modal
-if (authModalCloseBtn) { // Check if authModalCloseBtn exists before adding listener
+// Close Auth Modal on overlay click or Escape key
+if (authModalCloseBtn) {
     authModalCloseBtn.addEventListener('click', hideAuthModal);
 }
-if (authModalOverlay) { // Check if authModalOverlay exists before adding listener
+if (authModalOverlay) {
     authModalOverlay.addEventListener('click', (event) => {
         if (event.target === authModalOverlay) { // Close only if clicked on overlay itself, not content
             hideAuthModal();
@@ -872,6 +957,18 @@ document.addEventListener('keydown', (event) => {
         hideAuthModal();
     }
 });
+
+// Close User Area Dropdown if clicked outside (but not on the main button)
+document.addEventListener('click', (event) => {
+    if (userAreaWrapper && userAreaDropdown) {
+        const isClickInsideUserArea = userAreaWrapper.contains(event.target);
+        if (!isClickInsideUserArea && !userAreaDropdown.classList.contains('hidden')) { // Check if not hidden
+            userAreaDropdown.classList.add('opacity-0', 'scale-95', 'hidden', 'pointer-events-none');
+            userAreaDropdown.classList.remove('opacity-100', 'scale-100');
+        }
+    }
+});
+
 
 // --- New Multi-step Auth Modal Logic ---
 
@@ -1042,8 +1139,7 @@ if (resendOtpBtn) {
             simulatedOtp = '1234'; // Regenerate OTP or keep same for demo
             showMessage(`کد تایید جدید ${simulatedOtp} ارسال شد.`, 'success');
         } catch (error) {
-            console.error('Error resending OTP:', error);
-            showMessage('خطا در ارسال مجدد کد.', 'error');
+            console.error('خطا در ارسال مجدد کد.', 'error');
         } finally {
             resendOtpBtn.disabled = false;
         }
