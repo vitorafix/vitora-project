@@ -10,9 +10,12 @@ const miniCartActions = document.getElementById('mini-cart-actions');
 
 // Get references for main cart functionality (only if on cart page)
 const cartItemsContainer = document.getElementById('cart-items-container');
-const cartTotalPriceSpan = document.getElementById('cart-total-price');
-const cartEmptyMessage = document.getElementById('cart-empty-message');
-const cartContent = document.getElementById('cart-content');
+// Note: cartTotalPriceSpan is deprecated as total is now in tfoot
+// Note: cartEmptyMessage is deprecated as the empty state is handled differently
+const cartContent = document.getElementById('cart-content'); // Main div for cart table/summary
+const cartTotalRow = document.getElementById('cart-total-row'); // Reference to the new tfoot total row
+const cartTotalPriceFooterSpan = document.getElementById('cart-total-price-footer'); // Reference to the span within tfoot
+const cartOrderIdSpan = document.getElementById('cart-order-id'); // New: Reference for order ID display
 
 
 // Get references for search functionality
@@ -49,72 +52,83 @@ const searchableItems = [
     {
         id: 'dabesh',
         name: 'چای دبش ممتاز',
+        productCode: 'DAB-001', // Added product code
         description: 'چای سیاه قلم ممتاز با طعم و رنگ بی‌نظیر. انتخابی عالی برای دوستداران چای اصیل.',
         price: 110000,
-        image: 'https://placehold.co/400x300/F0F4C3/212121?text=محصول+۱'
+        // Updated image URL to a plain SVG placeholder for consistency
+        image: 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22400%22%20height%3D%22300%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23e0e0e0%22%20stroke%3D%22%23bbb%22%20stroke-width%3D%221%22%20rx%3D%225%22%2F%3E%3C%2Fsvg%3E'
     },
     {
         id: 'earl-grey',
         name: 'چای ارل گری',
+        productCode: 'ERG-002', // Added product code
         description: 'چای سیاه معطر با اسانس طبیعی برگاموت. عطری دلنشین و طعمی خاص برای لحظات آرامش.',
         price: 135000,
-        image: 'https://placehold.co/400x300/F0F4C3/212121?text=محصول+۲'
+        image: 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22400%22%20height%3D%22300%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23e0e0e0%22%20stroke%3D%22%23bbb%22%20stroke-width%3D%221%22%20rx%3D%225%22%2F%3E%3C%2Fsvg%3E'
     },
     {
         id: 'lemon-balm',
         name: 'دمنوش به لیمو',
+        productCode: 'LMB-003', // Added product code
         description: 'دمنوش آرام‌بخش با طعم دلپذیر به لیمو. مناسب برای کاهش استرس و بهبود خواب.',
         price: 70000,
-        image: 'https://placehold.co/400x300/F0F4C3/212121?text=محصول+۳'
+        image: 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22400%22%20height%3D%22300%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23e0e0e0%22%20stroke%3D%22%23bbb%22%20stroke-width%3D%221%22%20rx%3D%225%22%2F%3E%3C%2Fsvg%3E'
     },
     {
         id: 'black-tea',
         name: 'چای سیاه',
+        productCode: 'BLT-004', // Added product code
         description: 'عطر و طعم بی‌نظیر چای سیاه ایرانی، مناسب برای هر لحظه روز و پذیرایی از مهمانان.',
         price: 95000,
-        image: 'https://placehold.co/500x350/a77a62/fcf8f5?text=چای+سیاه'
+        image: 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22500%22%20height%3D%22350%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23e0e0e0%22%20stroke%3D%22%23bbb%22%20stroke-width%3D%221%22%20rx%3D%225%22%2F%3E%3C%2Fsvg%3E'
     },
     {
         id: 'green-tea',
         name: 'چای سبز',
+        productCode: 'GRT-005', // Added product code
         description: 'چای سبز سرشار از خواص طبیعی، طراوت و انرژی. انتخابی سالم و دلچسب.',
         price: 120000,
-        image: 'https://placehold.co/500x350/789a7f/fcf8f5?text=چای+سبز'
+        image: 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22500%22%20height%3D%22350%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23e0e0e0%22%20stroke%3D%22%23bbb%22%20stroke-width%3D%221%22%20rx%3D%225%22%2F%3E%3C%2Fsvg%3E'
     },
     {
         id: 'herbal-infusion',
         name: 'چای دمنوش‌ها',
+        productCode: 'HBT-006', // Added product code
         description: 'مجموعه‌ای از دمنوش‌های آرامش‌بخش و مفید، از دل طبیعت. طعمی متفاوت برای سلامتی شما.',
         price: 80000,
-        image: 'https://placehold.co/500x350/b08f83/fcf8f5?text=دمنوش‌ها'
+        image: 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22500%22%20height%3D%22350%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23e0e0e0%22%20stroke%3D%22%23bbb%22%20stroke-width%3D%221%22%20rx%3D%225%22%2F%3E%3C%2Fsvg%3E'
     },
     {
         id: 'white-tea',
         name: 'چای سفید',
+        productCode: 'WHT-007', // Added product code
         description: 'چای سفید، ظریف و کمیاب، تجربه‌ای لوکس و خاص. کمترین فرآوری و بیشترین خواص.',
         price: 250000,
-        image: 'https://placehold.co/500x350/EFEFEF/666666?text=چای+سفید'
+        image: 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22500%22%20height%3D%22350%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23e0e0e0%22%20stroke%3D%22%23bbb%22%20stroke-width%3D%221%22%20rx%3D%225%22%2F%3E%3C%2Fsvg%3E'
     },
     {
         id: 'oolong-tea',
         name: 'چای اولانگ',
+        productCode: 'OLT-008', // Added product code
         description: 'ترکیبی بی‌نظیر از طعم‌های چای سبز و سیاه. حد وسط بین چای سیاه و سبز.',
         price: 180000,
-        image: 'https://placehold.co/500x350/EFEFEF/666666?text=چای+اولانگ'
+        image: 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22500%22%20height%3D%22350%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23e0e0e0%22%20stroke%3D%22%23bbb%22%20stroke-width%3D%221%22%20rx%3D%225%22%2F%3E%3C%2Fsvg%3E'
     },
     {
         id: 'fruit-tea',
         name: 'چای میوه‌ای',
+        productCode: 'FRT-009', // Added product code
         description: 'ترکیب طعم‌های شیرین و تازه میوه با چای. طعمی شاداب‌کننده و معطر.',
         price: 100000,
-        image: 'https://placehold.co/500x350/EFEFEF/666666?text=چای+میوه‌ای'
+        image: 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22500%22%20height%3D%22350%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23e0e0e0%22%20stroke%3D%22%23bbb%22%20stroke-width%3D%221%22%20rx%3D%225%22%2F%3E%3C%2Fsvg%3E'
     },
     {
         id: 'aromatic-tea',
         name: 'چای عطری',
+        productCode: 'ART-010', // Added product code
         description: 'چای با رایحه‌های دلنشین و آرام‌بخش طبیعی. مناسب برای شروع یک روز دلپذیر.',
         price: 140000,
-        image: 'https://placehold.co/500x350/EFEFEF/666666?text=چای+عطری'
+        image: 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22500%22%20height%3D%22350%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23e0e0e0%22%20stroke%3D%22%23bbb%22%20stroke-width%3D%221%22%20rx%3D%225%22%2F%3E%3C%2Fsvg%3E'
     }
 ];
 
@@ -207,7 +221,7 @@ function renderMiniCart() {
             miniCartTotalPrice += itemSubtotal;
 
             miniItemDiv.innerHTML = `
-                <img src="${item.image}" alt="${item.name}" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2248%22%20height%3D%2248%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23ccc%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22Arial%2C%20sans-serif%22%20font-size%3D%2212%22%20fill%3D%22%23666%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22middle%22%3E%D8%B9%DA%A9%D8%B3%3C%2Ftext%3E%3C%2Fsvg%3E';">
+                <img src="${item.image}" alt="${item.name}" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2248%22%20height%3D%2248%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23e0e0e0%22%20stroke%3D%22%23bbb%22%20stroke-width%3D%221%22%20rx%3D%225%22%2F%3E%3C%2Fsvg%3E';">
                 <div class="mini-cart-details">
                     <div class="mini-cart-name">${item.name}</div>
                     <div class="mini-cart-price">${formatPrice(item.price)}</div>
@@ -221,6 +235,31 @@ function renderMiniCart() {
                     <i class="fas fa-times"></i>
                 </button>
             `;
+            // Add event listeners using delegation or directly if the element is created here
+            miniItemDiv.querySelectorAll('button[data-action]').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const productId = e.currentTarget.dataset.id;
+                    const action = e.currentTarget.dataset.action;
+                    if (action === 'remove') {
+                        showMessage('آیا از حذف این محصول از سبد خرید مطمئن هستید؟', 'info');
+                        // For this example, we'll auto-confirm and remove after a short delay
+                        setTimeout(() => {
+                            const itemIndex = cart.findIndex(item => item.id === productId);
+                            if (itemIndex > -1) {
+                                cart.splice(itemIndex, 1);
+                                localStorage.setItem('teaCart', JSON.stringify(cart));
+                                renderMiniCart();
+                                if (cartItemsContainer) {
+                                    renderCart();
+                                }
+                                showMessage('محصول از سبد خرید حذف شد.', 'success');
+                            }
+                        }, 500); // Simulate user confirming
+                    } else {
+                        updateQuantity(productId, action);
+                    }
+                });
+            });
             miniCartContent.appendChild(miniItemDiv);
         });
     }
@@ -243,46 +282,68 @@ function renderCart() {
     cartItemsContainer.innerHTML = ''; // Clear existing items
     let totalPrice = 0;
 
+    // Generate a mock order ID
+    if (cartOrderIdSpan) {
+        // Generate once per session or on first render, keep consistent
+        let currentOrderId = sessionStorage.getItem('currentOrderId');
+        if (!currentOrderId) {
+            // Generate a 10-digit number, starting with 9, in Persian numerals
+            currentOrderId = '۹' + Math.floor(100000000 + Math.random() * 900000000).toString().replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+            sessionStorage.setItem('currentOrderId', currentOrderId);
+        }
+        cartOrderIdSpan.textContent = currentOrderId;
+    }
+
+    // Always show the cart table structure, even if empty
+    // The previous cartEmptyMessage and cartContent.classList.add/remove('hidden') are removed
+    // since the table headers/footer are always desired according to the image.
+
     if (cart.length === 0) {
-        console.log("Cart is empty. Hiding cart content, showing empty message."); // Debugging line
-        cartEmptyMessage.classList.remove('hidden');
-        cartContent.classList.add('hidden');
+        console.log("Cart is empty. Hiding footer total.");
+        if (cartTotalRow) cartTotalRow.classList.add('hidden'); // Hide footer total if cart is empty
     } else {
-        console.log("Cart has items. Showing cart content, hiding empty message."); // Debugging line
-        cartEmptyMessage.classList.add('hidden');
-        cartContent.classList.remove('hidden'); // This is the key line to show the table
+        console.log("Cart has items. Showing footer total.");
+        if (cartTotalRow) cartTotalRow.classList.remove('hidden'); // Show footer total
 
         cart.forEach(item => {
             const row = document.createElement('tr');
-            row.classList.add('border-b', 'border-gray-200'); // Ensure border for each row
+            // Adding specific classes for styling from the image and app.css
+            row.classList.add('cart-item-row', 'border-b', 'border-gray-200', 'hover:bg-gray-50');
 
             const itemSubtotal = item.price * item.quantity;
             totalPrice += itemSubtotal;
 
             row.innerHTML = `
-                <td class="py-4 px-3 flex items-center">
-                    <img src="${item.image}" alt="${item.name}" class="cart-product-image" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2264%22%20height%3D%2264%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23ccc%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22Arial%2C%20sans-serif%22%20font-size%3D%2215%22%20fill%3D%22%23666%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22middle%22%3E%D8%B9%DA%A9%D8%B3%3C%2Ftext%3E%3C%2Fsvg%3E';">
-                    <span class="font-semibold text-brown-900 text-base md:text-lg">${item.name}</span>
-                </td>
-                <td class="py-4 px-3 text-sm md:text-base text-gray-800">${formatPrice(item.price)}</td>
-                <td class="py-4 px-3">
-                    <div class="quantity-control">
-                        <button data-id="${item.id}" data-action="decrease">-</button>
-                        <span class="text-gray-800">${item.quantity}</span>
-                        <button data-id="${item.id}" data-action="increase">+</button>
+                <td class="cart-product-cell py-4 px-3" data-label="عنوان محصول">
+                    <img src="${item.image}" alt="${item.name}" class="cart-product-image w-20 h-20 object-cover rounded-md border border-gray-300 ml-4" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2280%22%20height%3D%2280%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23e0e0e0%22%20stroke%3D%22%23bbb%22%20stroke-width%3D%221%22%20rx%3D%225%22%2F%3E%3C%2Fsvg%3E';">
+                    <div class="product-info flex flex-col justify-center text-right">
+                        <span class="product-name font-semibold text-lg text-brown-900">${item.name}</span>
+                        <span class="product-code text-sm text-gray-500 mt-1 block">کد محصول: <span dir="ltr">${item.productCode || 'N/A'}</span></span>
                     </div>
                 </td>
-                <td class="py-4 px-3 text-sm md:text-base font-bold text-green-800">${formatPrice(itemSubtotal)}</td>
-                <td class="py-4 px-3 text-center">
-                    <button data-id="${item.id}" data-action="remove" class="text-red-600 hover:text-red-800 transition-colors duration-200 p-2 rounded-full hover:bg-red-50">
-                        <i class="fas fa-trash-alt text-lg"></i>
+                <td class="cart-price-cell py-4 px-3 font-semibold text-lg text-green-800" data-label="قیمت واحد">${formatPrice(item.price)}</td>
+                <td class="cart-quantity-cell py-4 px-3 text-center" data-label="تعداد / واحد">
+                    <div class="quantity-control-cart inline-flex items-center border border-gray-300 rounded-lg p-1.5 mx-auto">
+                        <button data-id="${item.id}" data-action="increase" class="quantity-btn-cart bg-gray-100 text-brown-900 w-8 h-8 rounded-md flex items-center justify-center font-bold text-xl hover:bg-gray-200 transition-colors duration-200">+</button>
+                        <span class="quantity-display-cart px-3 font-semibold text-lg text-brown-900">${item.quantity}</span>
+                        <button data-id="${item.id}" data-action="decrease" class="quantity-btn-cart bg-gray-100 text-brown-900 w-8 h-8 rounded-md flex items-center justify-center font-bold text-xl hover:bg-gray-200 transition-colors duration-200">-</button>
+                    </div>
+                    <span class="unit-text block text-sm text-gray-600 mt-2">بسته</span>
+                </td>
+                <td class="cart-subtotal-cell py-4 px-3 font-bold text-xl text-green-800" data-label="مجموع">${formatPrice(itemSubtotal)}</td>
+                <td class="cart-remove-cell py-4 px-3 text-center" data-label="حذف">
+                    <button data-id="${item.id}" data-action="remove" class="remove-item-btn-cart bg-red-500 text-white w-9 h-9 rounded-full flex items-center justify-center text-xl hover:bg-red-600 transition-colors duration-200">
+                        <i class="fas fa-times"></i>
                     </button>
                 </td>
             `;
             cartItemsContainer.appendChild(row);
         });
     }
-    cartTotalPriceSpan.textContent = formatPrice(totalPrice);
+    // Update the total price in the footer
+    if (cartTotalPriceFooterSpan) {
+        cartTotalPriceFooterSpan.textContent = formatPrice(totalPrice);
+    }
     updateCartCount(); // Update header cart count as well
 }
 
@@ -314,7 +375,9 @@ function addProductToCart(product) {
     if (existingProductIndex > -1) {
         cart[existingProductIndex].quantity += 1;
     } else {
-        cart.push({ ...product, quantity: 1 });
+        // Ensure product code is available, use N/A if not
+        const productWithCode = { ...product, productCode: product.productCode || 'N/A', quantity: 1 };
+        cart.push(productWithCode);
     }
     localStorage.setItem('teaCart', JSON.stringify(cart));
     renderMiniCart();
@@ -325,6 +388,7 @@ function addProductToCart(product) {
     showMessage(`"${product.name}" به سبد خرید اضافه شد!`);
 }
 
+
 // Event delegation for "افزودن" buttons (Add to Cart)
 // This listener will now also capture clicks from dynamically added search results
 document.body.addEventListener('click', (event) => {
@@ -334,12 +398,14 @@ document.body.addEventListener('click', (event) => {
         const productName = targetButton.dataset.productName;
         const productPrice = parseInt(targetButton.dataset.productPrice);
         const productImage = targetButton.dataset.productImage;
+        const productCode = targetButton.dataset.productCode; // Get product code
 
         const productToAdd = {
             id: productId,
             name: productName,
             price: productPrice,
-            image: productImage
+            image: productImage,
+            productCode: productCode // Pass product code
         };
         addProductToCart(productToAdd);
     }
@@ -388,7 +454,7 @@ if (cartItemsContainer) { // Only add listener if main cart container exists (i.
 
             if (productId && action) {
                 if (action === 'remove') {
-                    // Replace browser's confirm with a custom message box
+                    // Using showMessage for confirmation as alert() is disallowed
                     showMessage('آیا از حذف این محصول از سبد خرید مطمئن هستید؟', 'info');
                     // For a real custom modal, you would show the modal here
                     // and handle the actual removal inside the modal's confirm callback.
@@ -676,12 +742,12 @@ function renderSearchResults(results, query) {
             const itemDiv = document.createElement('div');
             itemDiv.classList.add('search-result-item');
             itemDiv.innerHTML = `
-                <img src="${item.image}" alt="${item.name}" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2250%22%20height%3D%2250%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23ccc%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22Arial%2C%20sans-serif%22%20font-size%3D%2212%22%20fill%3D%22%23666%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22middle%22%3E%D8%AA%D8%B5%D9%88%DB%8C%D8%B1%3C%2Ftext%3E%3C%2Fsvg%3E';">
+                <img src="${item.image}" alt="${item.name}" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2250%22%20height%3D%2250%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23e0e0e0%22%20stroke%3D%22%23bbb%22%20stroke-width%3D%221%22%20rx%3D%225%22%2F%3E%3C%2Fsvg%3E';">
                 <div class="search-result-item-details">
                     <h4>${item.name}</h4>
                     <span class="price">${formatPrice(item.price)}</span>
                 </div>
-                <button class="add-to-cart-btn" data-product-id="${item.id}" data-product-name="${item.name}" data-product-price="${item.price}" data-product-image="${item.image}">
+                <button class="add-to-cart-btn" data-product-id="${item.id}" data-product-name="${item.name}" data-product-price="${item.price}" data-product-image="${item.image}" data-product-code="${item.productCode || ''}">
                     <i class="fas fa-plus-circle ml-1"></i> افزودن
                 </button>
             `;
