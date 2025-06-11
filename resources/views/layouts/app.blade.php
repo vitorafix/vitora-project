@@ -49,6 +49,9 @@
     {{-- Custom JavaScript for app.js, managed by Vite --}}
     @vite('resources/js/app.js')
 
+    {{-- Stack for custom scripts pushed from child views (مانند checkout.blade.php) --}}
+    @stack('scripts')
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // محاسبه و تنظیم ارتفاع navbar برای استفاده در CSS (اگر لازم باشد)

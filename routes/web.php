@@ -4,8 +4,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\SearchController;
-use App\Http\Controllers\ProductController; // این خط برای وارد کردن ProductController است
-use App\Http\Controllers\CartController;    // این خط برای وارد کردن CartController است
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\OrderController; // اضافه کردن OrderController
 
 /*
 |--------------------------------------------------------------------------
@@ -33,6 +34,14 @@ Route::delete('/cart/remove/{cartItem}', [CartController::class, 'remove'])->nam
 Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
 Route::get('/cart/contents', [CartController::class, 'getContents'])->name('cart.contents'); // برای دریافت محتویات فعلی سبد (Ajax)
 
+
+// Checkout Routes (جدید)
+Route::get('/checkout', [OrderController::class, 'index'])->name('checkout.index'); // نمایش صفحه ثبت سفارش
+Route::post('/checkout/place-order', [OrderController::class, 'placeOrder'])->name('checkout.placeOrder'); // پردازش ثبت سفارش
+
+// New route for order confirmation page
+Route::get('/order-confirmation/{order}', [OrderController::class, 'showConfirmation'])->name('order.confirmation'); // مسیر جدید برای نمایش صفحه تأیید سفارش
+
 // Example routes for other pages mentioned in the navigation/footer
 Route::get('/about', function () {
     return view('about'); // Assuming you'll create about.blade.php later
@@ -50,11 +59,6 @@ Route::get('/faq', function () {
     return view('faq'); // Assuming you'll create faq.blade.php later
 })->name('faq');
 
-// Route for checkout page
-Route::get('/checkout', function () {
-    return view('checkout'); // Make sure you have checkout.blade.php
-})->name('checkout');
-
 // New route for the complete profile page (replaces old register route)
 Route::get('/complete-profile', function () {
     return view('complete-profile'); // This assumes you have renamed register.blade.php to complete-profile.blade.php
@@ -68,3 +72,7 @@ Route::get('/search', [SearchController::class, 'index']);
 //     Route.get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
 // });
 Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+
+// Auth Routes (provided by Breeze)
+// Remove or comment out default Breeze auth routes if you implement custom auth
+// Auth::routes(); // If you used Laravel UI
