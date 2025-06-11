@@ -4,21 +4,61 @@
 
 {{-- این سکشن 'hero_section' حالا به yield جدید در app.blade.php فرستاده می‌شود --}}
 @section('hero_section')
-    <section id="hero-section" class="relative overflow-hidden flex flex-col items-center justify-center text-center text-white p-8" style="height: calc(100vh - var(--nav-height, 0px));">
-        {{-- Background Image Overlay (full width) --}}
-        <div class="absolute inset-0 w-full h-full bg-cover bg-center" style="background-image: url('{{ asset('uploads/hero-banner.jpg') }}');">
-            <div class="absolute inset-0 bg-brown-900 opacity-60"></div> {{-- Dark overlay --}}
+    {{-- بخش اسلایدشو اصلی (Hero Carousel) --}}
+    <section id="hero-carousel" class="relative overflow-hidden flex flex-col items-center justify-center text-center text-white p-8" style="height: calc(100vh - var(--nav-height, 0px));">
+        {{-- اسلاید 1 --}}
+        {{-- opacity-100 برای اسلاید فعلی و opacity-0 برای اسلایدهای مخفی --}}
+        <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-100" style="background-image: url('{{ asset('uploads/hero-banner.jpg') }}');">
+            <div class="absolute inset-0 bg-brown-900 opacity-60"></div> {{-- پوشش تیره --}}
+            <div class="relative z-10 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center h-full">
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 leading-tight animate-fade-in-up">
+                    عطر و طعم اصیل <br> چای ابراهیم
+                </h1>
+                <p class="text-lg md:text-xl lg:text-2xl mb-8 leading-relaxed animate-fade-in-up delay-100">
+                    از مزارع سرسبز لاهیجان تا فنجان شما، شمیم ناب چای ایرانی
+                </p>
+                {{-- می‌توانید دکمه‌های CTA را اینجا اضافه کنید --}}
+                {{-- <a href="{{ url('/products') }}" class="btn-primary">مشاهده محصولات</a> --}}
+            </div>
         </div>
 
-        {{-- Content - Centered and Max-width controlled (now full width within padding) --}}
-        <div class="relative z-10 w-full px-4 sm:px-6 lg:px-8">
-            <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 leading-tight animate-fade-in-up">
-                عطر و طعم اصیل <br> چای ابراهیم
-            </h1>
-            <p class="text-lg md:text-xl lg:text-2xl mb-8 leading-relaxed animate-fade-in-up delay-100">
-                از مزارع سرسبز لاهیجان تا فنجان شما، شمیم ناب چای ایرانی
-            </p>
-            
+        {{-- اسلاید 2 (مثال: تصویر و محتوای متفاوت) --}}
+        <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-0" style="background-image: url('{{ asset('uploads/hero-banner-2.jpg') }}');"> {{-- مسیر تصویر دوم خود را اینجا قرار دهید --}}
+            <div class="absolute inset-0 bg-brown-900 opacity-60"></div>
+            <div class="relative z-10 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center h-full">
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 leading-tight">
+                    تجربه‌ای تازه از طعم <br> چای سنتی
+                </h1>
+                <p class="text-lg md:text-xl lg:text-2xl mb-8 leading-relaxed">
+                    با هر جرعه، سفری به باغ‌های چای شمال ایران
+                </p>
+            </div>
+        </div>
+
+        {{-- اسلاید 3 (مثال: تصویر و محتوای متفاوت) --}}
+        <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-0" style="background-image: url('{{ asset('uploads/hero-banner-3.jpg') }}');"> {{-- مسیر تصویر سوم خود را اینجا قرار دهید --}}
+            <div class="absolute inset-0 bg-brown-900 opacity-60"></div>
+            <div class="relative z-10 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center h-full">
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 leading-tight">
+                    کیفیت بی‌نظیر <br> اصالت دیرینه
+                </h1>
+                <p class="text-lg md:text-xl lg:text-2xl mb-8 leading-relaxed">
+                    انتخابی بی‌نظیر برای لحظات دلنشین
+                </p>
+            </div>
+        </div>
+
+        {{-- دکمه‌های ناوبری اسلایدشو (اختیاری اما توصیه می‌شود) --}}
+        <button id="hero-prev" class="absolute top-1/2 -translate-y-1/2 left-4 md:left-8 bg-black bg-opacity-30 text-white p-3 rounded-full shadow-lg hover:bg-opacity-50 transition-all duration-300 z-20">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <button id="hero-next" class="absolute top-1/2 -translate-y-1/2 right-4 md:right-8 bg-black bg-opacity-30 text-white p-3 rounded-full shadow-lg hover:bg-opacity-50 transition-all duration-300 z-20">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+
+        {{-- نشانگرهای اسلایدشو (نقاط کوچک پایین اسلایدشو - اختیاری) --}}
+        <div id="hero-indicators" class="absolute bottom-8 z-20 flex space-x-2">
+            {{-- نشانگرها توسط جاوااسکریپت تولید خواهند شد --}}
         </div>
     </section>
 @endsection
@@ -27,7 +67,7 @@
 @section('content')
     {{-- Why choose us section (Top version) - Centered Container --}}
     <section class="my-16 p-8 bg-off-white rounded-xl shadow-lg container mx-auto">
-        <h2 class="text-3xl font-bold text-center text-brown-900 mb-10 section-heading">چرا چای ابراهیم را انتخاب کنید؟</h2>
+       
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             <div class="flex flex-col items-center p-6 bg-green-50 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
                 <i class="fas fa-leaf text-5xl text-green-800 mb-4"></i>
