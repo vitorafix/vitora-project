@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}"> {{-- این خط جدید برای CSRF Token --}}
     <title>@yield('title', 'چای ابراهیم - عطر و طعم اصیل ایرانی')</title>
 
     {{-- Tailwind CSS CDN: Recommended to use PostCSS and compile locally in production --}}
@@ -21,133 +22,105 @@
     {{-- باید اطمینان حاصل شود که محتوای ناوبار در partials.nav نیز از max-w-6xl یا container mx-auto استفاده کند --}}
     @include('partials.nav')
 
-    {{-- Live search results container (outside nav for better absolute positioning) --}}
-    {{-- این div باید در ابتدا کاملاً خالی باشد تا هیچ پیامی به صورت پیش‌فرض نمایش داده نشود. --}}
-    <div id="live-search-results-container">
-        {{-- محتوا توسط جاوااسکریپت به صورت پویا اضافه می‌شود --}}
+    {{-- Live search results will be injected here --}}
+    <div id="search-results-container" class="absolute top-16 left-0 right-0 z-40 bg-white shadow-lg rounded-b-lg max-w-2xl mx-auto hidden">
+        <div id="search-results" class="py-2">
+            {{-- Search results will be loaded here by JavaScript --}}
+        </div>
+        <div id="search-results-empty" class="text-center p-4 text-gray-500 hidden">
+            نتیجه‌ای یافت نشد.
+        </div>
     </div>
 
-    {{-- Hero Section - This section will now be full width --}}
-    {{-- نکته: این yield برای سکشن‌های تمام عرض مانند بنر صفحه اصلی استفاده می‌شود --}}
+    {{-- Hero Section (Slideshow) --}}
     @yield('hero_section')
 
-    {{-- Main content section, to be defined in child views --}}
-    {{-- 'sm:max-w-6xl' و 'mx-auto' حذف شدند تا محتوا تمام عرض شود --}}
-    <main class="max-w-full mt-12 p-6 flex-grow bg-off-white shadow-xl rounded-3xl px-4 sm:px-6 md:px-8">
+    {{-- Main content --}}
+    <main class="flex-grow">
         @yield('content')
     </main>
 
-    {{-- Footer Component --}}
-    {{-- باید اطمینان حاصل شود که محتوای فوتر در partials.footer نیز از max-w-6xl یا container mx-auto استفاده کند --}}
-    @include('partials.footer')
-
-    {{-- Message box for notifications --}}
-    <div id="message-box" class="message-box">
-        <i class="fas fa-check-circle ml-3"></i>
-        <span id="message-text"></span>
-    </div>
-
-    {{-- Authentication Modal Component --}}
+    {{-- Auth Modal --}}
     @include('partials.auth-modal')
 
-    {{-- Main JavaScript file, managed by Vite --}}
+    {{-- Footer Component --}}
+    @include('partials.footer')
+
+    {{-- Custom JavaScript for app.js, managed by Vite --}}
     @vite('resources/js/app.js')
 
-    {{-- Inline script for initial setup (like nav height) that depends on DOM load --}}
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const navElement = document.querySelector('nav');
-            if (navElement) {
-                // این متغیر CSS برای جبران ارتفاع ناوبار در مواقعی که نیاز باشد استفاده می شود.
-                document.documentElement.style.setProperty('--nav-height', `${navElement.offsetHeight}px`);
-            }
-        });
-
-        window.addEventListener('resize', () => {
-            const navElement = document.querySelector('nav');
-            if (navElement) {
-                document.documentElement.style.setProperty('--nav-height', `${navElement.offsetHeight}px`);
-            }
-        });
-
-        // JavaScript for the Hero Carousel (اسلایدشو بنر اصلی)
         document.addEventListener('DOMContentLoaded', function() {
-            const slides = document.querySelectorAll('.hero-slide'); // انتخاب تمام اسلایدهای بنر
-            const prevBtn = document.getElementById('hero-prev'); // دکمه قبلی
-            const nextBtn = document.getElementById('hero-next'); // دکمه بعدی
-            const indicatorsContainer = document.getElementById('hero-indicators'); // کانتینر نشانگرها
-            let currentSlide = 0; // اسلاید فعلی
-            let slideInterval; // متغیر برای نگهداری اینتروال اسلایدشو
-            const intervalTime = 9000; // زمان تغییر اسلاید (5 ثانیه)
+            // محاسبه و تنظیم ارتفاع navbar برای استفاده در CSS (اگر لازم باشد)
+            const navBar = document.querySelector('nav');
+            if (navBar) {
+                const navHeight = navBar.offsetHeight;
+                document.documentElement.style.setProperty('--nav-height', `${navHeight}px`);
+            }
 
-            // تابع نمایش اسلاید
+            // منطق اسلایدشو (Hero Carousel)
+            const slides = document.querySelectorAll('.hero-slide');
+            const prevBtn = document.getElementById('hero-prev-btn');
+            const nextBtn = document.getElementById('hero-next-btn');
+            const indicatorsContainer = document.getElementById('hero-indicators');
+            let currentSlide = 0;
+            let slideInterval;
+
             function showSlide(index) {
                 slides.forEach((slide, i) => {
                     if (i === index) {
-                        // نمایش اسلاید فعلی با opacity 100
                         slide.classList.remove('opacity-0');
                         slide.classList.add('opacity-100');
                     } else {
-                        // پنهان کردن سایر اسلایدها با opacity 0
                         slide.classList.remove('opacity-100');
                         slide.classList.add('opacity-0');
                     }
                 });
-                updateIndicators(index); // به‌روزرسانی نشانگرها
+                updateIndicators(index);
             }
 
-            // تابع برای رفتن به اسلاید بعدی
             function nextSlide() {
                 currentSlide = (currentSlide + 1) % slides.length;
                 showSlide(currentSlide);
             }
 
-            // تابع برای رفتن به اسلاید قبلی
             function prevSlide() {
                 currentSlide = (currentSlide - 1 + slides.length) % slides.length;
                 showSlide(currentSlide);
             }
 
-            // تابع برای شروع اسلایدشو خودکار
             function startSlideShow() {
-                stopSlideShow(); // اطمینان از توقف اینتروال قبلی
-                slideInterval = setInterval(nextSlide, intervalTime); // شروع اینتروال جدید
+                stopSlideShow(); // اطمینان از عدم وجود چندین اینتروال
+                slideInterval = setInterval(nextSlide, 5000); // هر 5 ثانیه اسلاید بعدی
             }
 
-            // تابع برای توقف اسلایدشو خودکار
             function stopSlideShow() {
                 clearInterval(slideInterval);
             }
 
-            // تابع برای ایجاد نشانگرهای اسلاید
             function createIndicators() {
+                indicatorsContainer.innerHTML = ''; // پاک کردن نشانگرهای قبلی
                 slides.forEach((_, i) => {
                     const indicator = document.createElement('div');
-                    // اضافه کردن کلاس 'mx-1' برای ایجاد فاصله بین دایره‌ها
-                    indicator.classList.add('w-3', 'h-3', 'bg-gray-300', 'rounded-full', 'cursor-pointer', 'transition-all', 'duration-300', 'mx-1');
-                    indicator.dataset.slideIndex = i; // ذخیره ایندکس اسلاید در data-attribute
+                    indicator.classList.add('w-3', 'h-3', 'rounded-full', 'bg-gray-300', 'bg-opacity-50', 'cursor-pointer', 'transition-all', 'duration-300');
                     indicator.addEventListener('click', () => {
-                        stopSlideShow(); // توقف اسلایدشو هنگام کلیک دستی
-                        showSlide(i); // نمایش اسلاید مربوطه
-                        currentSlide = i; // به‌روزرسانی اسلاید فعلی
-                        startSlideShow(); // شروع مجدد اسلایدشو
+                        stopSlideShow();
+                        showSlide(i);
+                        startSlideShow();
                     });
                     indicatorsContainer.appendChild(indicator);
                 });
+                updateIndicators(currentSlide);
             }
 
-            // تابع برای به‌روزرسانی وضعیت نشانگرها
             function updateIndicators(activeIndex) {
                 const indicators = indicatorsContainer.querySelectorAll('div');
                 indicators.forEach((indicator, i) => {
+                    indicator.classList.remove('bg-gray-500', 'bg-opacity-100'); // حذف کلاس‌های قبلی
+                    indicator.classList.add('bg-gray-300', 'bg-opacity-50');
                     if (i === activeIndex) {
-                        // نشانگر فعال: طوسی تیره
-                        indicator.classList.remove('bg-gray-300', 'bg-white', 'bg-opacity-50'); // حذف کلاس‌های قبلی
-                        indicator.classList.add('bg-gray-500', 'bg-opacity-100');
-                    } else {
-                        // نشانگر غیرفعال: طوسی روشن با کمی شفافیت
-                        indicator.classList.remove('bg-gray-500', 'bg-opacity-100'); // حذف کلاس‌های قبلی
-                        indicator.classList.add('bg-gray-300', 'bg-opacity-50');
+                        indicator.classList.remove('bg-gray-300', 'bg-opacity-50'); // حذف کلاس‌های قبلی
+                        indicator.classList.add('bg-gray-500', 'bg-opacity-100'); // افزودن کلاس‌های فعال
                     }
                 });
             }

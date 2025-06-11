@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Product; // مدل Product را اضافه کنید
 
 class PageController extends Controller
 {
@@ -13,10 +14,16 @@ class PageController extends Controller
      */
     public function home()
     {
-        return view('home');
+        // محصولات جدیدترین را بر اساس created_at دریافت کنید
+        $latestProducts = Product::orderBy('created_at', 'desc')->limit(6)->get();
+        // محصولات پرفروش (مثلاً بر اساس یک فیلد فروش یا به صورت تصادفی در ابتدا)
+        // در یک پروژه واقعی، این منطق پیچیده‌تر خواهد بود.
+        $featuredProducts = Product::inRandomOrder()->limit(6)->get();
+
+        return view('home', compact('latestProducts', 'featuredProducts'));
     }
 
-    // You can add methods for other pages here as needed
+    // شما می‌توانید متدهای دیگری برای صفحات دیگر اینجا اضافه کنید
     // public function products() { return view('products'); }
     // public function about() { return view('about'); }
     // public function contact() { return view('contact'); }

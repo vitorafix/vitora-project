@@ -11,289 +11,169 @@
         <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-100" style="background-image: url('{{ asset('uploads/hero-banner.jpg') }}');">
             <div class="absolute inset-0 bg-brown-900 opacity-60"></div> {{-- پوشش تیره --}}
             <div class="relative z-10 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center h-full">
-                <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 leading-tight animate-fade-in-up">
-                    عطر و طعم اصیل <br> چای ابراهیم
+                <h1 class="text-4xl md:text-5xl lg::text-6xl font-extrabold mb-4 leading-tight animate-fade-in-up">
+                    عطر و طعم اصیل <br> چای ایرانی
                 </h1>
-                <p class="text-lg md:text-xl lg:text-2xl mb-8 leading-relaxed animate-fade-in-up delay-100">
-                    از مزارع سرسبز لاهیجان تا فنجان شما، شمیم ناب چای ایرانی
+                <p class="text-lg md:text-xl max-w-2xl mb-8 animate-fade-in-up delay-200">
+                    با چای ابراهیم، هر فنجان، سفری است به دل طبیعت و سنت ایران زمین.
                 </p>
-                {{-- می‌توانید دکمه‌های CTA را اینجا اضافه کنید --}}
-                {{-- <a href="{{ url('/products') }}" class="btn-primary">مشاهده محصولات</a> --}}
+                <div class="animate-fade-in-up delay-400">
+                    <a href="{{ url('/products') }}" class="btn-primary-outline text-white border-white hover:bg-white hover:text-brown-900">
+                        مشاهده محصولات
+                        <i class="fas fa-arrow-left mr-2"></i>
+                    </a>
+                </div>
             </div>
         </div>
 
-        {{-- اسلاید 2 (مثال: تصویر و محتوای متفاوت) --}}
-        <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-0" style="background-image: url('{{ asset('uploads/hero-banner-2.jpg') }}');"> {{-- مسیر تصویر دوم خود را اینجا قرار دهید --}}
-            <div class="absolute inset-0 bg-brown-900 opacity-60"></div>
+        {{-- اسلاید 2 --}}
+        <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-0" style="background-image: url('{{ asset('uploads/hero-banner2.jpg') }}');">
+            <div class="absolute inset-0 bg-brown-900 opacity-60"></div> {{-- پوشش تیره --}}
             <div class="relative z-10 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center h-full">
-                <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 leading-tight">
-                    تجربه‌ای تازه از طعم <br> چای سنتی
-                </h1>
-                <p class="text-lg md:text-xl lg:text-2xl mb-8 leading-relaxed">
-                    با هر جرعه، سفری به باغ‌های چای شمال ایران
+                <h2 class="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 leading-tight animate-fade-in-up">
+                    کیفیت بی‌نظیر <br> از قلب گیلان
+                </h2>
+                <p class="text-lg md:text-xl max-w-2xl mb-8 animate-fade-in-up delay-200">
+                    ما بهترین چای‌های ایرانی را مستقیماً از مزارع چای گیلان به دست شما می‌رسانیم.
                 </p>
+                <div class="animate-fade-in-up delay-400">
+                    <a href="{{ url('/about') }}" class="btn-primary-outline text-white border-white hover:bg-white hover:text-brown-900">
+                        بیشتر بدانید
+                        <i class="fas fa-arrow-left mr-2"></i>
+                    </a>
+                </div>
             </div>
         </div>
 
-        {{-- اسلاید 3 (مثال: تصویر و محتوای متفاوت) --}}
-        <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-0" style="background-image: url('{{ asset('uploads/hero-banner-3.jpg') }}');"> {{-- مسیر تصویر سوم خود را اینجا قرار دهید --}}
-            <div class="absolute inset-0 bg-brown-900 opacity-60"></div>
+        {{-- اسلاید 3 --}}
+        <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-0" style="background-image: url('{{ asset('uploads/hero-banner3.jpg') }}');">
+            <div class="absolute inset-0 bg-brown-900 opacity-60"></div> {{-- پوشش تیره --}}
             <div class="relative z-10 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center h-full">
-                <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 leading-tight">
-                    کیفیت بی‌نظیر <br> اصالت دیرینه
-                </h1>
-                <p class="text-lg md:text-xl lg:text-2xl mb-8 leading-relaxed">
-                    انتخابی بی‌نظیر برای لحظات دلنشین
+                <h2 class="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 leading-tight animate-fade-in-up">
+                    انتخابی سالم <br> برای هر روز شما
+                </h2>
+                <p class="text-lg md:text-xl max-w-2xl mb-8 animate-fade-in-up delay-200">
+                    با چای‌های طبیعی و ارگانیک ما، سلامتی و نشاط را به زندگی خود بیاورید.
                 </p>
+                <div class="animate-fade-in-up delay-400">
+                    <a href="{{ url('/blog') }}" class="btn-primary-outline text-white border-white hover:bg-white hover:text-brown-900">
+                        مقالات سلامتی
+                        <i class="fas fa-arrow-left mr-2"></i>
+                    </a>
+                </div>
             </div>
         </div>
 
-        {{-- دکمه‌های ناوبری اسلایدشو (اختیاری اما توصیه می‌شود) --}}
-        <button id="hero-prev" class="absolute top-1/2 -translate-y-1/2 left-4 md:left-8 bg-black bg-opacity-30 text-white p-3 rounded-full shadow-lg hover:bg-opacity-50 transition-all duration-300 z-20">
-            <i class="fas fa-chevron-left"></i>
+        {{-- دکمه‌های ناوبری --}}
+        <button id="hero-prev-btn" class="absolute left-4 z-20 p-3 rounded-full bg-black bg-opacity-30 text-white hover:bg-opacity-50 transition-all duration-300 transform -translate-y-1/2 top-1/2">
+            <i class="fas fa-chevron-right text-xl"></i>
         </button>
-        <button id="hero-next" class="absolute top-1/2 -translate-y-1/2 right-4 md:right-8 bg-black bg-opacity-30 text-white p-3 rounded-full shadow-lg hover:bg-opacity-50 transition-all duration-300 z-20">
-            <i class="fas fa-chevron-right"></i>
+        <button id="hero-next-btn" class="absolute right-4 z-20 p-3 rounded-full bg-black bg-opacity-30 text-white hover:bg-opacity-50 transition-all duration-300 transform -translate-y-1/2 top-1/2">
+            <i class="fas fa-chevron-left text-xl"></i>
         </button>
 
-        {{-- نشانگرهای اسلایدشو (نقاط کوچک پایین اسلایدشو - اختیاری) --}}
+        {{-- نشانگرهای اسلاید --}}
         <div id="hero-indicators" class="absolute bottom-8 z-20 flex space-x-2">
-            {{-- نشانگرها توسط جاوااسکریپت تولید خواهند شد --}}
+            {{-- نشانگرها توسط JavaScript اینجا اضافه می‌شوند --}}
         </div>
     </section>
 @endsection
 
-{{-- بقیه محتوای صفحه اصلی که نیاز به محدودیت عرض دارد، در سکشن 'content' می‌ماند --}}
 @section('content')
-    {{-- Why choose us section (Top version) - Centered Container --}}
-    <section class="my-16 p-8 bg-off-white rounded-xl shadow-lg container mx-auto">
-       
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            <div class="flex flex-col items-center p-6 bg-green-50 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
-                <i class="fas fa-leaf text-5xl text-green-800 mb-4"></i>
-                <h3 class="text-xl font-semibold text-brown-900 mb-2">عطر و طعم ماندگار</h3>
-                <p class="text-gray-700">با استفاده از برگ‌های تازه و دست‌چین شده از بهترین مزارع چای، تجربه‌ای بی‌نظیر از عطر و طعم اصیل را به ارمغان می‌آوریم.</p>
-            </div>
-            <div class="flex flex-col items-center p-6 bg-green-50 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
-                <i class="fas fa-award text-5xl text-green-800 mb-4"></i>
-                <h3 class="text-xl font-semibold text-brown-900 mb-2">اصالت ایرانی</h3>
-                <p class="text-gray-700">محصولات چای ابراهیم، نماینده‌ای از سنت دیرینه کشت و فرآوری چای در ایران است که کیفیت بی‌رقیب را تضمین می‌کند.</p>
-            </div>
-            <div class="flex flex-col items-center p-6 bg-green-50 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
-                <i class="fas fa-hand-holding-heart text-5xl text-green-800 mb-4"></i>
-                <h3 class="text-xl font-semibold text-brown-900 mb-2">کیفیت بی‌نظیر</h3>
-                <p class="text-gray-700">هر دانه چای با دقت انتخاب می‌شود تا بهترین کیفیت و سلامت را برای شما و خانواده‌تان به ارمغان آورد.</p>
+    {{-- بخش محصولات پرفروش --}}
+    <section class="container mx-auto px-4 py-16 text-center">
+        <h2 class="text-4xl font-extrabold text-brown-900 mb-12">
+            <i class="fas fa-fire text-orange-500 ml-3"></i>
+            محصولات پرفروش
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-8">
+            @foreach ($featuredProducts as $product)
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 transform transition-transform duration-300 hover:scale-105 hover:shadow-xl group">
+                    <div class="relative overflow-hidden">
+                        <img src="{{ $product->image ?: 'https://placehold.co/400x400/E5E7EB/4B5563?text=Product' }}" alt="{{ $product->title }}" class="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-110">
+                        <div class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <a href="{{ url('/products/' . $product->id) }}" class="btn-primary-outline text-white border-white">
+                                مشاهده جزئیات
+                            </a>
+                        </div>
+                    </div>
+                    <div class="p-6 text-right">
+                        <h3 class="text-xl font-semibold text-brown-900 mb-2">{{ $product->title }}</h3>
+                        <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ $product->description }}</p>
+                        <div class="flex justify-between items-center mt-4">
+                            <span class="text-green-700 text-2xl font-bold">{{ number_format($product->price) }} تومان</span>
+                            <button class="btn-primary add-to-cart-btn" data-product-id="{{ $product->id }}" data-product-title="{{ $product->title }}" data-product-price="{{ $product->price }}" data-product-image="{{ $product->image ?: 'https://placehold.co/400x400/E5E7EB/4B5563?text=Product' }}">
+                                افزودن به سبد
+                                <i class="fas fa-cart-plus mr-2"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+        <div class="text-center mt-10">
+            <a href="{{ url('/products') }}" class="btn-secondary">مشاهده همه محصولات <i class="fas fa-arrow-left mr-2"></i></a>
+        </div>
+    </section>
+
+    {{-- بخش نظرات مشتریان --}}
+    <section class="bg-green-100 py-16 px-4">
+        <div class="container mx-auto text-center">
+            <h2 class="text-4xl font-extrabold text-brown-900 mb-12">
+                <i class="fas fa-comments text-green-700 ml-3"></i>
+                نظرات مشتریان
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {{-- Example Testimonial 1 --}}
+                <div class="bg-white p-8 rounded-xl shadow-md border border-gray-100 text-right">
+                    <p class="text-gray-700 italic mb-6">"چای ابراهیم واقعا عطر و طعم بی‌نظیری داره. از وقتی از این چای استفاده می‌کنم، حس شادابی بیشتری دارم."</p>
+                    <div class="flex items-center justify-end">
+                        <span class="font-semibold text-brown-900 mr-4">سارا احمدی</span>
+                        <img src="https://placehold.co/60x60/F3F4F6/6B7280?text=SA" alt="سارا احمدی" class="w-12 h-12 rounded-full object-cover">
+                    </div>
+                </div>
+                {{-- Example Testimonial 2 --}}
+                <div class="bg-white p-8 rounded-xl shadow-md border border-gray-100 text-right">
+                    <p class="text-gray-700 italic mb-6">"من عاشق دمنوش‌های میوه‌ای چای ابراهیم شدم. هر فنجانش یه دنیا آرامش میده."</p>
+                    <div class="flex items-center justify-end">
+                        <span class="font-semibold text-brown-900 mr-4">علی قاسمی</span>
+                        <img src="https://placehold.co/60x60/F3F4F6/6B7280?text=AG" alt="علی قاسمی" class="w-12 h-12 rounded-full object-cover">
+                    </div>
+                </div>
+                {{-- Example Testimonial 3 --}}
+                <div class="bg-white p-8 rounded-xl shadow-md border border-gray-100 text-right">
+                    <p class="text-gray-700 italic mb-6">"کیفیت چای سیاهشون بی‌نظیره. همیشه از این برند خرید می‌کنم و راضی‌ام."</p>
+                    <div class="flex items-center justify-end">
+                        <span class="font-semibold text-brown-900 mr-4">زهرا کریمی</span>
+                        <img src="https://placehold.co/60x60/F3F4F6/6B7280?text=ZK" alt="زهرا کریمی" class="w-12 h-12 rounded-full object-cover">
+                    </div>
+                </div>
             </div>
         </div>
     </section>
 
-    {{-- Product Categories Carousel Section ("محصولات") - Centered Container --}}
-    <section class="my-16 p-8 relative bg-gray-50 rounded-xl shadow-lg container mx-auto">
-        <h2 class="text-3xl font-bold text-center text-brown-900 mb-10 section-heading">محصولات</h2>
-
-        {{-- Carousel Navigation Buttons --}}
-        <button id="carousel-prev" class="absolute top-1/2 -translate-y-1/2 left-4 bg-green-800 text-white p-3 rounded-full shadow-lg hover:bg-green-700 transition-all duration-300 z-20">
-            <i class="fas fa-chevron-left"></i>
-        </button>
-        <button id="carousel-next" class="absolute top-1/2 -translate-y-1/2 right-4 bg-green-800 text-white p-3 rounded-full shadow-lg hover:bg-green-700 transition-all duration-300 z-20">
-            <i class="fas fa-chevron-right"></i>
-        </button>
-
-        {{-- Product Carousel Items (scrollable) --}}
-        {{-- Added 'scroll-smooth' for better user experience when navigating with buttons. --}}
-        <div id="product-carousel" dir="ltr" class="flex overflow-x-scroll scrollbar-hide carousel-container pb-4 gap-6 snap-x snap-mandatory px-4 scroll-smooth">
-            <a href="{{ url('/products') }}" class="carousel-item flex-shrink-0 snap-center w-[85%] sm:w-[48%] md:w-[32%] lg:w-[25%] bg-off-white p-8 rounded-2xl shadow-xl card-hover-effect border border-gray-100 group">
-                <div class="w-full h-56 rounded-xl mb-6 overflow-hidden placeholder-image">
-                    {{-- Added 'max-w-full' for better image responsiveness --}}
-                    <img src="https://placehold.co/500x350/a77a62/fcf8f5?text=چای+سیاه" alt="چای سیاه" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22500%22%20height%3D%22350%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23ccc%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22Arial%2C%20sans-serif%22%20font-size%3D%2225%22%20fill%3D%22%23666%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22middle%22%3E%D8%AA%D8%B5%D9%88%DB%8C%D8%B1%3C%2Ftext%3E%3C%2Fsvg%3E';">
-                </div>
-                <h3 class="text-3xl font-bold text-brown-900 mb-3 text-center group-hover:text-green-800 transition-colors duration-300">چای سیاه</h3>
-                <p class="text-gray-600 text-base text-center">عطر و طعم بی‌نظیر، مناسب برای هر لحظه روز.</p>
-            </a>
-            <a href="{{ url('/products') }}" class="carousel-item flex-shrink-0 snap-center w-[85%] sm:w-[48%] md:w-[32%] lg:w-[25%] bg-off-white p-8 rounded-2xl shadow-xl card-hover-effect border border-gray-100 group">
-                <div class="w-full h-56 rounded-xl mb-6 overflow-hidden placeholder-image">
-                    {{-- Added 'max-w-full' for better image responsiveness --}}
-                    <img src="https://placehold.co/500x350/789a7f/fcf8f5?text=چای+سبز" alt="چای سبز" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22500%22%20height%3D%22350%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23ccc%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22Arial%2C%20sans-serif%22%20font-size%3D%2225%22%22%20fill%3D%22%23666%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22middle%22%3E%D8%AA%D8%B5%D9%88%DB%8C%D8%B1%3C%2Ftext%3E%3C%2Fsvg%3E';">
-                </div>
-                <h3 class="text-3xl font-bold text-brown-900 mb-3 text-center group-hover:text-green-800 transition-colors duration-300">چای سبز</h3>
-                <p class="text-gray-600 text-base text-center">سرشار از خواص طبیعی، طراوت و انرژی.</p>
-            </a>
-            <a href="{{ url('/products') }}" class="carousel-item flex-shrink-0 snap-center w-[85%] sm:w-[48%] md:w-[32%] lg:w-[25%] bg-off-white p-8 rounded-2xl shadow-xl card-hover-effect border border-gray-100 group">
-                <div class="w-full h-56 rounded-xl mb-6 overflow-hidden placeholder-image">
-                    {{-- Added 'max-w-full' for better image responsiveness --}}
-                    <img src="https://placehold.co/500x350/b08f83/fcf8f5?text=دمنوش‌ها" alt="دمنوش‌ها" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22500%22%20height%3D%22350%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23ccc%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22Arial%2C%20sans-serif%22%20font-size%3D%2225%22%22%20fill%3D%22%23666%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22middle%22%3E%D8%AA%D8%B5%D9%88%DB%8C%D8%B1%3C%2Ftext%3E%3C%2Fsvg%3E';">
-                </div>
-                <h3 class="text-3xl font-bold text-brown-900 mb-3 text-center group-hover:text-green-800 transition-colors duration-300">چای دمنوش‌ها</h3>
-                <p class="text-gray-600 text-base text-center">آرامش‌بخش و مفید، از دل طبیعت.</p>
-            </a>
-            <a href="{{ url('/products') }}" class="carousel-item flex-shrink-0 snap-center w-[85%] sm:w-[48%] md:w-[32%] lg:w-[25%] bg-off-white p-8 rounded-2xl shadow-xl card-hover-effect border border-gray-100 group">
-                <div class="w-full h-56 rounded-xl mb-6 overflow-hidden placeholder-image">
-                    {{-- Added 'max-w-full' for better image responsiveness --}}
-                    <img src="https://placehold.co/500x350/EFEFEF/666666?text=چای+سفید" alt="چای سفید" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22500%22%20height%3D%22350%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23ccc%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22Arial%2C%20sans-serif%22%20font-size%3D%2225%22%22%20fill%3D%22%23666%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22middle%22%3E%D8%AA%D8%B5%D9%88%DB%8C%D8%B1%3C%2Ftext%3E%3C%2Fsvg%3E';">
-                </div>
-                <h3 class="text-3xl font-bold text-brown-900 mb-3 text-center group-hover:text-green-800 transition-colors duration-300">چای سفید</h3>
-                <p class="text-gray-600 text-base text-center">ظریف و کمیاب، تجربه‌ای لوکس و خاص.</p>
-            </a>
-            <a href="{{ url('/products') }}" class="carousel-item flex-shrink-0 snap-center w-[85%] sm:w-[48%] md:w-[32%] lg:w-[25%] bg-off-white p-8 rounded-2xl shadow-xl card-hover-effect border border-gray-100 group">
-                <div class="w-full h-56 rounded-xl mb-6 overflow-hidden placeholder-image">
-                    {{-- Added 'max-w-full' for better image responsiveness --}}
-                    <img src="https://placehold.co/500x350/EFEFEF/666666?text=چای+اولانگ" alt="چای اولانگ" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22500%22%20height%3D%22350%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23ccc%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22Arial%2C%20sans-serif%22%20font-size%3D%2225%22%22%20fill%3D%22%23666%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22middle%22%3E%D8%AA%D8%B5%D9%88%DB%8C%D8%B1%3C%2Ftext%3E%3C%2Fsvg%3E';">
-                </div>
-                <h3 class="text-3xl font-bold text-brown-900 mb-3 text-center group-hover:text-green-800 transition-colors duration-300">چای اولانگ</h3>
-                <p class="text-gray-600 text-base text-center">ترکیبی بی‌نظیر از طعم‌های چای سبز و سیاه.</p>
-            </a>
-            <a href="{{ url('/products') }}" class="carousel-item flex-shrink-0 snap-center w-[85%] sm:w-[48%] md:w-[32%] lg:w-[25%] bg-off-white p-8 rounded-2xl shadow-xl card-hover-effect border border-gray-100 group">
-                <div class="w-full h-56 rounded-xl mb-6 overflow-hidden placeholder-image">
-                    {{-- Added 'max-w-full' for better image responsiveness --}}
-                    <img src="https://placehold.co/500x350/EFEFEF/666666?text=چای+میوه‌ای" alt="چای میوه‌ای" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22500%22%20height%3D%22350%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23ccc%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22Arial%2C%20sans-serif%22%20font-size%3D%2225%22%22%20fill%3D%22%23666%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22middle%22%3E%D8%AA%D8%B5%D9%88%DB%8C%D8%B1%3C%2Ftext%3E%3C%2Fsvg%3E';">
-                </div>
-                <h3 class="text-3xl font-bold text-brown-900 mb-3 text-center group-hover:text-green-800 transition-colors duration-300">چای عطری</h3>
-                <p class="text-gray-600 text-base text-center">با رایحه‌های دلنشین و آرام‌بخش طبیعی.</p>
-            </a>
-        </div>
-    </section>
-
-    {{-- Why choose us section (Bottom version - with icons and gradient background) --}}
-    <section class="bg-gradient-to-r from-green-800 to-green-700 py-16 rounded-3xl mx-auto container px-8 shadow-2xl">
-        <h2 class="text-4xl font-bold text-center text-white mb-10 section-heading after:bg-white">چرا چای ابراهیم را انتخاب کنید؟</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-10 text-white text-center">
-            <div class="p-6 rounded-xl bg-white bg-opacity-10 backdrop-filter backdrop-blur-sm card-hover-effect">
-                <span class="text-5xl mb-4 text-amber-300">⭐</span>
-                <h3 class="text-2xl font-semibold mb-3">کیفیت بی‌نظیر</h3>
-                <p class="text-gray-200 text-base">برگ‌های دستچین شده، فرآوری اصولی و کنترل کیفیت دقیق.</p>
-            </div>
-            <div class="p-6 rounded-xl bg-white bg-opacity-10 backdrop-filter backdrop-blur-sm card-hover-effect">
-                <span class="text-5xl mb-4 text-green-300">🌱</span>
-                <h3 class="text-2xl font-semibold mb-3">اصالت ایرانی</h3>
-                <p class="text-gray-200 text-base">از مزارع سرسبز لاهیجان با سابقه طولانی در کشت چای.</p>
-            </div>
-            <div class="p-6 rounded-xl bg-white bg-opacity-10 backdrop-filter backdrop-blur-sm card-hover-effect">
-                <span class="text-5xl mb-4 text-red-300">❤️</span>
-                <h3 class="text-2xl font-semibold mb-3">عطر و طعم ماندگار</h3>
-                <p class="text-gray-200 text-base">چای تازه با عطر طبیعی و طعمی که در خاطر می‌ماند.</p>
-            </div>
-        </div>
-    </section>
-
-    {{-- Latest Products Section --}}
-    {{-- Changed bg-white to bg-off-white for a softer background --}}
-    <section class="my-16 p-8 bg-off-white shadow-2xl rounded-3xl">
-        <h2 class="text-4xl font-bold text-center text-brown-900 mb-10 section-heading">جدیدترین محصولات</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            <div class="bg-off-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-200">
-                <div class="w-full h-48 rounded-lg mb-4 overflow-hidden flex items-center justify-center border border-gray-300">
-                    {{-- Added 'max-w-full' for better image responsiveness --}}
-                    <img src="https://placehold.co/400x300/F0F4C3/212121?text=محصول+۱" alt="چای دبش" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22400%22%20height%3D%22300%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23ccc%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22Arial%2C%20sans-serif%22%20font-size%3D%2225%22%20fill%3D%22%23666%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22middle%22%3E%D8%AA%D8%B5%D9%88%DB%8C%D8%B1%3C%2Ftext%3E%3C%2Fsvg%3E';">
-                </div>
-                <h3 class="text-2xl font-semibold text-brown-900 mb-2">چای دبش ممتاز</h3>
-                <p class="text-gray-600 text-sm mb-4 leading-normal">چای سیاه قلم ممتاز با طعم و رنگ بی‌نظیر.</p>
-                <div class="flex justify-between items-center mt-4">
-                    <span class="text-green-800 text-xl font-bold">۱۱۰,۰۰۰ تومان</span>
-                    <button class="bg-green-800 text-white px-5 py-2 rounded-full hover:bg-green-700 transition-colors duration-300 shadow-md flex items-center add-to-cart-btn" data-product-id="dabesh" data-product-name="چای دبش ممتاز" data-product-price="110000" data-product-image="https://placehold.co/400x300/F0F4C3/212121?text=محصول+۱">
-                        <i class="fas fa-plus-circle ml-2"></i> افزودن
-                    </button>
-                </div>
-            </div>
-            <div class="bg-off-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-200">
-                <div class="w-full h-48 rounded-lg mb-4 overflow-hidden flex items-center justify-center border border-gray-300">
-                    {{-- Added 'max-w-full' for better image responsiveness --}}
-                    <img src="https://placehold.co/400x300/F0F4C3/212121?text=محصول+۲" alt="چای سیاه ارل گری" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22400%22%20height%3D%22300%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23ccc%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22Arial%2C%20sans-serif%22%20font-size%3D%2225%22%20fill%3D%22%23666%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22middle%22%3E%D8%AA%D8%B5%D9%88%DB%8C%D8%B1%3C%2Ftext%3E%3C%2Fsvg%3E';">
-                </div>
-                <h3 class="text-2xl font-semibold text-brown-900 mb-2">چای ارل گری</h3>
-                <p class="text-gray-600 text-sm mb-4 leading-normal">چای سیاه معطر با اسانس طبیعی برگاموت.</p>
-                <div class="flex justify-between items-center mt-4">
-                    <span class="text-green-800 text-xl font-bold">۱۳۵,۰۰۰ تومان</span>
-                    <button class="bg-green-800 text-white px-5 py-2 rounded-full hover:bg-green-700 transition-colors duration-300 shadow-md flex items-center add-to-cart-btn" data-product-id="earl-grey" data-product-name="چای ارل گری" data-product-price="135000" data-product-image="https://placehold.co/400x300/F0F4C3/212121?text=محصول+۲">
-                        <i class="fas fa-plus-circle ml-2"></i> افزودن
-                    </button>
-                </div>
-            </div>
-            <div class="bg-off-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-200">
-                <div class="w-full h-48 rounded-lg mb-4 overflow-hidden flex items-center justify-center border border-gray-300">
-                    {{-- Added 'max-w-full' for better image responsiveness --}}
-                    <img src="https://placehold.co/400x300/F0F4C3/212121?text=محصول+۳" alt="دمنوش به لیمو" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22400%22%20height%3D%22300%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23ccc%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22Arial%2C%20sans-serif%22%20font-size%3D%2225%22%20fill%3D%22%23666%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22middle%22%3E%D8%AA%D8%B5%D9%88%DB%8C%D8%B1%3C%2Ftext%3E%3C%2Fsvg%3E';">
-                </div>
-                <h3 class="text-2xl font-semibold text-brown-900 mb-2">دمنوش به لیمو</h3>
-                <p class="text-gray-600 text-sm mb-4 leading-normal">دمنوش آرام‌بخش با طعم دلپذیر به لیمو.</p>
-                <div class="flex justify-between items-center mt-4">
-                    <span class="text-green-800 text-xl font-bold">۷۰,۰۰۰ تومان</span>
-                    <button class="bg-green-800 text-white px-5 py-2 rounded-full hover:bg-green-700 transition-colors duration-300 shadow-md flex items-center add-to-cart-btn" data-product-id="lemon-balm" data-product-name="دمنوش به لیمو" data-product-price="70000" data-product-image="https://placehold.co/400x300/F0F4C3/212121?text=محصول+۳">
-                        <i class="fas fa-plus-circle ml-2"></i> افزودن
-                    </button>
-                </div>
-            </div>
-            {{-- You can add more latest products here --}}
-        </div>
-    </section>
-
-    {{-- Call to Action: Shop Now - Centered Container --}}
-    {{-- Changed bg-white to bg-off-white for a softer background --}}
-    <section class="my-16 p-8 text-center bg-off-white shadow-2xl rounded-3xl container mx-auto">
-        <h2 class="text-4xl font-bold text-brown-900 mb-6 section-heading">همین حالا چای خود را انتخاب کنید</h2>
-        <p class="text-gray-700 leading-loose max-w-3xl mx-auto mb-10 text-lg">
-            دنیایی از طعم‌ها و عطرها در انتظار شماست. با کلیک بر روی دکمه زیر، وارد فروشگاه شوید و محصول مورد علاقه خود را بیابید.
-        </p>
-        <a href="{{ url('/products') }}" class="bg-brown-900 text-white px-10 py-4 rounded-full text-lg font-semibold hover:bg-brown-800 transition-all duration-300 shadow-xl transform hover:scale-105">
-            ورود به فروشگاه
-        </a>
-    </section>
-
-    {{-- Our Story Section - Centered Container --}}
-    {{-- Changed bg-white to bg-off-white for a softer background --}}
-    <section class="my-16 p-8 bg-off-white shadow-2xl rounded-3xl container mx-auto">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div class="text-center md:text-right">
-                <h2 class="text-4xl font-bold text-brown-900 mb-6 section-heading">داستان ما</h2>
-                <p class="text-gray-700 leading-loose text-lg mb-6">
-                    در چای ابراهیم، ما بیش از یک نوشیدنی را ارائه می‌دهیم؛ ما یک سنت دیرینه و فرهنگ غنی را به خانه شما می‌آوریم. با بیش از نیم قرن تجربه در کشت و فرآوری چای، هر برگ با عشق و دقت انتخاب می‌شود تا لحظات آرامش‌بخشی را برای شما رقم بزنیم. تعهد ما به کیفیت، از دل مزارع سرسبز لاهیجان آغاز می‌شود و با فرآوری اصولی و بسته‌بندی نوین، به دست شما می‌رسد. اصالت و طعم بی‌نظیر، رمز ماندگاری چای ابراهیم است.
-                </p>
-                <a href="{{ url('/about') }}" class="mt-8 bg-green-800 text-white px-8 py-3 rounded-full text-base font-semibold hover:bg-green-700 transition-colors duration-300 shadow-lg card-hover-effect">
-                    بیشتر بدانید
-                </a>
-            </div>
-            <div class="relative h-96 rounded-2xl overflow-hidden shadow-xl transform rotate-3 scale-95 origin-bottom-right">
-                {{-- Added 'max-w-full' for better image responsiveness --}}
-                <img src="https://placehold.co/600x400/e6d3c0/8c7161?text=مزارع+چای" alt="مزارع چای ابراهیم" class="w-full h-full object-cover rounded-2xl" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22600%22%20height%3D%22400%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23ccc%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22Arial%2C%20sans-serif%22%20font-size%3D%2230%22%20fill%3D%22%23666%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22middle%22%3E%D8%AA%D8%B5%D9%88%DB%8C%D8%B1%3C%2Ftext%3E%3C%2Fsvg%3E';">
-                <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-30 rounded-2xl"></div>
-            </div>
-        </div>
-    </section>
-
-    {{-- Testimonials Section - Centered Container --}}
-    <section class="my-16 p-8 bg-green-800 text-white rounded-xl shadow-lg container mx-auto">
-        <h2 class="text-3xl font-bold text-center mb-10 section-heading text-white">نظرات مشتریان</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div class="bg-white bg-opacity-10 p-6 rounded-lg shadow-md border border-white border-opacity-20">
-                <p class="mb-4 text-lg italic">"چای ابراهیم واقعاً فوق‌العاده است! عطری دلنشین و طعمی بی‌نظیر که هر روز صبح من را سرحال می‌کند."</p>
-                <p class="font-semibold text-right">- سارا احمدی</p>
-            </div>
-            <div class="bg-white bg-opacity-10 p-6 rounded-lg shadow-md border border-white border-opacity-20">
-                <p class="mb-4 text-lg italic">"سال‌هاست که از چای ابراهیم استفاده می‌کنم و همیشه از کیفیت آن راضی بوده‌ام. اصالت طعم ایرانی را واقعاً حس می‌کنید."</p>
-                <p class="font-semibold text-right">- علی کریمی</p>
-            </div>
-        </div>
-    </section>
-
-    {{-- Blog/News Section - Centered Container --}}
-    {{-- Changed bg-white to bg-off-white for a softer background --}}
-    <section class="my-16 p-8 bg-off-white rounded-xl shadow-lg container mx-auto">
-        <h2 class="text-3xl font-bold text-center text-brown-900 mb-10 section-heading">جدیدترین مقالات</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+    {{-- بخش مقالات اخیر --}}
+    <section class="container mx-auto px-4 py-16 text-center">
+        <h2 class="text-4xl font-extrabold text-brown-900 mb-12">
+            <i class="fas fa-newspaper text-red-500 ml-3"></i>
+            مقالات اخیر
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {{-- Example Blog Post 1 --}}
             <div class="bg-gray-50 rounded-xl shadow-md overflow-hidden card-hover-effect border border-gray-100">
-                <img src="https://placehold.co/400x250/F3F4F6/6B7280?text=برداشت+چای" alt="روش‌های نوین برداشت چای" class="w-full h-48 object-cover">
+                <img src="https://placehold.co/400x250/F3F4F6/6B7280?text=تاریخچه+چای" alt="تاریخچه چای" class="w-full h-48 object-cover">
                 <div class="p-6">
-                    <h3 class="text-xl font-semibold text-brown-900 mb-2">روش‌های نوین برداشت چای</h3>
-                    <p class="text-gray-600 text-sm mb-4">آشنایی با پیشرفته‌ترین روش‌های برداشت چای که کیفیت و عطر آن را حفظ می‌کند.</p>
+                    <h3 class="text-xl font-semibold text-brown-900 mb-2">تاریخچه شگفت‌انگیز چای در ایران</h3>
+                    <p class="text-gray-600 text-sm mb-4">کشف کنید چای چگونه وارد فرهنگ و زندگی مردم ایران شد.</p>
                     <a href="{{ url('/blog/1') }}" class="text-green-800 hover:underline font-semibold">بیشتر بخوانید <i class="fas fa-arrow-left text-sm ml-1"></i></a>
                 </div>
             </div>
             {{-- Example Blog Post 2 --}}
             <div class="bg-gray-50 rounded-xl shadow-md overflow-hidden card-hover-effect border border-gray-100">
-                <img src="https://placehold.co/400x250/F3F4F6/6B7280?text=فواید+چای+سبز" alt="فواید شگفت‌انگیز چای سبز" class="w-full h-48 object-cover">
+                <img src="https://placehold.co/400x250/F3F4F6/6B7280?text=فواید+چای+سبز" alt="فواید چای سبز" class="w-full h-48 object-cover">
                 <div class="p-6">
-                    <h3 class="text-xl font-semibold text-brown-900 mb-2">فواید شگفت‌انگیز چای سبز</h3>
-                    <p class="text-gray-600 text-sm mb-4">مروری بر خواص بی‌شمار چای سبز برای سلامتی و شادابی شما.</p>
+                    <h3 class="text-xl font-semibold text-brown-900 mb-2">فواید بی‌شمار چای سبز برای سلامتی</h3>
+                    <p class="text-gray-600 text-sm mb-4">آشنایی با خواص آنتی‌اکسیدانی و درمانی چای سبز.</p>
                     <a href="{{ url('/blog/2') }}" class="text-green-800 hover:underline font-semibold">بیشتر بخوانید <i class="fas fa-arrow-left text-sm ml-1"></i></a>
                 </div>
             </div>
@@ -313,9 +193,15 @@
     </section>
 
     {{-- Contact Us CTA - Centered Container --}}
-    <section class="my-16 p-8 bg-brown-900 text-white rounded-xl shadow-lg container mx-auto">
-        <h2 class="text-3xl font-bold mb-4">سوالی دارید؟</h2>
-        <p class="text-lg mb-8">تیم پشتیبانی چای ابراهیم آماده پاسخگویی به شماست.</p>
-        <a href="{{ url('/contact') }}" class="btn-primary bg-white text-brown-900 hover:bg-gray-200">تماس با ما <i class="fas fa-phone-alt ml-2"></i></a>
+    <section class="my-16 p-8 bg-brown-900 text-white rounded-2xl shadow-lg mx-auto max-w-6xl text-center">
+        <h2 class="text-3xl md:text-4xl font-bold mb-6">همین امروز با ما تماس بگیرید!</h2>
+        <p class="text-lg mb-8 max-w-2xl mx-auto">
+            سوال، پیشنهاد یا نیاز به مشاوره دارید؟ تیم پشتیبانی چای ابراهیم آماده پاسخگویی به شماست.
+        </p>
+        <a href="{{ url('/contact') }}" class="bg-green-700 text-white px-8 py-4 rounded-full text-lg font-semibold hover:bg-green-800 transition-all duration-300 shadow-xl transform hover:scale-105">
+            تماس با ما
+            <i class="fas fa-phone-alt mr-2"></i>
+        </a>
     </section>
+
 @endsection
