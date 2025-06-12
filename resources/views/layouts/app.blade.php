@@ -3,51 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}"> {{-- این خط جدید برای CSRF Token --}}
-    <title>@yield('title', 'چای ابراهیم - عطر و طعم اصیل ایرانی')</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title', config('app.name', 'چای ابراهیم - عطر و طعم اصیل ایرانی'))</title>
 
-    {{-- Tailwind CSS CDN: Recommended to use PostCSS and compile locally in production --}}
-    <script src="https://cdn.tailwindcss.com"></script>
     {{-- Vazirmatn Font --}}
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     {{-- Font Awesome CDN --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
-    {{-- Custom CSS for app.css, managed by Vite --}}
-    @vite('resources/css/app.css')
+    {{-- === اصلاح شده: اطمینان از بارگذاری صحیح CSS و JS توسط Vite === --}}
+    {{-- Vite به طور خودکار <link rel="stylesheet"> و <script> را برای فایل‌های ورودی تولید می‌کند --}}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
 </head>
-<body class="flex flex-col min-h-screen">
+<body class="font-sans antialiased flex flex-col min-h-screen bg-gray-100">
 
-    {{-- Navigation Bar Component --}}
-    {{-- باید اطمینان حاصل شود که محتوای ناوبار در partials.nav نیز از max-w-6xl یا container mx-auto استفاده کند --}}
-    @include('partials.nav')
+    {{-- Navigation Bar Component (بهبود یافته برای سازگاری با Breeze و فروشگاه) --}}
+    @include('layouts.navigation') {{-- از ناوبار Breeze استفاده می‌کنیم --}}
 
-    {{-- Live search results will be injected here --}}
-    <div id="search-results-container" class="absolute top-16 left-0 right-0 z-40 bg-white shadow-lg rounded-b-lg max-w-2xl mx-auto hidden">
-        <div id="search-results" class="py-2">
-            {{-- Search results will be loaded here by JavaScript --}}
-        </div>
-        <div id="search-results-empty" class="text-center p-4 text-gray-500 hidden">
-            نتیجه‌ای یافت نشد.
-        </div>
-    </div>
+    {{-- Page Heading (برای صفحات داشبورد و پروفایل Breeze) --}}
+    @isset($header)
+        <header class="bg-white shadow">
+            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                {{ $header }}
+            </div>
+        </header>
+    @endisset
 
-    {{-- Hero Section (Slideshow) --}}
-    @yield('hero_section')
-
-    {{-- Main content --}}
+    {{-- Main content area --}}
     <main class="flex-grow">
-        @yield('content')
+        {{-- Hero Section (Slideshow) - فقط برای صفحه اصلی --}}
+        @yield('hero_section')
+
+        {{-- Content Slot / Section - برای صفحات فروشگاه و همچنین صفحات Breeze --}}
+        @if (isset($slot))
+            {{ $slot }} {{-- این برای صفحات Breeze (مانند dashboard, login, register) است --}}
+        @else
+            @yield('content') {{-- این برای صفحات فروشگاه شما (مانند home, products, cart, checkout) است --}}
+        @endif
     </main>
 
-    {{-- Auth Modal --}}
-    @include('partials.auth-modal')
+    {{-- Auth Modal (اگر مدال احراز هویت سفارشی دارید) --}}
+    {{-- @include('partials.auth-modal') --}} {{-- اگر این فایل وجود ندارد، باید آن را بسازید یا کامنت کنید --}}
 
     {{-- Footer Component --}}
     @include('partials.footer')
-
-    {{-- Custom JavaScript for app.js, managed by Vite --}}
-    @vite('resources/js/app.js')
 
     {{-- Stack for custom scripts pushed from child views (مانند checkout.blade.php) --}}
     @stack('scripts')

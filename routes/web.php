@@ -7,6 +7,7 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController; // اضافه کردن OrderController
+use App\Http\Controllers\ProfileController; // اضافه کردن ProfileController برای مسیرهای Breeze
 
 /*
 |--------------------------------------------------------------------------
@@ -19,14 +20,14 @@ use App\Http\Controllers\OrderController; // اضافه کردن OrderController
 |
 */
 
-// Home page route
+// Home page route (مسیر صفحه اصلی فروشگاه شما)
 Route::get('/', [PageController::class, 'home'])->name('home');
 
-// Products routes
+// Products routes (مسیرهای مربوط به محصولات)
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
 
-// Cart routes
+// Cart routes (مسیرهای مربوط به سبد خرید)
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
 Route::post('/cart/update/{cartItem}', [CartController::class, 'update'])->name('cart.update');
@@ -35,12 +36,13 @@ Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear')
 Route::get('/cart/contents', [CartController::class, 'getContents'])->name('cart.contents'); // برای دریافت محتویات فعلی سبد (Ajax)
 
 
-// Checkout Routes (جدید)
+// Checkout Routes (مسیرهای پرداخت و ثبت سفارش)
 Route::get('/checkout', [OrderController::class, 'index'])->name('checkout.index'); // نمایش صفحه ثبت سفارش
 Route::post('/checkout/place-order', [OrderController::class, 'placeOrder'])->name('checkout.placeOrder'); // پردازش ثبت سفارش
 
-// New route for order confirmation page
-Route::get('/order-confirmation/{order}', [OrderController::class, 'showConfirmation'])->name('order.confirmation'); // مسیر جدید برای نمایش صفحه تأیید سفارش
+// New route for order confirmation page (مسیر جدید برای نمایش صفحه تأیید سفارش)
+Route::get('/order-confirmation/{order}', [OrderController::class, 'showConfirmation'])->name('order.confirmation');
+
 
 // Example routes for other pages mentioned in the navigation/footer
 Route::get('/about', function () {
@@ -60,6 +62,7 @@ Route::get('/faq', function () {
 })->name('faq');
 
 // New route for the complete profile page (replaces old register route)
+// این مسیر ممکن است در صورت استفاده از Breeze برای تکمیل پروفایل کاربرد داشته باشد.
 Route::get('/complete-profile', function () {
     return view('complete-profile'); // This assumes you have renamed register.blade.php to complete-profile.blade.php
 })->name('complete-profile');
@@ -73,6 +76,17 @@ Route::get('/search', [SearchController::class, 'index']);
 // });
 Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
 
-// Auth Routes (provided by Breeze)
-// Remove or comment out default Breeze auth routes if you implement custom auth
-// Auth::routes(); // If you used Laravel UI
+
+// Breeze Auth Routes (مسیرهای احراز هویت Breeze)
+// این خطوط مربوط به مسیرهای پیش‌فرض Breeze هستند
+Route::get('/dashboard', function () {
+    return view('dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+require __DIR__.'/auth.php'; // این خط مسیرهای login, register, logout و ... را از فایل auth.php لود می‌کند

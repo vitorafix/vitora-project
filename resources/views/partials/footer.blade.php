@@ -1,62 +1,66 @@
-<footer class="bg-brown-900 text-gray-200 p-8 rounded-t-3xl shadow-inner">
-    {{-- اضافه کردن یک div والد برای محدود کردن عرض کل محتوای فوتر به max-w-6xl --}}
-    <div class="container mx-auto max-w-6xl px-4 sm:px-6 lg:px-8"> {{-- Added responsive padding --}}
-        {{-- تنظیم چینش ستون‌ها بر اساس تصویر --}}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8 gap-y-8">
-            {{-- بخش چای ابراهیم: راست چین برای دسکتاپ، وسط چین برای موبایل --}}
-            <div class="text-center md:text-right">
-                <h3 class="text-2xl font-bold mb-4 text-white">چای ابراهیم</h3>
-                <p class="text-sm leading-relaxed max-w-md md:max-w-none mx-auto md:mx-0">ما با عشق و دقت، بهترین چای‌ها را برای شما فراهم می‌کنیم تا هر لحظه شما را با طعم و عطر بی‌نظیر چای، خاطره‌انگیز کنیم.</p>
-                <div class="flex space-x-5 space-x-reverse mt-6 justify-center md:justify-end">
-                    <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">
-                        <i class="fab fa-instagram text-3xl"></i>
+<footer class="bg-teal-800 text-gray-100 py-12 rounded-t-3xl shadow-lg">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row justify-between items-center text-center md:text-right gap-8">
+
+            {{-- بخش لوگو و توضیحات مختصر --}}
+            <div class="md:w-1/3 flex flex-col items-center md:items-start">
+                <h3 class="text-3xl font-extrabold text-white mb-4">چای ابراهیم</h3>
+                <p class="text-sm leading-relaxed max-w-md">
+                    همراه لحظات آرامش شما با عطر و طعم بی‌نظیر چای اصیل ایرانی. تجربه‌ای ناب از کیفیت و سنت.
+                </p>
+                <div class="flex space-x-5 space-x-reverse mt-6">
+                    <a href="#" class="text-teal-200 hover:text-white transition-colors duration-300">
+                        <i class="fab fa-instagram text-2xl"></i>
                     </a>
-                    <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">
-                        <i class="fas fa-envelope text-3xl"></i>
+                    <a href="#" class="text-teal-200 hover:text-white transition-colors duration-300">
+                        <i class="fas fa-envelope text-2xl"></i>
                     </a>
-                    <a href="#" class="text-gray-400 hover:text-white transition-colors duration-300">
-                        <i class="fab fa-twitter text-3xl"></i>
+                    <a href="#" class="text-teal-200 hover:text-white transition-colors duration-300">
+                        <i class="fab fa-twitter text-2xl"></i>
                     </a>
                 </div>
             </div>
 
-            {{-- بخش دسترسی سریع: همیشه وسط چین --}}
-            <div class="text-center">
-                <h3 class="text-xl font-bold mb-4 text-white">دسترسی سریع</h3>
+            {{-- بخش اطلاعات تماس --}}
+            <div class="md:w-1/3 flex flex-col items-center md:items-center text-center">
+                <h3 class="text-2xl font-bold text-white mb-4">تماس با ما</h3>
                 <ul class="space-y-3">
-                    <li><a href="{{ url('/') }}" class="text-gray-400 hover:text-white transition-colors duration-300">خانه</a></li>
-                    <li><a href="{{ url('/products') }}" class="text-gray-400 hover:text-white transition-colors duration-300">محصولات</a></li>
-                    <li><a href="{{ url('/blog') }}" class="text-gray-400 hover:text-white transition-colors duration-300">بلاگ</a></li>
-                    <li><a href="{{ url('/faq') }}" class="text-gray-400 hover:text-white transition-colors duration-300">سوالات متداول</a></li>
+                    <li class="flex items-center justify-center md:justify-start">
+                        <i class="fas fa-map-marker-alt text-teal-300 ml-3"></i>
+                        <span class="text-sm">دفتر: تهران، بزرگراه اشرفی اصفهانی، کوچه طباطبایی</span>
+                    </li>
+                    <li class="flex items-center justify-center md:justify-start">
+                        <i class="fas fa-map-marked-alt text-teal-300 ml-3"></i>
+                        <span class="text-sm">کارخانه: لاهیجان، دو راهی بام سبز، کتشال</span>
+                    </li>
+                    <li class="flex items-center justify-center md:justify-start">
+                        <i class="fas fa-phone-alt text-teal-300 ml-3"></i>
+                        <span class="text-sm">تلفن: ۰۹۱۱۴۳۴۹۸۶۰</span>
+                    </li>
+                    <li class="flex items-center justify-center md:justify-start">
+                        <i class="fas fa-envelope text-teal-300 ml-3"></i>
+                        <span class="text-sm">ایمیل: peymansabzlahijteafactory@gmail.com</span>
+                    </li>
                 </ul>
             </div>
 
-            {{-- بخش تماس با ما: چپ چین برای دسکتاپ، وسط چین برای موبایل --}}
-            <div class="flex flex-col items-start md:items-start text-left">
-                <h3 class="text-xl font-bold mb-4 text-white">تماس با ما</h3>
-                <p class="text-sm mb-3">📍 دفتر بازرگانی: تهران، بزرگراه اشرفی اصفهانی، کوچه طباطبایی، ساختمان رویال</p>
-                <p class="text-sm mb-3">🏭 کارخانه: لاهیجان، دو راهی بام سبز، خیابان سعدی، روستای کتشال، کارخانه چای سازی پیمان سبز لاهیج</p>
-                <p class="text-sm mb-3">📞 تلفن: ۰۹۱۱۴۳۴۹۸۶۰</p>
-                <p class="text-sm">✉️ ایمیل: peymansabzlahijteafactory@gmail.com</p>
+            {{-- بخش "دسترسی سریع" (اختیاری: اگر می‌خواهید لینک‌های مهم را نگه دارید) --}}
+            {{-- در این طرح جدید، این بخش را ساده‌تر کرده‌ام تا تمرکز بر تماس باشد --}}
+            <div class="md:w-1/3 text-center md:text-left">
+                <h3 class="text-2xl font-bold text-white mb-4">لینک‌های مفید</h3>
+                <ul class="space-y-3">
+                    <li><a href="{{ url('/products') }}" class="text-teal-200 hover:text-white transition-colors duration-300">محصولات</a></li>
+                    <li><a href="{{ url('/blog') }}" class="text-teal-200 hover:text-white transition-colors duration-300">بلاگ</a></li>
+                    <li><a href="{{ url('/about') }}" class="text-teal-200 hover:text-white transition-colors duration-300">درباره ما</a></li>
+                    <li><a href="{{ url('/contact') }}" class="text-teal-200 hover:text-white transition-colors duration-300">تماس با ما</a></li>
+                </ul>
             </div>
+
         </div>
 
-        {{-- تغییر max-w-4xl به max-w-6xl برای هماهنگی با عرض کلی سایت --}}
-        <div class="bg-brown-800 py-12 px-8 rounded-2xl text-white text-center shadow-lg mt-8 mx-auto w-full max-w-6xl">
-            <h2 class="text-3xl font-bold mb-6">در خبرنامه ما عضو شوید</h2>
-            <p class="text-gray-200 leading-loose max-w-2xl mx-auto mb-8 text-base">
-                جدیدترین اخبار، تخفیف‌ها و مقالات جذاب چای را مستقیماً در ایمیل خود دریافت کنید.
-            </p>
-            <form class="max-w-xl mx-auto flex flex-col md:flex-row gap-4 items-center justify-center">
-                <input type="email" placeholder="ایمیل خود را وارد کنید..." class="flex-grow p-3 rounded-full text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-700 transition-all duration-300 shadow-md w-full md:w-auto text-right" required>
-                <button type="submit" class="bg-green-700 text-white px-7 py-3 rounded-full text-base font-semibold hover:bg-green-800 transition-all duration-300 shadow-xl transform hover:scale-105 w-full md:w-auto">
-                    عضویت
-                </button>
-            </form>
-        </div>
-
-        <div class="text-center mt-12 pt-6 border-t border-gray-700">
-            <p>&copy; 2023 چای ابراهیم. تمامی حقوق محفوظ است.</p>
+        {{-- بخش کپی رایت --}}
+        <div class="text-center mt-12 pt-6 border-t border-teal-700">
+            <p class="text-sm text-gray-300">&copy; 2023 چای ابراهیم. تمامی حقوق محفوظ است.</p>
         </div>
     </div>
 </footer>
