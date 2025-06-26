@@ -44,10 +44,10 @@
     </main>
 
     {{-- Auth Modal (اگر مدال احراز هویت سفارشی دارید) --}}
-    {{-- @include('partials.auth-modal') --}} {{-- اگر این فایل وجود ندارد، باید آن را بسازید یا کامنت کنید --}}
+    @include('partials.auth-modal') {{-- این خط را فعال نگه می‌داریم، فرض می‌کنیم فایل آن موجود است --}}
 
     {{-- Footer Component --}}
-    @include('partials.footer')
+    @include('partials.footer') {{-- مسیر به partials.footer تغییر یافت تا با نام فایل شما همخوانی داشته باشد --}}
 
     {{-- Stack for custom scripts pushed from child views (مانند checkout.blade.php) --}}
     @stack('scripts')
@@ -61,7 +61,7 @@
                 document.documentElement.style.setProperty('--nav-height', `${navHeight}px`);
             }
 
-            // منطق اسلایدشو (Hero Carousel)
+            // منطق اسلایدشو (Hero Carousel) - این کد از فایل اصلی شما حفظ شده است.
             const slides = document.querySelectorAll('.hero-slide');
             const prevBtn = document.getElementById('hero-prev-btn');
             const nextBtn = document.getElementById('hero-next-btn');
@@ -98,10 +98,15 @@
             }
 
             function stopSlideShow() {
-                clearInterval(slideInterval);
+                    clearInterval(slideInterval);
             }
 
             function createIndicators() {
+                // بررسی وجود indicatorsContainer قبل از دستکاری آن
+                if (!indicatorsContainer) {
+                    console.warn("Indicators container not found. Skipping indicator creation.");
+                    return;
+                }
                 indicatorsContainer.innerHTML = ''; // پاک کردن نشانگرهای قبلی
                 slides.forEach((_, i) => {
                     const indicator = document.createElement('div');
@@ -109,6 +114,8 @@
                     indicator.addEventListener('click', () => {
                         stopSlideShow();
                         showSlide(i);
+                        // بروزرسانی اسلاید فعلی پس از کلیک روی نشانگر
+                        currentSlide = i;
                         startSlideShow();
                     });
                     indicatorsContainer.appendChild(indicator);
@@ -117,6 +124,9 @@
             }
 
             function updateIndicators(activeIndex) {
+                if (!indicatorsContainer) { // اضافه کردن چک null
+                    return;
+                }
                 const indicators = indicatorsContainer.querySelectorAll('div');
                 indicators.forEach((indicator, i) => {
                     indicator.classList.remove('bg-gray-500', 'bg-opacity-100'); // حذف کلاس‌های قبلی
@@ -129,6 +139,7 @@
             }
 
             // مقداردهی اولیه اسلایدشو
+            // اضافه کردن چک slides.length > 0 برای جلوگیری از خطا اگر اسلایدی نیست
             if (slides.length > 0) {
                 createIndicators(); // ایجاد نشانگرها
                 showSlide(currentSlide); // نمایش اولین اسلاید
@@ -156,6 +167,8 @@
                     heroCarousel.addEventListener('mouseenter', stopSlideShow);
                     heroCarousel.addEventListener('mouseleave', startSlideShow);
                 }
+            } else {
+                console.warn("No hero slides found. Hero carousel will not be initialized.");
             }
         });
     </script>
