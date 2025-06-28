@@ -13,7 +13,7 @@ class CartController extends Controller
 {
     /**
      * Helper method to get the current user's cart or create one if it doesn't exist.
-     * This method handles both authenticated users and guest users.
+     * این متد هر دو نوع کاربر احراز هویت شده و مهمان را مدیریت می‌کند.
      */
     private function getOrCreateCart()
     {
@@ -104,18 +104,22 @@ class CartController extends Controller
      */
     public function update(Request $request, CartItem $cartItem)
     {
-        $request->validate([
-            'quantity' => 'required|integer|min:0', // 0 برای حذف آیتم
-        ]);
-
-        // مطمئن شوید که آیتم متعلق به سبد خرید کاربر فعلی است
+        // اطمینان حاصل کنید که آیتم متعلق به سبد خرید کاربر فعلی است
         $cart = $this->getOrCreateCart();
         if ($cartItem->cart_id !== $cart->id) {
             return response()->json(['message' => 'Unauthorized action.'], 403);
         }
 
-        $product = $cartItem->product;
-        if ($product->stock < $request->quantity && $request->quantity > 0) {
+        $request->validate([
+            'quantity' => 'required|integer|min:0', // 0 برای حذف آیتم
+        ]);
+
+        $product = $cartItem->product; // محصول مرتبط با آیتم سبد خرید را بگیرید
+        if (!$product) {
+            return response()->json(['message' => 'Product not found for this cart item.'], 404);
+        }
+
+        if ($request->quantity > 0 && $product->stock < $request->quantity) {
             return response()->json(['message' => 'Updating this quantity exceeds available stock.'], 400);
         }
 
@@ -132,7 +136,7 @@ class CartController extends Controller
 
         return response()->json([
             'message' => $message,
-            'cartItem' => $cartItem->load('product'),
+            'cartItem' => $cartItem->load('product'), // آیتم سبد خرید بروز شده (برای اطمینان)
             'totalItemsInCart' => $totalItemsInCart
         ]);
     }
@@ -178,7 +182,7 @@ class CartController extends Controller
 
     /**
      * Get current cart contents and total.
-     * Used by app.js to populate mini-cart and main cart.
+     * توسط app.js برای پر کردن mini-cart و main cart استفاده می‌شود.
      *
      * @return \Illuminate\Http\JsonResponse
      */

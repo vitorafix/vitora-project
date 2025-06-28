@@ -1,3 +1,72 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Navigation Link Styles */
+.nav-link {
+    @apply flex items-center px-4 py-3 text-white text-sm font-medium rounded-lg transition-all duration-300 hover:bg-white/10 hover:text-amber-200 relative overflow-hidden;
+}
+
+.nav-link.active {
+    @apply bg-amber-400 text-green-800 font-bold shadow-lg;
+}
+
+.nav-link:hover {
+    transform: translateY(-1px);
+}
+
+/* Dropdown Styles */
+.dropdown-link {
+    @apply flex items-center px-3 py-2 text-gray-700 text-xs hover:bg-green-50 hover:text-green-700 rounded-lg transition-all duration-200;
+}
+
+/* User Dropdown Styles */
+.user-dropdown-link {
+    @apply flex items-center justify-between px-4 py-3 text-gray-700 text-sm hover:bg-gray-50 transition-all duration-200;
+}
+
+/* Mobile Navigation Styles */
+.mobile-nav-link {
+    @apply flex items-center space-x-3 space-x-reverse px-4 py-3 text-white text-sm hover:bg-white/10 rounded-lg transition-all duration-300;
+}
+
+.mobile-nav-link.active {
+    @apply bg-amber-400 text-green-800 font-bold;
+}
+
+/* Smooth animations */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.nav-link,
+.dropdown-link,
+.user-dropdown-link {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Custom scrollbar for dropdown menus */
+.dropdown-menu::-webkit-scrollbar {
+    width: 4px;
+}
+
+.dropdown-menu::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 2px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}

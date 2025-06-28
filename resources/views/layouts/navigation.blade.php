@@ -1,144 +1,332 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
+<nav x-data="{ open: false }" class="bg-gradient-to-r from-green-800 via-green-700 to-green-600 shadow-xl border-b-4 border-amber-400 sticky top-0 z-50 backdrop-blur-sm">
     <!-- Primary Navigation Menu -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-            <div class="flex">
+    <div class="max-w-full mx-auto px-0"> <!-- Changed to max-w-full and px-0 for full width -->
+        <!-- Main flex container for logo, navigation links, and user/search section -->
+        <div class="flex items-center h-20"> <!-- Removed justify-between here, will manage spacing with flex-grow and ml-auto -->
+            <!-- Right Side - Logo & Brand -->
+            <div class="flex items-center shrink-0"> <!-- Removed ml-8 to make it stick to the right -->
                 <!-- Logo -->
-                <div class="shrink-0 flex items-center">
-                    <a href="{{ route('home') }}">
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
+                <div class="flex items-center group">
+                    <a href="{{ route('home') }}" class="flex items-center transition-transform duration-300 hover:scale-105" dir="rtl">
+                        <div class="relative"> <!-- Removed ml-3 to make it stick to the right -->
+                            <!-- Removed the leaf icon as requested -->
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-xl font-black text-white">چای ابراهیم</span>
+                            <span class="text-xs text-amber-200">عطر و طعم اصیل ایرانی</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Center - Main Navigation Links (now takes available space and centers its content) -->
+            <div class="hidden lg:flex flex-1 justify-center items-center space-x-reverse space-x-10" dir="rtl"> <!-- flex-1 to grow, justify-center to center content within itself -->
+                <!-- Home -->
+                <a href="{{ route('home') }}" 
+                   class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}">
+                    <i class="fas fa-home ml-2"></i>
+                    <span>صفحه اصلی</span>
+                </a>
+
+                <!-- Products with Dropdown -->
+                <div class="relative group">
+                    <a href="{{ route('products.index') }}" 
+                       class="nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}">
+                        <i class="fas fa-leaf ml-2"></i>
+                        <span>محصولات</span>
+                        <i class="fas fa-chevron-down text-xs mr-1 transition-transform duration-300 group-hover:rotate-180"></i>
+                    </a>
+                    <!-- Dropdown Menu -->
+                    <div class="absolute top-full right-0 mt-3 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50">
+                        <div class="p-4">
+                            <div class="text-sm text-gray-500 mb-3 font-semibold">دسته‌بندی محصولات</div>
+                            <div class="space-y-2">
+                                <a href="{{ route('products.index') }}?category=black-tea" class="dropdown-link">
+                                    <i class="fas fa-circle text-amber-600 text-xs ml-2"></i>چای سیاه
+                                </a>
+                                <a href="{{ route('products.index') }}?category=green-tea" class="dropdown-link">
+                                    <i class="fas fa-circle text-green-600 text-xs ml-2"></i>چای سبز
+                                </a>
+                                <a href="{{ route('products.index') }}?category=herbal-tea" class="dropdown-link">
+                                    <i class="fas fa-circle text-purple-600 text-xs ml-2"></i>چای گیاهی
+                                </a>
+                                <a href="{{ route('products.index') }}?category=special" class="dropdown-link">
+                                    <i class="fas fa-star text-yellow-500 text-xs ml-2"></i>محصولات ویژه
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Blog -->
+                <a href="{{ route('blog.index') }}" 
+                   class="nav-link {{ request()->routeIs('blog.*') ? 'active' : '' }}">
+                    <i class="fas fa-newspaper ml-2"></i>
+                    <span>وبلاگ</span>
+                </a>
+
+                <!-- About Us -->
+                <a href="{{ route('about') }}" 
+                   class="nav-link {{ request()->routeIs('about') ? 'active' : '' }}">
+                    <i class="fas fa-info-circle ml-2"></i>
+                    <span>درباره ما</span>
+                </a>
+
+                <!-- Contact Us -->
+                <a href="{{ route('contact') }}" 
+                   class="nav-link {{ request()->routeIs('contact') ? 'active' : '' }}">
+                    <i class="fas fa-phone-alt ml-2"></i>
+                    <span>تماس با ما</span>
+                </a>
+            </div>
+
+            <!-- Left Side - Search & User Menu (pushed to the left using ml-auto) -->
+            <div class="flex items-center space-x-6 ml-auto"> <!-- ml-auto pushes this block to the far left -->
+                <!-- Search Bar -->
+                <div class="hidden md:block relative">
+                    <form action="{{ route('search') }}" method="GET" class="relative">
+                        <input type="text" 
+                               name="q" 
+                               placeholder="جستجو در محصولات..." 
+                               class="w-64 px-4 py-2 pr-10 text-xs bg-white/90 backdrop-blur-sm border border-white/20 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-300 placeholder-gray-500">
+                        <button type="submit" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-green-600 transition-colors duration-300">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Cart with Counter -->
+                <div class="relative" x-data="{ cartCount: 0 }" x-init="
+                    // این بخش با تابع renderMiniCart در navbar_new.js همگام‌سازی می‌شود
+                    // نیازی نیست اینجا دوباره fetch کنیم مگر برای Fallback
+                    // cartCount مقداردهی اولیه از طریق JS مرکزی انجام خواهد شد
+                ">
+                    <a href="{{ route('cart.index') }}" 
+                       class="nav-link {{ request()->routeIs('cart.*') ? 'active' : '' }} relative">
+                        <i class="fas fa-shopping-cart ml-2"></i>
+                        <span>سبد خرید</span>
+                        <!-- Cart Counter Badge -->
+                        <span x-show="cartCount > 0" 
+                              x-text="cartCount"
+                              id="mini-cart-count"
+                              class="absolute -top-2 -left-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold animate-bounce">
+                        </span>
                     </a>
                 </div>
 
-                <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex" dir="rtl">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('داشبورد') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('products.index')" :active="request()->routeIs('products.index')">
-                        {{ __('محصولات') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('cart.index')" :active="request()->routeIs('cart.index')">
-                        {{ __('سبد خرید') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('checkout.index')" :active="request()->routeIs('checkout.index')">
-                        {{ __('پرداخت') }}
-                    </x-nav-link>
-                </div>
-            </div>
-
-            <!-- Settings Dropdown -->
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
-                <x-dropdown align="right" width="48">
-                    <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                            {{-- === اصلاح شده: بررسی وجود کاربر قبل از دسترسی به name === --}}
-                            @auth
-                                <div>{{ Auth::user()->name }}</div>
-                            @else
-                                <div>{{ __('کاربر مهمان') }}</div>
-                            @endauth
-
-                            <div class="ms-1">
-                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </button>
-                    </x-slot>
-
-                    <x-slot name="content">
+                <!-- User Menu Dropdown -->
+                <div class="relative" x-data="{ open: false }">
+                    <button @click="open = !open" 
+                            class="flex items-center px-4 py-2 text-white hover:bg-white/10 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-400" dir="rtl">
                         @auth
-                            <x-dropdown-link :href="route('profile.edit')">
-                                {{ __('پروفایل') }}
-                            </x-dropdown-link>
-
-                            <!-- Authentication -->
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <x-dropdown-link :href="route('logout')"
-                                        onclick="event.preventDefault();
-                                                    this.closest('form').submit();">
-                                    {{ __('خروج') }}
-                                </x-dropdown-link>
-                            </form>
+                            <div class="w-10 h-10 bg-amber-400 rounded-full flex items-center justify-center text-green-800 font-bold text-lg ml-3">
+                                {{ substr(Auth::user()->name, 0, 1) }}
+                            </div>
+                            <div class="hidden sm:block text-right ml-2">
+                                <div class="text-xs font-semibold">{{ Auth::user()->name }}</div>
+                                <div class="text-xs text-amber-200">کاربر عضو</div>
+                            </div>
                         @else
-                            <x-dropdown-link :href="route('login')">
-                                {{ __('ورود') }}
-                            </x-dropdown-link>
-                            <x-dropdown-link :href="route('register')">
-                                {{ __('ثبت‌نام') }}
-                            </x-dropdown-link>
+                            <div class="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center text-white ml-3">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="hidden sm:block text-right ml-2">
+                                <div class="text-xs font-semibold">کاربر مهمان</div>
+                                <div class="text-xs text-amber-200">عضو نشده</div>
+                            </div>
                         @endauth
-                    </x-slot>
-                </x-dropdown>
-            </div>
+                        <i class="fas fa-chevron-down text-xs transition-transform duration-300" :class="{'rotate-180': open}"></i>
+                    </button>
 
-            <!-- Hamburger -->
-            <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
+                    <!-- User Dropdown Menu -->
+                    <div x-show="open" 
+                         @click.away="open = false"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-95"
+                         class="absolute left-0 mt-3 w-72 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-50">
+                        
+                        @auth
+                            <!-- User Info Header -->
+                            <div class="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-green-50 to-amber-50">
+                                <div class="flex items-center" dir="rtl">
+                                    <div class="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg ml-3">
+                                        {{ substr(Auth::user()->name, 0, 1) }}
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold text-gray-800">{{ Auth::user()->name }}</div>
+                                        <div class="text-xs text-gray-500">{{ Auth::user()->email }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Menu Items -->
+                            <div class="py-2">
+                                <a href="{{ route('profile.edit') }}" class="user-dropdown-link">
+                                    <i class="fas fa-user-cog text-blue-500"></i>
+                                    <span>ویرایش پروفایل</span>
+                                    <i class="fas fa-chevron-left text-gray-400"></i>
+                                </a>
+                                
+                                <a href="{{ route('dashboard') }}" class="user-dropdown-link">
+                                    <i class="fas fa-tachometer-alt text-green-500"></i>
+                                    <span>داشبورد</span>
+                                    <i class="fas fa-chevron-left text-gray-400"></i>
+                                </a>
+
+                                <div class="border-t border-gray-100 my-2"></div>
+
+                                <form method="POST" action="{{ route('logout') }}" class="block">
+                                    @csrf
+                                    <button type="submit" class="user-dropdown-link w-full text-right text-red-600 hover:bg-red-50">
+                                        <i class="fas fa-sign-out-alt text-red-500"></i>
+                                        <span>خروج از حساب</span>
+                                        <i class="fas fa-chevron-left text-gray-400"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        @else
+                            <!-- Guest User Menu -->
+                            <div class="py-2">
+                                <a href="{{ route('login') }}" class="user-dropdown-link">
+                                    <i class="fas fa-sign-in-alt text-green-500"></i>
+                                    <span>ورود به حساب</span>
+                                    <i class="fas fa-chevron-left text-gray-400"></i>
+                                </a>
+                                
+                                <a href="{{ route('register') }}" class="user-dropdown-link">
+                                    <i class="fas fa-user-plus"></i>
+                                    <span>ثبت‌نام</span>
+                                    <i class="fas fa-chevron-left text-gray-400"></i>
+                                </a>
+                            </div>
+                        @endauth
+                    </div>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="lg:hidden">
+                    <button @click="open = !open" 
+                            class="p-2 rounded-md text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all duration-300">
+                        <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                            <path :class="{'hidden': open, 'inline-flex': !open }" 
+                                  class="inline-flex" 
+                                  stroke-linecap="round" 
+                                  stroke-linejoin="round" 
+                                  stroke-width="2" 
+                                  d="M4 6h16M4 12h16M4 18h16" />
+                            <path :class="{'hidden': !open, 'inline-flex': open }" 
+                                  class="hidden" 
+                                  stroke-linecap="round" 
+                                  stroke-linejoin="round" 
+                                  stroke-width="2" 
+                                  d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Responsive Navigation Menu -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
-        <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                {{ __('داشبورد') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('products.index')" :active="request()->routeIs('products.index')">
-                {{ __('محصولات') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('cart.index')" :active="request()->routeIs('cart.index')">
-                {{ __('سبد خرید') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('checkout.index')" :active="request()->routeIs('checkout.index')">
-                {{ __('پرداخت') }}
-            </x-responsive-nav-link>
+    <!-- Mobile Navigation Menu -->
+    <div :class="{'block': open, 'hidden': !open}" class="hidden lg:hidden bg-green-800/95 backdrop-blur-sm border-t border-green-600">
+        <!-- Mobile Search -->
+        <div class="px-4 py-3 border-b border-green-600">
+            <form action="{{ route('search') }}" method="GET">
+                <div class="relative">
+                    <input type="text" 
+                           name="q" 
+                           placeholder="جستجو..." 
+                           class="w-full px-4 py-2 pr-10 text-xs bg-white/90 border border-white/20 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-400">
+                    <button type="submit" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+        </div>
+        
+        <!-- Mobile Navigation Links -->
+        <div class="px-4 py-3 space-y-2">
+            <a href="{{ route('home') }}" 
+               class="mobile-nav-link {{ request()->routeIs('home') ? 'active' : '' }}">
+                <i class="fas fa-home"></i>
+                <span>صفحه اصلی</span>
+            </a>
+            
+            <a href="{{ route('products.index') }}" 
+               class="mobile-nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}">
+                <i class="fas fa-leaf"></i>
+                <span>محصولات</span>
+            </a>
+
+            <a href="{{ route('blog.index') }}" 
+               class="mobile-nav-link {{ request()->routeIs('blog.*') ? 'active' : '' }}">
+                <i class="fas fa-newspaper"></i>
+                <span>وبلاگ</span>
+            </a>
+
+            <a href="{{ route('about') }}" 
+               class="mobile-nav-link {{ request()->routeIs('about') ? 'active' : '' }}">
+                <i class="fas fa-info-circle"></i>
+                <span>درباره ما</span>
+            </a>
+
+            <a href="{{ route('contact') }}" 
+               class="mobile-nav-link {{ request()->routeIs('contact') ? 'active' : '' }}">
+                <i class="fas fa-phone-alt"></i>
+                <span>تماس با ما</span>
+            </a>
+            
+            <a href="{{ route('cart.index') }}" 
+               class="mobile-nav-link {{ request()->routeIs('cart.*') ? 'active' : '' }}">
+                <i class="fas fa-shopping-cart"></i>
+                <span>سبد خرید</span>
+                <span class="mr-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full" id="mobile-cart-count" style="display: none;">0</span>
+            </a>
         </div>
 
-        <!-- Responsive Settings Options -->
-        <div class="pt-4 pb-1 border-t border-gray-200">
-            <div class="px-4">
-                {{-- === اصلاح شده: بررسی وجود کاربر قبل از دسترسی به name و email === --}}
-                @auth
-                    <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
-                    <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
-                @else
-                    <div class="font-medium text-base text-gray-800">{{ __('کاربر مهمان') }}</div>
-                @endauth
-            </div>
-
-            <div class="mt-3 space-y-1">
-                @auth
-                    <x-responsive-nav-link :href="route('profile.edit')">
-                        {{ __('پروفایل') }}
-                    </x-responsive-nav-link>
-
-                    <!-- Authentication -->
+        <!-- Mobile User Section -->
+        <div class="border-t border-green-600 px-4 py-4">
+            @auth
+                <div class="flex items-center mb-4" dir="rtl">
+                    <div class="w-12 h-12 bg-amber-400 rounded-full flex items-center justify-center text-green-800 font-bold text-lg ml-3">
+                        {{ substr(Auth::user()->name, 0, 1) }}
+                    </div>
+                    <div>
+                        <div class="font-semibold text-white">{{ Auth::user()->name }}</div>
+                        <div class="text-xs text-amber-200">{{ Auth::user()->email }}</div>
+                    </div>
+                </div>
+                
+                <div class="space-y-2">
+                    <a href="{{ route('profile.edit') }}" class="mobile-nav-link">
+                        <i class="fas fa-user-cog"></i>
+                        <span>ویرایش پروفایل</span>
+                    </a>
+                    
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <x-responsive-nav-link :href="route('logout')"
-                                onclick="event.preventDefault();
-                                            this.closest('form').submit();">
-                            {{ __('خروج') }}
-                        </x-responsive-nav-link>
+                        <button type="submit" class="mobile-nav-link w-full text-right text-red-300 hover:bg-red-800/20">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>خروج از حساب</span>
+                        </button>
                     </form>
-                @else
-                    <x-responsive-nav-link :href="route('login')">
-                        {{ __('ورود') }}
-                    </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('register')">
-                        {{ __('ثبت‌نام') }}
-                    </x-responsive-nav-link>
-                @endauth
-            </div>
+                </div>
+            @else
+                <div class="space-y-2">
+                    <a href="{{ route('login') }}" class="mobile-nav-link">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span>ورود به حساب</span>
+                    </a>
+                    
+                    <a href="{{ route('register') }}" class="mobile-nav-link">
+                        <i class="fas fa-user-plus"></i>
+                        <span>ثبت‌نام</span>
+                    </a>
+                </div>
+            @endauth
         </div>
     </div>
 </nav>

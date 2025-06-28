@@ -9,25 +9,26 @@ class ProductController extends Controller
 {
     /**
      * Display a listing of the products.
+     * محصولات را لیست می‌کند (صفحه همه محصولات).
      *
      * @return \Illuminate\View\View
      */
     public function index()
     {
-        // نمایش همه محصولات (فعلا بدون صفحه بندی، بعدا اضافه میشه)
-        $products = Product::orderBy('created_at', 'desc')->get(); // همه محصولات
+        $products = Product::latest()->paginate(12); // مثلاً 12 محصول در هر صفحه
         return view('products', compact('products'));
     }
 
     /**
      * Display the specified product.
+     * محصول مشخص شده را نمایش می‌دهد (صفحه جزئیات محصول).
      *
      * @param  \App\Models\Product  $product
      * @return \Illuminate\View\View
      */
     public function show(Product $product)
     {
-        // نمایش جزئیات یک محصول خاص
-        return view('products.show', compact('product'));
+        // شما می‌توانید محصولات مرتبط یا نظرات را نیز در اینجا لود کنید
+        return view('product-single', compact('product'));
     }
 }

@@ -8,7 +8,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\BlogController; // جدید: اضافه کردن BlogController
+use App\Http\Controllers\BlogController; 
 
 /*
 |--------------------------------------------------------------------------
@@ -26,7 +26,8 @@ Route::get('/products/{product}', [ProductController::class, 'show'])->name('pro
 // Cart routes (مسیرهای مربوط به سبد خرید)
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
-Route::post('/cart/update/{cartItem}', [CartController::class, 'update'])->name('cart.update');
+// اصلاح شد: متد از POST به PUT تغییر یافت تا با درخواست جاوااسکریپت مطابقت داشته باشد
+Route::put('/cart/update/{cartItem}', [CartController::class, 'update'])->name('cart.update');
 Route::delete('/cart/remove/{cartItem}', [CartController::class, 'remove'])->name('cart.remove');
 Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
 Route::get('/cart/contents', [CartController::class, 'getContents'])->name('cart.contents');
@@ -57,7 +58,8 @@ Route::get('/complete-profile', function () {
     return view('complete-profile');
 })->name('complete-profile');
 
-Route::get('/search', [SearchController::class, 'index']);
+// اصلاح شد: اضافه کردن name('search') برای مسیر جستجو
+Route::get('/search', [SearchController::class, 'index'])->name('search');
 
 // Admin Panel Routes
 // Example: Route::middleware(['auth', 'admin'])->group(function () {
