@@ -21,6 +21,12 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'mobile_number',      // اضافه شده: شماره موبایل
+        'address',            // اضافه شده: آدرس
+        'city',               // اضافه شده: شهر
+        'province',           // اضافه شده: استان
+        'postal_code',        // اضافه شده: کد پستی
+        'profile_completed',  // اضافه شده: وضعیت تکمیل پروفایل
     ];
 
     /**
@@ -43,6 +49,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'profile_completed' => 'boolean', // اضافه شده: برای تبدیل خودکار به Boolean
         ];
     }
 }

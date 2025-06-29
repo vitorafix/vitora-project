@@ -17,6 +17,21 @@
                 اطلاعات ارسال
             </h2>
             <form id="place-order-form" class="space-y-6">
+                {{-- نام --}}
+                <div>
+                    <label for="first_name" class="block text-gray-700 text-sm font-bold mb-2">نام:</label>
+                    <input type="text" id="first_name" name="first_name" class="form-input block w-full border border-gray-300 rounded-md shadow-sm focus:ring-green-700 focus:border-green-700" placeholder="نام کوچک شما" required>
+                </div>
+                {{-- نام خانوادگی --}}
+                <div>
+                    <label for="last_name" class="block text-gray-700 text-sm font-bold mb-2">نام خانوادگی:</label>
+                    <input type="text" id="last_name" name="last_name" class="form-input block w-full border border-gray-300 rounded-md shadow-sm focus:ring-green-700 focus:border-green-700" placeholder="نام خانوادگی شما" required>
+                </div>
+                {{-- شماره تلفن --}}
+                <div>
+                    <label for="phone_number" class="block text-gray-700 text-sm font-bold mb-2">شماره تلفن:</label>
+                    <input type="tel" id="phone_number" name="phone_number" class="form-input block w-full border border-gray-300 rounded-md shadow-sm focus:ring-green-700 focus:border-green-700" placeholder="مثال: 09123456789" required>
+                </div>
                 {{-- آدرس کامل --}}
                 <div>
                     <label for="address" class="block text-gray-700 text-sm font-bold mb-2">آدرس کامل:</label>
@@ -107,7 +122,7 @@
                 }
 
                 try {
-                    const response = await fetch('/checkout/place-order', {
+                    const response = await fetch('/order/place', { // Changed endpoint to /order/place
                         method: 'POST', // متد POST
                         headers: {
                             'Content-Type': 'application/json', // نوع محتوا JSON
@@ -120,24 +135,32 @@
 
                     if (response.ok) { // اگر کد وضعیت 200-299 باشد
                         // فرض می‌کنیم showMessage یک تابع سراسری است (از app.js)
-                        showMessage(result.message, 'success');
+                        window.showMessage(result.message, 'success'); // Using window.showMessage as defined in app.js
                         // هدایت به صفحه تأیید سفارش
                         if (result.orderId) {
                             setTimeout(() => {
-                                window.location.href = `/order-confirmation/${result.orderId}`;
+                                window.location.href = `/order/confirmation/${result.orderId}`; // Changed route to /order/confirmation
                             }, 1500); // تأخیر قبل از ریدایرکت برای نمایش پیام موفقیت
                         } else {
                             // اگر orderId برگردانده نشد (سناریوی کمتر محتمل)
                             // می‌توانید اینجا سبد خرید را در فرانت‌اند خالی کنید
                         }
                     } else { // اگر کد وضعیت 4xx یا 5xx باشد
-                        console.error('Error placing order:', result.message || 'Unknown error');
-                        // نمایش پیام خطا به کاربر
-                        showMessage(result.message || 'خطا در ثبت سفارش. لطفاً دوباره تلاش کنید.', 'error');
+                        // Handle validation errors from the backend (status 422)
+                        if (response.status === 422 && result.errors) {
+                            let errorMessage = 'لطفاً اطلاعات ورودی را بررسی کنید: <br>';
+                            for (const field in result.errors) {
+                                errorMessage += `- ${result.errors[field].join(', ')}<br>`;
+                            }
+                            window.showMessage(errorMessage, 'error', 5000); // Show for longer
+                        } else {
+                            window.showMessage(result.message || 'خطا در ثبت سفارش. لطفاً دوباره تلاش کنید.', 'error');
+                        }
+                        console.error('Order placement error:', result);
                     }
                 } catch (error) {
                     console.error('Error placing order (network/parsing):', error);
-                    showMessage('خطا در ارتباط با سرور. لطفاً اتصال اینترنت خود را بررسی کنید.', 'error');
+                    window.showMessage('خطا در ارتباط با سرور. لطفاً اتصال اینترنت خود را بررسی کنید.', 'error');
                 } finally {
                     // ریست کردن حالت دکمه در هر صورت (موفقیت یا خطا)
                     placeOrderBtn.innerHTML = originalBtnText;
@@ -150,17 +173,18 @@
     });
 
     // تابع showMessage فرض می‌شود که در app.js تعریف شده و در دسترس است.
-    // اگر showMessage در دسترس نیست، باید آن را در اینجا تعریف کنید یا از console.log استفاده کنید.
-    function showMessage(message, type = 'info', duration = 3000) {
-        const messageBox = document.createElement('div');
-        messageBox.className = `fixed bottom-5 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg text-white z-50 transition-all duration-300 ease-out message-box ${type === 'success' ? 'bg-green-600' : (type === 'error' ? 'bg-red-600' : 'bg-gray-800')}`;
-        messageBox.textContent = message;
-        document.body.appendChild(messageBox);
+    // این تابع اینجا تکرار شده است، اما بهترین روش تعریف آن به صورت سراسری در app.js است.
+    // در پروژه فعلی ما، showMessage در app.js تعریف شده است، پس این بخش را می‌توان حذف کرد.
+    // function showMessage(message, type = 'info', duration = 3000) {
+    //     const messageBox = document.createElement('div');
+    //     messageBox.className = `fixed bottom-5 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg text-white z-50 transition-all duration-300 ease-out message-box ${type === 'success' ? 'bg-green-600' : (type === 'error' ? 'bg-red-600' : 'bg-gray-800')}`;
+    //     messageBox.textContent = message;
+    //     document.body.appendChild(messageBox);
 
-        setTimeout(() => {
-            messageBox.classList.add('opacity-0', 'translate-y-full');
-            messageBox.addEventListener('transitionend', () => messageBox.remove());
-        }, duration);
-    }
+    //     setTimeout(() => {
+    //         messageBox.classList.add('opacity-0', 'translate-y-full');
+    //         messageBox.addEventListener('transitionend', () => messageBox.remove());
+    //     }, duration);
+    // }
 </script>
 @endpush

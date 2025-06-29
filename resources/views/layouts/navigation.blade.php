@@ -4,11 +4,11 @@
         <!-- Main flex container for logo, navigation links, and user/search section -->
         <div class="flex items-center h-20"> <!-- Removed justify-between here, will manage spacing with flex-grow and ml-auto -->
             <!-- Right Side - Logo & Brand -->
-            <div class="flex items-center shrink-0"> <!-- Removed ml-8 to make it stick to the right -->
+            <div class="flex items-center shrink-0">
                 <!-- Logo -->
                 <div class="flex items-center group">
-                    <a href="{{ route('home') }}" class="flex items-center transition-transform duration-300 hover:scale-105" dir="rtl">
-                        <div class="relative"> <!-- Removed ml-3 to make it stick to the right -->
+                    <a href="{{ route('home') }}" class="flex items-center transition-transform duration-300 hover:scale-105 pr-4" dir="rtl">
+                        <div class="relative">
                             <!-- Removed the leaf icon as requested -->
                         </div>
                         <div class="flex flex-col">
@@ -20,12 +20,12 @@
             </div>
 
             <!-- Center - Main Navigation Links (now takes available space and centers its content) -->
-            <div class="hidden lg:flex flex-1 justify-center items-center space-x-reverse space-x-10" dir="rtl"> <!-- flex-1 to grow, justify-center to center content within itself -->
+            <div class="hidden lg:flex flex-1 justify-center items-center space-x-reverse space-10" dir="rtl">
                 <!-- Home -->
                 <a href="{{ route('home') }}" 
                    class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}">
                     <i class="fas fa-home ml-2"></i>
-                    <span>صفحه اصلی</span>
+                    <span class="text-xs">صفحه اصلی</span>
                 </a>
 
                 <!-- Products with Dropdown -->
@@ -81,35 +81,35 @@
             </div>
 
             <!-- Left Side - Search & User Menu (pushed to the left using ml-auto) -->
-            <div class="flex items-center space-x-6 ml-auto"> <!-- ml-auto pushes this block to the far left -->
-                <!-- Search Bar -->
-                <div class="hidden md:block relative">
-                    <form action="{{ route('search') }}" method="GET" class="relative">
-                        <input type="text" 
-                               name="q" 
-                               placeholder="جستجو در محصولات..." 
-                               class="w-64 px-4 py-2 pr-10 text-xs bg-white/90 backdrop-blur-sm border border-white/20 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-300 placeholder-gray-500">
-                        <button type="submit" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-green-600 transition-colors duration-300">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </form>
+            <div class="flex items-center space-x-6 ml-auto">
+                <!-- Search Bar with Live Results -->
+                <div class="hidden md:block relative z-50"> 
+                    <input type="text" 
+                           id="live-search-input" 
+                           name="q" 
+                           placeholder="جستجو در محصولات..." 
+                           class="w-64 px-4 py-2 pr-10 text-xs bg-white/90 backdrop-blur-sm border border-white/20 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-300 placeholder-gray-500">
+                    <i class="fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    
+                    <!-- Search Results Container - Positioned absolutely below the search input -->
+                    <div id="search-results-container" class="absolute top-full left-0 w-full mt-2 bg-white rounded-lg shadow-lg z-50 border border-gray-200 overflow-hidden hidden">
+                        <!-- Results or initial message will be inserted here by JavaScript -->
+                        <p class="text-gray-500 text-center py-4 text-sm" id="initial-message">شروع به تایپ کنید تا نتایج را مشاهده کنید.</p>
+                    </div>
                 </div>
 
                 <!-- Cart with Counter -->
-                <div class="relative" x-data="{ cartCount: 0 }" x-init="
-                    // این بخش با تابع renderMiniCart در navbar_new.js همگام‌سازی می‌شود
-                    // نیازی نیست اینجا دوباره fetch کنیم مگر برای Fallback
-                    // cartCount مقداردهی اولیه از طریق JS مرکزی انجام خواهد شد
-                ">
+                {{-- Alpine.js x-data and x-text removed as we are using pure JS from cart.js --}}
+                <div class="relative ml-[-2]">
                     <a href="{{ route('cart.index') }}" 
                        class="nav-link {{ request()->routeIs('cart.*') ? 'active' : '' }} relative">
                         <i class="fas fa-shopping-cart ml-2"></i>
                         <span>سبد خرید</span>
                         <!-- Cart Counter Badge -->
-                        <span x-show="cartCount > 0" 
-                              x-text="cartCount"
-                              id="mini-cart-count"
-                              class="absolute -top-2 -left-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold animate-bounce">
+                        {{-- Adjusted size (min-w-[20px] h-5), font size (text-xs), position (-top-2 -left-2), and padding (px-1) for better fit --}}
+                        <span id="cart-item-count"
+                              class="absolute -top-2 -left-2 bg-red-500 text-white text-[10px] rounded-full min-w-[18px] h-[18px] flex items-center justify-center font-bold animate-bounce hidden z-10 p-0.5 leading-none">
+                            0
                         </span>
                     </a>
                 </div>
@@ -235,16 +235,19 @@
     <div :class="{'block': open, 'hidden': !open}" class="hidden lg:hidden bg-green-800/95 backdrop-blur-sm border-t border-green-600">
         <!-- Mobile Search -->
         <div class="px-4 py-3 border-b border-green-600">
-            <form action="{{ route('search') }}" method="GET">
-                <div class="relative">
-                    <input type="text" 
-                           name="q" 
-                           placeholder="جستجو..." 
-                           class="w-full px-4 py-2 pr-10 text-xs bg-white/90 border border-white/20 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-400">
-                    <button type="submit" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </form>
+            <!-- Removed form here for mobile if live search is desired on mobile -->
+            <div class="relative">
+                <input type="text" 
+                       id="mobile-live-search-input" 
+                       name="q" 
+                       placeholder="جستجو..." 
+                       class="w-full px-4 py-2 pr-10 text-xs bg-white/90 border border-white/20 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-400">
+                <i class="fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <!-- Mobile Search Results Container -->
+                <div id="mobile-search-results-container" class="absolute top-full left-0 w-full mt-2 bg-white rounded-lg shadow-lg z-50 border border-gray-200 overflow-hidden hidden">
+                    <p class="text-gray-500 text-center py-4 text-sm" id="initial-message">شروع به تایپ کنید تا نتایج را مشاهده کنید.</p>
+                </div>
+            </div>
         </div>
         
         <!-- Mobile Navigation Links -->
@@ -252,7 +255,7 @@
             <a href="{{ route('home') }}" 
                class="mobile-nav-link {{ request()->routeIs('home') ? 'active' : '' }}">
                 <i class="fas fa-home"></i>
-                <span>صفحه اصلی</span>
+                <span class="text-xs">صفحه اصلی</span>
             </a>
             
             <a href="{{ route('products.index') }}" 
@@ -283,7 +286,9 @@
                class="mobile-nav-link {{ request()->routeIs('cart.*') ? 'active' : '' }}">
                 <i class="fas fa-shopping-cart"></i>
                 <span>سبد خرید</span>
-                <span class="mr-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full" id="mobile-cart-count" style="display: none;">0</span>
+                {{-- Changed id to cart-item-count and removed style="display: none;" --}}
+                {{-- Adjusted position and size for mobile counter --}}
+                <span class="mr-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full hidden" id="cart-item-count">0</span>
             </a>
         </div>
 

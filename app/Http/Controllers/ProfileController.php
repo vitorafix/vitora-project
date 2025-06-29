@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
+use App\Models\User; // مطمئن شوید مدل User ایمپورت شده است
 
 class ProfileController extends Controller
 {
@@ -56,5 +57,63 @@ class ProfileController extends Controller
         $request->session()->regenerateToken();
 
         return Redirect::to('/');
+    }
+
+    /**
+     * Display the form for completing user profile information.
+     * نمایش فرم برای تکمیل اطلاعات پروفایل کاربر.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
+     */
+    public function completeProfileForm(Request $request): View|RedirectResponse
+    {
+        $user = $request->user();
+
+        // اگر پروفایل قبلاً تکمیل شده باشد، به صفحه اصلی هدایت کنید
+        if ($user->profile_completed) {
+            return Redirect::route('home');
+        }
+
+        return view('profile.complete', [
+            'user' => $user,
+        ]);
+    }
+
+
+    /**
+     * Update the user's profile information, specifically for initial completion.
+     * اطلاعات پروفایل کاربر را، به ویژه برای تکمیل اولیه، به‌روزرسانی می‌کند.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function completeProfile(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        // 1. اعتبارسنجی ورودی‌ها
+        $request->validate([
+            'fullName' => ['required', 'string', 'max:255'],
+            // mobileNumber نیاز نیست اینجا آپدیت شود چون برای احراز هویت اولیه استفاده شده
+            'address' => ['required', 'string', 'max:255'],
+            'city' => ['required', 'string', 'max:255'],
+            'province' => ['required', 'string', 'max:255'],
+            'postalCode' => ['required', 'string', 'regex:/^[0-9]{10}$/'], // کد پستی 10 رقمی
+        ]);
+
+        // 2. به‌روزرسانی اطلاعات کاربر
+        $user->name = $request->fullName;
+        // $user->mobile_number = $request->mobileNumber; // این خط را حذف یا کامنت می‌کنیم چون شماره موبایل هنگام ثبت نام اولیه تعیین شده
+        $user->address = $request->address;
+        $user->city = $request->city;
+        $user->province = $request->province;
+        $user->postal_code = $request->postalCode;
+        $user->profile_completed = true; // یک فیلد برای نشان دادن تکمیل پروفایل
+
+        $user->save();
+
+        // 3. هدایت کاربر به صفحه اصلی با پیام موفقیت
+        return Redirect::route('home')->with('status', 'profile-completed');
     }
 }

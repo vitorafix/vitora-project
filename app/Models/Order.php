@@ -23,7 +23,9 @@ class Order extends Model
         'city',
         'province',
         'postal_code',
-        // فیلدهای اضافی دیگر مانند نام، نام خانوادگی، شماره تلفن را در اینجا اضافه کنید
+        'first_name',   // اضافه شده: نام مشتری
+        'last_name',    // اضافه شده: نام خانوادگی مشتری
+        'phone_number', // اضافه شده: شماره تلفن مشتری
     ];
 
     /**
@@ -46,3 +48,4 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 }
+

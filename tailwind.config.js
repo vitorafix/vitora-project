@@ -1,21 +1,26 @@
-import defaultTheme from 'tailwindcss/defaultTheme';
-import forms from '@tailwindcss/forms';
-
-/** @type {import('tailwindcss').Config} */
-export default {
-    content: [
-        './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
-        './storage/framework/views/*.php',
-        './resources/views/**/*.blade.php',
-    ],
-
-    theme: {
-        extend: {
-            fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
-            },
+// tailwind.config.js
+module.exports = {
+  content: [
+    './resources/**/*.blade.php',
+    './resources/**/*.js',
+    './resources/**/*.vue', // اگر از Vue.js استفاده می‌کنید، این خط را اضافه کنید
+  ],
+  theme: {
+    extend: {
+      colors: {
+        brown: {
+          900: '#4a2c2a',
+          800: '#6f4e37',
         },
+        green: {
+          700: '#38a169',
+          800: '#2f855a',
+        },
+      },
+      fontFamily: {
+        sans: ['Vazirmatn', 'sans-serif'], // فونت سفارشی
+      },
     },
-
-    plugins: [forms],
-};
+  },
+  plugins: [],
+}

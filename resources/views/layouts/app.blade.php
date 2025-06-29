@@ -15,6 +15,57 @@
     {{-- Vite به طور خودکار <link rel="stylesheet"> و <script> را برای فایل‌های ورودی تولید می‌کند --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
+    <style>
+        /* CSS برای مدال سفارشی */
+        .custom-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6); /* لایه تیره */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000; /* مطمئن شوید روی همه چیز باشد */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .custom-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .custom-modal-content {
+            background-color: #fff;
+            padding: 2.5rem;
+            border-radius: 1.5rem; /* rounded-2xl */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2); /* shadow-xl */
+            max-width: 480px; /* max-w-md */
+            width: 90%;
+            text-align: center;
+            transform: translateY(-20px); /* برای انیمیشن ورودی */
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+        .custom-modal-overlay.active .custom-modal-content {
+            transform: translateY(0);
+        }
+        .custom-modal-close-btn {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6B7280; /* gray-400 */
+            transition: color 0.2s ease;
+        }
+        .custom-modal-close-btn:hover {
+            color: #EF4444; /* red-500 */
+        }
+    </style>
 </head>
 <body class="font-sans antialiased flex flex-col min-h-screen bg-gray-100">
 
@@ -45,6 +96,26 @@
 
     {{-- Auth Modal (اگر مدال احراز هویت سفارشی دارید) --}}
     @include('partials.auth-modal') {{-- این خط را فعال نگه می‌داریم، فرض می‌کنیم فایل آن موجود است --}}
+
+    {{-- Custom Confirmation Modal --}}
+    <div id="confirmation-modal-overlay" class="custom-modal-overlay">
+        <div class="custom-modal-content">
+            <button id="confirmation-modal-close-btn" class="custom-modal-close-btn">
+                <i class="fas fa-times"></i>
+            </button>
+            <i class="fas fa-question-circle text-orange-500 text-5xl mb-6"></i>
+            <h3 class="text-2xl font-bold text-brown-900 mb-4" id="confirmation-modal-title">تایید عملیات</h3>
+            <p class="text-gray-700 text-lg mb-8" id="confirmation-modal-message">آیا از انجام این عملیات مطمئن هستید؟</p>
+            <div class="flex justify-center gap-6"> {{-- Increased gap from gap-4 to gap-6 for more space --}}
+                <button id="confirmation-modal-confirm-btn" class="btn-primary flex items-center justify-center min-w-[120px]"> {{-- Added min-w to ensure consistent button size --}}
+                    <i class="fas fa-check ml-2"></i> بله، مطمئنم
+                </button>
+                <button id="confirmation-modal-cancel-btn" class="btn-secondary flex items-center justify-center min-w-[120px]"> {{-- Added min-w to ensure consistent button size --}}
+                    <i class="fas fa-times ml-2"></i> لغو
+                </button>
+            </div>
+        </div>
+    </div>
 
     {{-- Footer Component --}}
     @include('partials.footer') {{-- مسیر به partials.footer تغییر یافت تا با نام فایل شما همخوانی داشته باشد --}}
@@ -172,5 +243,6 @@
             }
         });
     </script>
+    {{-- REMOVED THIS LINE: <script src="{{ asset('js/search.js') }}"></script> --}}
 </body>
 </html>

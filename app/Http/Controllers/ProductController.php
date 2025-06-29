@@ -28,7 +28,17 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
-        // شما می‌توانید محصولات مرتبط یا نظرات را نیز در اینجا لود کنید
-        return view('product-single', compact('product'));
+        // 1. واکشی محصولات مرتبط
+        // محصولاتی که در همان دسته محصول فعلی هستند اما خود محصول فعلی نیستند.
+        // تا 4 محصول مرتبط را می‌آوریم.
+        $relatedProducts = Product::where('category_id', $product->category_id)
+                                ->where('id', '!=', $product->id) // مطمئن شوید محصول فعلی شامل نمی‌شود
+                                ->inRandomOrder() // به صورت تصادفی مرتب کند
+                                ->limit(4) // حداکثر 4 محصول
+                                ->get();
+
+        // 2. ارسال محصول اصلی و محصولات مرتبط به ویو
+        return view('product-single', compact('product', 'relatedProducts'));
     }
 }
+

@@ -25,6 +25,9 @@ return new class extends Migration
             // 'onDelete('cascade')' یعنی اگر یک دسته‌بندی حذف شد، محصولات مرتبط با آن نیز حذف شوند
             $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
             $table->timestamps(); // ستون‌های created_at و updated_at برای زمان‌بندی
+
+            // اضافه کردن unique constraint روی ترکیب title و category_id
+            $table->unique(['title', 'category_id']);
         });
     }
 

@@ -3,23 +3,16 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-
-class SearchController extends Controller
-{
-    //
-}
-namespace App\Http\Controllers;
-
-use Illuminate\Http\Request;
 use App\Models\Product; // مدل محصولت
 
 class SearchController extends Controller
 {
-    public function index(Request $request)
+    public function search(Request $request) // Changed method name to 'search'
     {
         $query = $request->get('q');
 
-        $results = Product::where('name', 'like', "%$query%")
+        // Changed 'name' to 'title' as per database schema
+        $results = Product::where('title', 'like', "%$query%")
             ->orWhere('description', 'like', "%$query%")
             ->limit(10)
             ->get();

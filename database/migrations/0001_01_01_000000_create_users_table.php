@@ -8,6 +8,7 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     * این متد برای ایجاد جدول 'users' و تعریف ستون‌های آن استفاده می‌شود.
      */
     public function up(): void
     {
@@ -18,6 +19,15 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
+            
+            // فیلدهای جدید برای اطلاعات پروفایل کاربر
+            $table->string('mobile_number')->unique()->nullable(); // شماره موبایل (یکتا و اختیاری)
+            $table->text('address')->nullable(); // آدرس کامل (اختیاری)
+            $table->string('city')->nullable(); // شهر (اختیاری)
+            $table->string('province')->nullable(); // استان (اختیاری)
+            $table->string('postal_code')->nullable(); // کد پستی (اختیاری)
+            $table->boolean('profile_completed')->default(false); // وضعیت تکمیل پروفایل (پیش‌فرض: false)
+
             $table->timestamps();
         });
 
@@ -39,6 +49,7 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
+     * این متد برای حذف جداول در صورت اجرای 'rollback' استفاده می‌شود.
      */
     public function down(): void
     {
@@ -47,3 +58,4 @@ return new class extends Migration
         Schema::dropIfExists('sessions');
     }
 };
+
