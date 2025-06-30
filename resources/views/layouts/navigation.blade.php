@@ -25,7 +25,7 @@
                 <a href="{{ route('home') }}" 
                    class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}">
                     <i class="fas fa-home ml-2"></i>
-                    <span class="text-xs">صفحه اصلی</span>
+                    <span>صفحه اصلی</span>
                 </a>
 
                 <!-- Products with Dropdown -->
@@ -100,7 +100,7 @@
 
                 <!-- Cart with Counter -->
                 {{-- Alpine.js x-data and x-text removed as we are using pure JS from cart.js --}}
-                <div class="relative ml-[-2]">
+                <div class="relative"> {{-- Removed ml-[-2] here --}}
                     <a href="{{ route('cart.index') }}" 
                        class="nav-link {{ request()->routeIs('cart.*') ? 'active' : '' }} relative">
                         <i class="fas fa-shopping-cart ml-2"></i>
@@ -108,7 +108,7 @@
                         <!-- Cart Counter Badge -->
                         {{-- Adjusted size (min-w-[20px] h-5), font size (text-xs), position (-top-2 -left-2), and padding (px-1) for better fit --}}
                         <span id="cart-item-count"
-                              class="absolute -top-2 -left-2 bg-red-500 text-white text-[10px] rounded-full min-w-[18px] h-[18px] flex items-center justify-center font-bold animate-bounce hidden z-10 p-0.5 leading-none">
+                              class="absolute -top-0 -left-0 bg-red-500 text-white text-xs rounded-full min-w-[40px] h-5 flex items-center justify-center font-bold hidden z-10 px-1 leading-none">
                             0
                         </span>
                     </a>
@@ -179,7 +179,7 @@
 
                                 <div class="border-t border-gray-100 my-2"></div>
 
-                                <form method="POST" action="{{ route('logout') }}" class="block">
+                                <form method="POST" action="{{ route('auth.logout') }}"> {{-- Updated route --}}
                                     @csrf
                                     <button type="submit" class="user-dropdown-link w-full text-right text-red-600 hover:bg-red-50">
                                         <i class="fas fa-sign-out-alt text-red-500"></i>
@@ -191,13 +191,13 @@
                         @else
                             <!-- Guest User Menu -->
                             <div class="py-2">
-                                <a href="{{ route('login') }}" class="user-dropdown-link">
+                                <a href="{{ route('auth.mobile-login-form') }}" class="user-dropdown-link"> {{-- Updated route --}}
                                     <i class="fas fa-sign-in-alt text-green-500"></i>
                                     <span>ورود به حساب</span>
                                     <i class="fas fa-chevron-left text-gray-400"></i>
                                 </a>
                                 
-                                <a href="{{ route('register') }}" class="user-dropdown-link">
+                                <a href="{{ route('auth.mobile-login-form') }}" class="user-dropdown-link"> {{-- Updated route, assuming mobile-login-form handles registration --}}
                                     <i class="fas fa-user-plus"></i>
                                     <span>ثبت‌نام</span>
                                     <i class="fas fa-chevron-left text-gray-400"></i>
@@ -255,7 +255,7 @@
             <a href="{{ route('home') }}" 
                class="mobile-nav-link {{ request()->routeIs('home') ? 'active' : '' }}">
                 <i class="fas fa-home"></i>
-                <span class="text-xs">صفحه اصلی</span>
+                <span>صفحه اصلی</span>
             </a>
             
             <a href="{{ route('products.index') }}" 
@@ -311,7 +311,7 @@
                         <span>ویرایش پروفایل</span>
                     </a>
                     
-                    <form method="POST" action="{{ route('logout') }}">
+                    <form method="POST" action="{{ route('auth.logout') }}"> {{-- Updated route --}}
                         @csrf
                         <button type="submit" class="mobile-nav-link w-full text-right text-red-300 hover:bg-red-800/20">
                             <i class="fas fa-sign-out-alt"></i>
@@ -321,12 +321,12 @@
                 </div>
             @else
                 <div class="space-y-2">
-                    <a href="{{ route('login') }}" class="mobile-nav-link">
+                    <a href="{{ route('auth.mobile-login-form') }}" class="mobile-nav-link"> {{-- Updated route --}}
                         <i class="fas fa-sign-in-alt"></i>
                         <span>ورود به حساب</span>
                     </a>
                     
-                    <a href="{{ route('register') }}" class="mobile-nav-link">
+                    <a href="{{ route('auth.mobile-login-form') }}" class="mobile-nav-link"> {{-- Updated route, assuming mobile-login-form handles registration --}}
                         <i class="fas fa-user-plus"></i>
                         <span>ثبت‌نام</span>
                     </a>
