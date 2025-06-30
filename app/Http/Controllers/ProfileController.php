@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
 use App\Models\User; // مطمئن شوید مدل User ایمپورت شده است
+use Illuminate\Support\Facades\Hash; // اضافه کردن Hash برای هش کردن رمز عبور
+use Illuminate\Validation\Rules\Password; // اضافه کردن Password Rule
 
 class ProfileController extends Controller
 {
@@ -37,6 +39,28 @@ class ProfileController extends Controller
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
+
+    /**
+     * Update the user's password.
+     * به روز رسانی رمز عبور کاربر.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updatePassword(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', Password::defaults(), 'confirmed'],
+        ]);
+
+        $request->user()->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return Redirect::route('profile.edit')->with('status', 'password-updated');
+    }
+
 
     /**
      * Delete the user's account.

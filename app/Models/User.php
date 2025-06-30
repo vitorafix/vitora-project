@@ -5,7 +5,9 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
+use Illuminate\Notifications\Notifiable; // تصحیح شده: استفاده از بک‌اسلش (\) به جای فلش (->)
+use App\Models\Order; // اطمینان از ایمپورت مدل Order
+use App\Models\Address; // اضافه شده: ایمپورت مدل Address
 
 class User extends Authenticatable
 {
@@ -51,5 +53,23 @@ class User extends Authenticatable
             'password' => 'hashed',
             'profile_completed' => 'boolean', // اضافه شده: برای تبدیل خودکار به Boolean
         ];
+    }
+
+    /**
+     * Get the orders for the user.
+     * دریافت سفارشات مربوط به این کاربر.
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    /**
+     * Get the addresses for the user.
+     * دریافت آدرس‌های مربوط به این کاربر.
+     */
+    public function addresses()
+    {
+        return $this->hasMany(Address::class);
     }
 }

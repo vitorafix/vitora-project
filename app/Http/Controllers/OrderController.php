@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log; // برای لاگ کردن خطاها
+use Illuminate\View\View; // اضافه کردن ایمپورت View برای بازگشت مناسب متد
+use Illuminate\Http\RedirectResponse; // اضافه کردن ایمپورت RedirectResponse
 
 class OrderController extends Controller
 {
@@ -34,27 +36,44 @@ class OrderController extends Controller
     }
 
     /**
-     * Display the checkout page with cart contents.
-     * صفحه تسویه حساب را با محتویات سبد خرید نمایش می‌دهد.
+     * Display the checkout page with cart contents OR Display user's orders.
+     * این متد حالا برای دو منظور استفاده می‌شود: نمایش صفحه تسویه حساب (checkout.index) و نمایش سفارشات کاربر (profile.orders.index).
      *
+     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
-    public function index()
+    public function index(Request $request): View|RedirectResponse
     {
-        $cart = $this->getOrCreateCart();
-        // اطمینان از eager loading محصول برای جلوگیری از N+1 problem در view
-        $cartItems = $cart->items()->with('product')->get();
+        // تشخیص اینکه این درخواست از کدام route name آمده است
+        $routeName = $request->route()->getName();
 
-        // اگر سبد خرید خالی است، به صفحه سبد خرید یا محصولات هدایت کنید
-        if ($cartItems->isEmpty()) {
-            return redirect()->route('cart.index')->with('error', 'سبد خرید شما خالی است و نمی‌توانید سفارش ثبت کنید.');
+        if ($routeName === 'checkout.index') {
+            // منطق برای نمایش صفحه تسویه حساب (checkout)
+            $cart = $this->getOrCreateCart();
+            $cartItems = $cart->items()->with('product')->get();
+
+            if ($cartItems->isEmpty()) {
+                return redirect()->route('cart.index')->with('error', 'سبد خرید شما خالی است و نمی‌توانید سفارش ثبت کنید.');
+            }
+            return view('checkout', compact('cartItems', 'cart'));
+        } elseif ($routeName === 'profile.orders.index') {
+            // منطق برای نمایش لیست سفارشات کاربر در داشبورد
+            if (!Auth::check()) {
+                return redirect()->route('auth.mobile-login-form')->with('error', 'برای مشاهده سفارشات خود، ابتدا وارد شوید.');
+            }
+
+            $user = Auth::user();
+            // واکشی سفارشات کاربر با آیتم‌ها و محصولات مرتبط (order items and their products)
+            // از orderBy برای نمایش جدیدترین سفارشات در ابتدا استفاده شده است.
+            $orders = $user->orders()->with('items.product')->orderBy('created_at', 'desc')->get(); 
+
+            return view('profile.orders', compact('orders'));
         }
 
-        // اگر کاربر لاگین نکرده است، به صفحه لاگین/ثبت نام هدایت کنید (اختیاری، بستگی به سیاست فروشگاه)
-        // در این پروژه، فعلاً اجازه می‌دهیم مهمان‌ها نیز تسویه حساب کنند.
-
-        return view('checkout', compact('cartItems', 'cart')); // ارسال $cart به ویو برای دسترسی به متدهایی مانند getTotalPrice
+        // اگر route name نامشخص بود، به صفحه اصلی هدایت کنید یا خطای 404 بدهید.
+        return redirect()->route('home')->with('error', 'مسیر نامعتبر.');
     }
+
 
     /**
      * Process placing an order from the cart.

@@ -42,14 +42,14 @@
 
                     <!-- Orders Link -->
                     <a href="{{ route('profile.orders.index') }}" 
-                       class="flex items-center px-4 py-2 text-md font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150 ease-in-out {{ request()->routeIs('profile.orders.index') ? 'text-green-700 bg-green-50 dark:bg-green-900/30 dark:text-green-300' : '' }}">
+                       class="flex items-center px-4 py-2 text-md font-medium rounded-lg text-green-700 bg-green-50 dark:bg-green-900/30 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-700 transition duration-150 ease-in-out {{ request()->routeIs('profile.orders.index') ? 'text-green-700 bg-green-50 dark:bg-green-900/30 dark:text-green-300' : '' }}">
                         <i class="fas fa-box-open ml-3 text-amber-500"></i>
                         <span>{{ __('سفارش‌ها') }}</span>
                     </a>
 
                     <!-- Addresses Link -->
-                    <a href="{{ route('profile.addresses.index') }}" {{-- اطمینان حاصل کنید این لینک صحیح است --}}
-                       class="flex items-center px-4 py-2 text-md font-medium rounded-lg text-green-700 bg-green-50 dark:bg-green-900/30 dark:text-green-300 hover:bg-green-100 dark:hover:bg-gray-700 transition duration-150 ease-in-out {{ request()->routeIs('profile.addresses.index') || request()->routeIs('profile.addresses.create') || request()->routeIs('profile.addresses.edit') ? 'text-green-700 bg-green-50 dark:bg-green-900/30 dark:text-green-300' : '' }}">
+                    <a href="#" 
+                       class="flex items-center px-4 py-2 text-md font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150 ease-in-out">
                         <i class="fas fa-map-marker-alt ml-3 text-blue-500"></i>
                         <span>{{ __('آدرس‌ها') }}</span>
                     </a>
@@ -113,15 +113,91 @@
         <div class="flex-1 p-6 lg:p-8">
             <div class="bg-white dark:bg-gray-800 shadow-xl rounded-lg border border-gray-200 dark:border-gray-700 p-6 sm:p-8">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                    {{ __('خلاصه فعالیت‌ها') }}
+                    {{ __('سفارش‌های من') }}
                 </h3>
-                <p class="text-gray-700 dark:text-gray-300">
-                    {{ __('به داشبورد خود خوش آمدید،') }} {{ Auth::user()->name }}!
-                </p>
-                <p class="mt-2 text-gray-600 dark:text-gray-400">
-                    {{ __('در اینجا می‌توانید خلاصه فعالیت‌های خود، سفارش‌های اخیر و اعلان‌ها را مشاهده کنید.') }}
-                </p>
-                <!-- Add more dashboard widgets/content here -->
+
+                @if ($orders->isEmpty())
+                    <div class="text-center py-10">
+                        <i class="fas fa-box-open text-gray-400 text-6xl mb-4"></i>
+                        <p class="text-lg text-gray-600 dark:text-gray-400">{{ __('شما هنوز سفارشی ثبت نکرده‌اید.') }}</p>
+                        <a href="{{ route('products.index') }}" 
+                           class="mt-6 inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300">
+                            {{ __('شروع به خرید کنید') }}
+                            <i class="fas fa-chevron-left mr-2"></i>
+                        </a>
+                    </div>
+                @else
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider rounded-r-lg">
+                                        {{ __('کد سفارش') }}
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        {{ __('تاریخ') }}
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        {{ __('وضعیت') }}
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        {{ __('مبلغ کل') }}
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider rounded-l-lg">
+                                        {{ __('جزئیات') }}
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                @foreach ($orders as $order)
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                            #{{ $order->id }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                                            {{ $order->created_at->format('Y/m/d H:i') }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                            @php
+                                                $statusClass = '';
+                                                switch ($order->status) {
+                                                    case 'pending':
+                                                        $statusClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+                                                        break;
+                                                    case 'processing':
+                                                        $statusClass = 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+                                                        break;
+                                                    case 'completed':
+                                                        $statusClass = 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+                                                        break;
+                                                    case 'cancelled':
+                                                        $statusClass = 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+                                                        break;
+                                                    default:
+                                                        $statusClass = 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+                                                }
+                                            @endphp
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusClass }}">
+                                                {{ __($order->status) }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                                            {{ number_format($order->total_amount) }} {{ __('تومان') }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <a href="{{ route('orders.confirmation', $order->id) }}" 
+                                               class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-200 transition-colors duration-150">
+                                                {{ __('مشاهده') }}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {{-- Optional: Show order items when row is clicked or always expanded --}}
+                                    {{-- For simplicity, keeping it collapsed for now. Can expand with Alpine.js --}}
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
