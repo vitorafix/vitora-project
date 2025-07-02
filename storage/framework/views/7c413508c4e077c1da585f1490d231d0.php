@@ -1,109 +1,223 @@
-<x-app-layout>
+<?php if (isset($component)) { $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54 = $attributes; } ?>
+<?php $component = App\View\Components\AppLayout::resolve([] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('app-layout'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\App\View\Components\AppLayout::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes([]); ?>
     <div class="py-12 bg-gray-100 dark:bg-gray-900 min-h-screen flex items-center justify-center">
         <div class="w-full max-w-2xl bg-white dark:bg-gray-800 shadow-xl rounded-lg p-6 sm:p-8 border border-gray-200 dark:border-gray-700" dir="rtl">
             <!-- Header Section -->
             <div class="text-center mb-8">
                 <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-2">
-                    {{ isset($address) ? __('ویرایش آدرس') : __('افزودن آدرس جدید') }}
+                    <?php echo e(isset($address) ? __('ویرایش آدرس') : __('افزودن آدرس جدید')); ?>
+
                 </h1>
                 <p class="text-md text-gray-600 dark:text-gray-400">
-                    {{ isset($address) ? __('اطلاعات آدرس خود را به‌روزرسانی کنید.') : __('اطلاعات آدرس جدید را وارد کنید.') }}
+                    <?php echo e(isset($address) ? __('اطلاعات آدرس خود را به‌روزرسانی کنید.') : __('اطلاعات آدرس جدید را وارد کنید.')); ?>
+
                 </p>
             </div>
 
             <!-- Session Status Message -->
-            @if (session('status'))
+            <?php if(session('status')): ?>
                 <div class="mb-4 font-medium text-sm text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/20 p-3 rounded-lg flex items-center">
                     <i class="fas fa-check-circle ml-2"></i>
-                    {{ session('status') }}
+                    <?php echo e(session('status')); ?>
+
                 </div>
-            @endif
+            <?php endif; ?>
 
             <!-- Form Section -->
-            <form method="POST" action="{{ isset($address) ? route('profile.addresses.update', $address->id) : route('profile.addresses.store') }}" class="space-y-6">
-                @csrf
-                @if (isset($address))
-                    @method('PUT') {{-- برای متد PUT در ویرایش --}}
-                @endif
+            <form method="POST" action="<?php echo e(isset($address) ? route('profile.addresses.update', $address->id) : route('profile.addresses.store')); ?>" class="space-y-6">
+                <?php echo csrf_field(); ?>
+                <?php if(isset($address)): ?>
+                    <?php echo method_field('PUT'); ?> 
+                <?php endif; ?>
 
                 <!-- Title Field -->
                 <div>
                     <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        {{ __('عنوان آدرس (مثال: خانه، محل کار)') }}
+                        <?php echo e(__('عنوان آدرس (مثال: خانه، محل کار)')); ?>
+
                     </label>
                     <input id="title" 
                            class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400" 
                            type="text" 
                            name="title" 
-                           value="{{ old('title', $address->title ?? '') }}" 
+                           value="<?php echo e(old('title', $address->title ?? '')); ?>" 
                            placeholder="نامی برای آدرس خود انتخاب کنید">
-                    <x-input-error :messages="$errors->get('title')" class="mt-2 text-sm" />
+                    <?php if (isset($component)) { $__componentOriginalf94ed9c5393ef72725d159fe01139746 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalf94ed9c5393ef72725d159fe01139746 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.input-error','data' => ['messages' => $errors->get('title'),'class' => 'mt-2 text-sm']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('input-error'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['messages' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($errors->get('title')),'class' => 'mt-2 text-sm']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalf94ed9c5393ef72725d159fe01139746)): ?>
+<?php $attributes = $__attributesOriginalf94ed9c5393ef72725d159fe01139746; ?>
+<?php unset($__attributesOriginalf94ed9c5393ef72725d159fe01139746); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalf94ed9c5393ef72725d159fe01139746)): ?>
+<?php $component = $__componentOriginalf94ed9c5393ef72725d159fe01139746; ?>
+<?php unset($__componentOriginalf94ed9c5393ef72725d159fe01139746); ?>
+<?php endif; ?>
                 </div>
 
                 <!-- Province & City Fields -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label for="province" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            {{ __('استان') }}
+                            <?php echo e(__('استان')); ?>
+
                         </label>
                         <select id="province" 
                                 name="province" 
                                 class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base appearance-none" 
                                 required>
-                            {{-- Changed selected logic for initial load --}}
-                            <option value="" disabled {{ old('province', $address->province ?? '') ? '' : 'selected' }}>
-                                {{ __('انتخاب استان') }}
+                            
+                            <option value="" disabled <?php echo e(old('province', $address->province ?? '') ? '' : 'selected'); ?>>
+                                <?php echo e(__('انتخاب استان')); ?>
+
                             </option>
-                            {{-- Provinces will be populated dynamically by JavaScript --}}
+                            
                         </select>
-                        <x-input-error :messages="$errors->get('province')" class="mt-2 text-sm" />
+                        <?php if (isset($component)) { $__componentOriginalf94ed9c5393ef72725d159fe01139746 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalf94ed9c5393ef72725d159fe01139746 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.input-error','data' => ['messages' => $errors->get('province'),'class' => 'mt-2 text-sm']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('input-error'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['messages' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($errors->get('province')),'class' => 'mt-2 text-sm']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalf94ed9c5393ef72725d159fe01139746)): ?>
+<?php $attributes = $__attributesOriginalf94ed9c5393ef72725d159fe01139746; ?>
+<?php unset($__attributesOriginalf94ed9c5393ef72725d159fe01139746); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalf94ed9c5393ef72725d159fe01139746)): ?>
+<?php $component = $__componentOriginalf94ed9c5393ef72725d159fe01139746; ?>
+<?php unset($__componentOriginalf94ed9c5393ef72725d159fe01139746); ?>
+<?php endif; ?>
                     </div>
                     <div>
                         <label for="city" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            {{ __('شهر') }}
+                            <?php echo e(__('شهر')); ?>
+
                         </label>
                         <select id="city" 
                                 name="city" 
                                 class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base appearance-none" 
                                 required>
-                            {{-- Changed selected logic for initial load --}}
-                            <option value="" disabled {{ old('city', $address->city ?? '') ? '' : 'selected' }}>
-                                {{ __('انتخاب شهر') }}
+                            
+                            <option value="" disabled <?php echo e(old('city', $address->city ?? '') ? '' : 'selected'); ?>>
+                                <?php echo e(__('انتخاب شهر')); ?>
+
                             </option>
-                            {{-- Cities will be populated dynamically by JavaScript --}}
+                            
                         </select>
-                        <x-input-error :messages="$errors->get('city')" class="mt-2 text-sm" />
+                        <?php if (isset($component)) { $__componentOriginalf94ed9c5393ef72725d159fe01139746 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalf94ed9c5393ef72725d159fe01139746 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.input-error','data' => ['messages' => $errors->get('city'),'class' => 'mt-2 text-sm']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('input-error'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['messages' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($errors->get('city')),'class' => 'mt-2 text-sm']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalf94ed9c5393ef72725d159fe01139746)): ?>
+<?php $attributes = $__attributesOriginalf94ed9c5393ef72725d159fe01139746; ?>
+<?php unset($__attributesOriginalf94ed9c5393ef72725d159fe01139746); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalf94ed9c5393ef72725d159fe01139746)): ?>
+<?php $component = $__componentOriginalf94ed9c5393ef72725d159fe01139746; ?>
+<?php unset($__componentOriginalf94ed9c5393ef72725d159fe01139746); ?>
+<?php endif; ?>
                     </div>
                 </div>
 
                 <!-- Address Field -->
                 <div>
                     <label for="address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        {{ __('نشانی دقیق') }}
+                        <?php echo e(__('نشانی دقیق')); ?>
+
                     </label>
                     <textarea id="address" 
                               class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400 resize-y" 
                               name="address" 
                               rows="3" 
-                              placeholder="خیابان، کوچه، پلاک، واحد...">{{ old('address', $address->address ?? '') }}</textarea>
-                    <x-input-error :messages="$errors->get('address')" class="mt-2 text-sm" />
+                              placeholder="خیابان، کوچه، پلاک، واحد..."><?php echo e(old('address', $address->address ?? '')); ?></textarea>
+                    <?php if (isset($component)) { $__componentOriginalf94ed9c5393ef72725d159fe01139746 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalf94ed9c5393ef72725d159fe01139746 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.input-error','data' => ['messages' => $errors->get('address'),'class' => 'mt-2 text-sm']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('input-error'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['messages' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($errors->get('address')),'class' => 'mt-2 text-sm']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalf94ed9c5393ef72725d159fe01139746)): ?>
+<?php $attributes = $__attributesOriginalf94ed9c5393ef72725d159fe01139746; ?>
+<?php unset($__attributesOriginalf94ed9c5393ef72725d159fe01139746); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalf94ed9c5393ef72725d159fe01139746)): ?>
+<?php $component = $__componentOriginalf94ed9c5393ef72725d159fe01139746; ?>
+<?php unset($__componentOriginalf94ed9c5393ef72725d159fe01139746); ?>
+<?php endif; ?>
                 </div>
 
                 <!-- Postal Code Field -->
                 <div>
                     <label for="postal_code" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        {{ __('کد پستی ۱۰ رقمی') }}
+                        <?php echo e(__('کد پستی ۱۰ رقمی')); ?>
+
                     </label>
                     <input id="postal_code" 
                            class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400" 
                            type="text" 
                            name="postal_code" 
-                           value="{{ old('postal_code', $address->postal_code ?? '') }}" 
+                           value="<?php echo e(old('postal_code', $address->postal_code ?? '')); ?>" 
                            placeholder="1234567890"
                            maxlength="10"
                            pattern="[0-9]{10}">
-                    <span class='help-block text-xs text-gray-500 dark:text-gray-400 mt-1 block'>{{ __('کیبورد را در حالت انگلیسی قرار دهید') }}</span>
-                    <x-input-error :messages="$errors->get('postal_code')" class="mt-2 text-sm" />
+                    <span class='help-block text-xs text-gray-500 dark:text-gray-400 mt-1 block'><?php echo e(__('کیبورد را در حالت انگلیسی قرار دهید')); ?></span>
+                    <?php if (isset($component)) { $__componentOriginalf94ed9c5393ef72725d159fe01139746 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalf94ed9c5393ef72725d159fe01139746 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.input-error','data' => ['messages' => $errors->get('postal_code'),'class' => 'mt-2 text-sm']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('input-error'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['messages' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($errors->get('postal_code')),'class' => 'mt-2 text-sm']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalf94ed9c5393ef72725d159fe01139746)): ?>
+<?php $attributes = $__attributesOriginalf94ed9c5393ef72725d159fe01139746; ?>
+<?php unset($__attributesOriginalf94ed9c5393ef72725d159fe01139746); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalf94ed9c5393ef72725d159fe01139746)): ?>
+<?php $component = $__componentOriginalf94ed9c5393ef72725d159fe01139746; ?>
+<?php unset($__componentOriginalf94ed9c5393ef72725d159fe01139746); ?>
+<?php endif; ?>
                 </div>
 
                 <!-- Is Default Checkbox -->
@@ -114,19 +228,21 @@
                                name="is_default" 
                                value="1" 
                                class="rounded border-gray-300 text-green-600 shadow-sm focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600" 
-                               {{ old('is_default', $address->is_default ?? false) ? 'checked' : '' }}>
-                        <span class="ms-2 text-sm text-gray-700 dark:text-gray-300">{{ __('این آدرس پیش‌فرض من است') }}</span>
+                               <?php echo e(old('is_default', $address->is_default ?? false) ? 'checked' : ''); ?>>
+                        <span class="ms-2 text-sm text-gray-700 dark:text-gray-300"><?php echo e(__('این آدرس پیش‌فرض من است')); ?></span>
                     </label>
                 </div>
 
                 <div class="flex items-center justify-end mt-6">
-                    <a href="{{ route('profile.addresses.index') }}" 
+                    <a href="<?php echo e(route('profile.addresses.index')); ?>" 
                        class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg shadow-sm transition-all duration-200 ease-in-out ml-3">
-                        {{ __('انصراف') }}
+                        <?php echo e(__('انصراف')); ?>
+
                     </a>
                     <button type="submit" 
                             class="inline-flex items-center justify-center px-6 py-3 text-lg font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 ease-in-out min-w-[150px]">
-                        {{ isset($address) ? __('به‌روزرسانی آدرس') : __('ذخیره آدرس') }}
+                        <?php echo e(isset($address) ? __('به‌روزرسانی آدرس') : __('ذخیره آدرس')); ?>
+
                         <i class="fas fa-check-circle mr-2"></i>
                     </button>
                 </div>
@@ -368,10 +484,10 @@
                 // Add the default "Select Province" option
                 const defaultProvinceOption = document.createElement('option');
                 defaultProvinceOption.value = "";
-                defaultProvinceOption.textContent = "{{ __('انتخاب استان') }}";
+                defaultProvinceOption.textContent = "<?php echo e(__('انتخاب استان')); ?>";
                 defaultProvinceOption.disabled = true;
                 // Set 'selected' based on old value or if no old value exists
-                defaultProvinceOption.selected = !("{{ old('province', $address->province ?? '') }}");
+                defaultProvinceOption.selected = !("<?php echo e(old('province', $address->province ?? '')); ?>");
                 provinceSelect.appendChild(defaultProvinceOption);
 
                 provincesAndCitiesData.forEach(data => {
@@ -392,10 +508,10 @@
                 // Add the default "Select City" option
                 const defaultCityOption = document.createElement('option');
                 defaultCityOption.value = "";
-                defaultCityOption.textContent = "{{ __('انتخاب شهر') }}";
+                defaultCityOption.textContent = "<?php echo e(__('انتخاب شهر')); ?>";
                 defaultCityOption.disabled = true;
                 // Set 'selected' based on old value or if no old value exists
-                defaultCityOption.selected = !("{{ old('city', $address->city ?? '') }}");
+                defaultCityOption.selected = !("<?php echo e(old('city', $address->city ?? '')); ?>");
                 citySelect.appendChild(defaultCityOption);
 
                 cities.forEach(city => {
@@ -406,7 +522,7 @@
                 });
 
                 // Set old city value if it exists and is in the current province's cities
-                const oldCity = "{{ old('city', $address->city ?? '') }}";
+                const oldCity = "<?php echo e(old('city', $address->city ?? '')); ?>";
                 if (oldCity && cities.includes(oldCity)) {
                     citySelect.value = oldCity;
                 } else {
@@ -424,7 +540,7 @@
             populateProvinces();
 
             // Set old province value if it exists
-            const oldProvince = "{{ old('province', $address->province ?? '') }}";
+            const oldProvince = "<?php echo e(old('province', $address->province ?? '')); ?>";
             if (oldProvince) {
                 provinceSelect.value = oldProvince;
                 updateCities(); // Also update cities if an old province is set
@@ -434,4 +550,14 @@
             provinceSelect.addEventListener('change', updateCities);
         });
     </script>
-</x-app-layout>
+ <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
+<?php $attributes = $__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
+<?php unset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
+<?php $component = $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
+<?php unset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
+<?php endif; ?>
+<?php /**PATH C:\xampp\htdocs\myshop\resources\views/profile/address-create-edit.blade.php ENDPATH**/ ?>

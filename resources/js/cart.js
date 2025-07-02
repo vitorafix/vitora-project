@@ -3,6 +3,10 @@
 document.addEventListener('DOMContentLoaded', function() {
     // گرفتن مرجع به عنصر نمایش تعداد آیتم‌های سبد خرید در ناوبری (Mini-Cart)
     const cartItemCountSpan = document.getElementById('cart-item-count');
+    // مرجع به کانتینر جزئیات مینی سبد خرید که هنگام هاور ظاهر می‌شود
+    const miniCartDetailsContainer = document.getElementById('mini-cart-details-container');
+    // مرجع به آیکون یا دکمه مینی سبد خرید که رویداد هاور روی آن اعمال می‌شود
+    const miniCartTrigger = document.getElementById('mini-cart-trigger');
 
     // References to the custom confirmation modal elements
     // مراجع به عناصر مدال تأیید سفارشی
@@ -16,6 +20,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Variable to store the callback function for modal confirmation
     // متغیری برای ذخیره تابع callback برای تأیید مدال
     let confirmCallback = null;
+
+    // متغیر برای نگهداری تایمر هاور (برای جلوگیری از بسته شدن فوری)
+    let miniCartHoverTimer;
+    const HOVER_DELAY = 300; // میلی‌ثانیه تا نمایش جزئیات
+    const HIDE_DELAY = 300; // میلی‌ثانیه تا پنهان کردن جزئیات
 
     /**
      * Displays the mini-cart display (item count in the navigation bar).
@@ -145,6 +154,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
             if (response.ok) {
                 updateMiniCart(data.totalItemsInCart);
+                // همچنین جزئیات مینی‌کارت را پس از هر به‌روزرسانی واکشی کنید
+                // اگر کانتینر جزئیات وجود دارد و موس روی تریگر است، آن را رندر کنید
+                if (miniCartDetailsContainer && miniCartTrigger && miniCartTrigger.matches(':hover')) {
+                    renderMiniCartDetails();
+                }
             } else {
                 console.error('Error fetching mini-cart contents:', data.message);
                 updateMiniCart(0);
@@ -155,6 +169,70 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    /**
+     * Renders the detailed view of the mini-cart in a dropdown.
+     * نمای جزئیات مینی‌کارت را در یک دراپ‌داون رندر می‌کند.
+     */
+    async function renderMiniCartDetails() {
+        if (!miniCartDetailsContainer) return;
+
+        miniCartDetailsContainer.innerHTML = '<div class="p-4 text-center text-gray-600">در حال بارگذاری...</div>';
+        miniCartDetailsContainer.classList.add('active'); // نمایش با اضافه کردن کلاس active
+
+        try {
+            const response = await fetch('/cart/contents', {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' }
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                miniCartDetailsContainer.innerHTML = '<div class="p-4 text-center text-red-500">خطا در بارگذاری سبد خرید.</div>';
+                return;
+            }
+
+            if (data.cartItems.length === 0) {
+                miniCartDetailsContainer.innerHTML = `
+                    <div class="p-4 text-center text-gray-600">
+                        سبد خرید شما خالی است.
+                    </div>
+                `;
+            } else {
+                let itemsHtml = '';
+                data.cartItems.slice(0, 3).forEach(item => { // نمایش حداکثر 3 آیتم
+                    itemsHtml += `
+                        <div class="flex items-center py-2 border-b border-gray-100 last:border-b-0">
+                            <img src="${item.product.image || 'https://placehold.co/50x50/E5E7EB/4B5563?text=Product'}"
+                                 onerror="this.onerror=null;this.src='https://placehold.co/50x50/E5E7EB/4B5563?text=Product';"
+                                 alt="${item.product.title}" class="w-12 h-12 object-cover rounded-md ml-2">
+                            <div class="flex-grow">
+                                <p class="text-sm font-semibold text-gray-800">${item.product.title}</p>
+                                <p class="text-xs text-gray-600">${item.quantity} × ${new Intl.NumberFormat('fa-IR').format(item.price)} تومان</p>
+                            </div>
+                            <span class="text-sm font-bold text-brown-800">${new Intl.NumberFormat('fa-IR').format(item.price * item.quantity)} تومان</span>
+                        </div>
+                    `;
+                });
+
+                miniCartDetailsContainer.innerHTML = `
+                    <div class="p-4">
+                        ${itemsHtml}
+                        <div class="flex justify-between items-center pt-4 mt-2 border-t border-gray-200 mb-4">
+                            <span class="text-base font-bold text-brown-900">جمع کل:</span>
+                            <span class="text-base font-bold text-brown-900">${new Intl.NumberFormat('fa-IR').format(data.totalPrice)} تومان</span>
+                        </div>
+                        <!-- Removed "ادامه جهت تکمیل سفارش" button -->
+                        <a href="/cart" class="btn-secondary w-full text-center mt-4 py-2 text-sm">
+                            مشاهده سبد خرید
+                        </a>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error fetching mini-cart details:', error);
+            miniCartDetailsContainer.innerHTML = '<div class="p-4 text-center text-red-500">خطا در بارگذاری جزئیات سبد خرید.</div>';
+        }
+    }
 
     /**
      * Attaches event listeners to cart quantity buttons, input fields, and remove buttons.
@@ -527,6 +605,36 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Event listeners for mini-cart hover functionality
+    if (miniCartTrigger && miniCartDetailsContainer) {
+        miniCartTrigger.addEventListener('mouseenter', () => {
+            clearTimeout(miniCartHoverTimer);
+            miniCartHoverTimer = setTimeout(() => {
+                renderMiniCartDetails();
+            }, HOVER_DELAY);
+        });
+
+        miniCartTrigger.addEventListener('mouseleave', () => {
+            clearTimeout(miniCartHoverTimer);
+            miniCartHoverTimer = setTimeout(() => {
+                miniCartDetailsContainer.classList.remove('active'); // استفاده از remove('active')
+            }, HIDE_DELAY);
+        });
+
+        // Keep mini-cart details open if mouse enters the details container itself
+        miniCartDetailsContainer.addEventListener('mouseenter', () => {
+            clearTimeout(miniCartHoverTimer);
+        });
+
+        miniCartDetailsContainer.addEventListener('mouseleave', () => {
+            clearTimeout(miniCartHoverTimer);
+            miniCartHoverTimer = setTimeout(() => {
+                miniCartDetailsContainer.classList.remove('active'); // استفاده از remove('active')
+            }, HIDE_DELAY);
+        });
+    }
+
 
     // Initial render of main cart if on cart page, and mini-cart everywhere
     // رندر اولیه سبد خرید اصلی (اگر در صفحه سبد خرید هستیم) و مینی‌کارت (در همه صفحات)

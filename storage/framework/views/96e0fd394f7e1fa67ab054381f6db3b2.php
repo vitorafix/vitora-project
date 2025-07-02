@@ -98,20 +98,23 @@
                     </div>
                 </div>
 
-                <!-- Cart with Counter -->
-                
-                <div class="relative"> 
+                <!-- Cart with Counter and Hover Dropdown -->
+                <div class="relative mini-cart-dropdown"> 
                     <a href="<?php echo e(route('cart.index')); ?>" 
-                       class="nav-link <?php echo e(request()->routeIs('cart.*') ? 'active' : ''); ?> relative">
+                       class="nav-link <?php echo e(request()->routeIs('cart.*') ? 'active' : ''); ?> relative"
+                       id="mini-cart-trigger">
                         <i class="fas fa-shopping-cart ml-2"></i>
                         <span>سبد خرید</span>
                         <!-- Cart Counter Badge -->
-                        
                         <span id="cart-item-count"
                               class="absolute -top-0 -left-0 bg-red-500 text-white text-xs rounded-full min-w-[40px] h-5 flex items-center justify-center font-bold hidden z-10 px-1 leading-none">
                             0
                         </span>
                     </a>
+                    <!-- Mini-Cart Details Container (Hidden by default, shown on hover) -->
+                    <div id="mini-cart-details-container" class="mini-cart-dropdown-content">
+                        <!-- Content will be populated by JavaScript -->
+                    </div>
                 </div>
 
                 <!-- User Menu Dropdown -->
