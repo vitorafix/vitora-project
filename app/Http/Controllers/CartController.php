@@ -6,9 +6,10 @@ use Illuminate\Http\Request;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\DB; // اضافه کردن DB برای تراکنش
+use Illuminate\Support\Facades\DB;
 
 class CartController extends Controller
 {
@@ -39,7 +40,7 @@ class CartController extends Controller
     public function index()
     {
         $cart = $this->getOrCreateCart();
-        // اطمینان از eager loading محصول برای جلوگیری از N+1 problem در view
+        // آیتم‌ها همیشه از دیتابیس بارگذاری می‌شوند، چه کاربر لاگین باشد چه مهمان.
         $cartItems = $cart->items()->with('product')->get();
 
         return view('cart', compact('cartItems'));
@@ -75,38 +76,47 @@ class CartController extends Controller
             return response()->json(['message' => 'موجودی کافی برای این محصول وجود ندارد. موجودی فعلی: ' . $product->stock], 400);
         }
 
-        // 4. دریافت یا ایجاد سبد خرید کاربر
-        $cart = $this->getOrCreateCart();
+        $message = ''; // مقداردهی اولیه
 
-        // 5. افزودن یا به‌روزرسانی آیتم در سبد خرید
-        $cartItem = $cart->items()->where('product_id', $productId)->first();
-
-        if ($cartItem) {
-            // اگر آیتم قبلاً در سبد خرید بود، تعداد آن را افزایش دهید
-            $newQuantity = $cartItem->quantity + $quantity;
-            if ($product->stock < $newQuantity) {
-                return response()->json(['message' => 'موجودی کافی برای افزودن بیشتر این محصول وجود ندارد.'], 400);
-            }
-            $cartItem->quantity = $newQuantity;
-            $cartItem->save();
-            $message = 'تعداد محصول در سبد خرید به‌روزرسانی شد!';
+        if (Auth::check()) {
+            // کاربر لاگین کرده است: آیتم را به سبد خرید دیتابیسی اضافه کنید
+            $user = Auth::user();
+            $message = $this->addItemToDatabaseCart($user, $productId, $quantity, $product);
         } else {
-            // اگر آیتم جدید است، آن را به سبد خرید اضافه کنید
-            CartItem::create([
-                'cart_id' => $cart->id,
-                'product_id' => $productId,
-                'quantity' => $quantity,
-                'price' => $product->price, // بسیار مهم: قیمت را در زمان افزودن ذخیره کنید
-            ]);
-            $message = 'محصول با موفقیت به سبد خرید اضافه شد!';
+            // کاربر مهمان است: آیتم را مستقیماً به دیتابیس اضافه کنید (با استفاده از session_id)
+            $sessionId = Session::getId();
+            $cart = Cart::firstOrCreate(['session_id' => $sessionId]); // دریافت یا ایجاد سبد خرید مهمان در دیتابیس
+
+            $cartItem = CartItem::where('cart_id', $cart->id)
+                                ->where('product_id', $productId)
+                                ->first();
+
+            if ($cartItem) {
+                $newQuantity = $cartItem->quantity + $quantity;
+                if ($product->stock < $newQuantity) {
+                    return response()->json(['message' => 'موجودی کافی برای افزودن بیشتر این محصول وجود ندارد.'], 400);
+                }
+                $cartItem->quantity = $newQuantity;
+                $cartItem->save();
+                $message = 'تعداد محصول در سبد خرید به‌روزرسانی شد!';
+            } else {
+                CartItem::create([
+                    'cart_id' => $cart->id,
+                    'product_id' => $productId,
+                    'quantity' => $quantity,
+                    'price' => $product->price, // قیمت را در زمان افزودن ذخیره کنید
+                ]);
+                $message = 'محصول با موفقیت به سبد خرید شما اضافه شد (مهمان)!';
+            }
         }
 
-        // 6. محاسبه تعداد کل آیتم‌ها در سبد خرید برای به‌روزرسانی رابط کاربری (Mini-Cart)
+        // 6. محاسبه تعداد کل آیتم‌ها در سبد خرید (همیشه از دیتابیس، چون حالا مهمان‌ها هم در دیتابیس هستند)
+        $cart = $this->getOrCreateCart(); // دریافت سبد خرید صحیح (کاربر یا مهمان)
         $totalItemsInCart = $cart->items()->sum('quantity');
 
         return response()->json([
             'message' => $message,
-            'totalItemsInCart' => $totalItemsInCart // اضافه کردن totalItemsInCart به پاسخ
+            'totalItemsInCart' => $totalItemsInCart
         ], 200);
     }
 
@@ -199,7 +209,9 @@ class CartController extends Controller
     public function clear()
     {
         $cart = $this->getOrCreateCart();
-        $cart->items()->delete(); // حذف تمام آیتم‌های سبد خرید
+        $cart->items()->delete(); // حذف تمام آیتم‌های سبد خرید از دیتابیس
+
+        // نیازی به پاک کردن guest_cart_items از سشن نیست، زیرا آیتم‌های مهمان اکنون در دیتابیس ذخیره می‌شوند.
 
         return response()->json([
             'message' => 'سبد خرید با موفقیت خالی شد!',
@@ -216,15 +228,107 @@ class CartController extends Controller
     public function getContents()
     {
         $cart = $this->getOrCreateCart();
-        // اطمینان از eager loading محصول برای ارسال به فرانت‌اند
+        // آیتم‌ها همیشه از دیتابیس بارگذاری می‌شوند، چه کاربر لاگین باشد چه مهمان.
         $cartItems = $cart->items()->with('product')->get();
-        $totalPrice = $cart->getTotalPrice(); // فرض می‌کنیم این متد در مدل Cart وجود دارد
-        $totalItemsInCart = $cart->items->sum('quantity'); // محاسبه تعداد کل آیتم‌ها
+
+        $totalPrice = $cartItems->sum(function($item) {
+            return $item->quantity * $item->price;
+        });
+        $totalItemsInCart = $cartItems->sum('quantity');
 
         return response()->json([
             'cartItems' => $cartItems,
             'totalPrice' => $totalPrice,
             'totalItemsInCart' => $totalItemsInCart
         ], 200);
+    }
+
+    /**
+     * منطق ادغام سبد خرید مهمان با سبد خرید دیتابیسی کاربر.
+     * این متد توسط MobileAuthController پس از لاگین/ثبت‌نام فراخوانی می‌شود.
+     *
+     * @param User $user
+     * @param array $guestItems
+     * @return void
+     */
+    public function mergeGuestCart(User $user, array $guestItems)
+    {
+        // از یک تراکنش (transaction) برای اطمینان از یکپارچگی داده‌ها استفاده کنید.
+        DB::transaction(function () use ($user, $guestItems) {
+            // 1. ابتدا سبد خرید کاربر را پیدا کنید یا اگر وجود ندارد، ایجاد کنید.
+            $cart = Cart::firstOrCreate([
+                'user_id' => $user->id
+            ]);
+
+            foreach ($guestItems as $guestItem) {
+                $productId = $guestItem['product_id'];
+                $quantity = $guestItem['quantity'];
+
+                // 2. بررسی کنید که آیا این محصول از قبل در سبد خرید کاربر (بر اساس cart_id) وجود دارد یا خیر
+                $cartItem = CartItem::where('cart_id', $cart->id)
+                                    ->where('product_id', $productId)
+                                    ->first();
+
+                if ($cartItem) {
+                    // اگر محصول از قبل وجود دارد، فقط تعداد آن را افزایش دهید
+                    $cartItem->quantity += $quantity;
+                    $cartItem->save();
+                } else {
+                    // اگر محصول جدید است، آن را به سبد خرید کاربر اضافه کنید
+                    CartItem::create([
+                        'cart_id' => $cart->id,
+                        'product_id' => $productId,
+                        'quantity' => $quantity,
+                        'price' => $guestItem['price'] ?? Product::find($productId)->price,
+                    ]);
+                }
+            }
+        });
+    }
+
+    /**
+     * متد کمکی برای افزودن آیتم به سبد خرید دیتابیسی (برای کاربران لاگین کرده).
+     *
+     * @param User $user
+     * @param int $productId
+     * @param int $quantity
+     * @param Product $product
+     * @return string
+     */
+    protected function addItemToDatabaseCart(User $user, int $productId, int $quantity, Product $product): string
+    {
+        $message = '';
+        DB::transaction(function () use ($user, $productId, $quantity, $product, &$message) {
+            // 1. ابتدا سبد خرید کاربر را پیدا کنید یا اگر وجود ندارد، ایجاد کنید.
+            $cart = Cart::firstOrCreate([
+                'user_id' => $user->id
+            ]);
+
+            $cartItem = CartItem::where('cart_id', $cart->id)
+                                ->where('product_id', $productId)
+                                ->first();
+
+            if ($cartItem) {
+                // اگر آیتم قبلاً در سبد خرید بود، تعداد آن را افزایش دهید
+                $newQuantity = $cartItem->quantity + $quantity;
+                if ($product->stock < $newQuantity) {
+                    $message = 'موجودی کافی برای افزودن بیشتر این محصول وجود ندارد.';
+                    return;
+                }
+                $cartItem->quantity = $newQuantity;
+                $cartItem->save();
+                $message = 'تعداد محصول در سبد خرید به‌روزرسانی شد!';
+            } else {
+                // اگر آیتم جدید است، آن را به سبد خرید اضافه کنید
+                CartItem::create([
+                    'cart_id' => $cart->id,
+                    'product_id' => $productId,
+                    'quantity' => $quantity,
+                    'price' => $product->price,
+                ]);
+                $message = 'محصول با موفقیت به سبد خرید اضافه شد!';
+            }
+        });
+        return $message;
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Cart; // لازم است اگر در متدهای CartController به طور مستقیم پاس داده شود
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,9 +14,20 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
 use App\Services\MelipayamakSmsService;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Session;
+use App\Services\CartService; // اضافه شد: برای استفاده از سرویس سبد خرید
+use Illuminate\Support\Facades\Log; // اضافه شد: برای لاگ‌گذاری
 
 class MobileAuthController extends Controller
 {
+    // تزریق وابستگی CartService
+    protected $cartService;
+
+    public function __construct(CartService $cartService)
+    {
+        $this->cartService = $cartService;
+    }
+
     /**
      * نمایش فرم ورود فقط با شماره موبایل.
      *
@@ -23,8 +35,6 @@ class MobileAuthController extends Controller
      */
     public function showMobileLoginForm(): View
     {
-        // با توجه به اینکه فایل ویو به 'login.blade.php' تغییر نام داده شده است،
-        // باید به 'auth.login' اشاره کنیم.
         return view('auth.login');
     }
 
@@ -41,6 +51,7 @@ class MobileAuthController extends Controller
         ]);
 
         if ($validator->fails()) {
+            Log::warning('Validation failed for sendOtp', ['errors' => $validator->errors()->toArray()]);
             if ($request->expectsJson()) {
                 return response()->json(['errors' => $validator->errors()], 422);
             }
@@ -48,13 +59,13 @@ class MobileAuthController extends Controller
         }
 
         $mobileNumber = $request->mobile_number;
-        $otp = random_int(100000, 999999); // تولید یک کد 6 رقمی
+        $otp = random_int(100000, 999999);
         $cacheKey = 'otp_' . $mobileNumber;
 
-        // ذخیره OTP در کش به مدت 2 دقیقه
         Cache::put($cacheKey, $otp, now()->addMinutes(2));
+        Log::info('OTP generated and cached', ['mobile' => $mobileNumber, 'otp' => $otp]);
 
-        // استفاده از سرویس MelipayamakSmsService برای ارسال پیامک
+
         $smsService = new MelipayamakSmsService();
         $patternCode = config('services.melipayamak.pattern_code');
 
@@ -64,7 +75,9 @@ class MobileAuthController extends Controller
             } else {
                 $smsService->send($mobileNumber, "کد تایید شما: " . $otp . "\nفروشگاه چای");
             }
+            Log::info('OTP SMS sent successfully', ['mobile' => $mobileNumber]);
         } catch (\Exception $e) {
+            Log::error('Error sending OTP SMS', ['mobile' => $mobileNumber, 'error' => $e->getMessage()]);
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'خطا در ارسال کد تایید. لطفاً دوباره تلاش کنید.'], 500);
             }
@@ -75,7 +88,6 @@ class MobileAuthController extends Controller
             return response()->json(['message' => 'کد تایید به شماره شما ارسال شد.'], 200);
         }
 
-        // ذخیره شماره موبایل در سشن برای استفاده در صفحه تایید OTP
         $request->session()->put('mobile_number_for_otp', $mobileNumber);
         return redirect()->route('auth.verify-otp-form')->with('status', 'کد تایید به شماره شما ارسال شد.');
     }
@@ -88,10 +100,9 @@ class MobileAuthController extends Controller
      */
     public function showVerifyOtpForm(Request $request): View|RedirectResponse
     {
-        // شماره موبایل را از سشن دریافت می‌کنیم، نه از درخواست مستقیم
         $mobileNumber = $request->session()->get('mobile_number_for_otp');
         if (!$mobileNumber) {
-            // اگر شماره موبایل در سشن نبود، کاربر را به صفحه ورود هدایت می‌کنیم
+            Log::warning('Attempt to access verifyOtpForm without mobile number in session.');
             return redirect()->route('auth.mobile-login-form')->withErrors(['mobile_number' => 'ابتدا شماره موبایل خود را وارد کنید.']);
         }
         return view('auth.verify-otp', compact('mobileNumber'));
@@ -112,6 +123,7 @@ class MobileAuthController extends Controller
         ]);
 
         if ($validator->fails()) {
+            Log::warning('Validation failed for verifyOtp', ['errors' => $validator->errors()->toArray()]);
             if ($request->expectsJson()) {
                 return response()->json(['errors' => $validator->errors()], 422);
             }
@@ -125,6 +137,7 @@ class MobileAuthController extends Controller
         $storedOtp = Cache::get($cacheKey);
 
         if (!$storedOtp || $storedOtp != $otp) {
+            Log::warning('Invalid or expired OTP', ['mobile' => $mobileNumber, 'entered_otp' => $otp, 'stored_otp' => $storedOtp]);
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'کد تایید اشتباه یا منقضی شده است.'], 400);
             }
@@ -133,54 +146,57 @@ class MobileAuthController extends Controller
             ]);
         }
 
-        // کد OTP با موفقیت تایید شد، آن را از کش حذف می‌کنیم.
         Cache::forget($cacheKey);
+        Log::info('OTP verified and cleared from cache', ['mobile' => $mobileNumber]);
 
-        // بررسی می‌کنیم که آیا کاربری با این شماره موبایل وجود دارد یا خیر
+        $currentSessionId = Session::getId();
+
         $user = User::where('mobile_number', $mobileNumber)->first();
 
         if ($user) {
-            // کاربر موجود است، او را لاگین می‌کنیم.
             Auth::login($user);
+            Log::info('User logged in successfully', ['user_id' => $user->id, 'mobile' => $mobileNumber]);
+
+            // انتقال سبد خرید مهمان (بر اساس session_id) به سبد خرید کاربر لاگین شده
+            $this->cartService->transferGuestCartToUserCart($currentSessionId, $user);
+            Log::info('Guest cart transferred to existing user', ['user_id' => $user->id, 'session_id' => $currentSessionId]);
+
 
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'ورود با موفقیت انجام شد.', 'user' => $user], 200);
             }
 
-            // کاربر را به مسیر اصلی یا مقصد قبلی هدایت می‌کنیم.
             return redirect()->intended('/')->with('status', 'ورود با موفقیت انجام شد.');
 
         } else {
-            // کاربر جدید است.
-            // تلاش می‌کنیم اطلاعات ثبت‌نام موقت را از کش بازیابی کنیم.
             $registrationData = Cache::get('pending_registration_' . $mobileNumber);
 
             if ($registrationData) {
-                // اطلاعات ثبت‌نام در کش موجود است، کاربر را ایجاد می‌کنیم.
                 $user = User::create([
                     'name' => $registrationData['name'],
                     'lastname' => $registrationData['lastname'],
                     'mobile_number' => $registrationData['mobile_number'],
-                    // 'email' => $registrationData['email'], // اگر ایمیل را در ثبت‌نام دریافت می‌کنید
-                    'profile_completed' => false, // تغییر: پروفایل را در این مرحله "کامل نشده" در نظر می‌گیریم
+                    'profile_completed' => false,
                 ]);
+                Log::info('New user registered successfully', ['user_id' => $user->id, 'mobile' => $mobileNumber]);
 
-                // پس از ایجاد کاربر، اطلاعات موقت را از کش حذف می‌کنیم.
                 Cache::forget('pending_registration_' . $mobileNumber);
 
-                // کاربر را لاگین می‌کنیم.
                 Auth::login($user);
+
+                // انتقال سبد خرید مهمان (بر اساس session_id) به کاربر جدید
+                $this->cartService->assignGuestCartToNewUser($currentSessionId, $user);
+                Log::info('Guest cart assigned to new user', ['user_id' => $user->id, 'session_id' => $currentSessionId]);
+
 
                 if ($request->expectsJson()) {
                     return response()->json(['message' => 'ثبت‌نام و ورود با موفقیت انجام شد.', 'user' => $user], 200);
                 }
-                // کاربر را به صفحه اصلی هدایت می‌کنیم، اما میدل‌ور بعداً تکمیل پروفایل را چک می‌کند.
                 return redirect()->intended('/')->with('status', 'ثبت‌نام و ورود با موفقیت انجام شد.');
 
             } else {
-                // اگر شماره موبایل جدید است و اطلاعات ثبت‌نام موقت در کش نیست (مثلاً OTP از طریق فرم ورود ارسال شده)،
-                // به صفحه ورود با موبایل برمی‌گردیم و پیام مناسب را نمایش می‌دهیم.
-                $request->session()->flash('user_not_found_mobile', $mobileNumber); // Flash mobile number
+                Log::warning('User not found and no pending registration data', ['mobile' => $mobileNumber]);
+                $request->session()->flash('user_not_found_mobile', $mobileNumber);
                 if ($request->expectsJson()) {
                     return response()->json(['message' => 'کاربری با این شماره یافت نشد. لطفاً ثبت‌نام کنید.'], 404);
                 }
@@ -198,9 +214,9 @@ class MobileAuthController extends Controller
     public function logout(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();
+        Log::info('User logged out', ['user_id' => Auth::id()]);
 
         $request->session()->invalidate();
-
         $request->session()->regenerateToken();
 
         return redirect('/');
