@@ -13,22 +13,24 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
+            $table->id(); // کلید اصلی (Primary Key) خودکار افزایشی
+            $table->string('name')->nullable(); // نام (اختیاری در زمان ثبت‌نام اولیه)
+            $table->string('lastname')->nullable(); // نام خانوادگی (اختیاری در زمان ثبت‌نام اولیه)
+
+            // شماره موبایل: یکتا و اجباری برای ورود با OTP
+            // اگر کاربر فقط با موبایل وارد می‌شود، این فیلد نباید null باشد.
+            $table->string('mobile_number')->unique();
+
+            $table->string('email')->nullable()->unique(); // ایمیل (یکتا و اختیاری)
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            // $table->string('password'); // حذف شد: احراز هویت با OTP است
             $table->rememberToken();
             
-            // فیلدهای جدید برای اطلاعات پروفایل کاربر
-            $table->string('mobile_number')->unique()->nullable(); // شماره موبایل (یکتا و اختیاری)
-            $table->text('address')->nullable(); // آدرس کامل (اختیاری)
-            $table->string('city')->nullable(); // شهر (اختیاری)
-            $table->string('province')->nullable(); // استان (اختیاری)
-            $table->string('postal_code')->nullable(); // کد پستی (اختیاری)
-            $table->boolean('profile_completed')->default(false); // وضعیت تکمیل پروفایل (پیش‌فرض: false)
+            // وضعیت تکمیل پروفایل (پیش‌فرض: false)
+            // این فیلد نشان می‌دهد که آیا کاربر اطلاعات تکمیلی پروفایل خود را وارد کرده است یا خیر.
+            $table->boolean('profile_completed')->default(false); 
 
-            $table->timestamps();
+            $table->timestamps(); // ستون‌های created_at و updated_at
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

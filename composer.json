@@ -7,15 +7,17 @@
   "license": "MIT",
   "require": {
     "php": "^8.2",
-    "laravel/framework": "^12.0",
-    "laravel/tinker": "^2.10.1"
+    "laravel/framework": "^11.0",
+    "laravel/tinker": "^2.3"
   },
   "require-dev": {
+    "barryvdh/laravel-debugbar": "^3.14",
     "fakerphp/faker": "^1.23",
     "laravel/breeze": "^2.3",
     "laravel/pail": "^1.2.2",
     "laravel/pint": "^1.13",
     "laravel/sail": "^1.41",
+    "laravel/telescope": "^5.4",
     "mockery/mockery": "^1.6",
     "nunomaduro/collision": "^8.6",
     "phpstan/phpstan": "^2.1",
@@ -37,7 +39,7 @@
   },
   "scripts": {
     "post-autoload-dump": [
-      "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+      "Illuminate\\\\Foundation\\\\ComposerScripts::postAutoloadDump",
       "@php artisan package:discover --ansi"
     ],
     "post-update-cmd": [
@@ -52,7 +54,7 @@
       "@php artisan migrate --graceful --ansi"
     ],
     "dev": [
-      "Composer\\Config::disableProcessTimeout",
+      "Composer\\\\Config::disableProcessTimeout",
       "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite"
     ],
     "test": [
@@ -75,7 +77,7 @@
       "php-http/discovery": true
     }
   },
-  "minimum-stability": "stable",
+  "minimum-stability": "dev",
   "prefer-stable": true,
   "repositories": {
     "packagist": {

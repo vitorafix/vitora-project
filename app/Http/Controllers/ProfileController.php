@@ -2,142 +2,115 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\User;
+use App\Models\Address; // برای ذخیره آدرس‌ها
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
-use App\Models\User; // مطمئن شوید مدل User ایمپورت شده است
-use Illuminate\Support\Facades\Hash; // اضافه کردن Hash برای هش کردن رمز عبور
-use Illuminate\Validation\Rules\Password; // اضافه کردن Password Rule
 
-class ProfileController extends Controller
+class ProfileCompletionController extends Controller
 {
     /**
-     * Display the user's profile form.
-     */
-    public function edit(Request $request): View
-    {
-        return view('profile.edit', [
-            'user' => $request->user(),
-        ]);
-    }
-
-    /**
-     * Update the user's profile information.
-     */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
-    {
-        $request->user()->fill($request->validated());
-
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
-        }
-
-        $request->user()->save();
-
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
-    }
-
-    /**
-     * Update the user's password.
-     * به روز رسانی رمز عبور کاربر.
+     * نمایش فرم تکمیل پروفایل.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function updatePassword(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'current_password' => ['required', 'current_password'],
-            'password' => ['required', Password::defaults(), 'confirmed'],
-        ]);
-
-        $request->user()->update([
-            'password' => Hash::make($validated['password']),
-        ]);
-
-        return Redirect::route('profile.edit')->with('status', 'password-updated');
-    }
-
-
-    /**
-     * Delete the user's account.
-     */
-    public function destroy(Request $request): RedirectResponse
-    {
-        $request->validateWithBag('userDeletion', [
-            'password' => ['required', 'current_password'],
-        ]);
-
-        $user = $request->user();
-
-        Auth::logout();
-
-        $user->delete();
-
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return Redirect::to('/');
-    }
-
-    /**
-     * Display the form for completing user profile information.
-     * نمایش فرم برای تکمیل اطلاعات پروفایل کاربر.
-     *
-     * @param  \Illuminate\Http\Request  $request
+     * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
-    public function completeProfileForm(Request $request): View|RedirectResponse
+    public function showCompletionForm(Request $request): View|RedirectResponse
     {
-        $user = $request->user();
-
-        // اگر پروفایل قبلاً تکمیل شده باشد، به صفحه اصلی هدایت کنید
-        if ($user->profile_completed) {
-            return Redirect::route('home');
+        // اطمینان حاصل می‌کنیم که کاربر لاگین کرده است.
+        if (!Auth::check()) {
+            return redirect()->route('auth.mobile-login-form');
         }
 
-        return view('profile.complete', [
-            'user' => $user,
-        ]);
-    }
+        $user = Auth::user();
 
+        // اگر پروفایل کاربر از قبل کامل شده باشد، او را به صفحه اصلی هدایت می‌کنیم.
+        // این کار از دسترسی مجدد به فرم تکمیل پروفایل جلوگیری می‌کند.
+        if ($user->isProfileCompleted()) {
+            return redirect()->intended('/')->with('status', 'پروفایل شما از قبل کامل است.');
+        }
+
+        // نمایش ویو 'profile.complete' و ارسال آبجکت کاربر به آن.
+        // این فرم برای جمع‌آوری اطلاعات آدرس و تکمیل پروفایل استفاده می‌شود.
+        return view('profile.complete', compact('user'));
+    }
 
     /**
-     * Update the user's profile information, specifically for initial completion.
-     * اطلاعات پروفایل کاربر را، به ویژه برای تکمیل اولیه، به‌روزرسانی می‌کند.
+     * ذخیره اطلاعات تکمیل پروفایل و به‌روزرسانی وضعیت profile_completed.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     * @throws \Illuminate\Validation\ValidationException
      */
-    public function completeProfile(Request $request): RedirectResponse
+    public function storeCompletionForm(Request $request)
     {
-        $user = $request->user();
+        // اطمینان حاصل می‌کنیم که کاربر لاگین کرده است.
+        if (!Auth::check()) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'کاربر احراز هویت نشده است.'], 401);
+            }
+            return redirect()->route('auth.mobile-login-form');
+        }
 
-        // 1. اعتبارسنجی ورودی‌ها
-        $request->validate([
-            'fullName' => ['required', 'string', 'max:255'],
-            // mobileNumber نیاز نیست اینجا آپدیت شود چون برای احراز هویت اولیه استفاده شده
-            'address' => ['required', 'string', 'max:255'],
-            'city' => ['required', 'string', 'max:255'],
+        $user = Auth::user();
+
+        // اگر پروفایل کاربر از قبل کامل شده باشد، نیازی به پردازش مجدد نیست.
+        if ($user->isProfileCompleted()) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'پروفایل شما از قبل کامل است.'], 200);
+            }
+            return redirect()->intended('/')->with('status', 'پروفایل شما از قبل کامل است.');
+        }
+
+        // اعتبارسنجی ورودی‌های فرم تکمیل پروفایل.
+        // فیلدهای آدرس، کد پستی، شماره تلفن (ثابت) و عنوان آدرس اعتبارسنجی می‌شوند.
+        $validator = Validator::make($request->all(), [
             'province' => ['required', 'string', 'max:255'],
-            'postalCode' => ['required', 'string', 'regex:/^[0-9]{10}$/'], // کد پستی 10 رقمی
+            'city' => ['required', 'string', 'max:255'],
+            'address' => ['required', 'string', 'max:1000'],
+            'postal_code' => ['nullable', 'string', 'digits:10'], // کد پستی 10 رقمی و اختیاری
+            'phone_number' => ['nullable', 'string', 'regex:/^0[0-9]{10}$/', 'digits:11'], // تلفن ثابت 11 رقمی (با 0 شروع شود) و اختیاری
+            'title' => ['nullable', 'string', 'max:255'], // عنوان آدرس (مثلاً: خانه، محل کار) و اختیاری
         ]);
 
-        // 2. به‌روزرسانی اطلاعات کاربر
-        $user->name = $request->fullName;
-        // $user->mobile_number = $request->mobileNumber; // این خط را حذف یا کامنت می‌کنیم چون شماره موبایل هنگام ثبت نام اولیه تعیین شده
-        $user->address = $request->address;
-        $user->city = $request->city;
-        $user->province = $request->province;
-        $user->postal_code = $request->postalCode;
-        $user->profile_completed = true; // یک فیلد برای نشان دادن تکمیل پروفایل
+        // در صورت عدم موفقیت در اعتبارسنجی، خطاها را برمی‌گرداند.
+        if ($validator->fails()) {
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+            return back()->withErrors($validator)->withInput();
+        }
 
+        // ذخیره آدرس جدید برای کاربر در جدول 'addresses'.
+        // فرض می‌کنیم در این مرحله، کاربر حداقل یک آدرس را وارد می‌کند.
+        $address = new Address();
+        $address->user_id = $user->id; // ارتباط آدرس با کاربر لاگین شده
+        $address->title = $request->input('title', 'آدرس اصلی'); // اگر عنوان وارد نشود، 'آدرس اصلی' به عنوان پیش‌فرض تنظیم می‌شود.
+        $address->province = $request->province;
+        $address->city = $request->city;
+        $address->address = $request->address;
+        $address->postal_code = $request->postal_code;
+        $address->phone_number = $request->phone_number;
+        $address->is_default = true; // اولین آدرس وارد شده به عنوان آدرس پیش‌فرض تنظیم می‌شود.
+        $address->save();
+
+        // به‌روزرسانی وضعیت profile_completed کاربر به true.
+        // این نشان می‌دهد که کاربر اطلاعات پروفایل ضروری خود را تکمیل کرده است.
+        $user->profile_completed = true;
         $user->save();
 
-        // 3. هدایت کاربر به صفحه اصلی با پیام موفقیت
-        return Redirect::route('home')->with('status', 'profile-completed');
+        // پاسخ JSON برای درخواست‌های AJAX.
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'پروفایل با موفقیت تکمیل شد.', 'user' => $user], 200);
+        }
+
+        // هدایت کاربر به مقصدی که قبل از هدایت به تکمیل پروفایل قصد داشت به آن برود،
+        // یا به صفحه اصلی اگر مقصد قبلی وجود نداشته باشد.
+        return redirect()->intended('/')->with('status', 'پروفایل شما با موفقیت تکمیل شد.');
     }
 }
+

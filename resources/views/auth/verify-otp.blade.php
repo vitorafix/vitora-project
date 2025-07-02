@@ -9,9 +9,10 @@
                 <p class="text-md text-gray-600 dark:text-gray-400">
                     {{ __('کد تأیید به شماره موبایل شما ارسال شد. لطفا کد را وارد کنید.') }}
                 </p>
-                @if (session('mobile_number'))
+                {{-- نمایش شماره موبایل از متغیری که از کنترلر ارسال شده است --}}
+                @if (isset($mobileNumber))
                     <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                        {{ __('شماره موبایل:') }} <span class="font-bold text-gray-800 dark:text-gray-200">{{ session('mobile_number') }}</span>
+                        {{ __('شماره موبایل:') }} <span class="font-bold text-gray-800 dark:text-gray-200">{{ $mobileNumber }}</span>
                     </p>
                 @endif
             </div>
@@ -23,7 +24,8 @@
                 @csrf
 
                 <!-- Mobile Number (Hidden field to pass mobile_number) -->
-                <input type="hidden" name="mobile_number" value="{{ session('mobile_number') }}">
+                {{-- استفاده از متغیر mobileNumber که از کنترلر ارسال شده است --}}
+                <input type="hidden" name="mobile_number" value="{{ $mobileNumber ?? '' }}">
 
                 <!-- OTP -->
                 <div>
@@ -57,7 +59,8 @@
                 <div class="flex items-center justify-center mt-4">
                     <form method="POST" action="{{ route('auth.send-otp') }}">
                         @csrf
-                        <input type="hidden" name="mobile_number" value="{{ session('mobile_number') }}">
+                        {{-- استفاده از متغیر mobileNumber که از کنترلر ارسال شده است --}}
+                        <input type="hidden" name="mobile_number" value="{{ $mobileNumber ?? '' }}">
                         <button type="submit" 
                                 class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-green-600 dark:text-green-400 bg-transparent hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-all duration-200 ease-in-out">
                             {{ __('ارسال مجدد کد') }}
@@ -69,3 +72,4 @@
         </div>
     </div>
 </x-app-layout>
+

@@ -197,7 +197,8 @@
                                     <i class="fas fa-chevron-left text-gray-400"></i>
                                 </a>
                                 
-                                <a href="{{ route('auth.mobile-login-form') }}" class="user-dropdown-link"> {{-- Updated route, assuming mobile-login-form handles registration --}}
+                                {{-- لینک ثبت‌نام را به مسیر مستقیم register-form تغییر می‌دهیم --}}
+                                <a href="{{ route('auth.register-form') }}" class="user-dropdown-link"> 
                                     <i class="fas fa-user-plus"></i>
                                     <span>ثبت‌نام</span>
                                     <i class="fas fa-chevron-left text-gray-400"></i>
@@ -326,7 +327,8 @@
                         <span>ورود به حساب</span>
                     </a>
                     
-                    <a href="{{ route('auth.mobile-login-form') }}" class="mobile-nav-link"> {{-- Updated route, assuming mobile-login-form handles registration --}}
+                    {{-- لینک ثبت‌نام را به مسیر مستقیم register-form تغییر می‌دهیم --}}
+                    <a href="{{ route('auth.register-form') }}" class="mobile-nav-link"> 
                         <i class="fas fa-user-plus"></i>
                         <span>ثبت‌نام</span>
                     </a>
