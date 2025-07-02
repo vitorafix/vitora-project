@@ -22,16 +22,23 @@ class RegisterController extends Controller
      * و هم برای کاربرانی که از MobileAuthController هدایت می‌شوند (شماره موبایل در سشن است) نمایش داده می‌شود.
      *
      * @param Request $request
-     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
+     * @return \Illuminate\View\View
      */
-    public function showRegistrationForm(Request $request): View|RedirectResponse
+    public function showRegistrationForm(Request $request): View
     {
-        // تلاش برای دریافت شماره موبایل از سشن (اگر از MobileAuthController هدایت شده باشد)
-        $mobileNumberFromSession = $request->session()->get('new_registration_mobile');
+        // تلاش برای دریافت شماره موبایل از فلش سشن (اگر از MobileAuthController هدایت شده باشد)
+        $mobileNumber = $request->session()->get('user_not_found_mobile');
+        
+        // اگر شماره موبایل از سشن نیامده بود، تلاش می‌کنیم از پارامتر URL بگیریم (برای لینک مستقیم ثبت‌نام از mobile-login)
+        if (empty($mobileNumber)) {
+            $mobileNumber = $request->query('mobile_number');
+        }
 
-        // اگر شماره موبایل از سشن موجود باشد، آن را به ویو ارسال می‌کنیم.
-        // در غیر این صورت، فیلد شماره موبایل در ویو قابل ویرایش خواهد بود.
-        return view('auth.register', ['mobileNumber' => $mobileNumberFromSession]);
+        // اگر شماره موبایل همچنان خالی بود (یعنی کاربر مستقیماً از ناوبار به صفحه ثبت‌نام آمده)،
+        // نیازی به ریدایرکت نیست. متغیر mobileNumber خالی به ویو ارسال می‌شود تا کاربر آن را وارد کند.
+
+        // شماره موبایل را به ویو ارسال می‌کنیم.
+        return view('auth.register', compact('mobileNumber'));
     }
 
     /**

@@ -12,7 +12,23 @@
             </div>
 
             <!-- Session Status -->
+            {{-- نمایش پیام‌های وضعیت عمومی --}}
             <x-auth-session-status class="mb-4" :status="session('status')" />
+
+            {{-- نمایش پیام و لینک ثبت‌نام در صورت یافت نشدن کاربر --}}
+            @if (session('show_register_link'))
+                <div class="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg relative mb-4" role="alert">
+                    <strong class="font-bold">{{ __('توجه!') }}</strong>
+                    <span class="block sm:inline">{{ session('status') }}</span>
+                    <div class="mt-2 text-center">
+                        <a href="{{ route('auth.register-form', ['mobile_number' => session('user_not_found_mobile')]) }}" 
+                           class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-transparent hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200 ease-in-out">
+                            {{ __('ثبت‌نام کنید') }}
+                            <i class="fas fa-user-plus mr-2"></i>
+                        </a>
+                    </div>
+                </div>
+            @endif
 
             <form method="POST" action="{{ route('auth.send-otp') }}" class="space-y-6">
                 @csrf
@@ -41,6 +57,17 @@
                     </button>
                 </div>
             </form>
+
+            {{-- لینک ثبت‌نام مستقیم (برای کاربرانی که از ابتدا می‌خواهند ثبت‌نام کنند) --}}
+            <div class="flex items-center justify-center mt-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    {{ __('حساب کاربری ندارید؟') }}
+                    <a href="{{ route('auth.register-form') }}" class="font-semibold text-green-600 hover:text-green-500 transition-colors duration-200 ease-in-out">
+                        {{ __('ثبت‌نام کنید') }}
+                    </a>
+                </p>
+            </div>
         </div>
     </div>
 </x-app-layout>
+

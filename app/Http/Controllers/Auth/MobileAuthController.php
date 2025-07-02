@@ -23,7 +23,9 @@ class MobileAuthController extends Controller
      */
     public function showMobileLoginForm(): View
     {
-        return view('auth.mobile-login');
+        // با توجه به اینکه فایل ویو به 'login.blade.php' تغییر نام داده شده است،
+        // باید به 'auth.login' اشاره کنیم.
+        return view('auth.login');
     }
 
     /**
@@ -145,21 +147,45 @@ class MobileAuthController extends Controller
                 return response()->json(['message' => 'ورود با موفقیت انجام شد.', 'user' => $user], 200);
             }
 
-            // اگر پروفایل کامل است یا قرار نیست بلافاصله به تکمیل پروفایل هدایت شود،
             // کاربر را به مسیر اصلی یا مقصد قبلی هدایت می‌کنیم.
-            // منطق هدایت به تکمیل پروفایل توسط میدل‌ور در مسیرهای حساس انجام خواهد شد.
             return redirect()->intended('/')->with('status', 'ورود با موفقیت انجام شد.');
 
         } else {
-            // کاربر جدید است. به صفحه ورود با موبایل برمی‌گردیم و پیام مناسب را نمایش می‌دهیم.
-            // شماره موبایل را در سشن موقت نگه می‌داریم تا در صورت کلیک روی لینک ثبت‌نام،
-            // به صورت خودکار در فرم ثبت‌نام پر شود.
-            $request->session()->flash('user_not_found_mobile', $mobileNumber); // Flash mobile number
-            if ($request->expectsJson()) {
-                return response()->json(['message' => 'کاربری با این شماره یافت نشد. لطفاً ثبت‌نام کنید.'], 404);
+            // کاربر جدید است.
+            // تلاش می‌کنیم اطلاعات ثبت‌نام موقت را از کش بازیابی کنیم.
+            $registrationData = Cache::get('pending_registration_' . $mobileNumber);
+
+            if ($registrationData) {
+                // اطلاعات ثبت‌نام در کش موجود است، کاربر را ایجاد می‌کنیم.
+                $user = User::create([
+                    'name' => $registrationData['name'],
+                    'lastname' => $registrationData['lastname'],
+                    'mobile_number' => $registrationData['mobile_number'],
+                    // 'email' => $registrationData['email'], // اگر ایمیل را در ثبت‌نام دریافت می‌کنید
+                    'profile_completed' => false, // تغییر: پروفایل را در این مرحله "کامل نشده" در نظر می‌گیریم
+                ]);
+
+                // پس از ایجاد کاربر، اطلاعات موقت را از کش حذف می‌کنیم.
+                Cache::forget('pending_registration_' . $mobileNumber);
+
+                // کاربر را لاگین می‌کنیم.
+                Auth::login($user);
+
+                if ($request->expectsJson()) {
+                    return response()->json(['message' => 'ثبت‌نام و ورود با موفقیت انجام شد.', 'user' => $user], 200);
+                }
+                // کاربر را به صفحه اصلی هدایت می‌کنیم، اما میدل‌ور بعداً تکمیل پروفایل را چک می‌کند.
+                return redirect()->intended('/')->with('status', 'ثبت‌نام و ورود با موفقیت انجام شد.');
+
+            } else {
+                // اگر شماره موبایل جدید است و اطلاعات ثبت‌نام موقت در کش نیست (مثلاً OTP از طریق فرم ورود ارسال شده)،
+                // به صفحه ورود با موبایل برمی‌گردیم و پیام مناسب را نمایش می‌دهیم.
+                $request->session()->flash('user_not_found_mobile', $mobileNumber); // Flash mobile number
+                if ($request->expectsJson()) {
+                    return response()->json(['message' => 'کاربری با این شماره یافت نشد. لطفاً ثبت‌نام کنید.'], 404);
+                }
+                return redirect()->route('auth.mobile-login-form')->with('status', 'کاربری با این شماره یافت نشد. لطفاً ثبت‌نام کنید.')->with('show_register_link', true);
             }
-            // Redirect back to the mobile login form with a specific status
-            return redirect()->route('auth.mobile-login-form')->with('status', 'کاربری با این شماره یافت نشد. لطفاً ثبت‌نام کنید.')->with('show_register_link', true);
         }
     }
 
@@ -180,4 +206,3 @@ class MobileAuthController extends Controller
         return redirect('/');
     }
 }
-
