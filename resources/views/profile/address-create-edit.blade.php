@@ -141,24 +141,24 @@
                     <x-input-error :messages="$errors->get('recipient_last_name')" class="mt-2 text-sm" />
                 </div>
 
-                <!-- Recipient Mobile Number Field (Added below Postal Code) -->
+                <!-- Phone Number Field -->
                 <div>
-                    <label for="recipient_mobile" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label for="phone_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         {{ __('شماره تماس موبایل تحویل گیرنده') }}
                         <span class="text-red-500 text-lg leading-none align-middle">*</span> {{-- Red asterisk for required field --}}
                     </label>
-                    <input id="recipient_mobile" 
+                    <input id="phone_number" 
                            class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400" 
                            type="tel" {{-- Use type="tel" for telephone numbers --}}
-                           name="recipient_mobile" 
-                           value="{{ old('recipient_mobile', $address->recipient_mobile ?? '') }}" 
+                           name="phone_number" {{-- Changed name from 'recipient_mobile' to 'phone_number' --}}
+                           value="{{ old('phone_number', $address->phone_number ?? '') }}" {{-- Changed old and value from 'recipient_mobile' to 'phone_number' --}}
                            placeholder="مثال: 09123456789"
                            required {{-- Make the field required --}}
                            pattern="^09[0-9]{9}$|^[0-9]{10,11}$" {{-- Pattern for Iranian mobile numbers (09xxxxxxxxx) or 10-11 digits for general numbers --}}
                            oninput="this.value = convertToEnglishDigits(this.value);" {{-- Convert Persian digits to English --}}
                            >
                     <span class='help-block text-xs text-gray-500 dark:text-gray-400 mt-1 block'>{{ __('لطفاً شماره موبایل ۱۱ رقمی را وارد کنید (مثال: 09123456789). می‌توانید از اعداد فارسی یا انگلیسی استفاده کنید.') }}</span>
-                    <x-input-error :messages="$errors->get('recipient_mobile')" class="mt-2 text-sm" />
+                    <x-input-error :messages="$errors->get('phone_number')" class="mt-2 text-sm" /> {{-- Changed messages from 'recipient_mobile' to 'phone_number' --}}
                 </div>
 
                 <!-- Is Default Checkbox -->
@@ -194,7 +194,8 @@
         document.addEventListener('DOMContentLoaded', () => {
             const provinceSelect = document.getElementById('province');
             const citySelect = document.getElementById('city');
-            const recipientMobileInput = document.getElementById('recipient_mobile');
+            // Changed variable name from recipientMobileInput to phoneNumberInput
+            const phoneNumberInput = document.getElementById('phone_number'); 
 
             // Load the provinces and cities data from the JSON provided in the Canvas
             const provincesAndCitiesData = [

@@ -295,18 +295,18 @@
 <?php endif; ?>
                 </div>
 
-                <!-- Recipient Mobile Number Field (Added below Postal Code) -->
+                <!-- Phone Number Field -->
                 <div>
-                    <label for="recipient_mobile" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label for="phone_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         <?php echo e(__('شماره تماس موبایل تحویل گیرنده')); ?>
 
                         <span class="text-red-500 text-lg leading-none align-middle">*</span> 
                     </label>
-                    <input id="recipient_mobile" 
+                    <input id="phone_number" 
                            class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400" 
                            type="tel" 
-                           name="recipient_mobile" 
-                           value="<?php echo e(old('recipient_mobile', $address->recipient_mobile ?? '')); ?>" 
+                           name="phone_number" 
+                           value="<?php echo e(old('phone_number', $address->phone_number ?? '')); ?>" 
                            placeholder="مثال: 09123456789"
                            required 
                            pattern="^09[0-9]{9}$|^[0-9]{10,11}$" 
@@ -315,14 +315,14 @@
                     <span class='help-block text-xs text-gray-500 dark:text-gray-400 mt-1 block'><?php echo e(__('لطفاً شماره موبایل ۱۱ رقمی را وارد کنید (مثال: 09123456789). می‌توانید از اعداد فارسی یا انگلیسی استفاده کنید.')); ?></span>
                     <?php if (isset($component)) { $__componentOriginalf94ed9c5393ef72725d159fe01139746 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginalf94ed9c5393ef72725d159fe01139746 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.input-error','data' => ['messages' => $errors->get('recipient_mobile'),'class' => 'mt-2 text-sm']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.input-error','data' => ['messages' => $errors->get('phone_number'),'class' => 'mt-2 text-sm']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('input-error'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['messages' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($errors->get('recipient_mobile')),'class' => 'mt-2 text-sm']); ?>
+<?php $component->withAttributes(['messages' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($errors->get('phone_number')),'class' => 'mt-2 text-sm']); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginalf94ed9c5393ef72725d159fe01139746)): ?>
@@ -332,7 +332,7 @@
 <?php if (isset($__componentOriginalf94ed9c5393ef72725d159fe01139746)): ?>
 <?php $component = $__componentOriginalf94ed9c5393ef72725d159fe01139746; ?>
 <?php unset($__componentOriginalf94ed9c5393ef72725d159fe01139746); ?>
-<?php endif; ?>
+<?php endif; ?> 
                 </div>
 
                 <!-- Is Default Checkbox -->
@@ -370,7 +370,8 @@
         document.addEventListener('DOMContentLoaded', () => {
             const provinceSelect = document.getElementById('province');
             const citySelect = document.getElementById('city');
-            const recipientMobileInput = document.getElementById('recipient_mobile');
+            // Changed variable name from recipientMobileInput to phoneNumberInput
+            const phoneNumberInput = document.getElementById('phone_number'); 
 
             // Load the provinces and cities data from the JSON provided in the Canvas
             const provincesAndCitiesData = [
