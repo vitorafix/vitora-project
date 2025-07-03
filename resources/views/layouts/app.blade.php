@@ -16,6 +16,9 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
+        /* این استایل برای جلوگیری از نمایش لحظه‌ای المنت‌های x-cloak قبل از بارگذاری Alpine.js ضروری است */
+        [x-cloak] { display: none !important; }
+
         /* CSS برای مدال سفارشی */
         .custom-modal-overlay {
             position: fixed;

@@ -1,4 +1,4 @@
-<nav x-data="{ open: false }" class="bg-gradient-to-r from-green-800 via-green-700 to-green-600 shadow-xl border-b-4 border-amber-400 sticky top-0 z-50 backdrop-blur-sm">
+<nav x-data="{ mobileMenuOpen: false }" class="bg-gradient-to-r from-green-800 via-green-700 to-green-600 shadow-xl border-b-4 border-amber-400 sticky top-0 z-50 backdrop-blur-sm">
     <!-- Primary Navigation Menu -->
     <div class="max-w-full mx-auto px-0"> <!-- Changed to max-w-full and px-0 for full width -->
         <!-- Main flex container for logo, navigation links, and user/search section -->
@@ -118,8 +118,8 @@
                 </div>
 
                 <!-- User Menu Dropdown -->
-                <div class="relative" x-data="{ open: false }">
-                    <button @click="open = !open" 
+                <div class="relative" x-data="{ userMenuOpen: false }">
+                    <button @click="userMenuOpen = !userMenuOpen" 
                             class="flex items-center px-4 py-2 text-white hover:bg-white/10 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-400" dir="rtl">
                         @auth
                             <div class="w-10 h-10 bg-amber-400 rounded-full flex items-center justify-center text-green-800 font-bold text-lg ml-3">
@@ -134,23 +134,26 @@
                                 <i class="fas fa-user"></i>
                             </div>
                             <div class="hidden sm:block text-right ml-2">
-                                <div class="text-xs font-semibold">کاربر مهمان</div>
+                                <div class="text-xs text-semibold">کاربر مهمان</div>
                                 <div class="text-xs text-amber-200">عضو نشده</div>
                             </div>
                         @endauth
-                        <i class="fas fa-chevron-down text-xs transition-transform duration-300" :class="{'rotate-180': open}"></i>
+                        <i class="fas fa-chevron-down text-xs transition-transform duration-300" :class="{'rotate-180': userMenuOpen}"></i>
                     </button>
 
                     <!-- User Dropdown Menu -->
-                    <div x-show="open" 
-                         @click.away="open = false"
+                    {{-- اضافه کردن x-cloak و hidden برای اطمینان از پنهان ماندن منو در ابتدا --}}
+                    {{-- تغییر x-show به x-transition برای مدیریت نمایش و پنهان‌سازی با انیمیشن --}}
+                    <div x-show="userMenuOpen" 
+                         @click.away="userMenuOpen = false"
                          x-transition:enter="transition ease-out duration-200"
                          x-transition:enter-start="opacity-0 scale-95"
                          x-transition:enter-end="opacity-100 scale-100"
                          x-transition:leave="transition ease-in duration-150"
                          x-transition:leave-start="opacity-100 scale-100"
                          x-transition:leave-end="opacity-0 scale-95"
-                         class="absolute left-0 mt-3 w-72 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-50">
+                         class="absolute left-0 mt-3 w-72 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-50"
+                         x-cloak> 
                         
                         @auth
                             <!-- User Info Header -->
@@ -213,16 +216,16 @@
 
                 <!-- Mobile Menu Button -->
                 <div class="lg:hidden">
-                    <button @click="open = !open" 
+                    <button @click="mobileMenuOpen = !mobileMenuOpen" 
                             class="p-2 rounded-md text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all duration-300">
                         <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                            <path :class="{'hidden': open, 'inline-flex': !open }" 
+                            <path :class="{'hidden': mobileMenuOpen, 'inline-flex': !mobileMenuOpen }" 
                                   class="inline-flex" 
                                   stroke-linecap="round" 
                                   stroke-linejoin="round" 
                                   stroke-width="2" 
                                   d="M4 6h16M4 12h16M4 18h16" />
-                            <path :class="{'hidden': !open, 'inline-flex': open }" 
+                            <path :class="{'hidden': !mobileMenuOpen, 'inline-flex': mobileMenuOpen }" 
                                   class="hidden" 
                                   stroke-linecap="round" 
                                   stroke-linejoin="round" 
@@ -236,7 +239,7 @@
     </div>
 
     <!-- Mobile Navigation Menu -->
-    <div :class="{'block': open, 'hidden': !open}" class="hidden lg:hidden bg-green-800/95 backdrop-blur-sm border-t border-green-600">
+    <div :class="{'block': mobileMenuOpen, 'hidden': !mobileMenuOpen}" class="hidden lg:hidden bg-green-800/95 backdrop-blur-sm border-t border-green-600">
         <!-- Mobile Search -->
         <div class="px-4 py-3 border-b border-green-600">
             <!-- Removed form here for mobile if live search is desired on mobile -->

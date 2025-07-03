@@ -199,7 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
             } else {
                 let itemsHtml = '';
-                data.cartItems.slice(0, 3).forEach(item => { // نمایش حداکثر 3 آیتم
+                data.cartItems.slice(0, 4).forEach(item => { // نمایش حداکثر 3 آیتم
                     itemsHtml += `
                         <div class="flex items-center py-2 border-b border-gray-100 last:border-b-0">
                             <img src="${item.product.image || 'https://placehold.co/50x50/E5E7EB/4B5563?text=Product'}"
