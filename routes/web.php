@@ -7,7 +7,7 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProfileController; // مطمئن شوید این خط وجود دارد
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\Auth\MobileAuthController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -89,9 +89,21 @@ require __DIR__.'/auth.php';
 // روت‌هایی که نیاز به احراز هویت دارند
 Route::middleware('auth')->group(function () {
 
-    // پروفایل کاربر
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    // داشبورد را از داخل گروه EnsureProfileIsCompleted خارج می‌کنیم
+    Route::view('/dashboard', 'dashboard')->name('dashboard');
+
+    // پروفایل کاربر (روت نمایش صفحه پروفایل جدید)
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show'); // روت نمایش صفحه پروفایل
+
+    // روت‌های به‌روزرسانی اطلاعات پروفایل سفارشی (برای جلوگیری از تداخل با Breeze/Jetstream)
+    Route::put('/profile/personal', [ProfileController::class, 'updateProfile'])->name('profile.personal_update'); // نام روت و مسیر تغییر یافت
+    Route::post('/profile/legal-info', [ProfileController::class, 'storeLegalInfo'])->name('profile.legal-info.store');
+    Route::put('/profile/birth-date', [ProfileController::class, 'updateBirthDate'])->name('profile.birth-date.update');
+    Route::put('/profile/mobile', [ProfileController::class, 'updateMobile'])->name('profile.mobile.update');
+
+    // روت‌های پیش‌فرض پروفایل Breeze/Jetstream (حفظ شده‌اند)
+    // این روت‌ها معمولاً برای به‌روزرسانی اطلاعات اصلی حساب (مثل ایمیل و پسورد) استفاده می‌شوند
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update'); 
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
@@ -114,10 +126,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile/complete', [ProfileCompletionController::class, 'showCompletionForm'])->name('profile.complete');
     Route::post('/profile/complete', [ProfileCompletionController::class, 'storeCompletionForm'])->name('profile.complete.store');
 
-    // مسیرهایی که نیاز به تکمیل پروفایل دارند
+    // مسیرهایی که نیاز به تکمیل پروفایل دارند (برای مثال، صفحه پرداخت)
     Route::middleware([EnsureProfileIsCompleted::class])->group(function () {
-        Route::view('/dashboard', 'dashboard')->name('dashboard');
-
         Route::get('/checkout', [OrderController::class, 'index'])->name('checkout.index');
         Route::post('/order/place', [OrderController::class, 'placeOrder'])->name('orders.place');
     });

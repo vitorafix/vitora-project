@@ -17,18 +17,18 @@ use Illuminate\View\View;
 use Illuminate\Support\Facades\Session;
 use App\Services\CartService;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Hash; // اضافه شد: برای هش کردن OTP (اما دیگر برای OTP استفاده نمی‌شود، فقط برای سایر هش‌ها)
+use Illuminate\Support\Facades\Hash; // Added: For hashing OTP (but no longer used for OTP, only for other hashes)
 
 class MobileAuthController extends Controller
 {
-    // حداکثر تعداد تلاش برای ارسال OTP در یک بازه زمانی مشخص
+    // Maximum number of OTP sending attempts within a specified period
     const MAX_ATTEMPTS = 3;
-    // مدت زمان خنک شدن (cooldown) برای تلاش‌های OTP بر حسب دقیقه
+    // Cooldown period for OTP attempts in minutes
     const ATTEMPT_COOLDOWN_MINUTES = 15;
-    // مدت زمان انقضای OTP بر حسب دقیقه
+    // OTP expiry time in minutes
     const OTP_EXPIRY_MINUTES = 2;
 
-    // تزریق وابستگی CartService
+    // CartService dependency injection
     protected $cartService;
 
     public function __construct(CartService $cartService)
@@ -37,7 +37,7 @@ class MobileAuthController extends Controller
     }
 
     /**
-     * نمایش فرم ورود فقط با شماره موبایل.
+     * Display the mobile number login form.
      *
      * @return \Illuminate\View\View
      */
@@ -47,7 +47,7 @@ class MobileAuthController extends Controller
     }
 
     /**
-     * ارسال کد تأیید (OTP) به شماره موبایل.
+     * Send OTP to the mobile number.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
@@ -55,7 +55,7 @@ class MobileAuthController extends Controller
     public function sendOtp(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'mobile_number' => ['required', 'string', 'regex:/^09[0-9]{9}$/', 'size:11'], // تغییر از digits به size
+            'mobile_number' => ['required', 'string', 'regex:/^09[0-9]{9}$/', 'size:11'], // Changed from digits to size
         ]);
 
         if ($validator->fails()) {
@@ -67,9 +67,22 @@ class MobileAuthController extends Controller
         }
 
         $mobileNumber = $request->mobile_number;
+
+        // --- START: Added check for user existence before sending OTP ---
+        $user = User::where('mobile_number', $mobileNumber)->first();
+
+        if (!$user) {
+            Log::info('Mobile number not found in database, preventing OTP send.', ['mobile' => $mobileNumber]);
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'کاربری با این شماره یافت نشد. لطفاً ثبت‌نام کنید.'], 404);
+            }
+            return back()->withErrors(['mobile_number' => 'کاربری با این شماره یافت نشد. لطفاً ثبت‌نام کنید.'])->withInput();
+        }
+        // --- END: Added check for user existence before sending OTP ---
+
         $attemptsCacheKey = 'sms_attempts_' . $mobileNumber;
 
-        // بررسی تعداد تلاش‌های اخیر برای این شماره موبایل
+        // Check recent attempts for this mobile number
         $attempts = Cache::get($attemptsCacheKey, 0);
 
         if ($attempts >= self::MAX_ATTEMPTS) {
@@ -81,19 +94,19 @@ class MobileAuthController extends Controller
         }
 
         $otp = random_int(100000, 999999);
-        // کلید کش OTP را به صورت ساده‌تر تولید می‌کنیم تا با پیشوند داخلی لاراول هماهنگ باشد
-        $otpCacheKey = 'otp_' . $mobileNumber; // تغییر اینجا
+        // Generate a simpler OTP cache key to align with Laravel's internal prefixing
+        $otpCacheKey = 'otp_' . $mobileNumber; // Change here
         
-        // ذخیره OTP به صورت متن ساده در کش (بدون هش کردن با Hash::make)
+        // Store OTP as plain text in cache (without hashing with Hash::make)
         Cache::put($otpCacheKey, $otp, now()->addMinutes(self::OTP_EXPIRY_MINUTES));
         
-        // --- شروع لاگ‌های اضافه شده برای دیباگ ---
+        // --- START: Added logs for debugging ---
         Log::debug('OTP generated and cached', [
             'mobile' => $mobileNumber,
-            'otp_cache_key' => $otpCacheKey, // لاگ کردن کلید کش
-            'expiry_time' => now()->addMinutes(self::OTP_EXPIRY_MINUTES)->toDateTimeString() // لاگ کردن زمان انقضا
+            'otp_cache_key' => $otpCacheKey, // Log the cache key
+            'expiry_time' => now()->addMinutes(self::OTP_EXPIRY_MINUTES)->toDateTimeString() // Log the expiry time
         ]);
-        // --- پایان لاگ‌های اضافه شده برای دیباگ ---
+        // --- END: Added logs for debugging ---
 
         $smsService = new MelipayamakSmsService();
         $patternCode = config('services.melipayamak.pattern_code');
@@ -106,7 +119,7 @@ class MobileAuthController extends Controller
             }
             Log::info('OTP SMS sent successfully', ['mobile' => $mobileNumber]);
 
-            // مدیریت TTL برای شمارنده تلاش‌ها: اگر اولین تلاش است، TTL را تنظیم کن، در غیر این صورت فقط افزایش بده.
+            // Manage TTL for attempt counter: if it's the first attempt, set TTL, otherwise just increment.
             if ($attempts === 0) {
                 Cache::put($attemptsCacheKey, 1, now()->addMinutes(self::ATTEMPT_COOLDOWN_MINUTES));
                 Log::info('OTP attempt count initialized with TTL', ['mobile' => $mobileNumber, 'new_attempts' => 1]);
@@ -132,7 +145,7 @@ class MobileAuthController extends Controller
     }
 
     /**
-     * نمایش فرم تأیید کد (OTP).
+     * Display the OTP verification form.
      *
      * @param Request $request
      * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
@@ -148,7 +161,7 @@ class MobileAuthController extends Controller
     }
 
     /**
-     * تأیید کد تأیید (OTP) و ورود/ثبت‌نام کاربر.
+     * Verify OTP and log in/register the user.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
@@ -157,8 +170,8 @@ class MobileAuthController extends Controller
     public function verifyOtp(Request $request): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
     {
         $validator = Validator::make($request->all(), [
-            'mobile_number' => ['required', 'string', 'regex:/^09[0-9]{9}$/', 'size:11'], // تغییر از digits به size
-            'otp' => ['required', 'string', 'digits:6', 'numeric'], // اضافه شد: 'numeric' برای هماهنگی با فرانت‌اند
+            'mobile_number' => ['required', 'string', 'regex:/^09[0-9]{9}$/', 'size:11'], // Changed from digits to size
+            'otp' => ['required', 'string', 'digits:6', 'numeric'], // Added: 'numeric' for frontend compatibility
         ]);
 
         if ($validator->fails()) {
@@ -170,29 +183,29 @@ class MobileAuthController extends Controller
         }
 
         $mobileNumber = $request->mobile_number;
-        // کلید کش OTP را به صورت ساده‌تر تولید می‌کنیم تا با پیشوند داخلی لاراول هماهنگ باشد
-        $otpCacheKey = 'otp_' . $mobileNumber; // تغییر اینجا
+        // Generate a simpler OTP cache key to align with Laravel's internal prefixing
+        $otpCacheKey = 'otp_' . $mobileNumber; // Change here
 
-        // بازیابی OTP به صورت متن ساده از کش
-        $storedOtp = Cache::get($otpCacheKey); // تغییر نام متغیر برای وضوح بیشتر
+        // Retrieve OTP as plain text from cache
+        $storedOtp = Cache::get($otpCacheKey); // Renamed variable for clarity
 
-        // --- شروع لاگ‌های اضافه شده برای دیباگ ---
+        // --- START: Added logs for debugging ---
         Log::debug('Verifying OTP', [
             'mobile' => $mobileNumber,
-            'otp_cache_key' => $otpCacheKey, // لاگ کردن کلید کش
-            'stored_otp_exists_before_check' => (bool)$storedOtp, // آیا OTP ذخیره شده وجود دارد؟
-            'entered_otp_value' => $request->otp, // لاگ کردن مقدار OTP وارد شده (فقط برای دیباگ)
-            'stored_otp_value' => $storedOtp // لاگ کردن مقدار OTP ذخیره شده (فقط برای دیباگ)
+            'otp_cache_key' => $otpCacheKey, // Log the cache key
+            'stored_otp_exists_before_check' => (bool)$storedOtp, // Does the stored OTP exist?
+            'entered_otp_value' => $request->otp, // Log the entered OTP value (for debugging only)
+            'stored_otp_value' => $storedOtp // Log the stored OTP value (for debugging only)
         ]);
-        // --- پایان لاگ‌های اضافه شده برای دیباگ ---
+        // --- END: Added logs for debugging ---
 
-        // بررسی OTP با مقایسه مستقیم و تبدیل نوع به integer برای اطمینان از مقایسه صحیح
-        if (!$storedOtp || intval($request->otp) !== intval($storedOtp)) { // تغییر از Hash::check به مقایسه مستقیم با intval
+        // Verify OTP by direct comparison and type casting to integer to ensure correct comparison
+        if (!$storedOtp || intval($request->otp) !== intval($storedOtp)) { // Changed from Hash::check to direct comparison with intval
             Log::warning('Invalid or expired OTP', [
                 'mobile' => $mobileNumber,
                 'stored_otp_exists' => (bool)$storedOtp,
-                'stored_otp' => $storedOtp, // لاگ کردن مقدار ذخیره شده
-                'entered_otp' => $request->otp // لاگ کردن مقدار وارد شده
+                'stored_otp' => $storedOtp, // Log the stored value
+                'entered_otp' => $request->otp // Log the entered value
             ]);
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'کد تایید اشتباه یا منقضی شده است.'], 400);
@@ -213,7 +226,7 @@ class MobileAuthController extends Controller
             Auth::login($user);
             Log::info('User logged in successfully', ['user_id' => $user->id, 'mobile' => $mobileNumber]);
 
-            // انتقال سبد خرید مهمان (بر اساس session_id) به سبد خرید کاربر لاگین شده
+            // Transfer guest cart (based on session_id) to the logged-in user's cart
             $this->cartService->transferGuestCartToUserCart($currentSessionId, $user);
             Log::info('Guest cart transferred to existing user', ['user_id' => $user->id, 'session_id' => $currentSessionId]);
 
@@ -225,9 +238,9 @@ class MobileAuthController extends Controller
             return redirect()->intended('/')->with('status', 'ورود با موفقیت انجام شد.');
 
         } else {
-            // نکته: 'pending_registration_' باید در جایی که کاربر برای اولین بار اطلاعات ثبت‌نام را وارد می‌کند،
-            // با یک TTL مناسب (مثلاً 30 دقیقه) در کش ذخیره شود.
-            // مثال: Cache::put('pending_registration_' . $mobileNumber, $data, now()->addMinutes(30));
+            // Note: 'pending_registration_' should be stored in cache where the user first enters registration information,
+            // with an appropriate TTL (e.g., 30 minutes).
+            // Example: Cache::put('pending_registration_' . $mobileNumber, $data, now()->addMinutes(30));
             $registrationData = Cache::get('pending_registration_' . $mobileNumber);
 
             if ($registrationData) {
@@ -243,7 +256,7 @@ class MobileAuthController extends Controller
 
                 Auth::login($user);
 
-                // انتقال سبد خرید مهمان (بر اساس session_id) به کاربر جدید
+                // Assign guest cart (based on session_id) to the new user
                 $this->cartService->assignGuestCartToNewUser($currentSessionId, $user);
                 Log::info('Guest cart assigned to new user', ['user_id' => $user->id, 'session_id' => $currentSessionId]);
 
@@ -265,7 +278,7 @@ class MobileAuthController extends Controller
     }
 
     /**
-     * خروج کاربر.
+     * Log out the user.
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse

@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens; // اگر از Sanctum استفاده می‌کنید
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne; // اضافه کردن HasOne برای رابطه با LegalInfo
 
 class User extends Authenticatable
 {
@@ -25,10 +26,10 @@ class User extends Authenticatable
         'email',
         // 'password', // حذف شده: احراز هویت با OTP است
         'profile_completed',
-        // 'address',            // حذف شده: این فیلدها به جدول addresses منتقل شده‌اند
-        // 'city',               // حذف شده
-        // 'province',           // حذف شده
-        // 'postal_code',        // حذف شده
+        // اضافه شدن فیلدهای جدید پروفایل (first_name حذف شد تا با name تداخل نداشته باشد)
+        'national_id',
+        'birth_date',
+        'phone',
     ];
 
     /**
@@ -42,18 +43,15 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast.
      *
-     * @return array<string, string>
+     * @var array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            // 'password' => 'hashed', // حذف شده: احراز هویت با OTP است
-            'profile_completed' => 'boolean',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        // 'password' => 'hashed', // حذف شده: احراز هویت با OTP است
+        'profile_completed' => 'boolean',
+    ];
 
     /**
      * Get the orders for the user.
@@ -74,6 +72,15 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the legal information for the user.
+     * دریافت اطلاعات حقوقی مربوط به این کاربر.
+     */
+    public function legalInfo(): HasOne
+    {
+        return $this->hasOne(LegalInfo::class);
+    }
+
+    /**
      * Check if the user's profile is completed.
      * یک متد کمکی برای بررسی وضعیت تکمیل پروفایل
      */
@@ -82,4 +89,3 @@ class User extends Authenticatable
         return (bool) $this->profile_completed;
     }
 }
-

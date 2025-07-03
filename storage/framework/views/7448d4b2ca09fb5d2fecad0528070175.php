@@ -50,6 +50,16 @@
                         <span><?php echo e(__('داشبورد اصلی')); ?></span>
                     </a>
 
+                    <!-- Profile Information Link (as sub-item) -->
+                    <div class="pl-8 mt-1">
+                        
+                        <a href="<?php echo e(route('profile.show')); ?>" 
+                           class="flex items-center px-4 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150 ease-in-out <?php echo e(request()->routeIs('profile.show') ? 'text-green-700 bg-green-50 dark:bg-green-900/30 dark:text-green-300' : ''); ?>">
+                            <i class="fas fa-user-circle ml-3 text-purple-500"></i>
+                            <span><?php echo e(__('اطلاعات حساب')); ?></span>
+                        </a>
+                    </div>
+
                     <!-- Orders Link -->
                     <a href="<?php echo e(route('profile.orders.index')); ?>" 
                        class="flex items-center px-4 py-2 text-md font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150 ease-in-out <?php echo e(request()->routeIs('profile.orders.index') ? 'text-green-700 bg-green-50 dark:bg-green-900/30 dark:text-green-300' : ''); ?>">
@@ -64,13 +74,6 @@
                         <span><?php echo e(__('آدرس‌ها')); ?></span>
                     </a>
                     
-                    <!-- Profile Information Link -->
-                    <a href="<?php echo e(route('profile.edit')); ?>" 
-                       class="flex items-center px-4 py-2 text-md font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150 ease-in-out <?php echo e(request()->routeIs('profile.edit') ? 'text-green-700 bg-green-50 dark:bg-green-900/30 dark:text-green-300' : ''); ?>">
-                        <i class="fas fa-user-circle ml-3 text-purple-500"></i>
-                        <span><?php echo e(__('اطلاعات حساب')); ?></span>
-                    </a>
-
                     <!-- Notifications Link -->
                     <a href="#" 
                        class="flex items-center px-4 py-2 text-md font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150 ease-in-out">

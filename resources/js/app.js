@@ -52,6 +52,11 @@ import './cart';
 // ایمپورت کردن منطق جستجوی لایو. این فایل قابلیت جستجو را مدیریت خواهد کرد.
 import './search';
 
+// Import jalaali-js for Jalali calendar operations
+// ایمپورت کردن کتابخانه jalaali-js برای عملیات تقویم جلالی
+import * as jalaali from 'jalaali-js';
+window.jalaali = jalaali; // Make jalaali-js globally accessible if needed in other scripts
+
 // Note: The hero-carousel logic was previously in app.blade.php for direct JS,
 // but it's generally better practice to move complex JS to dedicated files if needed.
 // However, since it's already functional within app.blade.php for this setup,
