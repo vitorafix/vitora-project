@@ -75,11 +75,11 @@
                         <?php echo e(__('عنوان آدرس (مثلاً: خانه، محل کار)')); ?>
 
                     </label>
-                    <input id="title" 
-                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400" 
-                           type="text" 
-                           name="title" 
-                           value="<?php echo e(old('title')); ?>" 
+                    <input id="title"
+                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400"
+                           type="text"
+                           name="title"
+                           value="<?php echo e(old('title')); ?>"
                            placeholder="نامی برای آدرس خود انتخاب کنید">
                     <?php if (isset($component)) { $__componentOriginalf94ed9c5393ef72725d159fe01139746 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginalf94ed9c5393ef72725d159fe01139746 = $attributes; } ?>
@@ -111,16 +111,16 @@
                             <?php echo e(__('استان')); ?>
 
                         </label>
-                        <select id="province" 
-                                name="province" 
-                                class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base appearance-none" 
+                        <select id="province"
+                                name="province"
+                                class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base appearance-none"
                                 required>
-                            <option value="" disabled <?php echo e(old('province') ? '' : 'selected'); ?>><?php echo e(__('انتخاب استان')); ?></option>
-                            <option value="Tehran" <?php echo e(old('province') == 'Tehran' ? 'selected' : ''); ?>><?php echo e(__('تهران')); ?></option>
-                            <option value="Isfahan" <?php echo e(old('province') == 'Isfahan' ? 'selected' : ''); ?>><?php echo e(__('اصفهان')); ?></option>
-                            <option value="Mashhad" <?php echo e(old('province') == 'Mashhad' ? 'selected' : ''); ?>><?php echo e(__('مشهد')); ?></option>
-                            <option value="Shiraz" <?php echo e(old('province') == 'Shiraz' ? 'selected' : ''); ?>><?php echo e(__('شیراز')); ?></option>
-                            <option value="Tabriz" <?php echo e(old('province') == 'Tabriz' ? 'selected' : ''); ?>><?php echo e(__('تبریز')); ?></option>
+                            
+                            <option value="" disabled <?php echo e(old('province') ? '' : 'selected'); ?>>
+                                <?php echo e(__('انتخاب استان')); ?>
+
+                            </option>
+                            
                         </select>
                         <?php if (isset($component)) { $__componentOriginalf94ed9c5393ef72725d159fe01139746 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginalf94ed9c5393ef72725d159fe01139746 = $attributes; } ?>
@@ -149,11 +149,15 @@
                             <?php echo e(__('شهر')); ?>
 
                         </label>
-                        <select id="city" 
-                                name="city" 
-                                class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base appearance-none" 
+                        <select id="city"
+                                name="city"
+                                class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base appearance-none"
                                 required>
-                            <option value="" disabled <?php echo e(old('city') ? '' : 'selected'); ?>><?php echo e(__('انتخاب شهر')); ?></option>
+                            
+                            <option value="" disabled <?php echo e(old('city') ? '' : 'selected'); ?>>
+                                <?php echo e(__('انتخاب شهر')); ?>
+
+                            </option>
                             
                         </select>
                         <?php if (isset($component)) { $__componentOriginalf94ed9c5393ef72725d159fe01139746 = $component; } ?>
@@ -186,10 +190,10 @@
                         <?php echo e(__('نشانی دقیق')); ?>
 
                     </label>
-                    <textarea id="address" 
-                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400 resize-y" 
-                           name="address" 
-                           rows="3" 
+                    <textarea id="address"
+                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400 resize-y"
+                           name="address"
+                           rows="3"
                            placeholder="آدرس کامل خود را وارد کنید"
                            required><?php echo e(old('address')); ?></textarea>
                     <?php if (isset($component)) { $__componentOriginalf94ed9c5393ef72725d159fe01139746 = $component; } ?>
@@ -217,17 +221,19 @@
                 <!-- Postal Code Field -->
                 <div>
                     <label for="postal_code" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        <?php echo e(__('کد پستی ۱۰ رقمی (اختیاری)')); ?>
+                        <?php echo e(__('کد پستی ۱۰ رقمی ')); ?>
 
+                        <i title='ضروری' class="fas fa-star-of-life text-red-500 fa-xs ml-1"></i> 
                     </label>
-                    <input id="postal_code" 
-                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400" 
-                           type="text" 
-                           name="postal_code" 
-                           value="<?php echo e(old('postal_code')); ?>" 
+                    <input id="postal_code"
+                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400"
+                           type="text"
+                           name="postal_code"
+                           value="<?php echo e(old('postal_code')); ?>"
                            placeholder="1234567890"
                            maxlength="10"
-                           pattern="[0-9]{10}">
+                           pattern="[0-9]{10}"
+                           required> 
                     <span class='block text-xs text-gray-500 dark:text-gray-400 mt-1'><?php echo e(__('کیبورد را در حالت انگلیسی قرار دهید')); ?></span>
                     <?php if (isset($component)) { $__componentOriginalf94ed9c5393ef72725d159fe01139746 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginalf94ed9c5393ef72725d159fe01139746 = $attributes; } ?>
@@ -251,17 +257,51 @@
 <?php endif; ?>
                 </div>
 
+                <!-- Email Address Field (Moved here and made optional) -->
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <?php echo e(__('آدرس ایمیل ')); ?>
+
+                    </label>
+                    <input id="email"
+                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400"
+                           type="email"
+                           name="email"
+                           value="<?php echo e(old('email', $user->email ?? '')); ?>"
+                           placeholder="example@example.com"> 
+                    <?php if (isset($component)) { $__componentOriginalf94ed9c5393ef72725d159fe01139746 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalf94ed9c5393ef72725d159fe01139746 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.input-error','data' => ['messages' => $errors->get('email'),'class' => 'mt-2 text-sm']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('input-error'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['messages' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($errors->get('email')),'class' => 'mt-2 text-sm']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalf94ed9c5393ef72725d159fe01139746)): ?>
+<?php $attributes = $__attributesOriginalf94ed9c5393ef72725d159fe01139746; ?>
+<?php unset($__attributesOriginalf94ed9c5393ef72725d159fe01139746); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalf94ed9c5393ef72725d159fe01139746)): ?>
+<?php $component = $__componentOriginalf94ed9c5393ef72725d159fe01139746; ?>
+<?php unset($__componentOriginalf94ed9c5393ef72725d159fe01139746); ?>
+<?php endif; ?>
+                </div>
+
                 <!-- Phone Number Field (Fixed Line) -->
                 <div>
                     <label for="phone_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        <?php echo e(__('شماره تلفن ثابت (اختیاری)')); ?>
+                        <?php echo e(__('شماره تلفن ثابت ')); ?>
 
                     </label>
-                    <input id="phone_number" 
-                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400" 
-                           type="text" 
-                           name="phone_number" 
-                           value="<?php echo e(old('phone_number')); ?>" 
+                    <input id="phone_number"
+                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400"
+                           type="text"
+                           name="phone_number"
+                           value="<?php echo e(old('phone_number')); ?>"
                            placeholder="مثال: 021XXXXXXXX">
                     <span class='block text-xs text-gray-500 dark:text-gray-400 mt-1'><?php echo e(__('شماره تلفن ثابت با کد شهر (مثال: 021) و ۱۰ رقم بعد از آن')); ?></span>
                     <?php if (isset($component)) { $__componentOriginalf94ed9c5393ef72725d159fe01139746 = $component; } ?>
@@ -288,7 +328,7 @@
 
                 <!-- Submit Button -->
                 <div class="flex items-center justify-center mt-6">
-                    <button type="submit" 
+                    <button type="submit"
                             class="inline-flex items-center justify-center px-8 py-3 text-base font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 ease-in-out">
                         <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
@@ -306,51 +346,304 @@
         </div>
     </div>
 
-    <!-- Optional: اضافه کردن اسکریپت برای دینامیک کردن شهرها بر اساس استان -->
+    <!-- Script for Province-City dynamic dropdown -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const provinceSelect = document.getElementById('province');
             const citySelect = document.getElementById('city');
 
-            const citiesByProvince = {
-                'Tehran': ['Tehran', 'Karaj'],
-                'Isfahan': ['Isfahan'],
-                'Mashhad': ['Mashhad'],
-                'Shiraz': ['Shiraz'],
-                'Tabriz': ['Tabriz']
-            };
+            // Load the provinces and cities data from the JSON provided in the Canvas
+            const provincesAndCitiesData = [
+                {
+                    "province": "آذربایجان شرقی",
+                    "cities": [
+                        "تبریز", "مراغه", "مرند", "اهر", "میانه", "بناب", "سراب", "آذرشهر", "اسکو", "جلفا",
+                        "عجب‌شیر", "ملکان", "ورزقان", "هریس", "هشترود", "کلیبر", "بستان‌آباد", "چاراویماق", "هوراند"
+                    ]
+                },
+                {
+                    "province": "آذربایجان غربی",
+                    "cities": [
+                        "ارومیه", "خوی", "بوکان", "مهاباد", "میاندوآب", "سلماس", "پیرانشهر", "نقده", "تکاب", "ماکو",
+                        "سردشت", "شاهین‌دژ", "اشنویه", "چایپاره", "پلدشت", "شوط", "چالدران", "باروق", "محمدیار", "سیلوانا"
+                    ]
+                },
+                {
+                    "province": "اردبیل",
+                    "cities": [
+                        "اردبیل", "پارس‌آباد", "مشگین‌شهر", "خلخال", "گرمی", "نمین", "بیله‌سوار", "کوثر", "نیر", "سرعین",
+                        "اصلاندوز", "جعفرآباد", "عنبران"
+                    ]
+                },
+                {
+                    "province": "اصفهان",
+                    "cities": [
+                        "اصفهان", "کاشان", "خمینی‌شهر", "نجف‌آباد", "لنجان", "فلاورجان", "شاهین‌شهر و میمه", "شهرضا", "مبارکه",
+                        "آران و بیدگل", "گلپایگان", "فریدون‌شهر", "سمیرم", "خوانسار", "نطنز", "اردستان", "نایین",
+                        "تیران و کرون", "چادگان", "بوئین و میاندشت", "دهاقان", "خور و بیابانک", "ورزنه"
+                    ]
+                },
+                {
+                    "province": "البرز",
+                    "cities": [
+                        "کرج", "فردیس", "کمال‌شهر", "نظرآباد", "محمدشهر", "ماهدشت", "هشتگرد", "ساوجبلاغ", "چهارباغ",
+                        "اشتهارد", "طالقان", "گرمدره", "کوهسار"
+                    ]
+                },
+                {
+                    "province": "ایلام",
+                    "cities": [
+                        "ایلام", "دهلران", "ایوان", "آبدانان", "مهران", "دره‌شهر", "چرداول", "سیروان", "ملکشاهی", "بدره",
+                        "هلیلان", "چوار"
+                    ]
+                },
+                {
+                    "province": "بوشهر",
+                    "cities": [
+                        "بوشهر", "برازجان", "گناوه", "کنگان", "جم", "دیر", "دیلم", "عسلویه", "دشتستان", "تنگستان",
+                        "دشتی", "خورموج"
+                    ]
+                },
+                {
+                    "province": "تهران",
+                    "cities": [
+                        "تهران", "اسلامشهر", "شهریار", "قدس", "ملارد", "ری", "ورامین", "نسیم‌شهر", "رباط‌کریم",
+                        "بهارستان", "پاکدشت", "قرچک", "دماوند", "فیروزکوه", "شمیرانات", "پردیس", "پیشوا"
+                    ]
+                },
+                {
+                    "province": "چهارمحال و بختیاری",
+                    "cities": [
+                        "شهرکرد", "بروجن", "فارسان", "لردگان", "کوهرنگ", "کیار", "اردل", "سامان", "بن", "خانمیرزا",
+                        "فلارد"
+                    ]
+                },
+                {
+                    "province": "خراسان جنوبی",
+                    "cities": [
+                        "بیرجند", "قاین", "طبس", "فردوس", "نهبندان", "سربیشه", "سرایان", "بشرویه", "درمیان", "خوسف",
+                        "زیرکوه"
+                    ]
+                },
+                {
+                    "province": "خراسان رضوی",
+                    "cities": [
+                        "مشهد", "نیشابور", "سبزوار", "تربت حیدریه", "قوچان", "کاشمر", "تربت جام", "تایباد", "چناران",
+                        "سرخس", "گناباد", "فریمان", "خواف", "درگز", "بردسکن", "خلیل‌آباد", "کلات", "رشتخوار",
+                        "باخرز", "زاوه", "جغتای", "خوشاب", "فاروج", "داورزن", "ششتمد"
+                    ]
+                },
+                {
+                    "province": "خراسان شمالی",
+                    "cities": [
+                        "بجنورد", "شیروان", "اسفراین", "مانه و سملقان", "جاجرم", "فاروج", "گرمه", "راز و جرگلان"
+                    ]
+                },
+                {
+                    "province": "خوزستان",
+                    "cities": [
+                        "اهواز", "دزفول", "آبادان", "اندیمشک", "خرمشهر", "ایذه", "بهبهان", "مسجدسلیمان", "ماهشهر",
+                        "شوشتر", "شوش", "باغ‌ملک", "رامهرمز", "امیدیه", "شادگان", "سوسنگرد", "هندیجان", "گتوند",
+                        "لالی", "هویزه", "حمیدیه", "دشت آزادگان", "کارون", "اندیکا", "آغاجاری", "رامشیر", "باوی"
+                    ]
+                },
+                {
+                    "province": "زنجان",
+                    "cities": [
+                        "زنجان", "ابهر", "خرمدره", "قید", "طارم", "ماه‌نشان", "سلطانیه", "ایجرود", "زرین‌رود"
+                    ]
+                },
+                {
+                    "province": "سمنان",
+                    "cities": [
+                        "سمنان", "شاهرود", "دامغان", "گرمسار", "مهدی‌شهر", "میامی", "سرخه", "آرادان", "بسطام"
+                    ]
+                },
+                {
+                    "province": "سیستان و بلوچستان",
+                    "cities": [
+                        "زاهدان", "زابل", "ایرانشهر", "چابهار", "سراوان", "خاش", "کنارک", "نیک‌شهر", "سرباز", "دلگان",
+                        "زهک", "سیب و سوران", "مهرستان", "فنوج", "قصرقند", "نیمروز", "هامون", "میرجاوه", "لاشار",
+                        "بزمان", "بنت", "دشتیاری", "زرآباد"
+                    ]
+                },
+                {
+                    "province": "فارس",
+                    "cities": [
+                        "شیراز", "مرودشت", "جهرم", "فسا", "کازرون", "داراب", "فیروزآباد", "آباده", "نی‌ریز", "اقلید",
+                        "لارستان", "سپیدان", "ممسنی", "کوار", "لامرد", "فراشبند", "زرین‌دشت", "خرم‌بید", "مهر",
+                        "گراش", "استهبان", "رستم", "خنج", "بوانات", "قیروکارزین", "سروستان", "پاسارگاد", "ارسنجان",
+                        "خرامه", "کازرون", "اوز", "بیضا", "کوهچنار", "سرچهان", "زرقان"
+                    ]
+                },
+                {
+                    "province": "قزوین",
+                    "cities": [
+                        "قزوین", "تاکستان", "الوند", "محمدیه", "آبیک", "بویین‌زهرا", "آوج", "شال", "اسفرورین"
+                    ]
+                },
+                {
+                    "province": "قم",
+                    "cities": [
+                        "قم", "جعفریه", "دستجرد", "کهک", "سلفچگان", "قنوات"
+                    ]
+                },
+                {
+                    "province": "کردستان",
+                    "cities": [
+                        "سنندج", "سقز", "مریوان", "بانه", "قروه", "کامیاران", "دیواندره", "بیجار", "دهگلان", "سروآباد"
+                    ]
+                },
+                {
+                    "province": "کرمان",
+                    "cities": [
+                        "کرمان", "سیرجان", "رفسنجان", "جیرفت", "بم", "کهنوج", "زرند", "بافت", "بردسیر", "راور",
+                        "عنبرآباد", "منوجان", "قلعه‌گنج", "ریگان", "فهرج", "رودبار جنوب", "کوهبنان", "ارزوئیه",
+                        "نرماشیر", "فاریاب", "رابر", "کرمانشاه"
+                    ]
+                },
+                {
+                    "province": "کرمانشاه",
+                    "cities": [
+                        "کرمانشاه", "اسلام‌آباد غرب", "سنقر", "هرسین", "کنگاور", "جوانرود", "سرپل ذهاب", "گیلانغرب",
+                        "صحنه", "قصر شیرین", "روانسر", "ثلاث باباجانی", "پاوه", "دالاهو"
+                    ]
+                },
+                {
+                    "province": "کهگیلویه و بویراحمد",
+                    "cities": [
+                        "یاسوج", "گچساران", "دهدشت", "سی‌سخت", "لیکک", "باشت", "چرام", "لنده", "مارگون"
+                    ]
+                },
+                {
+                    "province": "گلستان",
+                    "cities": [
+                        "گرگان", "گنبد کاووس", "علی‌آباد کتول", "آق‌قلا", "کردکوی", "بندر ترکمن", "آزادشهر", "مینودشت",
+                        "رامیان", "کلاله", "گالیکش", "مراوه‌تپه", "گمیشان", "بندر گز", "فاضل‌آباد"
+                    ]
+                },
+                {
+                    "province": "گیلان",
+                    "cities": [
+                        "رشت", "بندر انزلی", "لاهیجان", "لنگرود", "تالش", "رودسر", "صومعه‌سرا", "آستانه اشرفیه", "رودبار",
+                        "فومن", "رضوانشهر", "ماسال", "سیاهکل", "املش", "شفت", "خمام", "کوچصفهان", "لشت نشا"
+                    ]
+                },
+                {
+                    "province": "لرستان",
+                    "cities": [
+                        "خرم‌آباد", "بروجرد", "دورود", "کوهدشت", "الیگودرز", "نورآباد", "پلدختر", "ازنا", "الشتر",
+                        "چگنی", "رومشکان", "سپیددشت"
+                    ]
+                },
+                {
+                    "province": "مازندران",
+                    "cities": [
+                        "ساری", "بابل", "آمل", "قائم‌شهر", "بهشهر", "تنکابن", "نوشهر", "بابلسر", "نور", "محمودآباد",
+                        "رامسر", "فریدونکنار", "چالوس", "جویبار", "نکا", "عباس‌آباد", "گلوگاه", "سوادکوه", "میاندورود",
+                        "سیمرغ", "کلاردشت", "سوادکوه شمالی"
+                    ]
+                },
+                {
+                    "province": "مرکزی",
+                    "cities": [
+                        "اراک", "ساوه", "خمین", "محلات", "دلیجان", "شازند", "زرندیه", "فراهان", "آشتیان", "تفرش",
+                        "کمیجان", "خنداب"
+                    ]
+                },
+                {
+                    "province": "هرمزگان",
+                    "cities": [
+                        "بندرعباس", "میناب", "رودان", "بندر لنگه", "قشم", "کیش", "پارسیان", "حاجی‌آباد", "بستک",
+                        "جاسک", "سیریک", "بشاگرد", "خمیر", "ابوموسی"
+                    ]
+                },
+                {
+                    "province": "همدان",
+                    "cities": [
+                        "همدان", "ملایر", "نهاوند", "تویسرکان", "اسدآباد", "کبودرآهنگ", "بهار", "رزن", "درگزین",
+                        "فامنین"
+                    ]
+                },
+                {
+                    "province": "یزد",
+                    "cities": [
+                        "یزد", "میبد", "اردکان", "بافق", "مهریز", "تفت", "ابرکوه", "اشکذر", "بهاباد", "خاتم",
+                        "مروست", "عقدا"
+                    ]
+                }
+            ];
 
+            // تابع برای پر کردن لیست کشویی استان‌ها
+            function populateProvinces() {
+                provinceSelect.innerHTML = ''; // پاک کردن گزینه‌های موجود
+                // اضافه کردن گزینه پیش‌فرض "انتخاب استان"
+                const defaultProvinceOption = document.createElement('option');
+                defaultProvinceOption.value = "";
+                defaultProvinceOption.textContent = "<?php echo e(__('انتخاب استان')); ?>";
+                defaultProvinceOption.disabled = true;
+                // تنظیم 'selected' بر اساس مقدار قبلی یا اگر هیچ مقدار قبلی وجود ندارد
+                defaultProvinceOption.selected = !("<?php echo e(old('province')); ?>");
+                provinceSelect.appendChild(defaultProvinceOption);
+
+                provincesAndCitiesData.forEach(data => {
+                    const option = document.createElement('option');
+                    option.value = data.province;
+                    option.textContent = data.province;
+                    provinceSelect.appendChild(option);
+                });
+            }
+
+            // تابع برای به‌روزرسانی لیست کشویی شهرها بر اساس استان انتخاب شده
             function updateCities() {
-                const selectedProvince = provinceSelect.value;
-                const cities = citiesByProvince[selectedProvince] || [];
+                const selectedProvinceName = provinceSelect.value;
+                const selectedProvinceData = provincesAndCitiesData.find(data => data.province === selectedProvinceName);
+                const cities = selectedProvinceData ? selectedProvinceData.cities : [];
 
-                // پاک کردن همه گزینه‌ها
-                citySelect.innerHTML = '<option value="" disabled selected><?php echo e(__("انتخاب شهر")); ?></option>';
+                citySelect.innerHTML = ''; // پاک کردن گزینه‌های موجود
+                // اضافه کردن گزینه پیش‌فرض "انتخاب شهر"
+                const defaultCityOption = document.createElement('option');
+                defaultCityOption.value = "";
+                defaultCityOption.textContent = "<?php echo e(__('انتخاب شهر')); ?>";
+                defaultCityOption.disabled = true;
+                // تنظیم 'selected' بر اساس مقدار قبلی یا اگر هیچ مقدار قبلی وجود ندارد
+                defaultCityOption.selected = !("<?php echo e(old('city')); ?>");
+                citySelect.appendChild(defaultCityOption);
 
                 cities.forEach(city => {
                     const option = document.createElement('option');
                     option.value = city;
-                    option.textContent = city === 'Tehran' ? 'تهران' :
-                                         city === 'Karaj' ? 'کرج' :
-                                         city === 'Isfahan' ? 'اصفهان' :
-                                         city === 'Mashhad' ? 'مشهد' :
-                                         city === 'Shiraz' ? 'شیراز' :
-                                         city === 'Tabriz' ? 'تبریز' : city;
+                    option.textContent = city;
                     citySelect.appendChild(option);
                 });
 
-                // اگر قبلا انتخابی داشت، آن را دوباره انتخاب کن
-                // از old('city') برای بازیابی مقدار پس از خطای اعتبارسنجی استفاده می‌کنیم
+                // تنظیم مقدار شهر قبلی اگر وجود دارد و در شهرهای استان فعلی است
                 const oldCity = "<?php echo e(old('city')); ?>";
                 if (oldCity && cities.includes(oldCity)) {
                     citySelect.value = oldCity;
+                } else {
+                    // اگر شهر قبلی در لیست جدید نیست، یا آدرس جدید است، به گزینه پیش‌فرض بازنشانی شود
+                    citySelect.value = "";
+                }
+
+                // بهبود UX: انتخاب خودکار شهر اگر فقط یک گزینه موجود باشد
+                if (cities.length === 1) {
+                    citySelect.value = cities[0];
                 }
             }
 
-            provinceSelect.addEventListener('change', updateCities);
+            // پر کردن اولیه استان‌ها
+            populateProvinces();
 
-            // فراخوانی اولیه برای تنظیم شهرها هنگام لود صفحه
-            updateCities();
+            // تنظیم مقدار استان قبلی اگر وجود دارد
+            const oldProvince = "<?php echo e(old('province')); ?>";
+            if (oldProvince) {
+                provinceSelect.value = oldProvince;
+                updateCities(); // همچنین شهرها را در صورت تنظیم استان قبلی به‌روزرسانی کنید
+            }
+
+            // اضافه کردن شنونده رویداد برای تغییر استان
+            provinceSelect.addEventListener('change', updateCities);
         });
     </script>
  <?php echo $__env->renderComponent(); ?>

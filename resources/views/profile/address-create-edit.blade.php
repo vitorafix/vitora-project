@@ -23,7 +23,7 @@
             <form method="POST" action="{{ isset($address) ? route('profile.addresses.update', $address->id) : route('profile.addresses.store') }}" class="space-y-6">
                 @csrf
                 @if (isset($address))
-                    @method('PUT') {{-- برای متد PUT در ویرایش --}}
+                    @method('PUT') {{-- For PUT method in edit --}}
                 @endif
 
                 <!-- Title Field -->
@@ -93,6 +93,7 @@
                 <div>
                     <label for="postal_code" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         {{ __('کد پستی ۱۰ رقمی') }}
+                        <span class="text-red-500 text-lg leading-none align-middle">*</span> {{-- Red asterisk for required field --}}
                     </label>
                     <input id="postal_code" 
                            class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400" 
@@ -100,10 +101,64 @@
                            name="postal_code" 
                            value="{{ old('postal_code', $address->postal_code ?? '') }}" 
                            placeholder="1234567890"
-                           maxlength="10"
-                           pattern="[0-9]{10}">
+                           required {{-- Make the field required --}}
+                           minlength="10" {{-- Minimum length of 10 characters --}}
+                           maxlength="10" {{-- Maximum length of 10 characters --}}
+                           pattern="[0-9]{10}"> {{-- Pattern to ensure exactly 10 digits --}}
                     <span class='help-block text-xs text-gray-500 dark:text-gray-400 mt-1 block'>{{ __('کیبورد را در حالت انگلیسی قرار دهید') }}</span>
                     <x-input-error :messages="$errors->get('postal_code')" class="mt-2 text-sm" />
+                </div>
+
+                <!-- Recipient First Name Field -->
+                <div>
+                    <label for="recipient_first_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {{ __('نام تحویل گیرنده') }}
+                        <span class="text-red-500 text-lg leading-none align-middle">*</span> {{-- Red asterisk for required field --}}
+                    </label>
+                    <input id="recipient_first_name" 
+                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400" 
+                           type="text" 
+                           name="recipient_first_name" 
+                           value="{{ old('recipient_first_name', $address->recipient_first_name ?? '') }}" 
+                           placeholder="نام تحویل گیرنده را وارد کنید"
+                           required>
+                    <x-input-error :messages="$errors->get('recipient_first_name')" class="mt-2 text-sm" />
+                </div>
+
+                <!-- Recipient Last Name Field -->
+                <div>
+                    <label for="recipient_last_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {{ __('نام خانوادگی تحویل گیرنده') }}
+                        <span class="text-red-500 text-lg leading-none align-middle">*</span> {{-- Red asterisk for required field --}}
+                    </label>
+                    <input id="recipient_last_name" 
+                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400" 
+                           type="text" 
+                           name="recipient_last_name" 
+                           value="{{ old('recipient_last_name', $address->recipient_last_name ?? '') }}" 
+                           placeholder="نام خانوادگی تحویل گیرنده را وارد کنید"
+                           required>
+                    <x-input-error :messages="$errors->get('recipient_last_name')" class="mt-2 text-sm" />
+                </div>
+
+                <!-- Recipient Mobile Number Field (Added below Postal Code) -->
+                <div>
+                    <label for="recipient_mobile" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {{ __('شماره تماس موبایل تحویل گیرنده') }}
+                        <span class="text-red-500 text-lg leading-none align-middle">*</span> {{-- Red asterisk for required field --}}
+                    </label>
+                    <input id="recipient_mobile" 
+                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400" 
+                           type="tel" {{-- Use type="tel" for telephone numbers --}}
+                           name="recipient_mobile" 
+                           value="{{ old('recipient_mobile', $address->recipient_mobile ?? '') }}" 
+                           placeholder="مثال: 09123456789"
+                           required {{-- Make the field required --}}
+                           pattern="^09[0-9]{9}$|^[0-9]{10,11}$" {{-- Pattern for Iranian mobile numbers (09xxxxxxxxx) or 10-11 digits for general numbers --}}
+                           oninput="this.value = convertToEnglishDigits(this.value);" {{-- Convert Persian digits to English --}}
+                           >
+                    <span class='help-block text-xs text-gray-500 dark:text-gray-400 mt-1 block'>{{ __('لطفاً شماره موبایل ۱۱ رقمی را وارد کنید (مثال: 09123456789). می‌توانید از اعداد فارسی یا انگلیسی استفاده کنید.') }}</span>
+                    <x-input-error :messages="$errors->get('recipient_mobile')" class="mt-2 text-sm" />
                 </div>
 
                 <!-- Is Default Checkbox -->
@@ -139,6 +194,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const provinceSelect = document.getElementById('province');
             const citySelect = document.getElementById('city');
+            const recipientMobileInput = document.getElementById('recipient_mobile');
 
             // Load the provinces and cities data from the JSON provided in the Canvas
             const provincesAndCitiesData = [
@@ -418,6 +474,17 @@
                 if (cities.length === 1) {
                     citySelect.value = cities[0];
                 }
+            }
+
+            // Function to convert Persian digits to English digits
+            function convertToEnglishDigits(input) {
+                const persianNumbers = [/۰/g, /۱/g, /۲/g, /۳/g, /۴/g, /۵/g, /۶/g, /۷/g, /۸/g, /۹/g];
+                const arabicNumbers = [/٠/g, /١/g, /٢/g, /٣/g, /٤/g, /٥/g, /٦/g, /٧/g, /٨/g, /٩/g];
+                
+                for (let i = 0; i < 10; i++) {
+                    input = input.replace(persianNumbers[i], i).replace(arabicNumbers[i], i);
+                }
+                return input;
             }
 
             // Initial population of provinces

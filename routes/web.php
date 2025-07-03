@@ -107,6 +107,9 @@ Route::middleware('auth')->group(function () {
         'destroy' => 'profile.addresses.destroy',
     ]);
 
+    // مسیر جدید برای تنظیم آدرس پیش‌فرض
+    Route::post('/profile/addresses/{address}/set-default', [AddressController::class, 'setDefault'])->name('profile.addresses.set-default');
+
     // تکمیل پروفایل
     Route::get('/profile/complete', [ProfileCompletionController::class, 'showCompletionForm'])->name('profile.complete');
     Route::post('/profile/complete', [ProfileCompletionController::class, 'storeCompletionForm'])->name('profile.complete.store');

@@ -188,6 +188,7 @@
                     <label for="postal_code" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         <?php echo e(__('کد پستی ۱۰ رقمی')); ?>
 
+                        <span class="text-red-500 text-lg leading-none align-middle">*</span> 
                     </label>
                     <input id="postal_code" 
                            class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400" 
@@ -195,8 +196,10 @@
                            name="postal_code" 
                            value="<?php echo e(old('postal_code', $address->postal_code ?? '')); ?>" 
                            placeholder="1234567890"
-                           maxlength="10"
-                           pattern="[0-9]{10}">
+                           required 
+                           minlength="10" 
+                           maxlength="10" 
+                           pattern="[0-9]{10}"> 
                     <span class='help-block text-xs text-gray-500 dark:text-gray-400 mt-1 block'><?php echo e(__('کیبورد را در حالت انگلیسی قرار دهید')); ?></span>
                     <?php if (isset($component)) { $__componentOriginalf94ed9c5393ef72725d159fe01139746 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginalf94ed9c5393ef72725d159fe01139746 = $attributes; } ?>
@@ -208,6 +211,118 @@
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
 <?php $component->withAttributes(['messages' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($errors->get('postal_code')),'class' => 'mt-2 text-sm']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalf94ed9c5393ef72725d159fe01139746)): ?>
+<?php $attributes = $__attributesOriginalf94ed9c5393ef72725d159fe01139746; ?>
+<?php unset($__attributesOriginalf94ed9c5393ef72725d159fe01139746); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalf94ed9c5393ef72725d159fe01139746)): ?>
+<?php $component = $__componentOriginalf94ed9c5393ef72725d159fe01139746; ?>
+<?php unset($__componentOriginalf94ed9c5393ef72725d159fe01139746); ?>
+<?php endif; ?>
+                </div>
+
+                <!-- Recipient First Name Field -->
+                <div>
+                    <label for="recipient_first_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <?php echo e(__('نام تحویل گیرنده')); ?>
+
+                        <span class="text-red-500 text-lg leading-none align-middle">*</span> 
+                    </label>
+                    <input id="recipient_first_name" 
+                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400" 
+                           type="text" 
+                           name="recipient_first_name" 
+                           value="<?php echo e(old('recipient_first_name', $address->recipient_first_name ?? '')); ?>" 
+                           placeholder="نام تحویل گیرنده را وارد کنید"
+                           required>
+                    <?php if (isset($component)) { $__componentOriginalf94ed9c5393ef72725d159fe01139746 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalf94ed9c5393ef72725d159fe01139746 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.input-error','data' => ['messages' => $errors->get('recipient_first_name'),'class' => 'mt-2 text-sm']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('input-error'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['messages' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($errors->get('recipient_first_name')),'class' => 'mt-2 text-sm']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalf94ed9c5393ef72725d159fe01139746)): ?>
+<?php $attributes = $__attributesOriginalf94ed9c5393ef72725d159fe01139746; ?>
+<?php unset($__attributesOriginalf94ed9c5393ef72725d159fe01139746); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalf94ed9c5393ef72725d159fe01139746)): ?>
+<?php $component = $__componentOriginalf94ed9c5393ef72725d159fe01139746; ?>
+<?php unset($__componentOriginalf94ed9c5393ef72725d159fe01139746); ?>
+<?php endif; ?>
+                </div>
+
+                <!-- Recipient Last Name Field -->
+                <div>
+                    <label for="recipient_last_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <?php echo e(__('نام خانوادگی تحویل گیرنده')); ?>
+
+                        <span class="text-red-500 text-lg leading-none align-middle">*</span> 
+                    </label>
+                    <input id="recipient_last_name" 
+                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400" 
+                           type="text" 
+                           name="recipient_last_name" 
+                           value="<?php echo e(old('recipient_last_name', $address->recipient_last_name ?? '')); ?>" 
+                           placeholder="نام خانوادگی تحویل گیرنده را وارد کنید"
+                           required>
+                    <?php if (isset($component)) { $__componentOriginalf94ed9c5393ef72725d159fe01139746 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalf94ed9c5393ef72725d159fe01139746 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.input-error','data' => ['messages' => $errors->get('recipient_last_name'),'class' => 'mt-2 text-sm']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('input-error'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['messages' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($errors->get('recipient_last_name')),'class' => 'mt-2 text-sm']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginalf94ed9c5393ef72725d159fe01139746)): ?>
+<?php $attributes = $__attributesOriginalf94ed9c5393ef72725d159fe01139746; ?>
+<?php unset($__attributesOriginalf94ed9c5393ef72725d159fe01139746); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginalf94ed9c5393ef72725d159fe01139746)): ?>
+<?php $component = $__componentOriginalf94ed9c5393ef72725d159fe01139746; ?>
+<?php unset($__componentOriginalf94ed9c5393ef72725d159fe01139746); ?>
+<?php endif; ?>
+                </div>
+
+                <!-- Recipient Mobile Number Field (Added below Postal Code) -->
+                <div>
+                    <label for="recipient_mobile" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        <?php echo e(__('شماره تماس موبایل تحویل گیرنده')); ?>
+
+                        <span class="text-red-500 text-lg leading-none align-middle">*</span> 
+                    </label>
+                    <input id="recipient_mobile" 
+                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400" 
+                           type="tel" 
+                           name="recipient_mobile" 
+                           value="<?php echo e(old('recipient_mobile', $address->recipient_mobile ?? '')); ?>" 
+                           placeholder="مثال: 09123456789"
+                           required 
+                           pattern="^09[0-9]{9}$|^[0-9]{10,11}$" 
+                           oninput="this.value = convertToEnglishDigits(this.value);" 
+                           >
+                    <span class='help-block text-xs text-gray-500 dark:text-gray-400 mt-1 block'><?php echo e(__('لطفاً شماره موبایل ۱۱ رقمی را وارد کنید (مثال: 09123456789). می‌توانید از اعداد فارسی یا انگلیسی استفاده کنید.')); ?></span>
+                    <?php if (isset($component)) { $__componentOriginalf94ed9c5393ef72725d159fe01139746 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalf94ed9c5393ef72725d159fe01139746 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.input-error','data' => ['messages' => $errors->get('recipient_mobile'),'class' => 'mt-2 text-sm']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('input-error'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['messages' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($errors->get('recipient_mobile')),'class' => 'mt-2 text-sm']); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginalf94ed9c5393ef72725d159fe01139746)): ?>
@@ -255,6 +370,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const provinceSelect = document.getElementById('province');
             const citySelect = document.getElementById('city');
+            const recipientMobileInput = document.getElementById('recipient_mobile');
 
             // Load the provinces and cities data from the JSON provided in the Canvas
             const provincesAndCitiesData = [
@@ -534,6 +650,17 @@
                 if (cities.length === 1) {
                     citySelect.value = cities[0];
                 }
+            }
+
+            // Function to convert Persian digits to English digits
+            function convertToEnglishDigits(input) {
+                const persianNumbers = [/۰/g, /۱/g, /۲/g, /۳/g, /۴/g, /۵/g, /۶/g, /۷/g, /۸/g, /۹/g];
+                const arabicNumbers = [/٠/g, /١/g, /٢/g, /٣/g, /٤/g, /٥/g, /٦/g, /٧/g, /٨/g, /٩/g];
+                
+                for (let i = 0; i < 10; i++) {
+                    input = input.replace(persianNumbers[i], i).replace(arabicNumbers[i], i);
+                }
+                return input;
             }
 
             // Initial population of provinces
