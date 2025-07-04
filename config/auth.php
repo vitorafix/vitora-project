@@ -112,4 +112,29 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | OTP (One-Time Password) Settings
+    |--------------------------------------------------------------------------
+    |
+    | These settings define the behavior for OTP generation, sending,
+    | verification, and associated rate limiting.
+    |
+    */
+    'otp' => [
+        'expiry_minutes' => env('OTP_EXPIRY_MINUTES', 2), // زمان انقضای OTP (دقیقه)
+        'send_attempts' => [
+            'max_attempts' => env('OTP_SEND_MAX_ATTEMPTS', 3), // حداکثر تلاش برای ارسال OTP
+            'cooldown_minutes' => env('OTP_SEND_COOLDOWN_MINUTES', 15), // مدت زمان خنک‌سازی برای ارسال OTP
+        ],
+        'verify_attempts' => [
+            'max_attempts' => env('OTP_VERIFY_MAX_ATTEMPTS', 5), // حداکثر تلاش برای تأیید OTP
+            'cooldown_minutes' => env('OTP_VERIFY_COOLDOWN_MINUTES', 30), // مدت زمان خنک‌سازی برای تأیید OTP
+        ],
+        'ip_attempts' => [
+            'max_attempts' => env('OTP_IP_MAX_ATTEMPTS', 10), // حداکثر تلاش از یک IP
+            'cooldown_minutes' => env('OTP_IP_COOLDOWN_MINUTES', 60), // مدت زمان خنک‌سازی برای IP
+        ],
+    ],
+
 ];

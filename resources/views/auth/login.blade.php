@@ -69,5 +69,32 @@
             </div>
         </div>
     </div>
-</x-app-layout>
 
+    {{-- کد جاوااسکریپت برای تبدیل اعداد فارسی به انگلیسی --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileNumberInput = document.getElementById('mobile_number');
+
+            if (mobileNumberInput) {
+                mobileNumberInput.addEventListener('input', function(event) {
+                    let value = event.target.value;
+                    let convertedValue = '';
+
+                    const persianToEnglishMap = {
+                        '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
+                        '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
+                        '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+                        '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
+                    };
+
+                    for (let i = 0; i < value.length; i++) {
+                        const char = value[i];
+                        convertedValue += persianToEnglishMap[char] || char;
+                    }
+
+                    event.target.value = convertedValue;
+                });
+            }
+        });
+    </script>
+</x-app-layout>

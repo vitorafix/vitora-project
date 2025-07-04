@@ -13,9 +13,21 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Illuminate\Support\Str;
 use App\Services\MelipayamakSmsService; // ایمپورت کردن سرویس پیامک
+use Illuminate\Support\Facades\Crypt; // اضافه شده: ایمپورت کردن کلاس Crypt برای رمزگذاری
+// اگر از Form Request استفاده می‌کنید، آن را اینجا ایمپورت کنید
+// use App\Http\Requests\RegisterRequest;
 
 class RegisterController extends Controller
 {
+    // اگر سرویس‌ها را در اینجا تزریق می‌کنید، مطمئن شوید که در constructor انجام شود.
+    // protected $otpService;
+    // protected $auditService;
+    // public function __construct(OtpServiceInterface $otpService, AuditServiceInterface $auditService)
+    // {
+    //     $this->otpService = $otpService;
+    //     $this->auditService = $auditService;
+    // }
+
     /**
      * نمایش فرم ثبت‌نام (نام، نام خانوادگی، شماره موبایل).
      * این فرم هم برای کاربران جدیدی که مستقیماً به صفحه ثبت‌نام می‌آیند
@@ -34,9 +46,6 @@ class RegisterController extends Controller
             $mobileNumber = $request->query('mobile_number');
         }
 
-        // اگر شماره موبایل همچنان خالی بود (یعنی کاربر مستقیماً از ناوبار به صفحه ثبت‌نام آمده)،
-        // نیازی به ریدایرکت نیست. متغیر mobileNumber خالی به ویو ارسال می‌شود تا کاربر آن را وارد کند.
-
         // شماره موبایل را به ویو ارسال می‌کنیم.
         return view('auth.register', compact('mobileNumber'));
     }
@@ -50,11 +59,12 @@ class RegisterController extends Controller
      */
     public function register(Request $request)
     {
+        // اعتبارسنجی داده‌ها
+        // اگر از RegisterRequest استفاده می‌کنید، این بخش را حذف کنید و RegisterRequest را در امضای متد قرار دهید.
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255'],
             'lastname' => ['nullable', 'string', 'max:255'],
             'mobile_number' => ['required', 'string', 'regex:/^09[0-9]{9}$/', 'digits:11', 'unique:users'],
-            // ایمیل در این مرحله حذف شد
         ]);
 
         if ($validator->fails()) {
@@ -66,21 +76,20 @@ class RegisterController extends Controller
 
         $mobileNumber = $request->mobile_number;
 
-        // ذخیره موقت اطلاعات ثبت‌نام در سشن/کش قبل از ارسال OTP
-        // این اطلاعات پس از تایید OTP در MobileAuthController استفاده خواهند شد.
+        // ذخیره موقت اطلاعات ثبت‌نام در کش قبل از ارسال OTP
+        // این اطلاعات پس از تایید OTP در MobileAuthController@verifyOtp استفاده خواهند شد.
         $registrationData = [
             'name' => $request->name,
             'lastname' => $request->lastname,
             'mobile_number' => $mobileNumber,
-            // 'email' => $request->email, // اگر ایمیل را اضافه کردید، اینجا ذخیره کنید
         ];
         Cache::put('pending_registration_' . $mobileNumber, $registrationData, now()->addMinutes(5)); // ذخیره به مدت 5 دقیقه
 
         $otp = random_int(100000, 999999); // تولید یک کد 6 رقمی
         $cacheKey = 'otp_' . $mobileNumber;
 
-        // ذخیره OTP در کش به مدت 2 دقیقه
-        Cache::put($cacheKey, $otp, now()->addMinutes(2));
+        // ذخیره OTP در کش به مدت 2 دقیقه (یا هر مدت زمان دیگری که در config/auth.php تنظیم کرده‌اید)
+        Cache::put($cacheKey, $otp, now()->addMinutes(config('auth.otp.expiry_minutes', 2)));
 
         // استفاده از سرویس MelipayamakSmsService برای ارسال پیامک
         $smsService = new MelipayamakSmsService();
@@ -93,6 +102,12 @@ class RegisterController extends Controller
                 $smsService->send($mobileNumber, "کد تایید شما: " . $otp . "\nفروشگاه چای");
             }
         } catch (\Exception $e) {
+            // لاگ کردن خطا برای اشکال‌زدایی
+            \Log::error('Error sending OTP during registration: ' . $e->getMessage(), [
+                'mobile_number' => $mobileNumber,
+                'exception' => $e
+            ]);
+
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'خطا در ارسال کد تایید. لطفاً دوباره تلاش کنید.'], 500);
             }
@@ -103,9 +118,11 @@ class RegisterController extends Controller
             return response()->json(['message' => 'کد تایید به شماره شما ارسال شد.'], 200);
         }
 
-        // ذخیره شماره موبایل در سشن برای استفاده در صفحه تایید OTP
-        $request->session()->put('mobile_number_for_otp', $mobileNumber);
-        return redirect()->route('auth.verify-otp-form')->with('status', 'کد تایید به شماره شما ارسال شد.');
+        // تغییر مهم: ذخیره شماره موبایل به صورت رمزگذاری شده در سشن
+        $request->session()->put('mobile_number_for_otp', Crypt::encryptString($mobileNumber));
+        
+        // هدایت کاربر به صفحه تأیید OTP
+        return redirect()->route('auth.verify-otp-form', ['mobile_number' => $mobileNumber])
+                         ->with('status', 'کد تایید به شماره شما ارسال شد. لطفاً آن را وارد کنید.');
     }
 }
-

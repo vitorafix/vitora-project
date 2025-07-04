@@ -123,6 +123,34 @@
             </div>
         </div>
     </div>
+
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileNumberInput = document.getElementById('mobile_number');
+
+            if (mobileNumberInput) {
+                mobileNumberInput.addEventListener('input', function(event) {
+                    let value = event.target.value;
+                    let convertedValue = '';
+
+                    const persianToEnglishMap = {
+                        '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
+                        '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
+                        '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+                        '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
+                    };
+
+                    for (let i = 0; i < value.length; i++) {
+                        const char = value[i];
+                        convertedValue += persianToEnglishMap[char] || char;
+                    }
+
+                    event.target.value = convertedValue;
+                });
+            }
+        });
+    </script>
  <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
@@ -133,5 +161,4 @@
 <?php $component = $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
 <?php unset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
 <?php endif; ?>
-
 <?php /**PATH C:\xampp\htdocs\myshop\resources\views/auth/login.blade.php ENDPATH**/ ?>

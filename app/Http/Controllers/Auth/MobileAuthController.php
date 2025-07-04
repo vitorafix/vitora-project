@@ -9,7 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Validator; // Still used for internal helper validation
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
 use App\Services\MelipayamakSmsService;
@@ -17,23 +17,35 @@ use Illuminate\View\View;
 use Illuminate\Support\Facades\Session;
 use App\Services\CartService;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Hash; // Added: For hashing OTP (but no longer used for OTP, only for other hashes)
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
+
+// Import new service classes and interfaces
+use App\Contracts\Services\OtpServiceInterface;
+use App\Contracts\Services\RateLimitServiceInterface;
+use App\Contracts\Services\AuditServiceInterface;
+use App\Http\Requests\SendOtpRequest;
+use App\Http\Requests\VerifyOtpRequest;
 
 class MobileAuthController extends Controller
 {
-    // Maximum number of OTP sending attempts within a specified period
-    const MAX_ATTEMPTS = 3;
-    // Cooldown period for OTP attempts in minutes
-    const ATTEMPT_COOLDOWN_MINUTES = 15;
-    // OTP expiry time in minutes
-    const OTP_EXPIRY_MINUTES = 2;
-
-    // CartService dependency injection
+    // Dependency Injection for services
     protected $cartService;
+    protected $otpService;
+    protected $rateLimitService;
+    protected $auditService;
 
-    public function __construct(CartService $cartService)
-    {
+    public function __construct(
+        CartService $cartService,
+        OtpServiceInterface $otpService, // Type-hinting against interface
+        RateLimitServiceInterface $rateLimitService, // Type-hinting against interface
+        AuditServiceInterface $auditService // Type-hinting against interface
+    ) {
         $this->cartService = $cartService;
+        $this->otpService = $otpService;
+        $this->rateLimitService = $rateLimitService;
+        $this->auditService = $auditService;
     }
 
     /**
@@ -49,64 +61,55 @@ class MobileAuthController extends Controller
     /**
      * Send OTP to the mobile number.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Http\Requests\SendOtpRequest  $request // Using Form Request for validation
      * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
-    public function sendOtp(Request $request)
+    public function sendOtp(SendOtpRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'mobile_number' => ['required', 'string', 'regex:/^09[0-9]{9}$/', 'size:11'], // Changed from digits to size
-        ]);
-
-        if ($validator->fails()) {
-            Log::warning('Validation failed for sendOtp', ['errors' => $validator->errors()->toArray()]);
-            if ($request->expectsJson()) {
-                return response()->json(['errors' => $validator->errors()], 422);
-            }
-            return back()->withErrors($validator)->withInput();
+        // Honeypot check is now handled by the Form Request's validation logic,
+        // but a final check here is harmless and can act as a fallback.
+        if ($this->isBot($request)) {
+            return $this->handleBotDetection($request);
         }
+
+        // Validation is handled by SendOtpRequest.
+        // If validation fails, it automatically redirects or returns JSON response.
 
         $mobileNumber = $request->mobile_number;
+        $ipAddress = $request->ip();
+        $userAgent = $request->userAgent();
 
-        // --- START: Added check for user existence before sending OTP ---
+        // IP-based Rate Limiting for sendOtp
+        if (!$this->rateLimitService->checkAndIncrementIpAttempts($ipAddress)) {
+            $this->auditService->log('ip_rate_limit_exceeded', 'Too many OTP send attempts from IP.', $request, null, Auth::id());
+            return $this->respondWithError(
+                'تعداد تلاش‌ها از IP شما بیش از حد مجاز است. لطفاً پس از ' . config('auth.otp.ip_attempts.cooldown_minutes') . ' دقیقه دیگر تلاش کنید.',
+                429,
+                $request,
+                'general'
+            );
+        }
+
+        // Check for user existence (for login/registration flow)
         $user = User::where('mobile_number', $mobileNumber)->first();
-
-        if (!$user) {
-            Log::info('Mobile number not found in database, preventing OTP send.', ['mobile' => $mobileNumber]);
-            if ($request->expectsJson()) {
-                return response()->json(['message' => 'کاربری با این شماره یافت نشد. لطفاً ثبت‌نام کنید.'], 404);
-            }
-            return back()->withErrors(['mobile_number' => 'کاربری با این شماره یافت نشد. لطفاً ثبت‌نام کنید.'])->withInput();
-        }
-        // --- END: Added check for user existence before sending OTP ---
-
-        $attemptsCacheKey = 'sms_attempts_' . $mobileNumber;
-
-        // Check recent attempts for this mobile number
-        $attempts = Cache::get($attemptsCacheKey, 0);
-
-        if ($attempts >= self::MAX_ATTEMPTS) {
-            Log::warning('Too many OTP requests for mobile number', ['mobile' => $mobileNumber, 'attempts' => $attempts]);
-            if ($request->expectsJson()) {
-                return response()->json(['message' => 'تعداد درخواست‌ها بیش از حد مجاز است. لطفاً پس از ' . self::ATTEMPT_COOLDOWN_MINUTES . ' دقیقه دیگر تلاش کنید.'], 429);
-            }
-            return back()->withErrors(['mobile_number' => 'تعداد درخواست‌ها بیش از حد مجاز است. لطفاً پس از ' . self::ATTEMPT_COOLDOWN_MINUTES . ' دقیقه دیگر تلاش کنید.'])->withInput();
+        if (!Auth::check() && !$user) {
+            $this->auditService->log('unauthenticated_otp_send_non_existent', 'Unauthenticated user attempted OTP send for non-existent mobile number.', $request, hash('sha256', $mobileNumber));
+            return $this->respondWithError('درخواست نامعتبر است.', 400, $request, 'mobile_number');
         }
 
-        $otp = random_int(100000, 999999);
-        // Generate a simpler OTP cache key to align with Laravel's internal prefixing
-        $otpCacheKey = 'otp_' . $mobileNumber; // Change here
-        
-        // Store OTP as plain text in cache (without hashing with Hash::make)
-        Cache::put($otpCacheKey, $otp, now()->addMinutes(self::OTP_EXPIRY_MINUTES));
-        
-        // --- START: Added logs for debugging ---
-        Log::debug('OTP generated and cached', [
-            'mobile' => $mobileNumber,
-            'otp_cache_key' => $otpCacheKey, // Log the cache key
-            'expiry_time' => now()->addMinutes(self::OTP_EXPIRY_MINUTES)->toDateTimeString() // Log the expiry time
-        ]);
-        // --- END: Added logs for debugging ---
+        // OTP send attempts rate limiting for mobile number
+        if (!$this->rateLimitService->checkAndIncrementSendAttempts($mobileNumber)) {
+            $this->auditService->log('mobile_otp_send_rate_limit_exceeded', 'Too many OTP requests for mobile number.', $request, hash('sha256', $mobileNumber));
+            return $this->respondWithError(
+                'تعداد درخواست‌ها بیش از حد مجاز است. لطفاً پس از ' . config('auth.otp.send_attempts.cooldown_minutes') . ' دقیقه دیگر تلاش کنید.',
+                429,
+                $request,
+                'mobile_number'
+            );
+        }
+
+        // Generate and store OTP using OtpService
+        $otp = $this->otpService->generateAndStore($mobileNumber);
 
         $smsService = new MelipayamakSmsService();
         $patternCode = config('services.melipayamak.pattern_code');
@@ -117,30 +120,25 @@ class MobileAuthController extends Controller
             } else {
                 $smsService->send($mobileNumber, "کد تایید شما: " . $otp . "\nفروشگاه چای");
             }
-            Log::info('OTP SMS sent successfully', ['mobile' => $mobileNumber]);
-
-            // Manage TTL for attempt counter: if it's the first attempt, set TTL, otherwise just increment.
-            if ($attempts === 0) {
-                Cache::put($attemptsCacheKey, 1, now()->addMinutes(self::ATTEMPT_COOLDOWN_MINUTES));
-                Log::info('OTP attempt count initialized with TTL', ['mobile' => $mobileNumber, 'new_attempts' => 1]);
-            } else {
-                Cache::increment($attemptsCacheKey);
-                Log::info('OTP attempt count incremented', ['mobile' => $mobileNumber, 'new_attempts' => $attempts + 1]);
-            }
+            $this->auditService->log('otp_send_success', 'OTP sent to mobile number.', $request, hash('sha256', $mobileNumber));
 
         } catch (\Exception $e) {
-            Log::error('Error sending OTP SMS', ['mobile' => $mobileNumber, 'error' => $e->getMessage()]);
-            if ($request->expectsJson()) {
-                return response()->json(['message' => 'خطا در ارسال کد تایید. لطفاً دوباره تلاش کنید.'], 500);
-            }
-            return back()->withErrors(['mobile_number' => 'خطا در ارسال کد تایید. لطفاً دوباره تلاش کنید.'])->withInput();
+            $this->auditService->log('otp_send_failure', 'Error sending OTP SMS: ' . $e->getMessage(), $request, hash('sha256', $mobileNumber));
+            return $this->respondWithError('خطا در ارسال کد تایید. لطفاً دوباره تلاش کنید.', 500, $request, 'mobile_number');
+        }
+
+        // Store the redirect path in session if provided from the profile page
+        if ($request->has('redirect_to_profile')) {
+            $request->session()->put('otp_redirect_after_verify', $request->input('redirect_to_profile'));
+            Log::info('OTP redirect path stored for profile update', ['path' => $request->input('redirect_to_profile')]);
         }
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'کد تایید به شماره شما ارسال شد.'], 200);
         }
 
-        $request->session()->put('mobile_number_for_otp', $mobileNumber);
+        // Encrypt mobile number before storing in session for security
+        $request->session()->put('mobile_number_for_otp', Crypt::encryptString($mobileNumber));
         return redirect()->route('auth.verify-otp-form')->with('status', 'کد تایید به شماره شما ارسال شد.');
     }
 
@@ -152,9 +150,16 @@ class MobileAuthController extends Controller
      */
     public function showVerifyOtpForm(Request $request): View|RedirectResponse
     {
-        $mobileNumber = $request->session()->get('mobile_number_for_otp');
+        try {
+            // Decrypt mobile number when retrieving from session
+            $mobileNumber = Crypt::decryptString($request->session()->get('mobile_number_for_otp'));
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            $this->auditService->log('invalid_encrypted_mobile_in_session', 'Attempt to access verifyOtpForm with invalid encrypted mobile number in session.', $request);
+            return redirect()->route('auth.mobile-login-form')->withErrors(['mobile_number' => 'ابتدا شماره موبایل خود را وارد کنید.']);
+        }
+        
         if (!$mobileNumber) {
-            Log::warning('Attempt to access verifyOtpForm without mobile number in session.');
+            $this->auditService->log('missing_mobile_in_session', 'Attempt to access verifyOtpForm without mobile number in session.', $request);
             return redirect()->route('auth.mobile-login-form')->withErrors(['mobile_number' => 'ابتدا شماره موبایل خود را وارد کنید.']);
         }
         return view('auth.verify-otp', compact('mobileNumber'));
@@ -163,118 +168,149 @@ class MobileAuthController extends Controller
     /**
      * Verify OTP and log in/register the user.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Http\Requests\VerifyOtpRequest  $request // Using Form Request for validation
      * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function verifyOtp(Request $request): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+    public function verifyOtp(VerifyOtpRequest $request): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
     {
-        $validator = Validator::make($request->all(), [
-            'mobile_number' => ['required', 'string', 'regex:/^09[0-9]{9}$/', 'size:11'], // Changed from digits to size
-            'otp' => ['required', 'string', 'digits:6', 'numeric'], // Added: 'numeric' for frontend compatibility
-        ]);
-
-        if ($validator->fails()) {
-            Log::warning('Validation failed for verifyOtp', ['errors' => $validator->errors()->toArray()]);
-            if ($request->expectsJson()) {
-                return response()->json(['errors' => $validator->errors()], 422);
-            }
-            return back()->withErrors($validator)->withInput();
+        // Honeypot check is now handled by the Form Request's validation logic,
+        // but a final check here is harmless and can act as a fallback.
+        if ($this->isBot($request)) {
+            return $this->handleBotDetection($request);
         }
+
+        // Validation is handled by VerifyOtpRequest.
+        // If validation fails, it automatically redirects or returns JSON response.
 
         $mobileNumber = $request->mobile_number;
-        // Generate a simpler OTP cache key to align with Laravel's internal prefixing
-        $otpCacheKey = 'otp_' . $mobileNumber; // Change here
+        $enteredOtp = $request->otp; // Get the entered OTP
+        $ipAddress = $request->ip();
+        $userAgent = $request->userAgent();
 
-        // Retrieve OTP as plain text from cache
-        $storedOtp = Cache::get($otpCacheKey); // Renamed variable for clarity
+        // --- بهبودهای جدید برای اعتبارسنجی و لاگ OTP ---
+        // 1. نرمال‌سازی OTP ورودی: حذف فاصله‌ها و تبدیل اعداد فارسی/عربی به انگلیسی
+        $enteredOtp = $this->normalizeOtp($enteredOtp);
+        // ----------------------------------------------------
 
-        // --- START: Added logs for debugging ---
-        Log::debug('Verifying OTP', [
-            'mobile' => $mobileNumber,
-            'otp_cache_key' => $otpCacheKey, // Log the cache key
-            'stored_otp_exists_before_check' => (bool)$storedOtp, // Does the stored OTP exist?
-            'entered_otp_value' => $request->otp, // Log the entered OTP value (for debugging only)
-            'stored_otp_value' => $storedOtp // Log the stored OTP value (for debugging only)
-        ]);
-        // --- END: Added logs for debugging ---
-
-        // Verify OTP by direct comparison and type casting to integer to ensure correct comparison
-        if (!$storedOtp || intval($request->otp) !== intval($storedOtp)) { // Changed from Hash::check to direct comparison with intval
-            Log::warning('Invalid or expired OTP', [
-                'mobile' => $mobileNumber,
-                'stored_otp_exists' => (bool)$storedOtp,
-                'stored_otp' => $storedOtp, // Log the stored value
-                'entered_otp' => $request->otp // Log the entered value
-            ]);
-            if ($request->expectsJson()) {
-                return response()->json(['message' => 'کد تایید اشتباه یا منقضی شده است.'], 400);
-            }
-            throw ValidationException::withMessages([
-                'otp' => ['کد تایید اشتباه یا منقضی شده است.'],
-            ]);
+        // IP-based Rate Limiting for verifyOtp
+        if (!$this->rateLimitService->checkAndIncrementIpAttempts($ipAddress)) {
+            $this->auditService->log('ip_rate_limit_exceeded', 'Too many OTP verification attempts from IP.', $request, null, Auth::id());
+            return $this->respondWithError(
+                'تعداد تلاش‌ها از IP شما بیش از حد مجاز است. لطفاً پس از ' . config('auth.otp.ip_attempts.cooldown_minutes') . ' دقیقه دیگر تلاش کنید.',
+                429,
+                $request,
+                'otp' // Error on OTP field for consistency
+            );
         }
 
-        Cache::forget($otpCacheKey);
-        Log::info('OTP verified and cleared from cache', ['mobile' => $mobileNumber]);
+        // OTP verification attempts rate limiting for mobile number
+        if (!$this->rateLimitService->checkAndIncrementVerifyAttempts($mobileNumber)) {
+            $this->auditService->log('mobile_otp_verify_rate_limit_exceeded', 'Too many OTP verification attempts for mobile number.', $request, hash('sha256', $mobileNumber));
+            return $this->respondWithError(
+                'تعداد تلاش‌های تأیید بیش از حد مجاز است. لطفاً پس از ' . config('auth.otp.verify_attempts.cooldown_minutes') . ' دقیقه دیگر تلاش کنید.',
+                429,
+                $request,
+                'otp'
+            );
+        }
+
+        // --- لاگ‌برداری برای اشکال‌زدایی مقایسه OTP ---
+        $otpCacheKey = 'otp_' . $mobileNumber;
+        $storedOtp = Cache::get($otpCacheKey);
+        Log::debug('Verifying OTP via OtpService', [
+            'mobile_hash' => hash('sha256', $mobileNumber),
+            'otp_cache_key' => $otpCacheKey,
+            'stored_otp_exists_before_check' => Cache::has($otpCacheKey),
+            'stored_otp_value_for_debug' => $storedOtp, // فقط برای اشکال‌زدایی، در محیط پروداکشن حذف شود
+            'entered_otp_value_for_debug' => $enteredOtp, // فقط برای اشکال‌زدایی، در محیط پروداکشن حذف شود
+        ]);
+        // ---------------------------------------------
+
+        // Verify OTP using OtpService
+        if (!$this->otpService->verify($mobileNumber, $enteredOtp)) {
+            // Audit Trail for OTP verification failure
+            $this->auditService->log('otp_verification_failure', 'Invalid or expired OTP entered.', $request, hash('sha256', $mobileNumber), Auth::id());
+            return $this->respondWithError('کد تایید اشتباه یا منقضی شده است.', 400, $request, 'otp');
+        }
+
+        // Reset rate limits on successful verification
+        $this->rateLimitService->resetVerifyAttempts($mobileNumber);
+        $this->rateLimitService->resetIpAttempts($ipAddress);
+
+        $this->auditService->log('otp_verification_success', 'OTP verified successfully.', $request, hash('sha256', $mobileNumber), Auth::id());
 
         $currentSessionId = Session::getId();
+        $authenticatedUser = Auth::user(); // Get the currently authenticated user
 
-        $user = User::where('mobile_number', $mobileNumber)->first();
+        $message = '';
+        $user = null; // Initialize user to null
 
-        if ($user) {
-            Auth::login($user);
-            Log::info('User logged in successfully', ['user_id' => $user->id, 'mobile' => $mobileNumber]);
-
-            // Transfer guest cart (based on session_id) to the logged-in user's cart
-            $this->cartService->transferGuestCartToUserCart($currentSessionId, $user);
-            Log::info('Guest cart transferred to existing user', ['user_id' => $user->id, 'session_id' => $currentSessionId]);
-
-
-            if ($request->expectsJson()) {
-                return response()->json(['message' => 'ورود با موفقیت انجام شد.', 'user' => $user], 200);
+        // Process user action (login, registration, or mobile update)
+        if ($authenticatedUser && $authenticatedUser->mobile_number !== $mobileNumber) {
+            // Scenario: Authenticated user changing mobile number
+            $redirectToProfile = $request->session()->get('otp_redirect_after_verify');
+            if (!$redirectToProfile) {
+                $this->auditService->log('unauthorized_mobile_change_attempt', 'Authenticated user tried to change mobile number outside of profile flow.', $request, hash('sha256', $mobileNumber), $authenticatedUser->id);
+                return $this->respondWithError('شما قبلاً ثبت‌نام کرده‌اید. لطفاً ورود کنید.', 403, $request);
             }
+            $authenticatedUser->mobile_number = $mobileNumber;
+            $authenticatedUser->save();
+            $user = $authenticatedUser; // Set user to the updated authenticated user
+            $message = 'شماره موبایل با موفقیت تغییر یافت.';
+            $this->auditService->log('mobile_number_updated', 'Mobile number successfully updated.', $request, hash('sha256', $mobileNumber), $user->id);
 
-            return redirect()->intended('/')->with('status', 'ورود با موفقیت انجام شد.');
-
-        } else {
-            // Note: 'pending_registration_' should be stored in cache where the user first enters registration information,
-            // with an appropriate TTL (e.g., 30 minutes).
-            // Example: Cache::put('pending_registration_' . $mobileNumber, $data, now()->addMinutes(30));
-            $registrationData = Cache::get('pending_registration_' . $mobileNumber);
-
-            if ($registrationData) {
-                $user = User::create([
-                    'name' => $registrationData['name'],
-                    'lastname' => $registrationData['lastname'],
-                    'mobile_number' => $registrationData['mobile_number'],
-                    'profile_completed' => false,
-                ]);
-                Log::info('New user registered successfully', ['user_id' => $user->id, 'mobile' => $mobileNumber]);
-
-                Cache::forget('pending_registration_' . $mobileNumber);
-
+        } else if (!$authenticatedUser) {
+            // Scenario: Unauthenticated user trying to login or register
+            $user = User::where('mobile_number', $mobileNumber)->first();
+            if ($user) {
+                // User exists, log them in
                 Auth::login($user);
-
-                // Assign guest cart (based on session_id) to the new user
-                $this->cartService->assignGuestCartToNewUser($currentSessionId, $user);
-                Log::info('Guest cart assigned to new user', ['user_id' => $user->id, 'session_id' => $currentSessionId]);
-
-
-                if ($request->expectsJson()) {
-                    return response()->json(['message' => 'ثبت‌نام و ورود با موفقیت انجام شد.', 'user' => $user], 200);
-                }
-                return redirect()->intended('/')->with('status', 'ثبت‌نام و ورود با موفقیت انجام شد.');
-
+                $this->cartService->transferGuestCartToUserCart($currentSessionId, $user);
+                $message = 'ورود با موفقیت انجام شد.';
+                $this->auditService->log('user_login_success', 'User logged in successfully via OTP.', $request, hash('sha256', $mobileNumber), $user->id);
             } else {
-                Log::warning('User not found and no pending registration data', ['mobile' => $mobileNumber]);
-                $request->session()->flash('user_not_found_mobile', $mobileNumber);
-                if ($request->expectsJson()) {
-                    return response()->json(['message' => 'کاربری با این شماره یافت نشد. لطفاً ثبت‌نام کنید.'], 404);
+                // User does not exist, check for pending registration data
+                $registrationData = Cache::get('pending_registration_' . $mobileNumber);
+                if ($registrationData) {
+                    $user = User::create([
+                        'name' => $registrationData['name'],
+                        'lastname' => $registrationData['lastname'],
+                        'mobile_number' => $registrationData['mobile_number'],
+                        'profile_completed' => false, // یا is_active = true
+                    ]);
+                    Cache::forget('pending_registration_' . $mobileNumber);
+                    Auth::login($user);
+                    $this->cartService->assignGuestCartToNewUser($currentSessionId, $user);
+                    $message = 'ثبت‌نام و ورود با موفقیت انجام شد.';
+                    $this->auditService->log('user_registration_success', 'New user registered successfully via OTP.', $request, hash('sha256', $mobileNumber), $user->id);
+                } else {
+                    // No user and no pending registration data
+                    $this->auditService->log('no_user_or_pending_registration', 'User not found and no pending registration data.', $request, hash('sha256', $mobileNumber));
+                    $request->session()->flash('user_not_found_mobile', $mobileNumber);
+                    return $this->respondWithError('کاربری با این شماره یافت نشد. لطفاً ثبت‌نام کنید.', 404, $request, 'mobile_number', 'auth.mobile-login-form', true);
                 }
-                return redirect()->route('auth.mobile-login-form')->with('status', 'کاربری با این شماره یافت نشد. لطفاً ثبت‌نام کنید.')->with('show_register_link', true);
             }
+        } else {
+            // Scenario: Authenticated user verifies OTP for their current mobile number (no change needed)
+            $user = $authenticatedUser; // Set user to the authenticated user
+            $message = 'شماره موبایل شما قبلاً همین بوده و نیازی به تغییر نبود.';
+            $this->auditService->log('otp_verified_same_mobile', 'Attempted to verify OTP for the same mobile number as current user.', $request, hash('sha256', $mobileNumber), $user->id);
         }
+
+        // Check for the redirect path stored in session
+        $redirectTo = $request->session()->pull('otp_redirect_after_verify', null);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'user' => $user, 'redirect_url' => $redirectTo], 200);
+        }
+
+        if ($redirectTo) {
+            Log::info('Redirecting to stored path after OTP verification', ['path' => $redirectTo]);
+            return redirect($redirectTo)->with('status', $message);
+        }
+
+        return redirect()->intended('/')->with('status', $message);
     }
 
     /**
@@ -285,12 +321,113 @@ class MobileAuthController extends Controller
      */
     public function logout(Request $request): RedirectResponse
     {
+        $userId = Auth::id(); // Get user ID before logging out
         Auth::guard('web')->logout();
-        Log::info('User logged out', ['user_id' => Auth::id()]);
+        Log::info('User logged out', ['user_id' => $userId]);
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
+        // Audit Trail for logout
+        $this->auditService->log('user_logout', 'User logged out.', $request, null, $userId);
+
         return redirect('/');
+    }
+
+    /**
+     * Helper method to check for bot activity (honeypot).
+     *
+     * @param Request $request
+     * @return bool
+     */
+    private function isBot(Request $request): bool
+    {
+        return $request->filled('website');
+    }
+
+    /**
+     * Helper method to handle bot detection response.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
+    private function handleBotDetection(Request $request)
+    {
+        Log::warning('Bot detected (honeypot triggered).', [
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+        $this->auditService->log('bot_detection', 'Bot activity detected via honeypot.', $request);
+        return $this->respondWithError('درخواست نامعتبر است.', 400, $request);
+    }
+
+    /**
+     * Helper method to handle validation errors.
+     *
+     * @param \Illuminate\Contracts\Validation\Validator $validator
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
+    private function handleValidationError(\Illuminate\Contracts\Validation\Validator $validator, Request $request)
+    {
+        Log::warning('Validation failed.', ['errors' => $validator->errors()->toArray()]);
+        $this->auditService->log('validation_failure', 'Form validation failed.', $request, null, Auth::id());
+        if ($request->expectsJson()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+        return back()->withErrors($validator)->withInput();
+    }
+
+    /**
+     * Helper method to respond with an error message.
+     *
+     * @param string $message
+     * @param int $code
+     * @param Request $request
+     * @param string $errorField
+     * @param string|null $redirectRoute
+     * @param bool $showRegisterLink
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
+    private function respondWithError(
+        string $message,
+        int $code,
+        Request $request,
+        string $errorField = 'general',
+        ?string $redirectRoute = null,
+        bool $showRegisterLink = false
+    ) {
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message], $code);
+        }
+        $redirect = back()->withErrors([$errorField => $message])->withInput();
+        if ($redirectRoute) {
+            $redirect = redirect()->route($redirectRoute)->with('status', $message);
+            if ($showRegisterLink) {
+                $redirect->with('show_register_link', true);
+            }
+        }
+        return $redirect;
+    }
+
+    /**
+     * Helper method to normalize OTP input (remove spaces, convert Persian/Arabic digits).
+     *
+     * @param string $otp
+     * @return string
+     */
+    private function normalizeOtp(string $otp): string
+    {
+        // Remove any spaces or dashes
+        $normalizedOtp = str_replace([' ', '-'], '', $otp);
+
+        // Convert Persian/Arabic digits to English digits
+        $persianDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+        $arabicDigits = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+        
+        $normalizedOtp = str_replace($persianDigits, range(0, 9), $normalizedOtp);
+        $normalizedOtp = str_replace($arabicDigits, range(0, 9), $normalizedOtp);
+
+        return $normalizedOtp;
     }
 }

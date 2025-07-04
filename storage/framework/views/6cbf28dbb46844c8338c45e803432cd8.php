@@ -20,19 +20,16 @@
                     <?php echo e(__('کد تأیید به شماره موبایل شما ارسال شد. لطفا کد را وارد کنید.')); ?>
 
                 </p>
-                
                 <?php if(isset($mobileNumber)): ?>
                     <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
                         <?php echo e(__('شماره موبایل:')); ?> <span class="font-bold text-gray-800 dark:text-gray-200"><?php echo e($mobileNumber); ?></span>
                     </p>
                 <?php endif; ?>
-                
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-4 mb-6">
                     <?php echo e(__('زمان باقی‌مانده:')); ?> <span id="countdown-timer" class="font-bold text-red-600 dark:text-red-400">02:00</span>
                 </p>
             </div>
 
-            <!-- Session Status -->
             <?php if (isset($component)) { $__componentOriginal7c1bf3a9346f208f66ee83b06b607fb5 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal7c1bf3a9346f208f66ee83b06b607fb5 = $attributes; } ?>
 <?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.auth-session-status','data' => ['class' => 'mb-4','status' => session('status')]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
@@ -57,11 +54,8 @@
             <form method="POST" action="<?php echo e(route('auth.verify-otp')); ?>" class="space-y-6">
                 <?php echo csrf_field(); ?>
 
-                <!-- Mobile Number (Hidden field to pass mobile_number) -->
-                
                 <input type="hidden" name="mobile_number" value="<?php echo e($mobileNumber ?? ''); ?>">
 
-                <!-- OTP -->
                 <div>
                     <label for="otp" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         <?php echo e(__('کد تأیید')); ?>
@@ -75,12 +69,12 @@
                            maxlength="6"
                            required 
                            autofocus
-                           inputmode="numeric" 
-                           pattern="[0-9]*"   
-                           value="<?php echo e(old('otp')); ?>" 
-                           aria-describedby="otp-help otp-error" 
-                           autocomplete="one-time-code"> 
-                    <span id="otp-help" class="sr-only"><?php echo e(__('لطفاً کد تأیید ۶ رقمی که به شماره موبایل شما ارسال شده است را وارد کنید.')); ?></span> 
+                           inputmode="numeric"
+                           pattern="[0-9]*"
+                           value="<?php echo e(old('otp')); ?>"
+                           aria-describedby="otp-help otp-error"
+                           autocomplete="one-time-code">
+                    <span id="otp-help" class="sr-only"><?php echo e(__('لطفاً کد تأیید ۶ رقمی که به شماره موبایل شما ارسال شده است را وارد کنید.')); ?></span>
                     <?php if (isset($component)) { $__componentOriginalf94ed9c5393ef72725d159fe01139746 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginalf94ed9c5393ef72725d159fe01139746 = $attributes; } ?>
 <?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.input-error','data' => ['messages' => $errors->get('otp'),'class' => 'mt-2 text-sm','id' => 'otp-error']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
@@ -100,7 +94,7 @@
 <?php if (isset($__componentOriginalf94ed9c5393ef72725d159fe01139746)): ?>
 <?php $component = $__componentOriginalf94ed9c5393ef72725d159fe01139746; ?>
 <?php unset($__componentOriginalf94ed9c5393ef72725d159fe01139746); ?>
-<?php endif; ?> 
+<?php endif; ?>
                 </div>
 
                 <div class="flex items-center justify-between mt-6">
@@ -114,22 +108,20 @@
                             class="inline-flex items-center justify-center px-6 py-3 text-lg font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 ease-in-out min-w-[150px]">
                         <?php echo e(__('تأیید و ورود')); ?>
 
-                        <i class="fas fa-check-circle mr-2"></i> 
+                        <i class="fas fa-check-circle mr-2"></i>
                     </button>
                 </div>
             </form>
-            
-            
+
             <div class="flex items-center justify-center mt-4">
                 <form id="resend-otp-form" method="POST" action="<?php echo e(route('auth.send-otp')); ?>">
                     <?php echo csrf_field(); ?>
-                    
                     <input type="hidden" name="mobile_number" value="<?php echo e($mobileNumber ?? ''); ?>">
                     <button type="submit" id="resend-otp-button"
                             class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-green-600 dark:text-green-400 bg-transparent hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-all duration-200 ease-in-out">
                         <?php echo e(__('ارسال مجدد کد')); ?>
 
-                        <i class="fas fa-redo-alt mr-2"></i> 
+                        <i class="fas fa-redo-alt mr-2"></i>
                     </button>
                 </form>
             </div>
@@ -140,20 +132,17 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             let timerElement = document.getElementById('countdown-timer');
-            let resendButton = document.getElementById('resend-otp-button'); // انتخاب دکمه با ID جدید
-            let resendForm = document.getElementById('resend-otp-form'); // انتخاب فرم ارسال مجدد
-            let otpInput = document.getElementById('otp'); // انتخاب فیلد OTP
+            let resendButton = document.getElementById('resend-otp-button');
+            let resendForm = document.getElementById('resend-otp-form');
+            let otpInput = document.getElementById('otp');
 
-            // زمان اولیه بر حسب ثانیه (2 دقیقه)
-            // از مقدار ثابت OTP_EXPIRY_MINUTES از کنترلر استفاده می‌کنیم.
-            // اگر این مقدار به ویو پاس داده نشده باشد، می‌توانید آن را به صورت دستی 2 * 60 تنظیم کنید.
-            let timeLeft = <?php echo e(\App\Http\Controllers\Auth\MobileAuthController::OTP_EXPIRY_MINUTES * 60); ?>;
+            // اصلاح شده: استفاده از config() برای خواندن زمان انقضا از فایل پیکربندی
+            let timeLeft = parseInt("<?php echo e((int) config('auth.otp.expiry_minutes', 2) * 60); ?>");
 
             function updateTimer() {
                 let minutes = Math.floor(timeLeft / 60);
                 let seconds = timeLeft % 60;
 
-                // فرمت دو رقمی برای نمایش (مثلاً 05 به جای 5)
                 minutes = minutes < 10 ? '0' + minutes : minutes;
                 seconds = seconds < 10 ? '0' + seconds : seconds;
 
@@ -162,36 +151,43 @@
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     timerElement.textContent = '<?php echo e(__("منقضی شد!")); ?>';
-                    // فعال کردن دکمه ارسال مجدد پس از پایان تایمر
                     resendButton.disabled = false;
                     resendButton.classList.remove('opacity-50', 'cursor-not-allowed');
                 } else {
                     timeLeft--;
-                    // غیرفعال کردن دکمه ارسال مجدد در حین تایمر
                     resendButton.disabled = true;
                     resendButton.classList.add('opacity-50', 'cursor-not-allowed');
                 }
             }
 
-            // اجرای تایمر هر 1 ثانیه
             let timerInterval = setInterval(updateTimer, 1000);
-
-            // اجرای اولیه برای نمایش فوری زمان و وضعیت دکمه
             updateTimer();
 
-            // اضافه کردن لودر هنگام ارسال مجدد کد
             resendForm.addEventListener('submit', function() {
                 resendButton.disabled = true;
                 resendButton.classList.add('opacity-50', 'cursor-not-allowed');
                 resendButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> <?php echo e(__("در حال ارسال...")); ?>';
             });
 
-            // بهبود JavaScript برای auto-focus و تمیز کردن input
-            otpInput.addEventListener('input', function(e) {
-                // فقط اعداد قبول کن
-                this.value = this.value.replace(/[^0-9]/g, '');
-                    
-                // اگر 6 رقم شد، فوکوس به دکمه تأیید
+            otpInput.addEventListener('input', function() {
+                // جایگزینی اعداد فارسی/عربی به انگلیسی
+                let persianDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+                let arabicDigits = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+
+                let englishValue = this.value.split('').map(function(char) {
+                    if (persianDigits.includes(char)) {
+                        return persianDigits.indexOf(char);
+                    } else if (arabicDigits.includes(char)) {
+                        return arabicDigits.indexOf(char);
+                    } else {
+                        return char;
+                    }
+                }).join('');
+
+                // فقط اعداد مجاز
+                englishValue = englishValue.replace(/[^0-9]/g, '');
+                this.value = englishValue;
+
                 if (this.value.length === 6) {
                     document.querySelector('form button[type="submit"]').focus();
                 }

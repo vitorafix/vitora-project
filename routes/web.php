@@ -63,13 +63,13 @@ Route::prefix('auth')->name('auth.')->group(function () {
     // اضافه کردن روت /login به همین متد، برای رفع خطای ویو auth.login
     Route::get('/login', [MobileAuthController::class, 'showMobileLoginForm'])->name('login');
 
-    // ارسال OTP - اضافه شدن middleware 'throttle' برای محدودیت درخواست بر اساس IP
-    Route::post('/send-otp', [MobileAuthController::class, 'sendOtp'])->name('send-otp')->middleware('throttle:5,1'); // مثال: 5 درخواست در 1 دقیقه برای هر IP
+    // ارسال OTP - Rate Limiting اکنون توسط RateLimitService در کنترلر مدیریت می‌شود
+    Route::post('/send-otp', [MobileAuthController::class, 'sendOtp'])->name('send-otp');
 
     // فرم تایید OTP
     Route::get('/verify-otp', [MobileAuthController::class, 'showVerifyOtpForm'])->name('verify-otp-form');
 
-    // تایید OTP
+    // تایید OTP - Rate Limiting اکنون توسط RateLimitService در کنترلر مدیریت می‌شود
     Route::post('/verify-otp', [MobileAuthController::class, 'verifyOtp'])->name('verify-otp');
 
     // خروج
