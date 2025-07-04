@@ -13,34 +13,54 @@ class AuditService implements AuditServiceInterface
     /**
      * Logs an audit event to the database.
      *
-     * @param string $action The action performed (e.g., 'otp_send_success', 'user_login').
-     * @param string $description A detailed description of the action.
-     * @param Request $request The current HTTP request.
-     * @param string|null $mobileHash Hashed mobile number, if applicable.
-     * @param int|null $userId User ID, if applicable. Defaults to authenticated user's ID.
+     * @param string $action
+     * @param string $description
+     * @param Request|null $request
+     * @param string|null $mobileNumber
+     * @param int|null $userId
+     * @param array $extraData Additional optional fields to store in audit_logs
      * @return void
      */
-    public function log(string $action, string $description, Request $request, ?string $mobileHash = null, ?int $userId = null): void
-    {
+    public function log(
+        string $action,
+        string $description,
+        ?Request $request = null,
+        ?string $mobileNumber = null,
+        ?int $userId = null,
+        array $extraData = []
+    ): void {
         try {
-            DB::table('audit_logs')->insert([
-                'user_id' => $userId ?? (Auth::check() ? Auth::id() : null), // Use provided userId or authenticated user's ID, or null
+            $ip = $request ? $request->ip() : null;
+            $userAgent = $request ? $request->userAgent() : null;
+            $sessionId = $request && $request->session() ? $request->session()->getId() : null;
+
+            $data = array_merge([
+                'user_id' => $userId ?? (Auth::check() ? Auth::id() : null),
                 'action' => $action,
                 'description' => $description,
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-                'mobile_hash' => $mobileHash,
+                'ip_address' => $ip,
+                'user_agent' => $userAgent,
+                'mobile_hash' => $mobileNumber ? hash('sha256', $mobileNumber) : null,
+                'session_id' => $sessionId,
                 'created_at' => now(),
                 'updated_at' => now(),
+            ], $extraData);
+
+            DB::table('audit_logs')->insert($data);
+
+            Log::debug('Audit log recorded successfully', [
+                'action' => $action,
+                'user_id' => $data['user_id'],
+                'ip' => $ip,
+                'extra' => $extraData,
             ]);
-            Log::debug('Audit log recorded successfully', ['action' => $action, 'user_id' => $userId ?? (Auth::check() ? Auth::id() : null), 'ip' => $request->ip()]);
         } catch (\Exception $e) {
             Log::error('Failed to record audit log: ' . $e->getMessage(), [
                 'action' => $action,
                 'user_id' => $userId ?? (Auth::check() ? Auth::id() : null),
-                'ip' => $request->ip(),
-                'mobile_hash' => $mobileHash,
-                'error' => $e->getMessage()
+                'ip' => $ip ?? 'unknown',
+                'mobile_hash' => $mobileNumber ? hash('sha256', $mobileNumber) : null,
+                'error' => $e->getMessage(),
             ]);
         }
     }
