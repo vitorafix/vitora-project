@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<!-- saved from url=(0030)http://localhost:8000/products -->
+<html lang="fa" dir="rtl" class="sf-js-enabled" style="--nav-height: 84px;"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="mQZr0J8SuS0RFSJuBK12Qu3fkvy8Z3COzBXh4OEw">
+    <title>محصولات ما - چای ابراهیم</title>
+
+    
+    <link href="./محصولات ما - چای ابراهیم_files/css2" rel="stylesheet">
+    
+    <link rel="stylesheet" href="./محصولات ما - چای ابراهیم_files/all.min.css">
+
+    
+    
+    <script type="module" src="./محصولات ما - چای ابراهیم_files/client"></script><link rel="stylesheet" href="./محصولات ما - چای ابراهیم_files/app.css"><script type="module" src="./محصولات ما - چای ابراهیم_files/app.js.download"></script>
+    <style>
+        /* این استایل برای جلوگیری از نمایش لحظه‌ای المنت‌های x-cloak قبل از بارگذاری Alpine.js ضروری است */
+        [x-cloak] { display: none !important; }
+
+        /* CSS برای مدال سفارشی */
+        .custom-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6); /* لایه تیره */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000; /* مطمئن شوید روی همه چیز باشد */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .custom-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .custom-modal-content {
+            background-color: #fff;
+            padding: 2.5rem;
+            border-radius: 1.5rem; /* rounded-2xl */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2); /* shadow-xl */
+            max-width: 480px; /* max-w-md */
+            width: 90%;
+            text-align: center;
+            transform: translateY(-20px); /* برای انیمیشن ورودی */
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+        .custom-modal-overlay.active .custom-modal-content {
+            transform: translateY(0);
+        }
+        .custom-modal-close-btn {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6B7280; /* gray-400 */
+            transition: color 0.2s ease;
+        }
+        .custom-modal-close-btn:hover {
+            color: #EF4444; /* red-500 */
+        }
+
+        /* استایل‌های جدید برای مینی سبد خرید هاور */
+        .mini-cart-dropdown {
+            position: relative; /* برای قرار دادن دراپ‌داون به صورت مطلق */
+            display: inline-block; /* برای اینکه عرض آن به اندازه محتوایش باشد */
+        }
+
+        .mini-cart-dropdown-content {
+            position: absolute;
+            right: 0; /* در سمت راست عنصر والد قرار می‌گیرد */
+            top: 100%; /* زیر عنصر والد قرار می‌گیرد */
+            margin-top: 0.5rem; /* فاصله از عنصر والد */
+            width: 18rem; /* عرض کادر را کوچکتر کردیم (قبلا 20rem بود) */
+            background-color: #fff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* سایه ظریف */
+            border-radius: 0.5rem; /* گوشه‌های گرد */
+            z-index: 50; /* مطمئن شوید روی بقیه عناصر قرار می‌گیرد */
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px); /* برای انیمیشن ورودی */
+            transition: opacity 0.2s ease-out, transform 0.2s ease-out, visibility 0.2s ease-out;
+            border: 1px solid #e5e7eb; /* border-gray-200 */
+            overflow: hidden; /* برای اطمینان از اینکه محتوا از گوشه‌های گرد بیرون نزند */
+        }
+
+        .mini-cart-dropdown-content.active {
+            opacity: 1; /* هنگام فعال شدن کامل مرئی شود */
+            visibility: visible; /* هنگام فعال شدن قابل مشاهده شود */
+            transform: translateY(0); /* به موقعیت اصلی برگردد */
+        }
+
+        /* استایل‌های بهبود یافته برای آیتم‌های داخل مینی سبد خرید */
+        .mini-cart-dropdown-content .py-2 {
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+
+        .mini-cart-dropdown-content .text-sm {
+            font-size: 0.875rem; /* 14px */
+        }
+
+        .mini-cart-dropdown-content .text-xs {
+            font-size: 0.75rem; /* 12px */
+        }
+
+        /* استایل برای دکمه‌های "ادامه جهت تکمیل سفارش" و "مشاهده سبد خرید" */
+        .mini-cart-dropdown-content .btn-primary,
+        .mini-cart-dropdown-content .btn-secondary {
+            padding-top: 0.6rem; /* کاهش پدینگ عمودی */
+            padding-bottom: 0.6rem; /* کاهش پدینگ عمودی */
+            font-size: 0.9rem; /* کمی کوچکتر کردن فونت دکمه‌ها */
+            margin-top: 0.75rem; /* فاصله بین دکمه‌ها و از محتوای بالا */
+        }
+    </style>
+<link rel="stylesheet" type="text/css" property="stylesheet" href="./محصولات ما - چای ابراهیم_files/stylesheets" data-turbolinks-eval="false" data-turbo-eval="false"><script src="./محصولات ما - چای ابراهیم_files/javascript" data-turbolinks-eval="false" data-turbo-eval="false"></script><script data-turbo-eval="false">jQuery.noConflict(true);</script>
+<script> Sfdump = window.Sfdump || (function (doc) { doc.documentElement.classList.add('sf-js-enabled'); var rxEsc = /([.*+?^${}()|\[\]\/\\])/g, idRx = /\bsf-dump-\d+-ref[012]\w+\b/, keyHint = 0 <= navigator.platform.toUpperCase().indexOf('MAC') ? 'Cmd' : 'Ctrl', addEventListener = function (e, n, cb) { e.addEventListener(n, cb, false); }; if (!doc.addEventListener) { addEventListener = function (element, eventName, callback) { element.attachEvent('on' + eventName, function (e) { e.preventDefault = function () {e.returnValue = false;}; e.target = e.srcElement; callback(e); }); }; } function toggle(a, recursive) { var s = a.nextSibling || {}, oldClass = s.className, arrow, newClass; if (/\bsf-dump-compact\b/.test(oldClass)) { arrow = '▼'; newClass = 'sf-dump-expanded'; } else if (/\bsf-dump-expanded\b/.test(oldClass)) { arrow = '▶'; newClass = 'sf-dump-compact'; } else { return false; } if (doc.createEvent && s.dispatchEvent) { var event = doc.createEvent('Event'); event.initEvent('sf-dump-expanded' === newClass ? 'sfbeforedumpexpand' : 'sfbeforedumpcollapse', true, false); s.dispatchEvent(event); } a.lastChild.innerHTML = arrow; s.className = s.className.replace(/\bsf-dump-(compact|expanded)\b/, newClass); if (recursive) { try { a = s.querySelectorAll('.'+oldClass); for (s = 0; s < a.length; ++s) { if (-1 == a[s].className.indexOf(newClass)) { a[s].className = newClass; a[s].previousSibling.lastChild.innerHTML = arrow; } } } catch (e) { } } return true; }; function collapse(a, recursive) { var s = a.nextSibling || {}, oldClass = s.className; if (/\bsf-dump-expanded\b/.test(oldClass)) { toggle(a, recursive); return true; } return false; }; function expand(a, recursive) { var s = a.nextSibling || {}, oldClass = s.className; if (/\bsf-dump-compact\b/.test(oldClass)) { toggle(a, recursive); return true; } return false; }; function collapseAll(root) { var a = root.querySelector('a.sf-dump-toggle'); if (a) { collapse(a, true); expand(a); return true; } return false; } function reveal(node) { var previous, parents = []; while ((node = node.parentNode || {}) && (previous = node.previousSibling) && 'A' === previous.tagName) { parents.push(previous); } if (0 !== parents.length) { parents.forEach(function (parent) { expand(parent); }); return true; } return false; } function highlight(root, activeNode, nodes) { resetHighlightedNodes(root); Array.from(nodes||[]).forEach(function (node) { if (!/\bsf-dump-highlight\b/.test(node.className)) { node.className = node.className + ' sf-dump-highlight'; } }); if (!/\bsf-dump-highlight-active\b/.test(activeNode.className)) { activeNode.className = activeNode.className + ' sf-dump-highlight-active'; } } function resetHighlightedNodes(root) { Array.from(root.querySelectorAll('.sf-dump-str, .sf-dump-key, .sf-dump-public, .sf-dump-protected, .sf-dump-private')).forEach(function (strNode) { strNode.className = strNode.className.replace(/\bsf-dump-highlight\b/, ''); strNode.className = strNode.className.replace(/\bsf-dump-highlight-active\b/, ''); }); } return function (root, x) { root = doc.getElementById(root); var indentRx = new RegExp('^('+(root.getAttribute('data-indent-pad') || ' ').replace(rxEsc, '\\$1')+')+', 'm'), options = {"maxDepth":1,"maxStringLength":160,"fileLinkFormat":false}, elt = root.getElementsByTagName('A'), len = elt.length, i = 0, s, h, t = []; while (i < len) t.push(elt[i++]); for (i in x) { options[i] = x[i]; } function a(e, f) { addEventListener(root, e, function (e, n) { if ('A' == e.target.tagName) { f(e.target, e); } else if ('A' == e.target.parentNode.tagName) { f(e.target.parentNode, e); } else { n = /\bsf-dump-ellipsis\b/.test(e.target.className) ? e.target.parentNode : e.target; if ((n = n.nextElementSibling) && 'A' == n.tagName) { if (!/\bsf-dump-toggle\b/.test(n.className)) { n = n.nextElementSibling || n; } f(n, e, true); } } }); }; function isCtrlKey(e) { return e.ctrlKey || e.metaKey; } function xpathString(str) { var parts = str.match(/[^'"]+|['"]/g).map(function (part) { if ("'" == part) { return '"\'"'; } if ('"' == part) { return "'\"'"; } return "'" + part + "'"; }); return "concat(" + parts.join(",") + ", '')"; } function xpathHasClass(className) { return "contains(concat(' ', normalize-space(@class), ' '), ' " + className +" ')"; } a('mouseover', function (a, e, c) { if (c) { e.target.style.cursor = "pointer"; } }); a('click', function (a, e, c) { if (/\bsf-dump-toggle\b/.test(a.className)) { e.preventDefault(); if (!toggle(a, isCtrlKey(e))) { var r = doc.getElementById(a.getAttribute('href').slice(1)), s = r.previousSibling, f = r.parentNode, t = a.parentNode; t.replaceChild(r, a); f.replaceChild(a, s); t.insertBefore(s, r); f = f.firstChild.nodeValue.match(indentRx); t = t.firstChild.nodeValue.match(indentRx); if (f && t && f[0] !== t[0]) { r.innerHTML = r.innerHTML.replace(new RegExp('^'+f[0].replace(rxEsc, '\\$1'), 'mg'), t[0]); } if (/\bsf-dump-compact\b/.test(r.className)) { toggle(s, isCtrlKey(e)); } } if (c) { } else if (doc.getSelection) { try { doc.getSelection().removeAllRanges(); } catch (e) { doc.getSelection().empty(); } } else { doc.selection.empty(); } } else if (/\bsf-dump-str-toggle\b/.test(a.className)) { e.preventDefault(); e = a.parentNode.parentNode; e.className = e.className.replace(/\bsf-dump-str-(expand|collapse)\b/, a.parentNode.className); } }); elt = root.getElementsByTagName('SAMP'); len = elt.length; i = 0; while (i < len) t.push(elt[i++]); len = t.length; for (i = 0; i < len; ++i) { elt = t[i]; if ('SAMP' == elt.tagName) { a = elt.previousSibling || {}; if ('A' != a.tagName) { a = doc.createElement('A'); a.className = 'sf-dump-ref'; elt.parentNode.insertBefore(a, elt); } else { a.innerHTML += ' '; } a.title = (a.title ? a.title+'\n[' : '[')+keyHint+'+click] Expand all children'; a.innerHTML += elt.className == 'sf-dump-compact' ? '<span>▶</span>' : '<span>▼</span>'; a.className += ' sf-dump-toggle'; x = 1; if ('sf-dump' != elt.parentNode.className) { x += elt.parentNode.getAttribute('data-depth')/1; } } else if (/\bsf-dump-ref\b/.test(elt.className) && (a = elt.getAttribute('href'))) { a = a.slice(1); elt.className += ' sf-dump-hover'; elt.className += ' '+a; if (/[\[{]$/.test(elt.previousSibling.nodeValue)) { a = a != elt.nextSibling.id && doc.getElementById(a); try { s = a.nextSibling; elt.appendChild(a); s.parentNode.insertBefore(a, s); if (/^[@#]/.test(elt.innerHTML)) { elt.innerHTML += ' <span>▶</span>'; } else { elt.innerHTML = '<span>▶</span>'; elt.className = 'sf-dump-ref'; } elt.className += ' sf-dump-toggle'; } catch (e) { if ('&' == elt.innerHTML.charAt(0)) { elt.innerHTML = '…'; elt.className = 'sf-dump-ref'; } } } } } if (doc.evaluate && Array.from && root.children.length > 1) { root.setAttribute('tabindex', 0); SearchState = function () { this.nodes = []; this.idx = 0; }; SearchState.prototype = { next: function () { if (this.isEmpty()) { return this.current(); } this.idx = this.idx < (this.nodes.length - 1) ? this.idx + 1 : 0; return this.current(); }, previous: function () { if (this.isEmpty()) { return this.current(); } this.idx = this.idx > 0 ? this.idx - 1 : (this.nodes.length - 1); return this.current(); }, isEmpty: function () { return 0 === this.count(); }, current: function () { if (this.isEmpty()) { return null; } return this.nodes[this.idx]; }, reset: function () { this.nodes = []; this.idx = 0; }, count: function () { return this.nodes.length; }, }; function showCurrent(state) { var currentNode = state.current(), currentRect, searchRect; if (currentNode) { reveal(currentNode); highlight(root, currentNode, state.nodes); if ('scrollIntoView' in currentNode) { currentNode.scrollIntoView(true); currentRect = currentNode.getBoundingClientRect(); searchRect = search.getBoundingClientRect(); if (currentRect.top < (searchRect.top + searchRect.height)) { window.scrollBy(0, -(searchRect.top + searchRect.height + 5)); } } } counter.textContent = (state.isEmpty() ? 0 : state.idx + 1) + ' of ' + state.count(); } var search = doc.createElement('div'); search.className = 'sf-dump-search-wrapper sf-dump-search-hidden'; search.innerHTML = ' <input type="text" class="sf-dump-search-input"> <span class="sf-dump-search-count">0 of 0<\/span> <button type="button" class="sf-dump-search-input-previous" tabindex="-1"> <svg viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1683 1331l-166 165q-19 19-45 19t-45-19L896 965l-531 531q-19 19-45 19t-45-19l-166-165q-19-19-19-45.5t19-45.5l742-741q19-19 45-19t45 19l742 741q19 19 19 45.5t-19 45.5z"\/><\/svg> <\/button> <button type="button" class="sf-dump-search-input-next" tabindex="-1"> <svg viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1683 808l-742 741q-19 19-45 19t-45-19L109 808q-19-19-19-45.5t19-45.5l166-165q19-19 45-19t45 19l531 531 531-531q19-19 45-19t45 19l166 165q19 19 19 45.5t-19 45.5z"\/><\/svg> <\/button> '; root.insertBefore(search, root.firstChild); var state = new SearchState(); var searchInput = search.querySelector('.sf-dump-search-input'); var counter = search.querySelector('.sf-dump-search-count'); var searchInputTimer = 0; var previousSearchQuery = ''; addEventListener(searchInput, 'keyup', function (e) { var searchQuery = e.target.value; /* Don't perform anything if the pressed key didn't change the query */ if (searchQuery === previousSearchQuery) { return; } previousSearchQuery = searchQuery; clearTimeout(searchInputTimer); searchInputTimer = setTimeout(function () { state.reset(); collapseAll(root); resetHighlightedNodes(root); if ('' === searchQuery) { counter.textContent = '0 of 0'; return; } var classMatches = [ "sf-dump-str", "sf-dump-key", "sf-dump-public", "sf-dump-protected", "sf-dump-private", ].map(xpathHasClass).join(' or '); var xpathResult = doc.evaluate('.//span[' + classMatches + '][contains(translate(child::text(), ' + xpathString(searchQuery.toUpperCase()) + ', ' + xpathString(searchQuery.toLowerCase()) + '), ' + xpathString(searchQuery.toLowerCase()) + ')]', root, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null); while (node = xpathResult.iterateNext()) state.nodes.push(node); showCurrent(state); }, 400); }); Array.from(search.querySelectorAll('.sf-dump-search-input-next, .sf-dump-search-input-previous')).forEach(function (btn) { addEventListener(btn, 'click', function (e) { e.preventDefault(); -1 !== e.target.className.indexOf('next') ? state.next() : state.previous(); searchInput.focus(); collapseAll(root); showCurrent(state); }) }); addEventListener(root, 'keydown', function (e) { var isSearchActive = !/\bsf-dump-search-hidden\b/.test(search.className); if ((114 === e.keyCode && !isSearchActive) || (isCtrlKey(e) && 70 === e.keyCode)) { /* F3 or CMD/CTRL + F */ if (70 === e.keyCode && document.activeElement === searchInput) { /* * If CMD/CTRL + F is hit while having focus on search input, * the user probably meant to trigger browser search instead. * Let the browser execute its behavior: */ return; } e.preventDefault(); search.className = search.className.replace(/\bsf-dump-search-hidden\b/, ''); searchInput.focus(); } else if (isSearchActive) { if (27 === e.keyCode) { /* ESC key */ search.className += ' sf-dump-search-hidden'; e.preventDefault(); resetHighlightedNodes(root); searchInput.value = ''; } else if ( (isCtrlKey(e) && 71 === e.keyCode) /* CMD/CTRL + G */ || 13 === e.keyCode /* Enter */ || 114 === e.keyCode /* F3 */ ) { e.preventDefault(); e.shiftKey ? state.previous() : state.next(); collapseAll(root); showCurrent(state); } } }); } if (0 >= options.maxStringLength) { return; } try { elt = root.querySelectorAll('.sf-dump-str'); len = elt.length; i = 0; t = []; while (i < len) t.push(elt[i++]); len = t.length; for (i = 0; i < len; ++i) { elt = t[i]; s = elt.innerText || elt.textContent; x = s.length - options.maxStringLength; if (0 < x) { h = elt.innerHTML; elt[elt.innerText ? 'innerText' : 'textContent'] = s.substring(0, options.maxStringLength); elt.className += ' sf-dump-str-collapse'; elt.innerHTML = '<span class=sf-dump-str-collapse>'+h+'<a class="sf-dump-ref sf-dump-str-toggle" title="Collapse"> ◀</a></span>'+ '<span class=sf-dump-str-expand>'+elt.innerHTML+'<a class="sf-dump-ref sf-dump-str-toggle" title="'+x+' remaining characters"> ▶</a></span>'; } } } catch (e) { } }; })(document); </script><style> .sf-js-enabled .phpdebugbar pre.sf-dump .sf-dump-compact, .sf-js-enabled .sf-dump-str-collapse .sf-dump-str-collapse, .sf-js-enabled .sf-dump-str-expand .sf-dump-str-expand { display: none; } .sf-dump-hover:hover { background-color: #B729D9; color: #FFF !important; border-radius: 2px; } .phpdebugbar pre.sf-dump { display: block; white-space: pre; padding: 5px; overflow: initial !important; } .phpdebugbar pre.sf-dump:after { content: ""; visibility: hidden; display: block; height: 0; clear: both; } .phpdebugbar pre.sf-dump .sf-dump-ellipsization { display: inline-flex; } .phpdebugbar pre.sf-dump a { text-decoration: none; cursor: pointer; border: 0; outline: none; color: inherit; } .phpdebugbar pre.sf-dump img { max-width: 50em; max-height: 50em; margin: .5em 0 0 0; padding: 0; background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAAAAAA6mKC9AAAAHUlEQVQY02O8zAABilCaiQEN0EeA8QuUcX9g3QEAAjcC5piyhyEAAAAASUVORK5CYII=) #D3D3D3; } .phpdebugbar pre.sf-dump .sf-dump-ellipsis { text-overflow: ellipsis; white-space: nowrap; overflow: hidden; } .phpdebugbar pre.sf-dump .sf-dump-ellipsis-tail { flex-shrink: 0; } .phpdebugbar pre.sf-dump code { display:inline; padding:0; background:none; } .sf-dump-public.sf-dump-highlight, .sf-dump-protected.sf-dump-highlight, .sf-dump-private.sf-dump-highlight, .sf-dump-str.sf-dump-highlight, .sf-dump-key.sf-dump-highlight { background: rgba(111, 172, 204, 0.3); border: 1px solid #7DA0B1; border-radius: 3px; } .sf-dump-public.sf-dump-highlight-active, .sf-dump-protected.sf-dump-highlight-active, .sf-dump-private.sf-dump-highlight-active, .sf-dump-str.sf-dump-highlight-active, .sf-dump-key.sf-dump-highlight-active { background: rgba(253, 175, 0, 0.4); border: 1px solid #ffa500; border-radius: 3px; } .phpdebugbar pre.sf-dump .sf-dump-search-hidden { display: none !important; } .phpdebugbar pre.sf-dump .sf-dump-search-wrapper { font-size: 0; white-space: nowrap; margin-bottom: 5px; display: flex; position: -webkit-sticky; position: sticky; top: 5px; } .phpdebugbar pre.sf-dump .sf-dump-search-wrapper > * { vertical-align: top; box-sizing: border-box; height: 21px; font-weight: normal; border-radius: 0; background: #FFF; color: #757575; border: 1px solid #BBB; } .phpdebugbar pre.sf-dump .sf-dump-search-wrapper > input.sf-dump-search-input { padding: 3px; height: 21px; font-size: 12px; border-right: none; border-top-left-radius: 3px; border-bottom-left-radius: 3px; color: #000; min-width: 15px; width: 100%; } .phpdebugbar pre.sf-dump .sf-dump-search-wrapper > .sf-dump-search-input-next, .phpdebugbar pre.sf-dump .sf-dump-search-wrapper > .sf-dump-search-input-previous { background: #F2F2F2; outline: none; border-left: none; font-size: 0; line-height: 0; } .phpdebugbar pre.sf-dump .sf-dump-search-wrapper > .sf-dump-search-input-next { border-top-right-radius: 3px; border-bottom-right-radius: 3px; } .phpdebugbar pre.sf-dump .sf-dump-search-wrapper > .sf-dump-search-input-next > svg, .phpdebugbar pre.sf-dump .sf-dump-search-wrapper > .sf-dump-search-input-previous > svg { pointer-events: none; width: 12px; height: 12px; } .phpdebugbar pre.sf-dump .sf-dump-search-wrapper > .sf-dump-search-count { display: inline-block; padding: 0 5px; margin: 0; border-left: none; line-height: 21px; font-size: 12px; }.phpdebugbar pre.sf-dump, .phpdebugbar pre.sf-dump .sf-dump-default{word-wrap: break-word; white-space: pre-wrap; word-break: normal}.phpdebugbar pre.sf-dump .sf-dump-num{font-weight:bold; color:#1299DA}.phpdebugbar pre.sf-dump .sf-dump-const{font-weight:bold}.phpdebugbar pre.sf-dump .sf-dump-str{font-weight:bold; color:#3A9B26}.phpdebugbar pre.sf-dump .sf-dump-note{color:#1299DA}.phpdebugbar pre.sf-dump .sf-dump-ref{color:#7B7B7B}.phpdebugbar pre.sf-dump .sf-dump-public{color:#000000}.phpdebugbar pre.sf-dump .sf-dump-protected{color:#000000}.phpdebugbar pre.sf-dump .sf-dump-private{color:#000000}.phpdebugbar pre.sf-dump .sf-dump-meta{color:#B729D9}.phpdebugbar pre.sf-dump .sf-dump-key{color:#3A9B26}.phpdebugbar pre.sf-dump .sf-dump-index{color:#1299DA}.phpdebugbar pre.sf-dump .sf-dump-ellipsis{color:#A0A000}.phpdebugbar pre.sf-dump .sf-dump-virtual{font-style:italic}.phpdebugbar pre.sf-dump .sf-dump-ns{user-select:none;}.phpdebugbar pre.sf-dump .sf-dump-ellipsis-note{color:#1299DA}</style>
+</head>
+<body class="font-sans antialiased flex flex-col min-h-screen bg-gray-100" style="margin-bottom: 30px;">
+
+    
+    <nav x-data="{ mobileMenuOpen: false }" class="bg-gradient-to-r from-green-800 via-green-700 to-green-600 shadow-xl border-b-4 border-amber-400 sticky top-0 z-50 backdrop-blur-sm">
+    <!-- Primary Navigation Menu -->
+    <div class="max-w-full mx-auto px-0"> <!-- Changed to max-w-full and px-0 for full width -->
+        <!-- Main flex container for logo, navigation links, and user/search section -->
+        <div class="flex items-center h-20"> <!-- Removed justify-between here, will manage spacing with flex-grow and ml-auto -->
+            <!-- Right Side - Logo & Brand -->
+            <div class="flex items-center shrink-0">
+                <!-- Logo -->
+                <div class="flex items-center group">
+                    <a href="http://localhost:8000/" class="flex items-center transition-transform duration-300 hover:scale-105 pr-4" dir="rtl">
+                        <div class="relative">
+                            <!-- Removed the leaf icon as requested -->
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-xl font-black text-white">چای ابراهیم</span>
+                            <span class="text-xs text-amber-200">عطر و طعم اصیل ایرانی</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Center - Main Navigation Links (now takes available space and centers its content) -->
+            <div class="hidden lg:flex flex-1 justify-center items-center space-x-reverse space-10" dir="rtl">
+                <!-- Home -->
+                <a href="http://localhost:8000/" class="nav-link ">
+                    <i class="fas fa-home ml-2"></i>
+                    <span>صفحه اصلی</span>
+                </a>
+
+                <!-- Products with Dropdown -->
+                <div class="relative group">
+                    <a href="http://localhost:8000/products" class="nav-link active">
+                        <i class="fas fa-leaf ml-2"></i>
+                        <span>محصولات</span>
+                        <i class="fas fa-chevron-down text-xs mr-1 transition-transform duration-300 group-hover:rotate-180"></i>
+                    </a>
+                    <!-- Dropdown Menu -->
+                    <div class="absolute top-full right-0 mt-3 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50">
+                        <div class="p-4">
+                            <div class="text-sm text-gray-500 mb-3 font-semibold">دسته‌بندی محصولات</div>
+                            <div class="space-y-2">
+                                <a href="http://localhost:8000/products?category=black-tea" class="dropdown-link">
+                                    <i class="fas fa-circle text-amber-600 text-xs ml-2"></i>چای سیاه
+                                </a>
+                                <a href="http://localhost:8000/products?category=green-tea" class="dropdown-link">
+                                    <i class="fas fa-circle text-green-600 text-xs ml-2"></i>چای سبز
+                                </a>
+                                <a href="http://localhost:8000/products?category=herbal-tea" class="dropdown-link">
+                                    <i class="fas fa-circle text-purple-600 text-xs ml-2"></i>چای گیاهی
+                                </a>
+                                <a href="http://localhost:8000/products?category=special" class="dropdown-link">
+                                    <i class="fas fa-star text-yellow-500 text-xs ml-2"></i>محصولات ویژه
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Blog -->
+                <a href="http://localhost:8000/blog" class="nav-link ">
+                    <i class="fas fa-newspaper ml-2"></i>
+                    <span>وبلاگ</span>
+                </a>
+
+                <!-- About Us -->
+                <a href="http://localhost:8000/about" class="nav-link ">
+                    <i class="fas fa-info-circle ml-2"></i>
+                    <span>درباره ما</span>
+                </a>
+
+                <!-- Contact Us -->
+                <a href="http://localhost:8000/contact" class="nav-link ">
+                    <i class="fas fa-phone-alt ml-2"></i>
+                    <span>تماس با ما</span>
+                </a>
+            </div>
+
+            <!-- Left Side - Search & User Menu (pushed to the left using ml-auto) -->
+            <div class="flex items-center space-x-6 ml-auto">
+                <!-- Search Bar with Live Results -->
+                <div class="hidden md:block relative z-50">
+                    <input type="text" id="live-search-input" name="q" placeholder="جستجو در محصولات..." class="w-64 px-4 py-2 pr-10 text-xs bg-white/90 backdrop-blur-sm border border-white/20 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-300 placeholder-gray-500">
+                    <i class="fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+
+                    <!-- Search Results Container - Positioned absolutely below the search input -->
+                    <div id="search-results-container" class="absolute top-full left-0 w-full mt-2 bg-white rounded-lg shadow-lg z-50 border border-gray-200 overflow-hidden hidden">
+                        <!-- Results or initial message will be inserted here by JavaScript -->
+                        <p class="text-gray-500 text-center py-4 text-sm" id="initial-message">شروع به تایپ کنید تا نتایج را مشاهده کنید.</p>
+                    </div>
+                </div>
+
+                <!-- Cart with Counter and Hover Dropdown -->
+                <div class="relative mini-cart-dropdown">
+                    <a href="http://localhost:8000/cart" class="nav-link  relative" id="mini-cart-trigger">
+                        <i class="fas fa-shopping-cart ml-2"></i>
+                        <span>سبد خرید</span>
+                        <!-- Cart Counter Badge -->
+                        <span id="cart-item-count" class="absolute -top-0 -left-0 bg-red-500 text-white text-xs rounded-full min-w-[40px] h-5 flex items-center justify-center font-bold hidden z-10 px-1 leading-none">0</span>
+                    </a>
+                    <!-- Mini-Cart Details Container (Hidden by default, shown on hover) -->
+                    <div id="mini-cart-details-container" class="mini-cart-dropdown-content">
+                        <!-- Content will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- User Menu Dropdown -->
+                <div class="relative" x-data="{ userMenuOpen: false }">
+                    <button @click="userMenuOpen = !userMenuOpen" class="flex items-center px-4 py-2 text-white hover:bg-white/10 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-400" dir="rtl">
+                                                    <div class="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center text-white ml-3">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="hidden sm:block text-right ml-2">
+                                <div class="text-xs text-semibold">کاربر مهمان</div>
+                                <div class="text-xs text-amber-200">عضو نشده</div>
+                            </div>
+                                                <i class="fas fa-chevron-down text-xs transition-transform duration-300" :class="{&#39;rotate-180&#39;: userMenuOpen}"></i>
+                    </button>
+
+                    <!-- User Dropdown Menu -->
+                    
+                    
+                    <div x-show="userMenuOpen" @click.away="userMenuOpen = false" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="absolute left-0 mt-3 w-72 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-50" style="display: none;">
+
+                                                    <!-- Guest User Menu -->
+                            <div class="py-2">
+                                <a href="http://localhost:8000/auth/mobile-login" class="user-dropdown-link"> 
+                                    <i class="fas fa-sign-in-alt text-green-500"></i>
+                                    <span>ورود به حساب</span>
+                                    <i class="fas fa-chevron-left text-gray-400"></i>
+                                </a>
+
+                                
+                                <a href="http://localhost:8000/auth/register" class="user-dropdown-link">
+                                    <i class="fas fa-user-plus"></i>
+                                    <span>ثبت‌نام</span>
+                                    <i class="fas fa-chevron-left text-gray-400"></i>
+                                </a>
+                            </div>
+                                            </div>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="lg:hidden">
+                    <button @click="mobileMenuOpen = !mobileMenuOpen" class="p-2 rounded-md text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all duration-300">
+                        <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                            <path :class="{&#39;hidden&#39;: mobileMenuOpen, &#39;inline-flex&#39;: !mobileMenuOpen }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                            <path :class="{&#39;hidden&#39;: !mobileMenuOpen, &#39;inline-flex&#39;: mobileMenuOpen }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Navigation Menu -->
+    <div :class="{&#39;block&#39;: mobileMenuOpen, &#39;hidden&#39;: !mobileMenuOpen}" class="hidden lg:hidden bg-green-800/95 backdrop-blur-sm border-t border-green-600">
+        <!-- Mobile Search -->
+        <div class="px-4 py-3 border-b border-green-600">
+            <!-- Removed form here for mobile if live search is desired on mobile -->
+            <div class="relative">
+                <input type="text" id="mobile-live-search-input" name="q" placeholder="جستجو..." class="w-full px-4 py-2 pr-10 text-xs bg-white/90 border border-white/20 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-400">
+                <i class="fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <!-- Mobile Search Results Container -->
+                <div id="mobile-search-results-container" class="absolute top-full left-0 w-full mt-2 bg-white rounded-lg shadow-lg z-50 border border-gray-200 overflow-hidden hidden">
+                    <p class="text-gray-500 text-center py-4 text-sm" id="initial-message">شروع به تایپ کنید تا نتایج را مشاهده کنید.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Links -->
+        <div class="px-4 py-3 space-y-2">
+            <a href="http://localhost:8000/" class="mobile-nav-link ">
+                <i class="fas fa-home"></i>
+                <span>صفحه اصلی</span>
+            </a>
+
+            <a href="http://localhost:8000/products" class="mobile-nav-link active">
+                <i class="fas fa-leaf"></i>
+                <span>محصولات</span>
+            </a>
+
+            <a href="http://localhost:8000/blog" class="mobile-nav-link ">
+                <i class="fas fa-newspaper"></i>
+                <span>وبلاگ</span>
+            </a>
+
+            <a href="http://localhost:8000/about" class="mobile-nav-link ">
+                <i class="fas fa-info-circle"></i>
+                <span>درباره ما</span>
+            </a>
+
+            <a href="http://localhost:8000/contact" class="mobile-nav-link ">
+                <i class="fas fa-phone-alt"></i>
+                <span>تماس با ما</span>
+            </a>
+
+            <a href="http://localhost:8000/cart" class="mobile-nav-link ">
+                <i class="fas fa-shopping-cart"></i>
+                <span>سبد خرید</span>
+                
+                
+                <span class="mr-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full hidden" id="cart-item-count">0</span>
+            </a>
+        </div>
+
+        <!-- Mobile User Section -->
+        <div class="border-t border-green-600 px-4 py-4">
+                            <div class="space-y-2">
+                    <a href="http://localhost:8000/auth/mobile-login" class="mobile-nav-link"> 
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span>ورود به حساب</span>
+                    </a>
+
+                    
+                    <a href="http://localhost:8000/auth/register" class="mobile-nav-link">
+                        <i class="fas fa-user-plus"></i>
+                        <span>ثبت‌نام</span>
+                    </a>
+                </div>
+                    </div>
+    </div>
+</nav>
+ 
+
+    
+    
+    
+    <main class="flex-grow">
+        
+        
+        
+                        <section class="container mx-auto px-4 py-8 md:py-16 max-w-6xl">
+        <h1 class="text-4xl font-extrabold text-brown-900 mb-12 text-center">
+            <i class="fas fa-box-open text-green-700 ml-3"></i>
+            محصولات ما
+        </h1>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                            <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 card-hover-effect">
+                    <a href="http://localhost:8000/products/7">
+                        <img src="./محصولات ما - چای ابراهیم_files/4B5563" onerror="this.onerror=null;this.src=&#39;https://placehold.co/400x400/E5E7EB/4B5563?text=Product&#39;;" alt="چای سیاه ممتاز لاهیجان" class="w-full h-48 object-cover transition-transform duration-300 hover:scale-105">
+                    </a>
+                    <div class="p-5 text-center rtl:text-right">
+                        <h3 class="text-xl font-semibold text-brown-900 mb-2 truncate">
+                            <a href="http://localhost:8000/products/7" class="hover:text-green-700 transition-colors duration-200">
+                                چای سیاه ممتاز لاهیجان
+                            </a>
+                        </h3>
+                                                    <p class="text-sm text-gray-500 mb-2">دسته‌بندی: چای سیاه</p>
+                                                <p class="text-green-700 font-bold text-2xl mb-4">
+                            180,000 تومان
+                        </p>
+                                                    <button class="add-to-cart-btn btn-primary w-full py-2 flex items-center justify-center text-lg" data-product-id="7" data-product-title="چای سیاه ممتاز لاهیجان" data-product-price="180000.00">
+                                <i class="fas fa-cart-plus ml-2"></i>
+                                افزودن به سبد
+                            </button>
+                                            </div>
+                </div>
+                            <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 card-hover-effect">
+                    <a href="http://localhost:8000/products/8">
+                        <img src="./محصولات ما - چای ابراهیم_files/4B5563" onerror="this.onerror=null;this.src=&#39;https://placehold.co/400x400/E5E7EB/4B5563?text=Product&#39;;" alt="چای سبز ارگانیک شمال" class="w-full h-48 object-cover transition-transform duration-300 hover:scale-105">
+                    </a>
+                    <div class="p-5 text-center rtl:text-right">
+                        <h3 class="text-xl font-semibold text-brown-900 mb-2 truncate">
+                            <a href="http://localhost:8000/products/8" class="hover:text-green-700 transition-colors duration-200">
+                                چای سبز ارگانیک شمال
+                            </a>
+                        </h3>
+                                                    <p class="text-sm text-gray-500 mb-2">دسته‌بندی: چای سبز</p>
+                                                <p class="text-green-700 font-bold text-2xl mb-4">
+                            200,000 تومان
+                        </p>
+                                                    <button class="add-to-cart-btn btn-primary w-full py-2 flex items-center justify-center text-lg" data-product-id="8" data-product-title="چای سبز ارگانیک شمال" data-product-price="200000.00">
+                                <i class="fas fa-cart-plus ml-2"></i>
+                                افزودن به سبد
+                            </button>
+                                            </div>
+                </div>
+                            <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 card-hover-effect">
+                    <a href="http://localhost:8000/products/9">
+                        <img src="./محصولات ما - چای ابراهیم_files/4B5563" onerror="this.onerror=null;this.src=&#39;https://placehold.co/400x400/E5E7EB/4B5563?text=Product&#39;;" alt="چای ماسالا هندی" class="w-full h-48 object-cover transition-transform duration-300 hover:scale-105">
+                    </a>
+                    <div class="p-5 text-center rtl:text-right">
+                        <h3 class="text-xl font-semibold text-brown-900 mb-2 truncate">
+                            <a href="http://localhost:8000/products/9" class="hover:text-green-700 transition-colors duration-200">
+                                چای ماسالا هندی
+                            </a>
+                        </h3>
+                                                    <p class="text-sm text-gray-500 mb-2">دسته‌بندی: چای ماسالا</p>
+                                                <p class="text-green-700 font-bold text-2xl mb-4">
+                            250,000 تومان
+                        </p>
+                                                    <button class="add-to-cart-btn btn-primary w-full py-2 flex items-center justify-center text-lg" data-product-id="9" data-product-title="چای ماسالا هندی" data-product-price="250000.00">
+                                <i class="fas fa-cart-plus ml-2"></i>
+                                افزودن به سبد
+                            </button>
+                                            </div>
+                </div>
+                            <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 card-hover-effect">
+                    <a href="http://localhost:8000/products/10">
+                        <img src="./محصولات ما - چای ابراهیم_files/4B5563" onerror="this.onerror=null;this.src=&#39;https://placehold.co/400x400/E5E7EB/4B5563?text=Product&#39;;" alt="چای سفید نپالی" class="w-full h-48 object-cover transition-transform duration-300 hover:scale-105">
+                    </a>
+                    <div class="p-5 text-center rtl:text-right">
+                        <h3 class="text-xl font-semibold text-brown-900 mb-2 truncate">
+                            <a href="http://localhost:8000/products/10" class="hover:text-green-700 transition-colors duration-200">
+                                چای سفید نپالی
+                            </a>
+                        </h3>
+                                                    <p class="text-sm text-gray-500 mb-2">دسته‌بندی: چای سفید</p>
+                                                <p class="text-green-700 font-bold text-2xl mb-4">
+                            300,000 تومان
+                        </p>
+                                                    <button class="add-to-cart-btn btn-primary w-full py-2 flex items-center justify-center text-lg" data-product-id="10" data-product-title="چای سفید نپالی" data-product-price="300000.00">
+                                <i class="fas fa-cart-plus ml-2"></i>
+                                افزودن به سبد
+                            </button>
+                                            </div>
+                </div>
+                            <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 card-hover-effect">
+                    <a href="http://localhost:8000/products/11">
+                        <img src="./محصولات ما - چای ابراهیم_files/4B5563" onerror="this.onerror=null;this.src=&#39;https://placehold.co/400x400/E5E7EB/4B5563?text=Product&#39;;" alt="چای اولانگ تایوانی" class="w-full h-48 object-cover transition-transform duration-300 hover:scale-105">
+                    </a>
+                    <div class="p-5 text-center rtl:text-right">
+                        <h3 class="text-xl font-semibold text-brown-900 mb-2 truncate">
+                            <a href="http://localhost:8000/products/11" class="hover:text-green-700 transition-colors duration-200">
+                                چای اولانگ تایوانی
+                            </a>
+                        </h3>
+                                                    <p class="text-sm text-gray-500 mb-2">دسته‌بندی: چای اولانگ</p>
+                                                <p class="text-green-700 font-bold text-2xl mb-4">
+                            280,000 تومان
+                        </p>
+                                                    <button class="add-to-cart-btn btn-primary w-full py-2 flex items-center justify-center text-lg" data-product-id="11" data-product-title="چای اولانگ تایوانی" data-product-price="280000.00">
+                                <i class="fas fa-cart-plus ml-2"></i>
+                                افزودن به سبد
+                            </button>
+                                            </div>
+                </div>
+                            <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 card-hover-effect">
+                    <a href="http://localhost:8000/products/12">
+                        <img src="./محصولات ما - چای ابراهیم_files/4B5563" onerror="this.onerror=null;this.src=&#39;https://placehold.co/400x400/E5E7EB/4B5563?text=Product&#39;;" alt="چای کله مورچه‌ای سنتی" class="w-full h-48 object-cover transition-transform duration-300 hover:scale-105">
+                    </a>
+                    <div class="p-5 text-center rtl:text-right">
+                        <h3 class="text-xl font-semibold text-brown-900 mb-2 truncate">
+                            <a href="http://localhost:8000/products/12" class="hover:text-green-700 transition-colors duration-200">
+                                چای کله مورچه‌ای سنتی
+                            </a>
+                        </h3>
+                                                    <p class="text-sm text-gray-500 mb-2">دسته‌بندی: چای سیاه</p>
+                                                <p class="text-green-700 font-bold text-2xl mb-4">
+                            150,000 تومان
+                        </p>
+                                                    <button class="add-to-cart-btn btn-primary w-full py-2 flex items-center justify-center text-lg" data-product-id="12" data-product-title="چای کله مورچه‌ای سنتی" data-product-price="150000.00">
+                                <i class="fas fa-cart-plus ml-2"></i>
+                                افزودن به سبد
+                            </button>
+                                            </div>
+                </div>
+                            <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 card-hover-effect">
+                    <a href="http://localhost:8000/products/13">
+                        <img src="./محصولات ما - چای ابراهیم_files/4B5563" onerror="this.onerror=null;this.src=&#39;https://placehold.co/400x400/E5E7EB/4B5563?text=Product&#39;;" alt="دمنوش به لیمو" class="w-full h-48 object-cover transition-transform duration-300 hover:scale-105">
+                    </a>
+                    <div class="p-5 text-center rtl:text-right">
+                        <h3 class="text-xl font-semibold text-brown-900 mb-2 truncate">
+                            <a href="http://localhost:8000/products/13" class="hover:text-green-700 transition-colors duration-200">
+                                دمنوش به لیمو
+                            </a>
+                        </h3>
+                                                    <p class="text-sm text-gray-500 mb-2">دسته‌بندی: چای گیاهی</p>
+                                                <p class="text-green-700 font-bold text-2xl mb-4">
+                            90,000 تومان
+                        </p>
+                                                    <button class="add-to-cart-btn btn-primary w-full py-2 flex items-center justify-center text-lg" data-product-id="13" data-product-title="دمنوش به لیمو" data-product-price="90000.00">
+                                <i class="fas fa-cart-plus ml-2"></i>
+                                افزودن به سبد
+                            </button>
+                                            </div>
+                </div>
+                            <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 card-hover-effect">
+                    <a href="http://localhost:8000/products/14">
+                        <img src="./محصولات ما - چای ابراهیم_files/4B5563" onerror="this.onerror=null;this.src=&#39;https://placehold.co/400x400/E5E7EB/4B5563?text=Product&#39;;" alt="چای سبز ژاپنی" class="w-full h-48 object-cover transition-transform duration-300 hover:scale-105">
+                    </a>
+                    <div class="p-5 text-center rtl:text-right">
+                        <h3 class="text-xl font-semibold text-brown-900 mb-2 truncate">
+                            <a href="http://localhost:8000/products/14" class="hover:text-green-700 transition-colors duration-200">
+                                چای سبز ژاپنی
+                            </a>
+                        </h3>
+                                                    <p class="text-sm text-gray-500 mb-2">دسته‌بندی: چای سبز</p>
+                                                <p class="text-green-700 font-bold text-2xl mb-4">
+                            220,000 تومان
+                        </p>
+                                                    <button class="add-to-cart-btn btn-primary w-full py-2 flex items-center justify-center text-lg" data-product-id="14" data-product-title="چای سبز ژاپنی" data-product-price="220000.00">
+                                <i class="fas fa-cart-plus ml-2"></i>
+                                افزودن به سبد
+                            </button>
+                                            </div>
+                </div>
+                    </div>
+
+        
+        <div class="mt-10 flex justify-center">
+            
+        </div>
+    </section>
+ 
+            </main>
+
+    
+    <div id="auth-modal-overlay" class="auth-modal-overlay hidden">
+    <div class="auth-modal-content">
+        <button id="auth-modal-close-btn" class="auth-modal-close-btn">
+            <i class="fas fa-times"></i>
+        </button>
+
+        
+        <form id="mobile-login-step" class="auth-form">
+            <h3>ورود / ثبت نام</h3>
+            <div class="auth-form-group">
+                <label for="mobile-number">شماره موبایل:</label>
+                <input type="tel" id="mobile-number" name="mobile_number" placeholder="مثال: 09123456789" required="" pattern="^09[0-9]{9}$" maxlength="11">
+                <p class="text-sm text-gray-500 mt-1 text-right">شماره موبایل خود را وارد کنید.</p>
+            </div>
+            <button type="submit" class="auth-submit-btn" id="get-otp-btn">دریافت کد تایید</button>
+            <div class="auth-switch-link hidden"> 
+                هنوز حساب کاربری ندارید؟ <a href="http://localhost:8000/register" class="text-green-800 font-semibold hover:underline">ثبت نام</a>
+            </div>
+        </form>
+
+        
+        <form id="sms-verify-step" class="auth-form hidden">
+            <h3>تایید شماره موبایل</h3>
+            <div class="auth-form-group">
+                <label for="otp-code">کد تایید (پیامک شده به <span id="display-mobile-number" class="font-bold text-green-800"></span>):</label>
+                <input type="text" id="otp-code" name="otp_code" placeholder="کد 4 رقمی" required="" pattern="[0-9]{4}" maxlength="4">
+            </div>
+            <button type="submit" class="auth-submit-btn" id="verify-otp-btn">تایید و ورود</button>
+            <div class="auth-switch-link mt-4">
+                <button type="button" id="resend-otp-btn" class="text-green-800 font-semibold hover:underline">ارسال مجدد کد</button>
+            </div>
+            <button type="button" id="back-to-mobile-btn" class="text-gray-500 hover:underline mt-4">ویرایش شماره موبایل</button>
+        </form>
+
+        
+        <div id="auth-message" class="mt-4 text-center text-sm font-semibold"></div>
+        <div id="auth-spinner" class="mt-4 hidden">
+            <i class="fas fa-spinner fa-spin text-green-700 text-2xl"></i>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Auth Modal Styles */
+    .auth-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .auth-modal-overlay.show {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* Styles for the modal content (no changes needed here related to default visibility) */
+    .auth-modal-content {
+        background-color: #fff;
+        padding: 2.5rem;
+        border-radius: 1rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        max-width: 450px;
+        width: 90%;
+        text-align: center;
+        position: relative;
+        transform: translateY(-20px);
+        opacity: 0;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+
+    .auth-modal-overlay.show .auth-modal-content {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    .auth-modal-close-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: #777;
+        cursor: pointer;
+        transition: color 0.2s ease;
+    }
+
+    .auth-modal-close-btn:hover {
+        color: #333;
+    }
+
+    .auth-form h3 {
+        font-size: 1.875rem; /* text-3xl */
+        font-weight: 800; /* font-extrabold */
+        color: #4A2D2A; /* brown-900 */
+        margin-bottom: 1.5rem;
+    }
+
+    .auth-form-group {
+        margin-bottom: 1.25rem;
+        text-align: right;
+    }
+
+    .auth-form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .auth-form-group input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid #ccc;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        outline: none;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .auth-form-group input:focus {
+        border-color: #2F855A; /* green-700 */
+        box-shadow: 0 0 0 3px rgba(47, 133, 90, 0.2);
+    }
+
+    .auth-submit-btn {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background-color: #2F855A; /* green-700 */
+        color: white;
+        border: none;
+        border-radius: 0.5rem;
+        font-size: 1.125rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .auth-submit-btn:hover {
+        background-color: #2C7A52; /* darker green */
+        transform: translateY(-2px);
+    }
+
+    .auth-switch-link {
+        margin-top: 1rem;
+        font-size: 0.875rem;
+        color: #555;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const authModalOverlay = document.getElementById('auth-modal-overlay');
+        const authModalCloseBtn = document.getElementById('auth-modal-close-btn');
+        const mobileLoginStep = document.getElementById('mobile-login-step');
+        const smsVerifyStep = document.getElementById('sms-verify-step');
+        const getOtpBtn = document.getElementById('get-otp-btn');
+        const verifyOtpBtn = document.getElementById('verify-otp-btn');
+        const resendOtpBtn = document.getElementById('resend-otp-btn');
+        const backToMobileBtn = document.getElementById('back-to-mobile-btn');
+        const mobileNumberInput = document.getElementById('mobile-number');
+        const otpCodeInput = document.getElementById('otp-code');
+        const displayMobileNumber = document.getElementById('display-mobile-number');
+        const authMessage = document.getElementById('auth-message');
+        const authSpinner = document.getElementById('auth-spinner');
+        const loginRegisterBtn = document.getElementById('login-register-btn'); // Assuming this button exists in your nav
+
+        function showModal() {
+            authModalOverlay.classList.remove('hidden'); // حذف کلاس hidden
+            authModalOverlay.classList.add('show');
+        }
+
+        function hideModal() {
+            authModalOverlay.classList.remove('show');
+            authModalOverlay.classList.add('hidden'); // اضافه کردن کلاس hidden
+            // Reset to mobile login step when closing
+            mobileLoginStep.classList.remove('hidden');
+            smsVerifyStep.classList.add('hidden');
+            authMessage.textContent = '';
+        }
+
+        // Event listener for opening the modal (e.g., from a login button in the nav)
+        if (loginRegisterBtn) {
+            loginRegisterBtn.addEventListener('click', showModal);
+        }
+
+        authModalCloseBtn.addEventListener('click', hideModal);
+
+        // Close modal when clicking outside content
+        authModalOverlay.addEventListener('click', function(event) {
+            if (event.target === authModalOverlay) {
+                hideModal();
+            }
+        });
+
+        // Handle mobile login step (get OTP)
+        mobileLoginStep.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            authMessage.textContent = '';
+            authSpinner.classList.remove('hidden');
+            getOtpBtn.disabled = true;
+
+            const mobileNumber = mobileNumberInput.value;
+
+            try {
+                const response = await fetch('/api/get-otp', { // Make sure this route exists
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ mobile_number: mobileNumber })
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    authMessage.textContent = result.message || 'کد تایید ارسال شد.';
+                    authMessage.style.color = 'green';
+                    displayMobileNumber.textContent = mobileNumber; // نمایش شماره موبایل
+                    mobileLoginStep.classList.add('hidden');
+                    smsVerifyStep.classList.remove('hidden');
+                    otpCodeInput.focus(); // فوکوس بر روی فیلد کد تایید
+                } else {
+                    authMessage.textContent = result.message || 'خطا در ارسال کد تایید.';
+                    authMessage.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error fetching OTP:', error);
+                authMessage.textContent = 'خطا در ارتباط با سرور. لطفا اتصال اینترنت خود را بررسی کنید.';
+                authMessage.style.color = 'red';
+            } finally {
+                authSpinner.classList.add('hidden');
+                getOtpBtn.disabled = false;
+            }
+        });
+
+        // Handle SMS verification step (verify OTP)
+        smsVerifyStep.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            authMessage.textContent = '';
+            authSpinner.classList.remove('hidden');
+            verifyOtpBtn.disabled = true;
+
+            const mobileNumber = displayMobileNumber.textContent; // استفاده از شماره موبایل نمایش داده شده
+            const otpCode = otpCodeInput.value;
+
+            try {
+                const response = await fetch('/api/verify-otp', { // Make sure this route exists
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ mobile_number: mobileNumber, otp_code: otpCode })
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    authMessage.textContent = result.message || 'ورود موفقیت‌آمیز بود! در حال انتقال...';
+                    authMessage.style.color = 'green';
+                    // Optional: Redirect or refresh page after successful login
+                    if (result.redirect) {
+                        window.location.href = result.redirect;
+                    } else {
+                        window.location.reload(); // Refresh the page to show authenticated state
+                    }
+                } else {
+                    authMessage.textContent = result.message || 'کد تایید اشتباه است. دوباره تلاش کنید.';
+                    authMessage.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error verifying OTP:', error);
+                authMessage.textContent = 'خطا در ارتباط با سرور. لطفا اتصال اینترنت خود را بررسی کنید.';
+                authMessage.style.color = 'red';
+            } finally {
+                authSpinner.classList.add('hidden');
+                verifyOtpBtn.disabled = false;
+            }
+        });
+
+        // Resend OTP button
+        resendOtpBtn.addEventListener('click', async function() {
+            authMessage.textContent = '';
+            authSpinner.classList.remove('hidden');
+            resendOtpBtn.disabled = true;
+
+            const mobileNumber = displayMobileNumber.textContent;
+
+            try {
+                const response = await fetch('/api/resend-otp', { // Make sure this route exists
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ mobile_number: mobileNumber })
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    authMessage.textContent = result.message || 'کد تایید مجدداً ارسال شد.';
+                    authMessage.style.color = 'green';
+                } else {
+                    authMessage.textContent = result.message || 'خطا در ارسال مجدد کد تایید.';
+                    authMessage.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error resending OTP:', error);
+                authMessage.textContent = 'خطا در ارتباط با سرور.';
+                authMessage.style.color = 'red';
+            } finally {
+                authSpinner.classList.add('hidden');
+                resendOtpBtn.disabled = false;
+            }
+        });
+
+        // Back to mobile number input
+        backToMobileBtn.addEventListener('click', function() {
+            mobileLoginStep.classList.remove('hidden');
+            smsVerifyStep.classList.add('hidden');
+            authMessage.textContent = '';
+            otpCodeInput.value = ''; // پاک کردن کد تایید
+        });
+
+        // Initial check if modal should be shown (e.g., if there's an error from backend on page load)
+        // This part needs careful consideration based on your specific backend error handling
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('login_error')) {
+            showModal();
+            authMessage.textContent = urlParams.get('login_error');
+            authMessage.style.color = 'red';
+        }
+
+        // Check for specific scenario: if a user is redirected to a page that expects auth,
+        // and they are not authenticated, you might want to show the modal automatically.
+        // For example, if redirected from a protected route.
+        // For now, it will only show if 'login_error' param is present.
+    });
+</script>
+ 
+
+    
+    <div id="confirmation-modal-overlay" class="custom-modal-overlay">
+        <div class="custom-modal-content">
+            <button id="confirmation-modal-close-btn" class="custom-modal-close-btn">
+                <i class="fas fa-times"></i>
+            </button>
+            <i class="fas fa-question-circle text-orange-500 text-5xl mb-6"></i>
+            <h3 class="text-2xl font-bold text-brown-900 mb-4" id="confirmation-modal-title">تایید عملیات</h3>
+            <p class="text-gray-700 text-lg mb-8" id="confirmation-modal-message">آیا از انجام این عملیات مطمئن هستید؟</p>
+            <div class="flex justify-center gap-6"> 
+                <button id="confirmation-modal-confirm-btn" class="btn-primary flex items-center justify-center min-w-[120px]"> 
+                    <i class="fas fa-check ml-2"></i> بله، مطمئنم
+                </button>
+                <button id="confirmation-modal-cancel-btn" class="btn-secondary flex items-center justify-center min-w-[120px]"> 
+                    <i class="fas fa-times ml-2"></i> لغو
+                </button>
+            </div>
+        </div>
+    </div>
+
+    
+    <footer class="bg-teal-800 text-gray-100 py-12 rounded-t-3xl shadow-lg">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row justify-between items-center text-center md:text-right gap-8">
+
+            
+            <div class="md:w-1/3 flex flex-col items-center md:items-start">
+                <h3 class="text-3xl font-extrabold text-white mb-4">چای ابراهیم</h3>
+                <p class="text-sm leading-relaxed max-w-md">
+                    همراه لحظات آرامش شما با عطر و طعم بی‌نظیر چای اصیل ایرانی. تجربه‌ای ناب از کیفیت و سنت.
+                </p>
+                <div class="flex space-x-5 space-x-reverse mt-6">
+                    <a href="http://localhost:8000/products#" class="text-teal-200 hover:text-white transition-colors duration-300">
+                        <i class="fab fa-instagram text-2xl"></i>
+                    </a>
+                    <a href="http://localhost:8000/products#" class="text-teal-200 hover:text-white transition-colors duration-300">
+                        <i class="fas fa-envelope text-2xl"></i>
+                    </a>
+                    <a href="http://localhost:8000/products#" class="text-teal-200 hover:text-white transition-colors duration-300">
+                        <i class="fab fa-twitter text-2xl"></i>
+                    </a>
+                </div>
+            </div>
+
+            
+            <div class="md:w-1/3 flex flex-col items-center md:items-center text-center">
+                <h3 class="text-2xl font-bold text-white mb-4">تماس با ما</h3>
+                <ul class="space-y-3">
+                    <li class="flex items-center justify-center md:justify-start">
+                        <i class="fas fa-map-marker-alt text-teal-300 ml-3"></i>
+                        <span class="text-sm">دفتر: تهران، بزرگراه اشرفی اصفهانی، کوچه طباطبایی</span>
+                    </li>
+                    <li class="flex items-center justify-center md:justify-start">
+                        <i class="fas fa-map-marked-alt text-teal-300 ml-3"></i>
+                        <span class="text-sm">کارخانه: لاهیجان، دو راهی بام سبز، کتشال</span>
+                    </li>
+                    <li class="flex items-center justify-center md:justify-start">
+                        <i class="fas fa-phone-alt text-teal-300 ml-3"></i>
+                        <span class="text-sm">تلفن: ۰۹۱۱۴۳۴۹۸۶۰</span>
+                    </li>
+                    <li class="flex items-center justify-center md:justify-start">
+                        <i class="fas fa-envelope text-teal-300 ml-3"></i>
+                        <span class="text-sm">ایمیل: peymansabzlahijteafactory@gmail.com</span>
+                    </li>
+                </ul>
+            </div>
+
+            
+            
+            <div class="md:w-1/3 text-center md:text-left">
+                <h3 class="text-2xl font-bold text-white mb-4">لینک‌های مفید</h3>
+                <ul class="space-y-3">
+                    <li><a href="http://localhost:8000/products" class="text-teal-200 hover:text-white transition-colors duration-300">محصولات</a></li>
+                    <li><a href="http://localhost:8000/blog" class="text-teal-200 hover:text-white transition-colors duration-300">بلاگ</a></li>
+                    <li><a href="http://localhost:8000/about" class="text-teal-200 hover:text-white transition-colors duration-300">درباره ما</a></li>
+                    <li><a href="http://localhost:8000/contact" class="text-teal-200 hover:text-white transition-colors duration-300">تماس با ما</a></li>
+                </ul>
+            </div>
+
+        </div>
+
+        
+        <div class="text-center mt-12 pt-6 border-t border-teal-700">
+            <p class="text-sm text-gray-300">© 2023 چای ابراهیم. تمامی حقوق محفوظ است.</p>
+        </div>
+    </div>
+</footer>
+ 
+
+    
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // محاسبه و تنظیم ارتفاع navbar برای استفاده در CSS (اگر لازم باشد)
+            const navBar = document.querySelector('nav');
+            if (navBar) {
+                const navHeight = navBar.offsetHeight;
+                document.documentElement.style.setProperty('--nav-height', `${navHeight}px`);
+            }
+
+            // منطق اسلایدشو (Hero Carousel) - این کد از فایل اصلی شما حفظ شده است.
+            const slides = document.querySelectorAll('.hero-slide');
+            const prevBtn = document.getElementById('hero-prev-btn');
+            const nextBtn = document.getElementById('hero-next-btn');
+            const indicatorsContainer = document.getElementById('hero-indicators');
+            let currentSlide = 0;
+            let slideInterval;
+
+            function showSlide(index) {
+                slides.forEach((slide, i) => {
+                    if (i === index) {
+                        slide.classList.remove('opacity-0');
+                        slide.classList.add('opacity-100');
+                    } else {
+                        slide.classList.remove('opacity-100');
+                        slide.classList.add('opacity-0');
+                    }
+                });
+                updateIndicators(index);
+            }
+
+            function nextSlide() {
+                currentSlide = (currentSlide + 1) % slides.length;
+                showSlide(currentSlide);
+            }
+
+            function prevSlide() {
+                currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+                showSlide(currentSlide);
+            }
+
+            function startSlideShow() {
+                stopSlideShow(); // اطمینان از عدم وجود چندین اینتروال
+                slideInterval = setInterval(nextSlide, 5000); // هر 5 ثانیه اسلاید بعدی
+            }
+
+            function stopSlideShow() {
+                    clearInterval(slideInterval);
+            }
+
+            function createIndicators() {
+                // بررسی وجود indicatorsContainer قبل از دستکاری آن
+                if (!indicatorsContainer) {
+                    console.warn("Indicators container not found. Skipping indicator creation.");
+                    return;
+                }
+                indicatorsContainer.innerHTML = ''; // پاک کردن نشانگرهای قبلی
+                slides.forEach((_, i) => {
+                    const indicator = document.createElement('div');
+                    indicator.classList.add('w-3', 'h-3', 'rounded-full', 'bg-gray-300', 'bg-opacity-50', 'cursor-pointer', 'transition-all', 'duration-300');
+                    indicator.addEventListener('click', () => {
+                        stopSlideShow();
+                        showSlide(i);
+                        // بروزرسانی اسلاید فعلی پس از کلیک روی نشانگر
+                        currentSlide = i;
+                        startSlideShow();
+                    });
+                    indicatorsContainer.appendChild(indicator);
+                });
+                updateIndicators(currentSlide);
+            }
+
+            function updateIndicators(activeIndex) {
+                if (!indicatorsContainer) { // اضافه کردن چک null
+                    return;
+                }
+                const indicators = indicatorsContainer.querySelectorAll('div');
+                indicators.forEach((indicator, i) => {
+                    indicator.classList.remove('bg-gray-500', 'bg-opacity-100'); // حذف کلاس‌های قبلی
+                    indicator.classList.add('bg-gray-300', 'bg-opacity-50');
+                    if (i === activeIndex) {
+                        indicator.classList.remove('bg-gray-300', 'bg-opacity-50'); // حذف کلاس‌های قبلی
+                        indicator.classList.add('bg-gray-500', 'bg-opacity-100'); // افزودن کلاس‌های فعال
+                    }
+                });
+            }
+
+            // مقداردهی اولیه اسلایدشو
+            // اضافه کردن چک slides.length > 0 برای جلوگیری از خطا اگر اسلایدی نیست
+            if (slides.length > 0) {
+                createIndicators(); // ایجاد نشانگرها
+                showSlide(currentSlide); // نمایش اولین اسلاید
+                startSlideShow(); // شروع اسلایدشو خودکار
+
+                // افزودن Event Listener برای دکمه‌های ناوبری
+                if (prevBtn) {
+                    prevBtn.addEventListener('click', () => {
+                        stopSlideShow();
+                        prevSlide();
+                        startSlideShow();
+                    });
+                }
+                if (nextBtn) {
+                    nextBtn.addEventListener('click', () => {
+                        stopSlideShow();
+                        nextSlide();
+                        startSlideShow();
+                    });
+                }
+
+                // اختیاری: مکث اسلایدشو هنگام قرار گرفتن ماوس روی آن
+                const heroCarousel = document.getElementById('hero-carousel');
+                if (heroCarousel) {
+                    heroCarousel.addEventListener('mouseenter', stopSlideShow);
+                    heroCarousel.addEventListener('mouseleave', startSlideShow);
+                }
+            } else {
+                console.warn("No hero slides found. Hero carousel will not be initialized.");
+            }
+        });
+    </script>
+    
+<script type="text/javascript">
+var phpdebugbar = new PhpDebugBar.DebugBar();
+phpdebugbar.setHideEmptyTabs(false);
+phpdebugbar.addIndicator("php_version", new PhpDebugBar.DebugBar.Indicator({"icon":"code","tooltip":"PHP Version"}), "right");
+phpdebugbar.addTab("messages", new PhpDebugBar.DebugBar.Tab({"icon":"list-alt","title":"Messages", "widget": new PhpDebugBar.Widgets.MessagesWidget()}));
+phpdebugbar.addIndicator("time", new PhpDebugBar.DebugBar.Indicator({"icon":"clock-o","tooltip":"Request Duration"}), "right");
+phpdebugbar.addTab("timeline", new PhpDebugBar.DebugBar.Tab({"icon":"tasks","title":"Timeline", "widget": new PhpDebugBar.Widgets.TimelineWidget()}));
+phpdebugbar.addIndicator("memory", new PhpDebugBar.DebugBar.Indicator({"icon":"cogs","tooltip":"Memory Usage"}), "right");
+phpdebugbar.addTab("exceptions", new PhpDebugBar.DebugBar.Tab({"icon":"bug","title":"Exceptions", "widget": new PhpDebugBar.Widgets.ExceptionsWidget()}));
+phpdebugbar.addTab("views", new PhpDebugBar.DebugBar.Tab({"icon":"leaf","title":"Views", "widget": new PhpDebugBar.Widgets.TemplatesWidget()}));
+phpdebugbar.addTab("route", new PhpDebugBar.DebugBar.Tab({"icon":"share","title":"Route", "widget": new PhpDebugBar.Widgets.HtmlVariableListWidget()}));
+phpdebugbar.addIndicator("currentroute", new PhpDebugBar.DebugBar.Indicator({"icon":"share","tooltip":"Route"}), "right");
+phpdebugbar.addTab("queries", new PhpDebugBar.DebugBar.Tab({"icon":"database","title":"Queries", "widget": new PhpDebugBar.Widgets.LaravelQueriesWidget()}));
+phpdebugbar.addTab("models", new PhpDebugBar.DebugBar.Tab({"icon":"cubes","title":"Models", "widget": new PhpDebugBar.Widgets.HtmlVariableListWidget()}));
+phpdebugbar.addTab("emails", new PhpDebugBar.DebugBar.Tab({"icon":"inbox","title":"Mails", "widget": new PhpDebugBar.Widgets.MailsWidget()}));
+phpdebugbar.addTab("gate", new PhpDebugBar.DebugBar.Tab({"icon":"list-alt","title":"Gate", "widget": new PhpDebugBar.Widgets.MessagesWidget()}));
+phpdebugbar.addTab("session", new PhpDebugBar.DebugBar.Tab({"icon":"archive","title":"Session", "widget": new PhpDebugBar.Widgets.VariableListWidget()}));
+phpdebugbar.addTab("request", new PhpDebugBar.DebugBar.Tab({"icon":"tags","title":"Request", "widget": new PhpDebugBar.Widgets.HtmlVariableListWidget()}));
+phpdebugbar.setDataMap({
+"php_version": ["php.version", ],
+"messages": ["messages.messages", []],
+"messages:badge": ["messages.count", null],
+"time": ["time.duration_str", '0ms'],
+"timeline": ["time", {}],
+"memory": ["memory.peak_usage_str", '0B'],
+"exceptions": ["exceptions.exceptions", []],
+"exceptions:badge": ["exceptions.count", null],
+"views": ["views", []],
+"views:badge": ["views.nb_templates", 0],
+"route": ["route", {}],
+"currentroute": ["route.uri", ],
+"queries": ["queries", []],
+"queries:badge": ["queries.nb_statements", 0],
+"models": ["models.data", {}],
+"models:badge": ["models.count", 0],
+"emails": ["symfonymailer_mails.mails", []],
+"emails:badge": ["symfonymailer_mails.count", null],
+"gate": ["gate.messages", []],
+"gate:badge": ["gate.count", null],
+"session": ["session", {}],
+"request": ["request", {}]
+});
+phpdebugbar.restoreState();
+phpdebugbar.enableAjaxHandlerTab();
+phpdebugbar.ajaxHandler = new PhpDebugBar.AjaxHandler(phpdebugbar, undefined, true);
+phpdebugbar.ajaxHandler.bindToFetch();
+phpdebugbar.ajaxHandler.bindToXHR();
+phpdebugbar.setOpenHandler(new PhpDebugBar.OpenHandler({"url":"http:\/\/localhost:8000\/_debugbar\/open"}));
+phpdebugbar.addDataSet({"__meta":{"id":"X550c835e6ff22ba7c274ea1e44fe84a8","datetime":"2025-07-04 02:35:16","utime":1751596516.92471,"method":"GET","uri":"\/products","ip":"127.0.0.1"},"php":{"version":"8.2.12","interface":"cli-server"},"messages":{"count":0,"messages":[]},"time":{"start":1751596516.104246,"end":1751596516.924734,"duration":0.8204882144927979,"duration_str":"820ms","measures":[{"label":"Booting","start":1751596516.104246,"relative_start":0,"end":1751596516.367438,"relative_end":1751596516.367438,"duration":0.26319217681884766,"duration_str":"263ms","memory":0,"memory_str":"0B","params":[],"collector":"time"},{"label":"Application","start":1751596516.367449,"relative_start":0.26320314407348633,"end":1751596516.924737,"relative_end":2.86102294921875e-6,"duration":0.5572879314422607,"duration_str":"557ms","memory":0,"memory_str":"0B","params":[],"collector":"time"}]},"memory":{"peak_usage":25643976,"peak_usage_str":"24MB"},"exceptions":{"count":0,"exceptions":[]},"views":{"nb_templates":6,"templates":[{"name":"products","param_count":null,"params":[],"start":1751596516.513523,"type":"blade","hash":"bladeC:\\xampp\\htdocs\\myshop\\resources\\views\/products.blade.phpproducts","xdebug_link":{"url":"phpstorm:\/\/open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fresources%2Fviews%2Fproducts.blade.php\u0026line=1","ajax":false,"filename":"products.blade.php","line":"?"}},{"name":"pagination::tailwind","param_count":null,"params":[],"start":1751596516.778367,"type":"blade","hash":"bladeC:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Pagination\/resources\/views\/tailwind.blade.phppagination::tailwind","xdebug_link":{"url":"phpstorm:\/\/open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fvendor%2Flaravel%2Fframework%2Fsrc%2FIlluminate%2FPagination%2Fresources%2Fviews%2Ftailwind.blade.php\u0026line=1","ajax":false,"filename":"tailwind.blade.php","line":"?"}},{"name":"layouts.app","param_count":null,"params":[],"start":1751596516.897169,"type":"blade","hash":"bladeC:\\xampp\\htdocs\\myshop\\resources\\views\/layouts\/app.blade.phplayouts.app","xdebug_link":{"url":"phpstorm:\/\/open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fresources%2Fviews%2Flayouts%2Fapp.blade.php\u0026line=1","ajax":false,"filename":"app.blade.php","line":"?"}},{"name":"layouts.navigation","param_count":null,"params":[],"start":1751596516.900916,"type":"blade","hash":"bladeC:\\xampp\\htdocs\\myshop\\resources\\views\/layouts\/navigation.blade.phplayouts.navigation","xdebug_link":{"url":"phpstorm:\/\/open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fresources%2Fviews%2Flayouts%2Fnavigation.blade.php\u0026line=1","ajax":false,"filename":"navigation.blade.php","line":"?"}},{"name":"partials.auth-modal","param_count":null,"params":[],"start":1751596516.907723,"type":"blade","hash":"bladeC:\\xampp\\htdocs\\myshop\\resources\\views\/partials\/auth-modal.blade.phppartials.auth-modal","xdebug_link":{"url":"phpstorm:\/\/open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fresources%2Fviews%2Fpartials%2Fauth-modal.blade.php\u0026line=1","ajax":false,"filename":"auth-modal.blade.php","line":"?"}},{"name":"partials.footer","param_count":null,"params":[],"start":1751596516.90917,"type":"blade","hash":"bladeC:\\xampp\\htdocs\\myshop\\resources\\views\/partials\/footer.blade.phppartials.footer","xdebug_link":{"url":"phpstorm:\/\/open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fresources%2Fviews%2Fpartials%2Ffooter.blade.php\u0026line=1","ajax":false,"filename":"footer.blade.php","line":"?"}}]},"route":{"uri":"GET products","middleware":"web","controller":"App\\Http\\Controllers\\ProductController@index","namespace":null,"prefix":"","where":[],"as":"products.index","file":"\u003Ca href=\u0022phpstorm:\/\/open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fapp%2FHttp%2FControllers%2FProductController.php\u0026line=16\u0022 onclick=\u0022\u0022\u003Eapp\/Http\/Controllers\/ProductController.php:16-20\u003C\/a\u003E"},"queries":{"nb_statements":12,"nb_visible_statements":12,"nb_excluded_statements":0,"nb_failed_statements":0,"accumulated_duration":0.03873,"accumulated_duration_str":"38.73ms","memory_usage":0,"memory_usage_str":null,"statements":[{"sql":"select * from `sessions` where `id` = \u0027IwUl2QeZQ69GKjZu2CjGtbEWRxqKguS1TDRzvEUC\u0027 limit 1","type":"query","params":[],"bindings":["IwUl2QeZQ69GKjZu2CjGtbEWRxqKguS1TDRzvEUC"],"hints":null,"show_copy":true,"backtrace":[{"index":15,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Session\/DatabaseSessionHandler.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Session\\DatabaseSessionHandler.php","line":97},{"index":16,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Session\/Store.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Session\\Store.php","line":117},{"index":17,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Session\/Store.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Session\\Store.php","line":105},{"index":18,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Session\/Store.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Session\\Store.php","line":89},{"index":19,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Session\/Middleware\/StartSession.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Session\\Middleware\\StartSession.php","line":147}],"start":1751596516.432464,"duration":0.00164,"duration_str":"1.64ms","memory":0,"memory_str":null,"filename":"DatabaseSessionHandler.php:97","source":{"index":15,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Session\/DatabaseSessionHandler.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Session\\DatabaseSessionHandler.php","line":97},"xdebug_link":{"url":"phpstorm:\/\/open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fvendor%2Flaravel%2Fframework%2Fsrc%2FIlluminate%2FSession%2FDatabaseSessionHandler.php\u0026line=97","ajax":false,"filename":"DatabaseSessionHandler.php","line":"97"},"connection":"myshop_db","explain":null,"start_percent":0,"width_percent":4.234},{"sql":"select count(*) as aggregate from `products`","type":"query","params":[],"bindings":[],"hints":null,"show_copy":true,"backtrace":[{"index":16,"namespace":null,"name":"app\/Http\/Controllers\/ProductController.php","file":"C:\\xampp\\htdocs\\myshop\\app\\Http\\Controllers\\ProductController.php","line":18},{"index":17,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Routing\/ControllerDispatcher.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\ControllerDispatcher.php","line":47},{"index":18,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Routing\/Route.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Route.php","line":266},{"index":19,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Routing\/Route.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Route.php","line":212},{"index":20,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Routing\/Router.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php","line":808}],"start":1751596516.448189,"duration":0.0033399999999999997,"duration_str":"3.34ms","memory":0,"memory_str":null,"filename":"ProductController.php:18","source":{"index":16,"namespace":null,"name":"app\/Http\/Controllers\/ProductController.php","file":"C:\\xampp\\htdocs\\myshop\\app\\Http\\Controllers\\ProductController.php","line":18},"xdebug_link":{"url":"phpstorm:\/\/open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fapp%2FHttp%2FControllers%2FProductController.php\u0026line=18","ajax":false,"filename":"ProductController.php","line":"18"},"connection":"myshop_db","explain":null,"start_percent":4.234,"width_percent":8.624},{"sql":"select * from `products` order by `created_at` desc limit 12 offset 0","type":"query","params":[],"bindings":[],"hints":null,"show_copy":true,"backtrace":[{"index":16,"namespace":null,"name":"app\/Http\/Controllers\/ProductController.php","file":"C:\\xampp\\htdocs\\myshop\\app\\Http\\Controllers\\ProductController.php","line":18},{"index":17,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Routing\/ControllerDispatcher.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\ControllerDispatcher.php","line":47},{"index":18,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Routing\/Route.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Route.php","line":266},{"index":19,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Routing\/Route.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Route.php","line":212},{"index":20,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Routing\/Router.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Routing\\Router.php","line":808}],"start":1751596516.454498,"duration":0.00098,"duration_str":"980\u03bcs","memory":0,"memory_str":null,"filename":"ProductController.php:18","source":{"index":16,"namespace":null,"name":"app\/Http\/Controllers\/ProductController.php","file":"C:\\xampp\\htdocs\\myshop\\app\\Http\\Controllers\\ProductController.php","line":18},"xdebug_link":{"url":"phpstorm:\/\/open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fapp%2FHttp%2FControllers%2FProductController.php\u0026line=18","ajax":false,"filename":"ProductController.php","line":"18"},"connection":"myshop_db","explain":null,"start_percent":12.858,"width_percent":2.53},{"sql":"select * from `categories` where `categories`.`id` = 3 limit 1","type":"query","params":[],"bindings":[3],"hints":null,"show_copy":true,"backtrace":[{"index":21,"namespace":"view","name":"products","file":"C:\\xampp\\htdocs\\myshop\\resources\\views\/products.blade.php","line":28},{"index":23,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Filesystem\/Filesystem.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Filesystem\\Filesystem.php","line":124},{"index":24,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/Engines\/PhpEngine.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\Engines\\PhpEngine.php","line":58},{"index":25,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/Engines\/CompilerEngine.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\Engines\\CompilerEngine.php","line":75},{"index":26,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/View.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\View.php","line":209}],"start":1751596516.706899,"duration":0.018170000000000002,"duration_str":"18.17ms","memory":0,"memory_str":null,"filename":"products:28","source":{"index":21,"namespace":"view","name":"products","file":"C:\\xampp\\htdocs\\myshop\\resources\\views\/products.blade.php","line":28},"xdebug_link":{"url":"phpstorm:\/\/open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fresources%2Fviews%2Fproducts.blade.php\u0026line=28","ajax":false,"filename":"products.blade.php","line":"28"},"connection":"myshop_db","explain":null,"start_percent":15.389,"width_percent":46.915},{"sql":"select * from `categories` where `categories`.`id` = 4 limit 1","type":"query","params":[],"bindings":[4],"hints":null,"show_copy":true,"backtrace":[{"index":21,"namespace":"view","name":"products","file":"C:\\xampp\\htdocs\\myshop\\resources\\views\/products.blade.php","line":28},{"index":23,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Filesystem\/Filesystem.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Filesystem\\Filesystem.php","line":124},{"index":24,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/Engines\/PhpEngine.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\Engines\\PhpEngine.php","line":58},{"index":25,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/Engines\/CompilerEngine.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\Engines\\CompilerEngine.php","line":75},{"index":26,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/View.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\View.php","line":209}],"start":1751596516.727891,"duration":0.0007099999999999999,"duration_str":"710\u03bcs","memory":0,"memory_str":null,"filename":"products:28","source":{"index":21,"namespace":"view","name":"products","file":"C:\\xampp\\htdocs\\myshop\\resources\\views\/products.blade.php","line":28},"xdebug_link":{"url":"phpstorm:\/\/open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fresources%2Fviews%2Fproducts.blade.php\u0026line=28","ajax":false,"filename":"products.blade.php","line":"28"},"connection":"myshop_db","explain":null,"start_percent":62.303,"width_percent":1.833},{"sql":"select * from `categories` where `categories`.`id` = 7 limit 1","type":"query","params":[],"bindings":[7],"hints":null,"show_copy":true,"backtrace":[{"index":21,"namespace":"view","name":"products","file":"C:\\xampp\\htdocs\\myshop\\resources\\views\/products.blade.php","line":28},{"index":23,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Filesystem\/Filesystem.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Filesystem\\Filesystem.php","line":124},{"index":24,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/Engines\/PhpEngine.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\Engines\\PhpEngine.php","line":58},{"index":25,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/Engines\/CompilerEngine.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\Engines\\CompilerEngine.php","line":75},{"index":26,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/View.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\View.php","line":209}],"start":1751596516.73067,"duration":0.00054,"duration_str":"540\u03bcs","memory":0,"memory_str":null,"filename":"products:28","source":{"index":21,"namespace":"view","name":"products","file":"C:\\xampp\\htdocs\\myshop\\resources\\views\/products.blade.php","line":28},"xdebug_link":{"url":"phpstorm:\/\/open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fresources%2Fviews%2Fproducts.blade.php\u0026line=28","ajax":false,"filename":"products.blade.php","line":"28"},"connection":"myshop_db","explain":null,"start_percent":64.136,"width_percent":1.394},{"sql":"select * from `categories` where `categories`.`id` = 5 limit 1","type":"query","params":[],"bindings":[5],"hints":null,"show_copy":true,"backtrace":[{"index":21,"namespace":"view","name":"products","file":"C:\\xampp\\htdocs\\myshop\\resources\\views\/products.blade.php","line":28},{"index":23,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Filesystem\/Filesystem.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Filesystem\\Filesystem.php","line":124},{"index":24,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/Engines\/PhpEngine.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\Engines\\PhpEngine.php","line":58},{"index":25,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/Engines\/CompilerEngine.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\Engines\\CompilerEngine.php","line":75},{"index":26,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/View.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\View.php","line":209}],"start":1751596516.733285,"duration":0.0007700000000000001,"duration_str":"770\u03bcs","memory":0,"memory_str":null,"filename":"products:28","source":{"index":21,"namespace":"view","name":"products","file":"C:\\xampp\\htdocs\\myshop\\resources\\views\/products.blade.php","line":28},"xdebug_link":{"url":"phpstorm:\/\/open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fresources%2Fviews%2Fproducts.blade.php\u0026line=28","ajax":false,"filename":"products.blade.php","line":"28"},"connection":"myshop_db","explain":null,"start_percent":65.531,"width_percent":1.988},{"sql":"select * from `categories` where `categories`.`id` = 6 limit 1","type":"query","params":[],"bindings":[6],"hints":null,"show_copy":true,"backtrace":[{"index":21,"namespace":"view","name":"products","file":"C:\\xampp\\htdocs\\myshop\\resources\\views\/products.blade.php","line":28},{"index":23,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Filesystem\/Filesystem.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Filesystem\\Filesystem.php","line":124},{"index":24,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/Engines\/PhpEngine.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\Engines\\PhpEngine.php","line":58},{"index":25,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/Engines\/CompilerEngine.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\Engines\\CompilerEngine.php","line":75},{"index":26,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/View.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\View.php","line":209}],"start":1751596516.736396,"duration":0.00122,"duration_str":"1.22ms","memory":0,"memory_str":null,"filename":"products:28","source":{"index":21,"namespace":"view","name":"products","file":"C:\\xampp\\htdocs\\myshop\\resources\\views\/products.blade.php","line":28},"xdebug_link":{"url":"phpstorm:\/\/open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fresources%2Fviews%2Fproducts.blade.php\u0026line=28","ajax":false,"filename":"products.blade.php","line":"28"},"connection":"myshop_db","explain":null,"start_percent":67.519,"width_percent":3.15},{"sql":"select * from `categories` where `categories`.`id` = 3 limit 1","type":"query","params":[],"bindings":[3],"hints":null,"show_copy":true,"backtrace":[{"index":21,"namespace":"view","name":"products","file":"C:\\xampp\\htdocs\\myshop\\resources\\views\/products.blade.php","line":28},{"index":23,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Filesystem\/Filesystem.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Filesystem\\Filesystem.php","line":124},{"index":24,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/Engines\/PhpEngine.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\Engines\\PhpEngine.php","line":58},{"index":25,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/Engines\/CompilerEngine.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\Engines\\CompilerEngine.php","line":75},{"index":26,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/View.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\View.php","line":209}],"start":1751596516.740342,"duration":0.00128,"duration_str":"1.28ms","memory":0,"memory_str":null,"filename":"products:28","source":{"index":21,"namespace":"view","name":"products","file":"C:\\xampp\\htdocs\\myshop\\resources\\views\/products.blade.php","line":28},"xdebug_link":{"url":"phpstorm:\/\/open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fresources%2Fviews%2Fproducts.blade.php\u0026line=28","ajax":false,"filename":"products.blade.php","line":"28"},"connection":"myshop_db","explain":null,"start_percent":70.669,"width_percent":3.305},{"sql":"select * from `categories` where `categories`.`id` = 8 limit 1","type":"query","params":[],"bindings":[8],"hints":null,"show_copy":true,"backtrace":[{"index":21,"namespace":"view","name":"products","file":"C:\\xampp\\htdocs\\myshop\\resources\\views\/products.blade.php","line":28},{"index":23,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Filesystem\/Filesystem.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Filesystem\\Filesystem.php","line":124},{"index":24,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/Engines\/PhpEngine.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\Engines\\PhpEngine.php","line":58},{"index":25,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/Engines\/CompilerEngine.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\Engines\\CompilerEngine.php","line":75},{"index":26,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/View.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\View.php","line":209}],"start":1751596516.743604,"duration":0.00043,"duration_str":"430\u03bcs","memory":0,"memory_str":null,"filename":"products:28","source":{"index":21,"namespace":"view","name":"products","file":"C:\\xampp\\htdocs\\myshop\\resources\\views\/products.blade.php","line":28},"xdebug_link":{"url":"phpstorm:\/\/open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fresources%2Fviews%2Fproducts.blade.php\u0026line=28","ajax":false,"filename":"products.blade.php","line":"28"},"connection":"myshop_db","explain":null,"start_percent":73.974,"width_percent":1.11},{"sql":"select * from `categories` where `categories`.`id` = 4 limit 1","type":"query","params":[],"bindings":[4],"hints":null,"show_copy":true,"backtrace":[{"index":21,"namespace":"view","name":"products","file":"C:\\xampp\\htdocs\\myshop\\resources\\views\/products.blade.php","line":28},{"index":23,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Filesystem\/Filesystem.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Filesystem\\Filesystem.php","line":124},{"index":24,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/Engines\/PhpEngine.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\Engines\\PhpEngine.php","line":58},{"index":25,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/Engines\/CompilerEngine.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\Engines\\CompilerEngine.php","line":75},{"index":26,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/View\/View.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\View\\View.php","line":209}],"start":1751596516.745783,"duration":0.00034,"duration_str":"340\u03bcs","memory":0,"memory_str":null,"filename":"products:28","source":{"index":21,"namespace":"view","name":"products","file":"C:\\xampp\\htdocs\\myshop\\resources\\views\/products.blade.php","line":28},"xdebug_link":{"url":"phpstorm:\/\/open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fresources%2Fviews%2Fproducts.blade.php\u0026line=28","ajax":false,"filename":"products.blade.php","line":"28"},"connection":"myshop_db","explain":null,"start_percent":75.084,"width_percent":0.878},{"sql":"update `sessions` set `payload` = \u0027YTozOntzOjY6Il90b2tlbiI7czo0MDoibVFacjBKOFN1UzBSRlNKdUJLMTJRdTNma3Z5OFozQ096QlhoNE9FdyI7czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6MzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9wcm9kdWN0cyI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=\u0027, `last_activity` = 1751596516, `user_id` = null, `ip_address` = \u0027127.0.0.1\u0027, `user_agent` = \u0027Mozilla\/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/137.0.0.0 Safari\/537.36\u0027 where `id` = \u0027IwUl2QeZQ69GKjZu2CjGtbEWRxqKguS1TDRzvEUC\u0027","type":"query","params":[],"bindings":["YTozOntzOjY6Il90b2tlbiI7czo0MDoibVFacjBKOFN1UzBSRlNKdUJLMTJRdTNma3Z5OFozQ096QlhoNE9FdyI7czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6MzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9wcm9kdWN0cyI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=",1751596516,null,"127.0.0.1","Mozilla\/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/137.0.0.0 Safari\/537.36","IwUl2QeZQ69GKjZu2CjGtbEWRxqKguS1TDRzvEUC"],"hints":null,"show_copy":true,"backtrace":[{"index":11,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Session\/DatabaseSessionHandler.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Session\\DatabaseSessionHandler.php","line":173},{"index":12,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Session\/DatabaseSessionHandler.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Session\\DatabaseSessionHandler.php","line":140},{"index":13,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Session\/Store.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Session\\Store.php","line":176},{"index":14,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Session\/Middleware\/StartSession.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Session\\Middleware\\StartSession.php","line":245},{"index":15,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Session\/Middleware\/StartSession.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Session\\Middleware\\StartSession.php","line":130}],"start":1751596516.911852,"duration":0.00931,"duration_str":"9.31ms","memory":0,"memory_str":null,"filename":"DatabaseSessionHandler.php:173","source":{"index":11,"namespace":null,"name":"vendor\/laravel\/framework\/src\/Illuminate\/Session\/DatabaseSessionHandler.php","file":"C:\\xampp\\htdocs\\myshop\\vendor\\laravel\\framework\\src\\Illuminate\\Session\\DatabaseSessionHandler.php","line":173},"xdebug_link":{"url":"phpstorm:\/\/open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fvendor%2Flaravel%2Fframework%2Fsrc%2FIlluminate%2FSession%2FDatabaseSessionHandler.php\u0026line=173","ajax":false,"filename":"DatabaseSessionHandler.php","line":"173"},"connection":"myshop_db","explain":null,"start_percent":75.962,"width_percent":24.038}]},"models":{"data":{"App\\Models\\Product":{"value":8,"xdebug_link":{"url":"phpstorm:\/\/open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fapp%2FModels%2FProduct.php\u0026line=1","ajax":false,"filename":"Product.php","line":"?"}},"App\\Models\\Category":{"value":8,"xdebug_link":{"url":"phpstorm:\/\/open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fapp%2FModels%2FCategory.php\u0026line=1","ajax":false,"filename":"Category.php","line":"?"}}},"count":16,"is_counter":true},"symfonymailer_mails":{"count":0,"mails":[]},"gate":{"count":0,"messages":[]},"session":{"_token":"mQZr0J8SuS0RFSJuBK12Qu3fkvy8Z3COzBXh4OEw","_previous":"array:1 [\n  \u0022url\u0022 =\u003E \u0022http:\/\/localhost:8000\/products\u0022\n]","_flash":"array:2 [\n  \u0022old\u0022 =\u003E []\n  \u0022new\u0022 =\u003E []\n]"},"request":{"telescope":"\u003Ca href=\u0022http:\/\/localhost:8000\/_debugbar\/telescope\/9f4e88d1-71a6-4ef8-9a9f-000ced73a6c2\u0022 target=\u0022_blank\u0022\u003EView in Telescope\u003C\/a\u003E","path_info":"\/products","status_code":"\u003Cpre class=sf-dump id=sf-dump-439369330 data-indent-pad=\u0022  \u0022\u003E\u003Cspan class=sf-dump-num\u003E200\u003C\/span\u003E\n\u003C\/pre\u003E\u003Cscript\u003ESfdump(\u0022sf-dump-439369330\u0022, {\u0022maxDepth\u0022:0})\u003C\/script\u003E\n","status_text":"OK","format":"html","content_type":"text\/html; charset=UTF-8","request_query":"\u003Cpre class=sf-dump id=sf-dump-135412218 data-indent-pad=\u0022  \u0022\u003E[]\n\u003C\/pre\u003E\u003Cscript\u003ESfdump(\u0022sf-dump-135412218\u0022, {\u0022maxDepth\u0022:0})\u003C\/script\u003E\n","request_request":"\u003Cpre class=sf-dump id=sf-dump-1933411139 data-indent-pad=\u0022  \u0022\u003E[]\n\u003C\/pre\u003E\u003Cscript\u003ESfdump(\u0022sf-dump-1933411139\u0022, {\u0022maxDepth\u0022:0})\u003C\/script\u003E\n","request_headers":"\u003Cpre class=sf-dump id=sf-dump-11236159 data-indent-pad=\u0022  \u0022\u003E\u003Cspan class=sf-dump-note\u003Earray:16\u003C\/span\u003E [\u003Csamp data-depth=1 class=sf-dump-expanded\u003E\n  \u0022\u003Cspan class=sf-dump-key\u003Ehost\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:1\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u003Cspan class=sf-dump-index\u003E0\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u002214 characters\u0022\u003Elocalhost:8000\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n  \u0022\u003Cspan class=sf-dump-key\u003Econnection\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:1\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u003Cspan class=sf-dump-index\u003E0\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u002210 characters\u0022\u003Ekeep-alive\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n  \u0022\u003Cspan class=sf-dump-key\u003Esec-ch-ua\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:1\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u003Cspan class=sf-dump-index\u003E0\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u002265 characters\u0022\u003E\u0026quot;Google Chrome\u0026quot;;v=\u0026quot;137\u0026quot;, \u0026quot;Chromium\u0026quot;;v=\u0026quot;137\u0026quot;, \u0026quot;Not\/A)Brand\u0026quot;;v=\u0026quot;24\u0026quot;\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n  \u0022\u003Cspan class=sf-dump-key\u003Esec-ch-ua-mobile\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:1\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u003Cspan class=sf-dump-index\u003E0\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u00222 characters\u0022\u003E?0\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n  \u0022\u003Cspan class=sf-dump-key\u003Esec-ch-ua-platform\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:1\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u003Cspan class=sf-dump-index\u003E0\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u00229 characters\u0022\u003E\u0026quot;Windows\u0026quot;\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n  \u0022\u003Cspan class=sf-dump-key\u003Eupgrade-insecure-requests\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:1\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u003Cspan class=sf-dump-index\u003E0\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str\u003E1\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n  \u0022\u003Cspan class=sf-dump-key\u003Euser-agent\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:1\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u003Cspan class=sf-dump-index\u003E0\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u0022111 characters\u0022\u003EMozilla\/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/137.0.0.0 Safari\/537.36\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n  \u0022\u003Cspan class=sf-dump-key\u003Eaccept\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:1\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u003Cspan class=sf-dump-index\u003E0\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u0022135 characters\u0022\u003Etext\/html,application\/xhtml+xml,application\/xml;q=0.9,image\/avif,image\/webp,image\/apng,*\/*;q=0.8,application\/signed-exchange;v=b3;q=0.7\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n  \u0022\u003Cspan class=sf-dump-key\u003Esec-fetch-site\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:1\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u003Cspan class=sf-dump-index\u003E0\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u002211 characters\u0022\u003Esame-origin\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n  \u0022\u003Cspan class=sf-dump-key\u003Esec-fetch-mode\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:1\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u003Cspan class=sf-dump-index\u003E0\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u00228 characters\u0022\u003Enavigate\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n  \u0022\u003Cspan class=sf-dump-key\u003Esec-fetch-user\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:1\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u003Cspan class=sf-dump-index\u003E0\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u00222 characters\u0022\u003E?1\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n  \u0022\u003Cspan class=sf-dump-key\u003Esec-fetch-dest\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:1\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u003Cspan class=sf-dump-index\u003E0\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u00228 characters\u0022\u003Edocument\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n  \u0022\u003Cspan class=sf-dump-key\u003Ereferer\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:1\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u003Cspan class=sf-dump-index\u003E0\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u002222 characters\u0022\u003Ehttp:\/\/localhost:8000\/\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n  \u0022\u003Cspan class=sf-dump-key\u003Eaccept-encoding\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:1\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u003Cspan class=sf-dump-index\u003E0\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u002223 characters\u0022\u003Egzip, deflate, br, zstd\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n  \u0022\u003Cspan class=sf-dump-key\u003Eaccept-language\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:1\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u003Cspan class=sf-dump-index\u003E0\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u002223 characters\u0022\u003Een-US,en;q=0.9,fa;q=0.8\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n  \u0022\u003Cspan class=sf-dump-key\u003Ecookie\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:1\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u003Cspan class=sf-dump-index\u003E0\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u0022713 characters\u0022\u003EXSRF-TOKEN=eyJpdiI6IkVRN1RvemJqWkZuZ1lmVUplZTJreEE9PSIsInZhbHVlIjoiNnRCYlo2MEhwSlJLeDhYbloza0ViNjBOTnk2ajBHSUtuaHlHK3UrdURqL2ZtZmtnRWRYTDN6SUhqdm94dW1aS1pOd3VWOUxMM2w3Vk9jZ0VWeHR3cVpEbDlnMnBRL25RYnYrSWwyOXc2TDZHRG0vSGZlZndQajdQNFFsOG80enAiLCJtYWMiOiIwNTZkOGRjNGUxNDkwOGJjODQzOTYzOGZkYzlkN2FlYTFhNTJjYmFhYTkyMzQzMGEwYWU3NjUzYjkyODBjNjYzIiwidGFnIjoiIn0%3D; laravel_session=eyJpdiI6InlVbWxMUnVVUFlGdzlxY3JQa2FGMGc9PSIsInZhbHVlIjoicjhzR2VSOGQrYkk0RkhGa3NOVzhFNFFLT1dLWUI3ZDd2Z2Q2ODUvZ2VRL0dEcWtLMlZnWXJKVWlwYWVJcC9PMkhDL01Xa1FKSGxTMGNxV3MxVXEydURhS2ZqNHhVN1ZmNkxORy9ldFVCSFVNdkJuL2NqTnlHN0FVRjBtZ3kxWkIiLCJtYWMiOiI0MWNjMDg0MTVmMDc0MTQwOTI0NmQ4MmE5ZGU5NmMyMGNmZjIwZDViNzEwYTMwOGVmNzExMzk4N2M4OTIwMDBjIiwidGFnIjoiIn0%3D\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n\u003C\/samp\u003E]\n\u003C\/pre\u003E\u003Cscript\u003ESfdump(\u0022sf-dump-11236159\u0022, {\u0022maxDepth\u0022:0})\u003C\/script\u003E\n","request_cookies":"\u003Cpre class=sf-dump id=sf-dump-285569433 data-indent-pad=\u0022  \u0022\u003E\u003Cspan class=sf-dump-note\u003Earray:2\u003C\/span\u003E [\u003Csamp data-depth=1 class=sf-dump-expanded\u003E\n  \u0022\u003Cspan class=sf-dump-key\u003EXSRF-TOKEN\u003C\/span\u003E\u0022 =\u003E \u0022\u003Cspan class=sf-dump-str title=\u002240 characters\u0022\u003EmQZr0J8SuS0RFSJuBK12Qu3fkvy8Z3COzBXh4OEw\u003C\/span\u003E\u0022\n  \u0022\u003Cspan class=sf-dump-key\u003Elaravel_session\u003C\/span\u003E\u0022 =\u003E \u0022\u003Cspan class=sf-dump-str title=\u002240 characters\u0022\u003EIwUl2QeZQ69GKjZu2CjGtbEWRxqKguS1TDRzvEUC\u003C\/span\u003E\u0022\n\u003C\/samp\u003E]\n\u003C\/pre\u003E\u003Cscript\u003ESfdump(\u0022sf-dump-285569433\u0022, {\u0022maxDepth\u0022:0})\u003C\/script\u003E\n","response_headers":"\u003Cpre class=sf-dump id=sf-dump-919258441 data-indent-pad=\u0022  \u0022\u003E\u003Cspan class=sf-dump-note\u003Earray:5\u003C\/span\u003E [\u003Csamp data-depth=1 class=sf-dump-expanded\u003E\n  \u0022\u003Cspan class=sf-dump-key\u003Econtent-type\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:1\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u003Cspan class=sf-dump-index\u003E0\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u002224 characters\u0022\u003Etext\/html; charset=UTF-8\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n  \u0022\u003Cspan class=sf-dump-key\u003Ecache-control\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:1\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u003Cspan class=sf-dump-index\u003E0\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u002217 characters\u0022\u003Eno-cache, private\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n  \u0022\u003Cspan class=sf-dump-key\u003Edate\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:1\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u003Cspan class=sf-dump-index\u003E0\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u002229 characters\u0022\u003EFri, 04 Jul 2025 02:35:16 GMT\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n  \u0022\u003Cspan class=sf-dump-key\u003Eset-cookie\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:2\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u003Cspan class=sf-dump-index\u003E0\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u0022428 characters\u0022\u003EXSRF-TOKEN=eyJpdiI6Inh3VUxLaG1uUzVrb2ozdGZCRkZQT3c9PSIsInZhbHVlIjoiOWtXQlVIUWhaa2VXNytqQllsNWFiZUE0OWtiRS81OVRSaHIwUXk2OHZuaENqUmFPUkw1MXlNU0FQUmpOTUtLbEFUM25BdEx2MEdUR29kOWY0OUNkY2RFS3AzZitDRHVTNXdPdUh3VkJyMHR5cWJ0M1FOYXUwL2FOYkg0L0YxdE8iLCJtYWMiOiI2MzkyMjg0ZDZhYzBiYjcxMWQ5YjNlYmVkZGEyN2ZjM2VjNjA2YWMzMDlkMjBiZGYxY2M4M2M2YWVhZTE3YzRiIiwidGFnIjoiIn0%3D; expires=Fri, 04 Jul 2025 04:35:16 GMT; Max-Age=7200; path=\/; samesite=lax\u003C\/span\u003E\u0022\n    \u003Cspan class=sf-dump-index\u003E1\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u0022443 characters\u0022\u003Elaravel_session=eyJpdiI6Ik03REY3azRIQ01DTXBuYS9yUTdYb1E9PSIsInZhbHVlIjoiUEkwajhObUlkK1VlU1pkMENOeFhDckdpanp6M01yeDQrS1Q4Zjg1QzRHY0tDSnpLanNmaUYyakNLYmlQWm5uaytpUTFpMDJ2aTc1V1dxbUsvSkc1NU9FVllWZlpkdlV5c3FsVFdrTys0R1NwM3dOWEdUVWdBUzVJTmlBeWZkM2QiLCJtYWMiOiI0YTE1NzNiZGRhYzI0OGY5NzQyZmFhNDJiNzY2MTZjYTQ3NWQ5YTcxOGY1N2ZmZjg2OGVkNmRlYzVjNjQ4YmRjIiwidGFnIjoiIn0%3D; expires=Fri, 04 Jul 2025 04:35:16 GMT; Max-Age=7200; path=\/; httponly; samesite=lax\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n  \u0022\u003Cspan class=sf-dump-key\u003ESet-Cookie\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:2\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u003Cspan class=sf-dump-index\u003E0\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u0022400 characters\u0022\u003EXSRF-TOKEN=eyJpdiI6Inh3VUxLaG1uUzVrb2ozdGZCRkZQT3c9PSIsInZhbHVlIjoiOWtXQlVIUWhaa2VXNytqQllsNWFiZUE0OWtiRS81OVRSaHIwUXk2OHZuaENqUmFPUkw1MXlNU0FQUmpOTUtLbEFUM25BdEx2MEdUR29kOWY0OUNkY2RFS3AzZitDRHVTNXdPdUh3VkJyMHR5cWJ0M1FOYXUwL2FOYkg0L0YxdE8iLCJtYWMiOiI2MzkyMjg0ZDZhYzBiYjcxMWQ5YjNlYmVkZGEyN2ZjM2VjNjA2YWMzMDlkMjBiZGYxY2M4M2M2YWVhZTE3YzRiIiwidGFnIjoiIn0%3D; expires=Fri, 04-Jul-2025 04:35:16 GMT; path=\/\u003C\/span\u003E\u0022\n    \u003Cspan class=sf-dump-index\u003E1\u003C\/span\u003E =\u003E \u0022\u003Cspan class=sf-dump-str title=\u0022415 characters\u0022\u003Elaravel_session=eyJpdiI6Ik03REY3azRIQ01DTXBuYS9yUTdYb1E9PSIsInZhbHVlIjoiUEkwajhObUlkK1VlU1pkMENOeFhDckdpanp6M01yeDQrS1Q4Zjg1QzRHY0tDSnpLanNmaUYyakNLYmlQWm5uaytpUTFpMDJ2aTc1V1dxbUsvSkc1NU9FVllWZlpkdlV5c3FsVFdrTys0R1NwM3dOWEdUVWdBUzVJTmlBeWZkM2QiLCJtYWMiOiI0YTE1NzNiZGRhYzI0OGY5NzQyZmFhNDJiNzY2MTZjYTQ3NWQ5YTcxOGY1N2ZmZjg2OGVkNmRlYzVjNjQ4YmRjIiwidGFnIjoiIn0%3D; expires=Fri, 04-Jul-2025 04:35:16 GMT; path=\/; httponly\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n\u003C\/samp\u003E]\n\u003C\/pre\u003E\u003Cscript\u003ESfdump(\u0022sf-dump-919258441\u0022, {\u0022maxDepth\u0022:0})\u003C\/script\u003E\n","session_attributes":"\u003Cpre class=sf-dump id=sf-dump-1348520470 data-indent-pad=\u0022  \u0022\u003E\u003Cspan class=sf-dump-note\u003Earray:3\u003C\/span\u003E [\u003Csamp data-depth=1 class=sf-dump-expanded\u003E\n  \u0022\u003Cspan class=sf-dump-key\u003E_token\u003C\/span\u003E\u0022 =\u003E \u0022\u003Cspan class=sf-dump-str title=\u002240 characters\u0022\u003EmQZr0J8SuS0RFSJuBK12Qu3fkvy8Z3COzBXh4OEw\u003C\/span\u003E\u0022\n  \u0022\u003Cspan class=sf-dump-key\u003E_previous\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:1\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u0022\u003Cspan class=sf-dump-key\u003Eurl\u003C\/span\u003E\u0022 =\u003E \u0022\u003Cspan class=sf-dump-str title=\u002230 characters\u0022\u003Ehttp:\/\/localhost:8000\/products\u003C\/span\u003E\u0022\n  \u003C\/samp\u003E]\n  \u0022\u003Cspan class=sf-dump-key\u003E_flash\u003C\/span\u003E\u0022 =\u003E \u003Cspan class=sf-dump-note\u003Earray:2\u003C\/span\u003E [\u003Csamp data-depth=2 class=sf-dump-compact\u003E\n    \u0022\u003Cspan class=sf-dump-key\u003Eold\u003C\/span\u003E\u0022 =\u003E []\n    \u0022\u003Cspan class=sf-dump-key\u003Enew\u003C\/span\u003E\u0022 =\u003E []\n  \u003C\/samp\u003E]\n\u003C\/samp\u003E]\n\u003C\/pre\u003E\u003Cscript\u003ESfdump(\u0022sf-dump-1348520470\u0022, {\u0022maxDepth\u0022:0})\u003C\/script\u003E\n"}}, "X550c835e6ff22ba7c274ea1e44fe84a8");
+
+</script><div class="phpdebugbar phpdebugbar-minimized"><div class="phpdebugbar-drag-capture"></div><div class="phpdebugbar-resize-handle"></div><div class="phpdebugbar-header"><a class="phpdebugbar-restore-btn"></a><div class="phpdebugbar-header-left"><a class="phpdebugbar-tab" data-collector="messages"><i class="phpdebugbar-fa phpdebugbar-fa-list-alt"></i><span class="phpdebugbar-text">Messages</span><span class="phpdebugbar-badge"></span></a><a class="phpdebugbar-tab" data-collector="timeline"><i class="phpdebugbar-fa phpdebugbar-fa-tasks"></i><span class="phpdebugbar-text">Timeline</span><span class="phpdebugbar-badge"></span></a><a class="phpdebugbar-tab" data-collector="exceptions"><i class="phpdebugbar-fa phpdebugbar-fa-bug"></i><span class="phpdebugbar-text">Exceptions</span><span class="phpdebugbar-badge"></span></a><a class="phpdebugbar-tab" data-collector="views"><i class="phpdebugbar-fa phpdebugbar-fa-leaf"></i><span class="phpdebugbar-text">Views</span><span class="phpdebugbar-badge phpdebugbar-visible">0</span></a><a class="phpdebugbar-tab" data-collector="route"><i class="phpdebugbar-fa phpdebugbar-fa-share"></i><span class="phpdebugbar-text">Route</span><span class="phpdebugbar-badge"></span></a><a class="phpdebugbar-tab" data-collector="queries"><i class="phpdebugbar-fa phpdebugbar-fa-database"></i><span class="phpdebugbar-text">Queries</span><span class="phpdebugbar-badge phpdebugbar-visible">4</span></a><a class="phpdebugbar-tab" data-collector="models"><i class="phpdebugbar-fa phpdebugbar-fa-cubes"></i><span class="phpdebugbar-text">Models</span><span class="phpdebugbar-badge phpdebugbar-visible">1</span></a><a class="phpdebugbar-tab" data-collector="emails"><i class="phpdebugbar-fa phpdebugbar-fa-inbox"></i><span class="phpdebugbar-text">Mails</span><span class="phpdebugbar-badge"></span></a><a class="phpdebugbar-tab" data-collector="gate"><i class="phpdebugbar-fa phpdebugbar-fa-list-alt"></i><span class="phpdebugbar-text">Gate</span><span class="phpdebugbar-badge"></span></a><a class="phpdebugbar-tab" data-collector="session"><i class="phpdebugbar-fa phpdebugbar-fa-archive"></i><span class="phpdebugbar-text">Session</span><span class="phpdebugbar-badge"></span></a><a class="phpdebugbar-tab" data-collector="request"><i class="phpdebugbar-fa phpdebugbar-fa-tags"></i><span class="phpdebugbar-text">Request</span><span class="phpdebugbar-badge"></span></a></div><div class="phpdebugbar-header-right"><a class="phpdebugbar-close-btn"></a><a class="phpdebugbar-minimize-btn"></a><a class="phpdebugbar-maximize-btn"></a><a class="phpdebugbar-open-btn" style=""></a><a class="phpdebugbar-tab phpdebugbar-tab-history" data-collector="__datasets" style=""><i class="phpdebugbar-fa phpdebugbar-fa-history"></i><span class="phpdebugbar-text">Request history</span><span class="phpdebugbar-badge phpdebugbar-visible">2</span></a><select class="phpdebugbar-datasets-switcher" name="datasets-switcher" style="display: block;"><option value="X550c835e6ff22ba7c274ea1e44fe84a8">#1 products (02:35:16)</option><option value="X711ac44f6901fd5089c2cc8407513618">#2 contents (ajax) (02:35:17)</option></select><span class="phpdebugbar-indicator"><i class="phpdebugbar-fa phpdebugbar-fa-code"></i><span class="phpdebugbar-text">8.2.12</span><span class="phpdebugbar-tooltip">PHP Version</span></span><span class="phpdebugbar-indicator"><i class="phpdebugbar-fa phpdebugbar-fa-clock-o"></i><span class="phpdebugbar-text">280ms</span><span class="phpdebugbar-tooltip">Request Duration</span></span><span class="phpdebugbar-indicator"><i class="phpdebugbar-fa phpdebugbar-fa-cogs"></i><span class="phpdebugbar-text">24MB</span><span class="phpdebugbar-tooltip">Memory Usage</span></span><span class="phpdebugbar-indicator"><i class="phpdebugbar-fa phpdebugbar-fa-share"></i><span class="phpdebugbar-text">GET cart/contents</span><span class="phpdebugbar-tooltip">Route</span></span></div></div><div class="phpdebugbar-body" style="height: 512.625px;"><div class="phpdebugbar-panel" data-collector="messages"><div class="phpdebugbar-widgets-messages"><ul class="phpdebugbar-widgets-list"></ul><div class="phpdebugbar-widgets-toolbar"><i class="phpdebugbar-fa phpdebugbar-fa-search"></i><input type="text" name="search" aria-label="Search" placeholder="Search"><a class="phpdebugbar-widgets-filter" style="visibility: hidden;"></a></div></div></div><div class="phpdebugbar-panel" data-collector="timeline"><ul class="phpdebugbar-widgets-timeline"><li><div class="phpdebugbar-widgets-measure"><span class="phpdebugbar-widgets-value" style="left: 0%; width: 71.26%;"></span><span class="phpdebugbar-widgets-label">Booting (200ms)</span><span class="phpdebugbar-widgets-collector">time</span></div></li><li><div class="phpdebugbar-widgets-measure"><span class="phpdebugbar-widgets-value" style="left: 71.26%; width: 28.74%;"></span><span class="phpdebugbar-widgets-label">Application (80.48ms)</span><span class="phpdebugbar-widgets-collector">time</span></div></li><li><table class="phpdebugbar-widgets-params"><tr><td class="phpdebugbar-widgets-name">1 x Booting (71.26%)</td><td class="phpdebugbar-widgets-value"><div class="phpdebugbar-widgets-measure"><span class="phpdebugbar-widgets-value" style="width: 71.26%;"></span><span class="phpdebugbar-widgets-label">200ms</span></div></td></tr><tr><td class="phpdebugbar-widgets-name">1 x Application (28.74%)</td><td class="phpdebugbar-widgets-value"><div class="phpdebugbar-widgets-measure"><span class="phpdebugbar-widgets-value" style="width: 28.74%;"></span><span class="phpdebugbar-widgets-label">80.48ms</span></div></td></tr></table></li></ul></div><div class="phpdebugbar-panel" data-collector="exceptions"><div class="phpdebugbar-widgets-exceptions"><ul class="phpdebugbar-widgets-list"></ul></div></div><div class="phpdebugbar-panel" data-collector="views"><div class="phpdebugbar-widgets-templates"><div class="phpdebugbar-widgets-status"><span>0 templates were rendered</span></div><ul class="phpdebugbar-widgets-list"></ul><div class="phpdebugbar-widgets-callgraph"></div></div></div><div class="phpdebugbar-panel" data-collector="route"><dl class="phpdebugbar-widgets-kvlist phpdebugbar-widgets-htmlvarlist"><dt class="phpdebugbar-widgets-key"><span title="uri">uri</span></dt><dd class="phpdebugbar-widgets-value">GET cart/contents</dd><dt class="phpdebugbar-widgets-key"><span title="middleware">middleware</span></dt><dd class="phpdebugbar-widgets-value">web</dd><dt class="phpdebugbar-widgets-key"><span title="controller">controller</span></dt><dd class="phpdebugbar-widgets-value">App\Http\Controllers\CartController@getContents</dd><dt class="phpdebugbar-widgets-key"><span title="namespace">namespace</span></dt><dd class="phpdebugbar-widgets-value"></dd><dt class="phpdebugbar-widgets-key"><span title="prefix">prefix</span></dt><dd class="phpdebugbar-widgets-value"></dd><dt class="phpdebugbar-widgets-key"><span title="where">where</span></dt><dd class="phpdebugbar-widgets-value"></dd><dt class="phpdebugbar-widgets-key"><span title="as">as</span></dt><dd class="phpdebugbar-widgets-value">cart.contents</dd><dt class="phpdebugbar-widgets-key"><span title="file">file</span></dt><dd class="phpdebugbar-widgets-value"><a href="phpstorm://open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fapp%2FHttp%2FControllers%2FCartController.php&amp;line=228" onclick="">app/Http/Controllers/CartController.php:228-244</a></dd></dl></div><div class="phpdebugbar-panel" data-collector="queries"><div class="phpdebugbar-widgets-sqlqueries"><div class="phpdebugbar-widgets-status"><span>4 statements were executed</span><span title="Accumulated duration" class="phpdebugbar-widgets-duration">16.12ms</span></div><ul class="phpdebugbar-widgets-list"><li class="phpdebugbar-widgets-list-item phpdebugbar-widgets-expandable" data-connection="myshop_db" data-duplicate="false"><span title="Filename" class="phpdebugbar-widgets-filename">DatabaseSessionHandler.php#97<a href="phpstorm://open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fvendor%2Flaravel%2Fframework%2Fsrc%2FIlluminate%2FSession%2FDatabaseSessionHandler.php&amp;line=97" class="phpdebugbar-widgets-editor-link"></a></span><span title="Connection" class="phpdebugbar-widgets-database">myshop_db</span><span title="Duration" class="phpdebugbar-widgets-duration">810μs</span><span title="Copy to clipboard" class="phpdebugbar-widgets-copy-clipboard" style="cursor: pointer;"></span><code class="phpdebugbar-widgets-sql"><span class="hljs-keyword">select</span> <span class="hljs-operator">*</span> <span class="hljs-keyword">from</span> `sessions` <span class="hljs-keyword">where</span> `id` <span class="hljs-operator">=</span> <span class="hljs-string">'IwUl2QeZQ69GKjZu2CjGtbEWRxqKguS1TDRzvEUC'</span> limit <span class="hljs-number">1</span></code><div class="phpdebugbar-widgets-bg-measure"><div class="phpdebugbar-widgets-value" style="left: 0%; width: 5.025%;"></div></div><table class="phpdebugbar-widgets-params"><tr><td class="phpdebugbar-widgets-name">Bindings<i class="phpdebugbar-text-muted phpdebugbar-fa phpdebugbar-fa-thumb-tack"></i></td><td class="phpdebugbar-widgets-value"><ul class="phpdebugbar-widgets-table-list"><li class="phpdebugbar-widgets-table-list-item"><span class="phpdebugbar-text-muted">0:</span>&nbsp;<span>IwUl2QeZQ69GKjZu2CjGtbEWRxqKguS1TDRzvEUC</span></li></ul></td></tr><tr><td class="phpdebugbar-widgets-name">Backtrace<i class="phpdebugbar-text-muted phpdebugbar-fa phpdebugbar-fa-list-ul"></i></td><td class="phpdebugbar-widgets-value"><ul class="phpdebugbar-widgets-table-list"><li class="phpdebugbar-widgets-table-list-item">vendor/laravel/framework/src/Illuminate/Session/DatabaseSessionHandler.php:97</li><li class="phpdebugbar-widgets-table-list-item">vendor/laravel/framework/src/Illuminate/Session/Store.php:117</li><li class="phpdebugbar-widgets-table-list-item">vendor/laravel/framework/src/Illuminate/Session/Store.php:105</li><li class="phpdebugbar-widgets-table-list-item">vendor/laravel/framework/src/Illuminate/Session/Store.php:89</li><li class="phpdebugbar-widgets-table-list-item">vendor/laravel/framework/src/Illuminate/Session/Middleware/StartSession.php:147</li></ul></td></tr></table></li><li class="phpdebugbar-widgets-list-item phpdebugbar-widgets-expandable" data-connection="myshop_db" data-duplicate="false"><span title="Filename" class="phpdebugbar-widgets-filename">CartController.php#30<a href="phpstorm://open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fapp%2FHttp%2FControllers%2FCartController.php&amp;line=30" class="phpdebugbar-widgets-editor-link"></a></span><span title="Connection" class="phpdebugbar-widgets-database">myshop_db</span><span title="Duration" class="phpdebugbar-widgets-duration">680μs</span><span title="Copy to clipboard" class="phpdebugbar-widgets-copy-clipboard" style="cursor: pointer;"></span><code class="phpdebugbar-widgets-sql"><span class="hljs-keyword">select</span> <span class="hljs-operator">*</span> <span class="hljs-keyword">from</span> `carts` <span class="hljs-keyword">where</span> (`session_id` <span class="hljs-operator">=</span> <span class="hljs-string">'IwUl2QeZQ69GKjZu2CjGtbEWRxqKguS1TDRzvEUC'</span>) limit <span class="hljs-number">1</span></code><div class="phpdebugbar-widgets-bg-measure"><div class="phpdebugbar-widgets-value" style="left: 5.025%; width: 4.218%;"></div></div><table class="phpdebugbar-widgets-params"><tr><td class="phpdebugbar-widgets-name">Bindings<i class="phpdebugbar-text-muted phpdebugbar-fa phpdebugbar-fa-thumb-tack"></i></td><td class="phpdebugbar-widgets-value"><ul class="phpdebugbar-widgets-table-list"><li class="phpdebugbar-widgets-table-list-item"><span class="phpdebugbar-text-muted">0:</span>&nbsp;<span>IwUl2QeZQ69GKjZu2CjGtbEWRxqKguS1TDRzvEUC</span></li></ul></td></tr><tr><td class="phpdebugbar-widgets-name">Backtrace<i class="phpdebugbar-text-muted phpdebugbar-fa phpdebugbar-fa-list-ul"></i></td><td class="phpdebugbar-widgets-value"><ul class="phpdebugbar-widgets-table-list"><li class="phpdebugbar-widgets-table-list-item">app/Http/Controllers/CartController.php:30</li><li class="phpdebugbar-widgets-table-list-item">app/Http/Controllers/CartController.php:230</li><li class="phpdebugbar-widgets-table-list-item">vendor/laravel/framework/src/Illuminate/Routing/ControllerDispatcher.php:47</li><li class="phpdebugbar-widgets-table-list-item">vendor/laravel/framework/src/Illuminate/Routing/Route.php:266</li><li class="phpdebugbar-widgets-table-list-item">vendor/laravel/framework/src/Illuminate/Routing/Route.php:212</li></ul></td></tr></table></li><li class="phpdebugbar-widgets-list-item phpdebugbar-widgets-expandable" data-connection="myshop_db" data-duplicate="false"><span title="Filename" class="phpdebugbar-widgets-filename">CartController.php#232<a href="phpstorm://open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fapp%2FHttp%2FControllers%2FCartController.php&amp;line=232" class="phpdebugbar-widgets-editor-link"></a></span><span title="Connection" class="phpdebugbar-widgets-database">myshop_db</span><span title="Duration" class="phpdebugbar-widgets-duration">870μs</span><span title="Copy to clipboard" class="phpdebugbar-widgets-copy-clipboard" style="cursor: pointer;"></span><code class="phpdebugbar-widgets-sql"><span class="hljs-keyword">select</span> <span class="hljs-operator">*</span> <span class="hljs-keyword">from</span> `cart_items` <span class="hljs-keyword">where</span> `cart_items`.`cart_id` <span class="hljs-operator">=</span> <span class="hljs-number">35</span> <span class="hljs-keyword">and</span> `cart_items`.`cart_id` <span class="hljs-keyword">is</span> <span class="hljs-keyword">not</span> <span class="hljs-keyword">null</span></code><div class="phpdebugbar-widgets-bg-measure"><div class="phpdebugbar-widgets-value" style="left: 9.243%; width: 5.397%;"></div></div><table class="phpdebugbar-widgets-params"><tr><td class="phpdebugbar-widgets-name">Bindings<i class="phpdebugbar-text-muted phpdebugbar-fa phpdebugbar-fa-thumb-tack"></i></td><td class="phpdebugbar-widgets-value"><ul class="phpdebugbar-widgets-table-list"><li class="phpdebugbar-widgets-table-list-item"><span class="phpdebugbar-text-muted">0:</span>&nbsp;<span>35</span></li></ul></td></tr><tr><td class="phpdebugbar-widgets-name">Backtrace<i class="phpdebugbar-text-muted phpdebugbar-fa phpdebugbar-fa-list-ul"></i></td><td class="phpdebugbar-widgets-value"><ul class="phpdebugbar-widgets-table-list"><li class="phpdebugbar-widgets-table-list-item">app/Http/Controllers/CartController.php:232</li><li class="phpdebugbar-widgets-table-list-item">vendor/laravel/framework/src/Illuminate/Routing/ControllerDispatcher.php:47</li><li class="phpdebugbar-widgets-table-list-item">vendor/laravel/framework/src/Illuminate/Routing/Route.php:266</li><li class="phpdebugbar-widgets-table-list-item">vendor/laravel/framework/src/Illuminate/Routing/Route.php:212</li><li class="phpdebugbar-widgets-table-list-item">vendor/laravel/framework/src/Illuminate/Routing/Router.php:808</li></ul></td></tr></table></li><li class="phpdebugbar-widgets-list-item phpdebugbar-widgets-expandable" data-connection="myshop_db" data-duplicate="false"><span title="Filename" class="phpdebugbar-widgets-filename">DatabaseSessionHandler.php#173<a href="phpstorm://open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fvendor%2Flaravel%2Fframework%2Fsrc%2FIlluminate%2FSession%2FDatabaseSessionHandler.php&amp;line=173" class="phpdebugbar-widgets-editor-link"></a></span><span title="Connection" class="phpdebugbar-widgets-database">myshop_db</span><span title="Duration" class="phpdebugbar-widgets-duration">13.76ms</span><span title="Copy to clipboard" class="phpdebugbar-widgets-copy-clipboard" style="cursor: pointer;"></span><code class="phpdebugbar-widgets-sql"><span class="hljs-keyword">update</span> `sessions` <span class="hljs-keyword">set</span> `payload` <span class="hljs-operator">=</span> <span class="hljs-string">'YTozOntzOjY6Il90b2tlbiI7czo0MDoibVFacjBKOFN1UzBSRlNKdUJLMTJRdTNma3Z5OFozQ096QlhoNE9FdyI7czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9jYXJ0L2NvbnRlbnRzIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ=='</span>, `last_activity` <span class="hljs-operator">=</span> <span class="hljs-number">1751596517</span>, `user_id` <span class="hljs-operator">=</span> <span class="hljs-keyword">null</span>, `ip_address` <span class="hljs-operator">=</span> <span class="hljs-string">'127.0.0.1'</span>, `user_agent` <span class="hljs-operator">=</span> <span class="hljs-string">'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'</span> <span class="hljs-keyword">where</span> `id` <span class="hljs-operator">=</span> <span class="hljs-string">'IwUl2QeZQ69GKjZu2CjGtbEWRxqKguS1TDRzvEUC'</span></code><div class="phpdebugbar-widgets-bg-measure"><div class="phpdebugbar-widgets-value" style="left: 14.64%; width: 85.36%;"></div></div><table class="phpdebugbar-widgets-params"><tr><td class="phpdebugbar-widgets-name">Bindings<i class="phpdebugbar-text-muted phpdebugbar-fa phpdebugbar-fa-thumb-tack"></i></td><td class="phpdebugbar-widgets-value"><ul class="phpdebugbar-widgets-table-list"><li class="phpdebugbar-widgets-table-list-item"><span class="phpdebugbar-text-muted">0:</span>&nbsp;<span>YTozOntzOjY6Il90b2tlbiI7czo0MDoibVFacjBKOFN1UzBSRlNKdUJLMTJRdTNma3Z5OFozQ096QlhoNE9FdyI7czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6MzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9jYXJ0L2NvbnRlbnRzIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==</span></li><li class="phpdebugbar-widgets-table-list-item"><span class="phpdebugbar-text-muted">1:</span>&nbsp;<span>1751596517</span></li><li class="phpdebugbar-widgets-table-list-item"><span class="phpdebugbar-text-muted">2:</span>&nbsp;<span></span></li><li class="phpdebugbar-widgets-table-list-item"><span class="phpdebugbar-text-muted">3:</span>&nbsp;<span>127.0.0.1</span></li><li class="phpdebugbar-widgets-table-list-item"><span class="phpdebugbar-text-muted">4:</span>&nbsp;<span>Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36</span></li><li class="phpdebugbar-widgets-table-list-item"><span class="phpdebugbar-text-muted">5:</span>&nbsp;<span>IwUl2QeZQ69GKjZu2CjGtbEWRxqKguS1TDRzvEUC</span></li></ul></td></tr><tr><td class="phpdebugbar-widgets-name">Backtrace<i class="phpdebugbar-text-muted phpdebugbar-fa phpdebugbar-fa-list-ul"></i></td><td class="phpdebugbar-widgets-value"><ul class="phpdebugbar-widgets-table-list"><li class="phpdebugbar-widgets-table-list-item">vendor/laravel/framework/src/Illuminate/Session/DatabaseSessionHandler.php:173</li><li class="phpdebugbar-widgets-table-list-item">vendor/laravel/framework/src/Illuminate/Session/DatabaseSessionHandler.php:140</li><li class="phpdebugbar-widgets-table-list-item">vendor/laravel/framework/src/Illuminate/Session/Store.php:176</li><li class="phpdebugbar-widgets-table-list-item">vendor/laravel/framework/src/Illuminate/Session/Middleware/StartSession.php:245</li><li class="phpdebugbar-widgets-table-list-item">vendor/laravel/framework/src/Illuminate/Session/Middleware/StartSession.php:130</li></ul></td></tr></table></li></ul></div></div><div class="phpdebugbar-panel" data-collector="models"><dl class="phpdebugbar-widgets-kvlist phpdebugbar-widgets-htmlvarlist"><dt class="phpdebugbar-widgets-key"><span title="App\Models\Cart">App\Models\Cart</span></dt><dd class="phpdebugbar-widgets-value">1<span class="phpdebugbar-widgets-filename">Cart.php#?<a href="phpstorm://open?file=C%3A%2Fxampp%2Fhtdocs%2Fmyshop%2Fapp%2FModels%2FCart.php&amp;line=1" class="phpdebugbar-widgets-editor-link"></a></span></dd></dl></div><div class="phpdebugbar-panel" data-collector="emails"><div class="phpdebugbar-widgets-mails"><ul class="phpdebugbar-widgets-list"></ul></div></div><div class="phpdebugbar-panel" data-collector="gate"><div class="phpdebugbar-widgets-messages"><ul class="phpdebugbar-widgets-list"></ul><div class="phpdebugbar-widgets-toolbar"><i class="phpdebugbar-fa phpdebugbar-fa-search"></i><input type="text" name="search" aria-label="Search" placeholder="Search"><a class="phpdebugbar-widgets-filter" style="visibility: hidden;"></a></div></div></div><div class="phpdebugbar-panel" data-collector="session"><dl class="phpdebugbar-widgets-kvlist phpdebugbar-widgets-varlist"><dt class="phpdebugbar-widgets-key"><span title="_token">_token</span></dt><dd class="phpdebugbar-widgets-value">mQZr0J8SuS0RFSJuBK12Qu3fkvy8Z3COzBXh4OEw</dd><dt class="phpdebugbar-widgets-key"><span title="_previous">_previous</span></dt><dd class="phpdebugbar-widgets-value">array:1 [
+  "url" =&gt; "http://localhost:8000/cart/contents"
+]</dd><dt class="phpdebugbar-widgets-key"><span title="_flash">_flash</span></dt><dd class="phpdebugbar-widgets-value">array:2 [
+  "old" =&gt; []
+  "new" =&gt; []
+]</dd></dl></div><div class="phpdebugbar-panel" data-collector="request"><dl class="phpdebugbar-widgets-kvlist phpdebugbar-widgets-htmlvarlist"><dt class="phpdebugbar-widgets-key"><span title="telescope">telescope</span></dt><dd class="phpdebugbar-widgets-value"><a href="http://localhost:8000/_debugbar/telescope/9f4e88d2-8b55-47c4-8694-8c4b12ddf129" target="_blank">View in Telescope</a></dd><dt class="phpdebugbar-widgets-key"><span title="path_info">path_info</span></dt><dd class="phpdebugbar-widgets-value">/cart/contents</dd><dt class="phpdebugbar-widgets-key"><span title="status_code">status_code</span></dt><dd class="phpdebugbar-widgets-value"><pre class="sf-dump" id="sf-dump-1739167179" data-indent-pad="  "><span class="sf-dump-num">200</span>
+</pre><script>Sfdump("sf-dump-1739167179", {"maxDepth":0})</script>
+</dd><dt class="phpdebugbar-widgets-key"><span title="status_text">status_text</span></dt><dd class="phpdebugbar-widgets-value">OK</dd><dt class="phpdebugbar-widgets-key"><span title="format">format</span></dt><dd class="phpdebugbar-widgets-value">html</dd><dt class="phpdebugbar-widgets-key"><span title="content_type">content_type</span></dt><dd class="phpdebugbar-widgets-value">application/json</dd><dt class="phpdebugbar-widgets-key"><span title="request_query">request_query</span></dt><dd class="phpdebugbar-widgets-value"><pre class="sf-dump" id="sf-dump-901458116" data-indent-pad="  ">[]
+</pre><script>Sfdump("sf-dump-901458116", {"maxDepth":0})</script>
+</dd><dt class="phpdebugbar-widgets-key"><span title="request_request">request_request</span></dt><dd class="phpdebugbar-widgets-value"><pre class="sf-dump" id="sf-dump-1516260274" data-indent-pad="  ">[]
+</pre><script>Sfdump("sf-dump-1516260274", {"maxDepth":0})</script>
+</dd><dt class="phpdebugbar-widgets-key"><span title="request_headers">request_headers</span></dt><dd class="phpdebugbar-widgets-value"><pre class="sf-dump" id="sf-dump-1249478397" data-indent-pad="  " tabindex="0"><div class="sf-dump-search-wrapper sf-dump-search-hidden"> <input type="text" class="sf-dump-search-input"> <span class="sf-dump-search-count">0 of 0</span> <button type="button" class="sf-dump-search-input-previous" tabindex="-1"> <svg viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1683 1331l-166 165q-19 19-45 19t-45-19L896 965l-531 531q-19 19-45 19t-45-19l-166-165q-19-19-19-45.5t19-45.5l742-741q19-19 45-19t45 19l742 741q19 19 19 45.5t-19 45.5z"></path></svg> </button> <button type="button" class="sf-dump-search-input-next" tabindex="-1"> <svg viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1683 808l-742 741q-19 19-45 19t-45-19L109 808q-19-19-19-45.5t19-45.5l166-165q19-19 45-19t45 19l531 531 531-531q19-19 45-19t45 19l166 165q19 19 19 45.5t-19 45.5z"></path></svg> </button> </div><span class="sf-dump-note">array:14</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▼</span></a><samp data-depth="1" class="sf-dump-expanded">
+  "<span class="sf-dump-key">host</span>" =&gt; <span class="sf-dump-note">array:1</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▶</span></a><samp data-depth="2" class="sf-dump-compact">
+    <span class="sf-dump-index">0</span> =&gt; "<span class="sf-dump-str" title="14 characters">localhost:8000</span>"
+  </samp>]
+  "<span class="sf-dump-key">connection</span>" =&gt; <span class="sf-dump-note">array:1</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▶</span></a><samp data-depth="2" class="sf-dump-compact">
+    <span class="sf-dump-index">0</span> =&gt; "<span class="sf-dump-str" title="10 characters">keep-alive</span>"
+  </samp>]
+  "<span class="sf-dump-key">sec-ch-ua-platform</span>" =&gt; <span class="sf-dump-note">array:1</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▶</span></a><samp data-depth="2" class="sf-dump-compact">
+    <span class="sf-dump-index">0</span> =&gt; "<span class="sf-dump-str" title="9 characters">"Windows"</span>"
+  </samp>]
+  "<span class="sf-dump-key">user-agent</span>" =&gt; <span class="sf-dump-note">array:1</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▶</span></a><samp data-depth="2" class="sf-dump-compact">
+    <span class="sf-dump-index">0</span> =&gt; "<span class="sf-dump-str" title="111 characters">Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36</span>"
+  </samp>]
+  "<span class="sf-dump-key">accept</span>" =&gt; <span class="sf-dump-note">array:1</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▶</span></a><samp data-depth="2" class="sf-dump-compact">
+    <span class="sf-dump-index">0</span> =&gt; "<span class="sf-dump-str" title="16 characters">application/json</span>"
+  </samp>]
+  "<span class="sf-dump-key">sec-ch-ua</span>" =&gt; <span class="sf-dump-note">array:1</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▶</span></a><samp data-depth="2" class="sf-dump-compact">
+    <span class="sf-dump-index">0</span> =&gt; "<span class="sf-dump-str" title="65 characters">"Google Chrome";v="137", "Chromium";v="137", "Not/A)Brand";v="24"</span>"
+  </samp>]
+  "<span class="sf-dump-key">sec-ch-ua-mobile</span>" =&gt; <span class="sf-dump-note">array:1</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▶</span></a><samp data-depth="2" class="sf-dump-compact">
+    <span class="sf-dump-index">0</span> =&gt; "<span class="sf-dump-str" title="2 characters">?0</span>"
+  </samp>]
+  "<span class="sf-dump-key">sec-fetch-site</span>" =&gt; <span class="sf-dump-note">array:1</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▶</span></a><samp data-depth="2" class="sf-dump-compact">
+    <span class="sf-dump-index">0</span> =&gt; "<span class="sf-dump-str" title="11 characters">same-origin</span>"
+  </samp>]
+  "<span class="sf-dump-key">sec-fetch-mode</span>" =&gt; <span class="sf-dump-note">array:1</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▶</span></a><samp data-depth="2" class="sf-dump-compact">
+    <span class="sf-dump-index">0</span> =&gt; "<span class="sf-dump-str" title="4 characters">cors</span>"
+  </samp>]
+  "<span class="sf-dump-key">sec-fetch-dest</span>" =&gt; <span class="sf-dump-note">array:1</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▶</span></a><samp data-depth="2" class="sf-dump-compact">
+    <span class="sf-dump-index">0</span> =&gt; "<span class="sf-dump-str" title="5 characters">empty</span>"
+  </samp>]
+  "<span class="sf-dump-key">referer</span>" =&gt; <span class="sf-dump-note">array:1</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▶</span></a><samp data-depth="2" class="sf-dump-compact">
+    <span class="sf-dump-index">0</span> =&gt; "<span class="sf-dump-str" title="30 characters">http://localhost:8000/products</span>"
+  </samp>]
+  "<span class="sf-dump-key">accept-encoding</span>" =&gt; <span class="sf-dump-note">array:1</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▶</span></a><samp data-depth="2" class="sf-dump-compact">
+    <span class="sf-dump-index">0</span> =&gt; "<span class="sf-dump-str" title="23 characters">gzip, deflate, br, zstd</span>"
+  </samp>]
+  "<span class="sf-dump-key">accept-language</span>" =&gt; <span class="sf-dump-note">array:1</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▶</span></a><samp data-depth="2" class="sf-dump-compact">
+    <span class="sf-dump-index">0</span> =&gt; "<span class="sf-dump-str" title="23 characters">en-US,en;q=0.9,fa;q=0.8</span>"
+  </samp>]
+  "<span class="sf-dump-key">cookie</span>" =&gt; <span class="sf-dump-note">array:1</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▶</span></a><samp data-depth="2" class="sf-dump-compact">
+    <span class="sf-dump-index">0</span> =&gt; "<span class="sf-dump-str sf-dump-str-collapse" title="713 characters"><span class="sf-dump-str-collapse">XSRF-TOKEN=eyJpdiI6Inh3VUxLaG1uUzVrb2ozdGZCRkZQT3c9PSIsInZhbHVlIjoiOWtXQlVIUWhaa2VXNytqQllsNWFiZUE0OWtiRS81OVRSaHIwUXk2OHZuaENqUmFPUkw1MXlNU0FQUmpOTUtLbEFUM25BdEx2MEdUR29kOWY0OUNkY2RFS3AzZitDRHVTNXdPdUh3VkJyMHR5cWJ0M1FOYXUwL2FOYkg0L0YxdE8iLCJtYWMiOiI2MzkyMjg0ZDZhYzBiYjcxMWQ5YjNlYmVkZGEyN2ZjM2VjNjA2YWMzMDlkMjBiZGYxY2M4M2M2YWVhZTE3YzRiIiwidGFnIjoiIn0%3D; laravel_session=eyJpdiI6Ik03REY3azRIQ01DTXBuYS9yUTdYb1E9PSIsInZhbHVlIjoiUEkwajhObUlkK1VlU1pkMENOeFhDckdpanp6M01yeDQrS1Q4Zjg1QzRHY0tDSnpLanNmaUYyakNLYmlQWm5uaytpUTFpMDJ2aTc1V1dxbUsvSkc1NU9FVllWZlpkdlV5c3FsVFdrTys0R1NwM3dOWEdUVWdBUzVJTmlBeWZkM2QiLCJtYWMiOiI0YTE1NzNiZGRhYzI0OGY5NzQyZmFhNDJiNzY2MTZjYTQ3NWQ5YTcxOGY1N2ZmZjg2OGVkNmRlYzVjNjQ4YmRjIiwidGFnIjoiIn0%3D<a class="sf-dump-ref sf-dump-str-toggle" title="Collapse"> ◀</a></span><span class="sf-dump-str-expand">XSRF-TOKEN=eyJpdiI6Inh3VUxLaG1uUzVrb2ozdGZCRkZQT3c9PSIsInZhbHVlIjoiOWtXQlVIUWhaa2VXNytqQllsNWFiZUE0OWtiRS81OVRSaHIwUXk2OHZuaENqUmFPUkw1MXlNU0FQUmpOTUtLbEFUM25Bd<a class="sf-dump-ref sf-dump-str-toggle" title="553 remaining characters"> ▶</a></span></span>"
+  </samp>]
+</samp>]
+</pre><script>Sfdump("sf-dump-1249478397", {"maxDepth":0})</script>
+</dd><dt class="phpdebugbar-widgets-key"><span title="request_cookies">request_cookies</span></dt><dd class="phpdebugbar-widgets-value"><pre class="sf-dump" id="sf-dump-896826940" data-indent-pad="  " tabindex="0"><div class="sf-dump-search-wrapper sf-dump-search-hidden"> <input type="text" class="sf-dump-search-input"> <span class="sf-dump-search-count">0 of 0</span> <button type="button" class="sf-dump-search-input-previous" tabindex="-1"> <svg viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1683 1331l-166 165q-19 19-45 19t-45-19L896 965l-531 531q-19 19-45 19t-45-19l-166-165q-19-19-19-45.5t19-45.5l742-741q19-19 45-19t45 19l742 741q19 19 19 45.5t-19 45.5z"></path></svg> </button> <button type="button" class="sf-dump-search-input-next" tabindex="-1"> <svg viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1683 808l-742 741q-19 19-45 19t-45-19L109 808q-19-19-19-45.5t19-45.5l166-165q19-19 45-19t45 19l531 531 531-531q19-19 45-19t45 19l166 165q19 19 19 45.5t-19 45.5z"></path></svg> </button> </div><span class="sf-dump-note">array:2</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▼</span></a><samp data-depth="1" class="sf-dump-expanded">
+  "<span class="sf-dump-key">XSRF-TOKEN</span>" =&gt; "<span class="sf-dump-str" title="40 characters">mQZr0J8SuS0RFSJuBK12Qu3fkvy8Z3COzBXh4OEw</span>"
+  "<span class="sf-dump-key">laravel_session</span>" =&gt; "<span class="sf-dump-str" title="40 characters">IwUl2QeZQ69GKjZu2CjGtbEWRxqKguS1TDRzvEUC</span>"
+</samp>]
+</pre><script>Sfdump("sf-dump-896826940", {"maxDepth":0})</script>
+</dd><dt class="phpdebugbar-widgets-key"><span title="response_headers">response_headers</span></dt><dd class="phpdebugbar-widgets-value"><pre class="sf-dump" id="sf-dump-1555314439" data-indent-pad="  " tabindex="0"><div class="sf-dump-search-wrapper sf-dump-search-hidden"> <input type="text" class="sf-dump-search-input"> <span class="sf-dump-search-count">0 of 0</span> <button type="button" class="sf-dump-search-input-previous" tabindex="-1"> <svg viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1683 1331l-166 165q-19 19-45 19t-45-19L896 965l-531 531q-19 19-45 19t-45-19l-166-165q-19-19-19-45.5t19-45.5l742-741q19-19 45-19t45 19l742 741q19 19 19 45.5t-19 45.5z"></path></svg> </button> <button type="button" class="sf-dump-search-input-next" tabindex="-1"> <svg viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1683 808l-742 741q-19 19-45 19t-45-19L109 808q-19-19-19-45.5t19-45.5l166-165q19-19 45-19t45 19l531 531 531-531q19-19 45-19t45 19l166 165q19 19 19 45.5t-19 45.5z"></path></svg> </button> </div><span class="sf-dump-note">array:5</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▼</span></a><samp data-depth="1" class="sf-dump-expanded">
+  "<span class="sf-dump-key">cache-control</span>" =&gt; <span class="sf-dump-note">array:1</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▶</span></a><samp data-depth="2" class="sf-dump-compact">
+    <span class="sf-dump-index">0</span> =&gt; "<span class="sf-dump-str" title="17 characters">no-cache, private</span>"
+  </samp>]
+  "<span class="sf-dump-key">date</span>" =&gt; <span class="sf-dump-note">array:1</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▶</span></a><samp data-depth="2" class="sf-dump-compact">
+    <span class="sf-dump-index">0</span> =&gt; "<span class="sf-dump-str" title="29 characters">Fri, 04 Jul 2025 02:35:17 GMT</span>"
+  </samp>]
+  "<span class="sf-dump-key">content-type</span>" =&gt; <span class="sf-dump-note">array:1</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▶</span></a><samp data-depth="2" class="sf-dump-compact">
+    <span class="sf-dump-index">0</span> =&gt; "<span class="sf-dump-str" title="16 characters">application/json</span>"
+  </samp>]
+  "<span class="sf-dump-key">set-cookie</span>" =&gt; <span class="sf-dump-note">array:2</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▶</span></a><samp data-depth="2" class="sf-dump-compact">
+    <span class="sf-dump-index">0</span> =&gt; "<span class="sf-dump-str sf-dump-str-collapse" title="428 characters"><span class="sf-dump-str-collapse">XSRF-TOKEN=eyJpdiI6IlBaL1c3dVlwejdabndOaEMvclJvc2c9PSIsInZhbHVlIjoiZHZFTFFWZG5PV1lHeUhWa0lTRHBKdE1YZEJMUVNkUk9UQU9EaFZvUTRvMnd6T3JuTjV3a2JYYjNXWWVENjFJL09Qa2s5QlN6SjFzZ2Y1dlZsODZvUlJEaTFNM0Nsa2hrOU05Q2cvTkpEQTZodEhvK3o2SFdPTVg4RGdoTnZxc2EiLCJtYWMiOiI2OWExMTRiYzIzYzBiMGMyZWFmMTE2ODIxNzhiOTY0Yjc1MDczZGE3NzI1YzY0MDViODYxYTViMTU2M2RhNTNjIiwidGFnIjoiIn0%3D; expires=Fri, 04 Jul 2025 04:35:17 GMT; Max-Age=7200; path=/; samesite=lax<a class="sf-dump-ref sf-dump-str-toggle" title="Collapse"> ◀</a></span><span class="sf-dump-str-expand">XSRF-TOKEN=eyJpdiI6IlBaL1c3dVlwejdabndOaEMvclJvc2c9PSIsInZhbHVlIjoiZHZFTFFWZG5PV1lHeUhWa0lTRHBKdE1YZEJMUVNkUk9UQU9EaFZvUTRvMnd6T3JuTjV3a2JYYjNXWWVENjFJL09Qa2s5Q<a class="sf-dump-ref sf-dump-str-toggle" title="268 remaining characters"> ▶</a></span></span>"
+    <span class="sf-dump-index">1</span> =&gt; "<span class="sf-dump-str sf-dump-str-collapse" title="443 characters"><span class="sf-dump-str-collapse">laravel_session=eyJpdiI6Inc2K1JSTUgwMWpiVDJGdmtsVnhlT1E9PSIsInZhbHVlIjoibHZKVnNoR1c1Q0NYYlNGVEYrKzYxTVp4TzhDMVlxN0ZiZEEyRGtvMVBLUE9ORkVzZ2VIR0hJYS9MMC9WK295b1I3RjZHaytkWmVFRlloTnRMQ0I0Nld3c1h5MmlYRDBGRDFZMlBoaFhrTmxUSDRDeWk3N1hScERUWmZtRGJ2a3QiLCJtYWMiOiI2M2JkOTVhMDY4NWFjMjMyMjhmMjU0NTc2MDVmZmM5MGJiODE3NDA0ZmQ1YTkxNGZmZTk5ZjdlYmUxZDRkODNjIiwidGFnIjoiIn0%3D; expires=Fri, 04 Jul 2025 04:35:17 GMT; Max-Age=7200; path=/; httponly; samesite=lax<a class="sf-dump-ref sf-dump-str-toggle" title="Collapse"> ◀</a></span><span class="sf-dump-str-expand">laravel_session=eyJpdiI6Inc2K1JSTUgwMWpiVDJGdmtsVnhlT1E9PSIsInZhbHVlIjoibHZKVnNoR1c1Q0NYYlNGVEYrKzYxTVp4TzhDMVlxN0ZiZEEyRGtvMVBLUE9ORkVzZ2VIR0hJYS9MMC9WK295b1I3<a class="sf-dump-ref sf-dump-str-toggle" title="283 remaining characters"> ▶</a></span></span>"
+  </samp>]
+  "<span class="sf-dump-key">Set-Cookie</span>" =&gt; <span class="sf-dump-note">array:2</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▶</span></a><samp data-depth="2" class="sf-dump-compact">
+    <span class="sf-dump-index">0</span> =&gt; "<span class="sf-dump-str sf-dump-str-collapse" title="400 characters"><span class="sf-dump-str-collapse">XSRF-TOKEN=eyJpdiI6IlBaL1c3dVlwejdabndOaEMvclJvc2c9PSIsInZhbHVlIjoiZHZFTFFWZG5PV1lHeUhWa0lTRHBKdE1YZEJMUVNkUk9UQU9EaFZvUTRvMnd6T3JuTjV3a2JYYjNXWWVENjFJL09Qa2s5QlN6SjFzZ2Y1dlZsODZvUlJEaTFNM0Nsa2hrOU05Q2cvTkpEQTZodEhvK3o2SFdPTVg4RGdoTnZxc2EiLCJtYWMiOiI2OWExMTRiYzIzYzBiMGMyZWFmMTE2ODIxNzhiOTY0Yjc1MDczZGE3NzI1YzY0MDViODYxYTViMTU2M2RhNTNjIiwidGFnIjoiIn0%3D; expires=Fri, 04-Jul-2025 04:35:17 GMT; path=/<a class="sf-dump-ref sf-dump-str-toggle" title="Collapse"> ◀</a></span><span class="sf-dump-str-expand">XSRF-TOKEN=eyJpdiI6IlBaL1c3dVlwejdabndOaEMvclJvc2c9PSIsInZhbHVlIjoiZHZFTFFWZG5PV1lHeUhWa0lTRHBKdE1YZEJMUVNkUk9UQU9EaFZvUTRvMnd6T3JuTjV3a2JYYjNXWWVENjFJL09Qa2s5Q<a class="sf-dump-ref sf-dump-str-toggle" title="240 remaining characters"> ▶</a></span></span>"
+    <span class="sf-dump-index">1</span> =&gt; "<span class="sf-dump-str sf-dump-str-collapse" title="415 characters"><span class="sf-dump-str-collapse">laravel_session=eyJpdiI6Inc2K1JSTUgwMWpiVDJGdmtsVnhlT1E9PSIsInZhbHVlIjoibHZKVnNoR1c1Q0NYYlNGVEYrKzYxTVp4TzhDMVlxN0ZiZEEyRGtvMVBLUE9ORkVzZ2VIR0hJYS9MMC9WK295b1I3RjZHaytkWmVFRlloTnRMQ0I0Nld3c1h5MmlYRDBGRDFZMlBoaFhrTmxUSDRDeWk3N1hScERUWmZtRGJ2a3QiLCJtYWMiOiI2M2JkOTVhMDY4NWFjMjMyMjhmMjU0NTc2MDVmZmM5MGJiODE3NDA0ZmQ1YTkxNGZmZTk5ZjdlYmUxZDRkODNjIiwidGFnIjoiIn0%3D; expires=Fri, 04-Jul-2025 04:35:17 GMT; path=/; httponly<a class="sf-dump-ref sf-dump-str-toggle" title="Collapse"> ◀</a></span><span class="sf-dump-str-expand">laravel_session=eyJpdiI6Inc2K1JSTUgwMWpiVDJGdmtsVnhlT1E9PSIsInZhbHVlIjoibHZKVnNoR1c1Q0NYYlNGVEYrKzYxTVp4TzhDMVlxN0ZiZEEyRGtvMVBLUE9ORkVzZ2VIR0hJYS9MMC9WK295b1I3<a class="sf-dump-ref sf-dump-str-toggle" title="255 remaining characters"> ▶</a></span></span>"
+  </samp>]
+</samp>]
+</pre><script>Sfdump("sf-dump-1555314439", {"maxDepth":0})</script>
+</dd><dt class="phpdebugbar-widgets-key"><span title="session_attributes">session_attributes</span></dt><dd class="phpdebugbar-widgets-value"><pre class="sf-dump" id="sf-dump-106811590" data-indent-pad="  " tabindex="0"><div class="sf-dump-search-wrapper sf-dump-search-hidden"> <input type="text" class="sf-dump-search-input"> <span class="sf-dump-search-count">0 of 0</span> <button type="button" class="sf-dump-search-input-previous" tabindex="-1"> <svg viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1683 1331l-166 165q-19 19-45 19t-45-19L896 965l-531 531q-19 19-45 19t-45-19l-166-165q-19-19-19-45.5t19-45.5l742-741q19-19 45-19t45 19l742 741q19 19 19 45.5t-19 45.5z"></path></svg> </button> <button type="button" class="sf-dump-search-input-next" tabindex="-1"> <svg viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1683 808l-742 741q-19 19-45 19t-45-19L109 808q-19-19-19-45.5t19-45.5l166-165q19-19 45-19t45 19l531 531 531-531q19-19 45-19t45 19l166 165q19 19 19 45.5t-19 45.5z"></path></svg> </button> </div><span class="sf-dump-note">array:3</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▼</span></a><samp data-depth="1" class="sf-dump-expanded">
+  "<span class="sf-dump-key">_token</span>" =&gt; "<span class="sf-dump-str" title="40 characters">mQZr0J8SuS0RFSJuBK12Qu3fkvy8Z3COzBXh4OEw</span>"
+  "<span class="sf-dump-key">_previous</span>" =&gt; <span class="sf-dump-note">array:1</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▶</span></a><samp data-depth="2" class="sf-dump-compact">
+    "<span class="sf-dump-key">url</span>" =&gt; "<span class="sf-dump-str" title="35 characters">http://localhost:8000/cart/contents</span>"
+  </samp>]
+  "<span class="sf-dump-key">_flash</span>" =&gt; <span class="sf-dump-note">array:2</span> [<a class="sf-dump-ref sf-dump-toggle" title="[Ctrl+click] Expand all children"><span>▶</span></a><samp data-depth="2" class="sf-dump-compact">
+    "<span class="sf-dump-key">old</span>" =&gt; []
+    "<span class="sf-dump-key">new</span>" =&gt; []
+  </samp>]
+</samp>]
+</pre><script>Sfdump("sf-dump-106811590", {"maxDepth":0})</script>
+</dd></dl></div><div class="phpdebugbar-panel" data-collector="__datasets"><div class="phpdebugbar-widgets-dataset-history"><div class="phpdebugbar-widgets-dataset-actions"><label>Autoshow<input type="checkbox"></label><a>Clear</a><a>Show all</a><select name="method" style="width:100px"><option>(method)</option><option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option></select><input type="text" name="search" aria-label="Search" placeholder="Search"></div><table><thead><tr><th style="width: 30px;"></th><th style="width: 175px;">Date ↕</th><th style="width: 80px;">Method</th><th>URL</th><th width="40%">Data</th></tr></thead><tbody><tr data-id="X550c835e6ff22ba7c274ea1e44fe84a8" class="phpdebugbar-widgets-table-row" style="cursor: pointer;"><td>#1</td><td>2025-07-04 02:35:16</td><td>GET</td><td>/products</td><td><a title="Views"><i class="phpdebugbar-fa phpdebugbar-fa-leaf"></i><span class="phpdebugbar-badge" style="display: inline-block;">6</span></a><a title="Queries"><i class="phpdebugbar-fa phpdebugbar-fa-database"></i><span class="phpdebugbar-badge" style="display: inline-block;">12</span></a><a title="Models"><i class="phpdebugbar-fa phpdebugbar-fa-cubes"></i><span class="phpdebugbar-badge" style="display: inline-block;">16</span></a></td></tr><tr data-id="X711ac44f6901fd5089c2cc8407513618" class="phpdebugbar-widgets-table-row phpdebugbar-widgets-active" style="cursor: pointer;"><td>#2</td><td>2025-07-04 02:35:17</td><td>GET</td><td>/cart/contents (ajax)</td><td><a title="Queries"><i class="phpdebugbar-fa phpdebugbar-fa-database"></i><span class="phpdebugbar-badge phpdebugbar-visible" style="display: inline-block;">4</span></a><a title="Models"><i class="phpdebugbar-fa phpdebugbar-fa-cubes"></i><span class="phpdebugbar-badge phpdebugbar-visible" style="display: inline-block;">1</span></a></td></tr></tbody></table></div></div></div><a class="phpdebugbar-restore-btn" style="display: none;"></a></div><div class="phpdebugbar-openhandler" style="display: none;"><div class="phpdebugbar-openhandler-header">PHP DebugBar | Open<a><i class="phpdebugbar-fa phpdebugbar-fa-times"></i></a></div><table><thead><tr><th width="150">Date</th><th width="55">Method</th><th>URL</th><th width="125">IP</th><th width="100">Filter data</th></tr></thead><tbody></tbody></table><div class="phpdebugbar-openhandler-actions"><a>Load more</a><a>Show only current URL</a><a>Show all</a><a>Delete all</a><form><br><b>Filter results</b><br>Method: <select name="method"><option></option><option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option></select><br>Uri: <input type="text" name="uri"><br>IP: <input type="text" name="ip"><br><button type="submit">Search</button></form></div></div><div class="phpdebugbar-openhandler-overlay" style="display: none;"></div>
+
+
+</body></html>
