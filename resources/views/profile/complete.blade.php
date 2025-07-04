@@ -145,7 +145,11 @@
                            type="text"
                            name="phone_number"
                            value="{{ old('phone_number') }}"
-                           placeholder="مثال: 021XXXXXXXX">
+                           placeholder="مثال: 021XXXXXXXX"
+                           maxlength="11" {{-- حداکثر طول 11 رقم برای شماره تلفن ثابت --}}
+                           pattern="^0[0-8]\d{8,9}$" {{-- الگوی regex برای شماره تلفن ثابت: شروع با 0، رقم دوم 9 نباشد، و مجموعاً 10 یا 11 رقم --}}
+                           title=" . مثال: 02112345678" {{-- توضیح برای کاربر در صورت عدم تطابق الگو --}}
+                           >
                     <span class='block text-xs text-gray-500 dark:text-gray-400 mt-1'>{{ __('شماره تلفن ثابت با کد شهر (مثال: 021) و ۱۰ رقم بعد از آن') }}</span>
                     <x-input-error :messages="$errors->get('phone_number')" class="mt-2 text-sm" />
                 </div>

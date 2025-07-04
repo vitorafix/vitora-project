@@ -302,7 +302,11 @@
                            type="text"
                            name="phone_number"
                            value="<?php echo e(old('phone_number')); ?>"
-                           placeholder="مثال: 021XXXXXXXX">
+                           placeholder="مثال: 021XXXXXXXX"
+                           maxlength="11" 
+                           pattern="^0[0-8]\d{8,9}$" 
+                           title=" . مثال: 02112345678" 
+                           >
                     <span class='block text-xs text-gray-500 dark:text-gray-400 mt-1'><?php echo e(__('شماره تلفن ثابت با کد شهر (مثال: 021) و ۱۰ رقم بعد از آن')); ?></span>
                     <?php if (isset($component)) { $__componentOriginalf94ed9c5393ef72725d159fe01139746 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginalf94ed9c5393ef72725d159fe01139746 = $attributes; } ?>

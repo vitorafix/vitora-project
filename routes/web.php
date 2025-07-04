@@ -44,6 +44,11 @@ Route::get('/cart/contents', [CartController::class, 'getContents'])->name('cart
 Route::view('/about', 'about')->name('about');
 Route::view('/contact', 'contact')->name('contact');
 Route::view('/faq', 'faq')->name('faq');
+// مسیر جدید برای صفحه قوانین و مقررات
+Route::get('/rules', function () {
+    return view('rules');
+})->name('rules');
+
 
 // بلاگ
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
@@ -103,7 +108,7 @@ Route::middleware('auth')->group(function () {
 
     // روت‌های پیش‌فرض پروفایل Breeze/Jetstream (حفظ شده‌اند)
     // این روت‌ها معمولاً برای به‌روزرسانی اطلاعات اصلی حساب (مثل ایمیل و پسورد) استفاده می‌شوند
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update'); 
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');

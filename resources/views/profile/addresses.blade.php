@@ -54,9 +54,9 @@
                         <span>{{ __('آدرس‌ها') }}</span>
                     </a>
                     
-                    <!-- Profile Information Link -->
-                    <a href="{{ route('profile.edit') }}" 
-                       class="flex items-center px-4 py-2 text-md font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150 ease-in-out {{ request()->routeIs('profile.edit') ? 'text-green-700 bg-green-50 dark:bg-green-900/30 dark:text-green-300' : '' }}">
+                    <!-- Profile Information Link - Changed from profile.edit to profile.show -->
+                    <a href="{{ route('profile.show') }}" 
+                       class="flex items-center px-4 py-2 text-md font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150 ease-in-out {{ request()->routeIs('profile.show') ? 'text-green-700 bg-green-50 dark:bg-green-900/30 dark:text-green-300' : '' }}">
                         <i class="fas fa-user-circle ml-3 text-purple-500"></i>
                         <span>{{ __('اطلاعات حساب') }}</span>
                     </a>
