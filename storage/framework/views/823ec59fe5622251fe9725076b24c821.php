@@ -1,39 +1,39 @@
-@extends('layouts.app')
 
-@section('title', 'جزئیات محصول - چای ابراهیم') {{-- عنوان صفحه را عمومی‌تر کردم --}}
 
-@section('content')
-    {{-- Top Promotional Banner --}}
+<?php $__env->startSection('title', 'جزئیات محصول - چای ابراهیم'); ?> 
+
+<?php $__env->startSection('content'); ?>
+    
     <div class="bg-gradient-to-r from-green-700 to-green-900 text-white p-4 text-center text-sm font-semibold rounded-lg shadow-md mb-8">
         <p>🎁 ارسال رایگان برای خرید بالای <span class="font-bold">۱ میلیون تومان</span>! بعد از ثبت نام <span class="font-bold">۵ درصد تخفیف</span> بگیر!</p>
     </div>
 
     <section class="my-8 p-8">
         <div class="container mx-auto">
-            {{-- Breadcrumbs --}}
+            
             <nav class="text-gray-600 text-sm mb-6 flex items-center justify-start" aria-label="Breadcrumb">
                 <ol class="list-none p-0 inline-flex items-center">
                     <li class="flex items-center">
-                        <a href="{{ url('/') }}" class="text-green-800 hover:text-green-900">خانه</a>
+                        <a href="<?php echo e(url('/')); ?>" class="text-green-800 hover:text-green-900">خانه</a>
                         <i class="fas fa-chevron-left text-xs mx-2"></i>
                     </li>
                     <li class="flex items-center">
-                        <a href="{{ url('products') }}" class="text-green-800 hover:text-green-900">انواع چای</a>
+                        <a href="<?php echo e(url('products')); ?>" class="text-green-800 hover:text-green-900">انواع چای</a>
                         <i class="fas fa-chevron-left text-xs mx-2"></i>
                     </li>
                     <li class="flex items-center">
-                        <span id="breadcrumb-category" class="text-gray-600">دسته بندی محصول</span> {{-- Dynamic Category --}}
+                        <span id="breadcrumb-category" class="text-gray-600">دسته بندی محصول</span> 
                         <i class="fas fa-chevron-left text-xs mx-2"></i>
                     </li>
                     <li class="flex items-center">
-                        <span id="breadcrumb-product-name" class="text-brown-900 font-semibold">نام محصول</span> {{-- Dynamic Product Name --}}
+                        <span id="breadcrumb-product-name" class="text-brown-900 font-semibold">نام محصول</span> 
                     </li>
                 </ol>
             </nav>
 
             <div id="product-detail-content" class="bg-white rounded-xl shadow-lg border border-gray-100 p-8 grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-8 lg:gap-12 items-start">
                 
-                {{-- Product Details - Left Column (lg:col-span-2 xl:col-span-2) --}}
+                
                 <div class="lg:col-span-2 xl:col-span-2 order-2 lg:order-1 text-right">
                     <h1 id="product-detail-name" class="text-4xl font-bold text-brown-900 mb-4 leading-tight">نام محصول</h1>
                     
@@ -67,22 +67,22 @@
                     </button>
                 </div>
 
-                {{-- Product Image Gallery - Right Column (lg:col-span-1 xl:col-span-2) --}}
+                
                 <div class="lg:col-span-1 xl:col-span-2 order-1 lg:order-2 flex flex-col items-center">
                     <div class="w-full relative rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                        {{-- Main image will be loaded by JavaScript --}}
+                        
                         <img id="product-detail-main-image" src="https://placehold.co/600x450/E0E0E0/4A4A4A?text=No+Image" alt="تصویر اصلی محصول" class="w-full h-auto object-cover rounded-xl">
-                        {{-- Zoom icon (if needed) --}}
-                        {{-- <button class="absolute top-4 left-4 bg-white/70 rounded-full p-2 text-gray-700 hover:bg-white transition-colors"><i class="fas fa-search-plus"></i></button> --}}
+                        
+                        
                     </div>
                     <div id="product-thumbnails" class="flex flex-row justify-center lg:flex-col gap-3 mt-6 w-full lg:w-24">
-                        {{-- Thumbnails will be loaded here by JavaScript --}}
-                        {{-- Example Thumbnail (will be dynamic) --}}
-                        {{-- <img src="https://placehold.co/100x75/E0E0E0/4A4A4A?text=Thumb1" class="w-20 h-auto rounded-lg border border-gray-300 cursor-pointer hover:border-green-800 transition-all duration-200" alt="Thumbnail 1"> --}}
+                        
+                        
+                        
                     </div>
                 </div>
 
-                {{-- Additional Info Blocks (below main content on smaller screens, or float on larger) --}}
+                
                 <div class="lg:col-span-3 xl:col-span-4 mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-gray-100 p-6 rounded-xl shadow-md border border-gray-200 text-center">
                         <h4 class="text-xl font-bold text-brown-900 mb-3">طعم: <span id="product-detail-taste"></span></h4>
@@ -98,8 +98,10 @@
             <div id="product-not-found" class="hidden text-center bg-white p-8 rounded-xl shadow-lg border border-gray-100 mt-8">
                 <i class="fas fa-exclamation-circle text-6xl text-red-500 mb-4"></i>
                 <h2 class="text-3xl font-bold text-brown-900 mb-4">محصول مورد نظر یافت نشد.</h2>
-                <p class="text-gray-700 text-lg mb-6">متاسفانه، محصولی با این مشخصات پیدا نشد. لطفاً از <a href="{{ url('products') }}" class="text-green-800 hover:underline">صفحه محصولات</a> دیدن فرمایید.</p>
+                <p class="text-gray-700 text-lg mb-6">متاسفانه، محصولی با این مشخصات پیدا نشد. لطفاً از <a href="<?php echo e(url('products')); ?>" class="text-green-800 hover:underline">صفحه محصولات</a> دیدن فرمایید.</p>
             </div>
         </div>
     </section>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\xampp\htdocs\myshop\resources\views/product-single.blade.php ENDPATH**/ ?>

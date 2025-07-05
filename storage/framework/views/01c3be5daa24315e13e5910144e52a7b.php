@@ -13,13 +13,9 @@
             <?php $__empty_1 = true; $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                 <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 card-hover-effect">
                     <a href="<?php echo e(route('products.show', $product->id)); ?>">
-                        <?php
-                            $images = $product->image ? explode(',', $product->image) : [];
-                        ?>
-
-                        <?php if(count($images) > 0): ?>
-                            
-                            <img src="<?php echo e(asset('images/products/' . trim($images[0]) . '.jpg')); ?>"
+                        
+                        <?php if($product->image): ?>
+                            <img src="<?php echo e($productService->getImageUrl($product->image)); ?>"
                                  onerror="this.onerror=null;this.src='https://placehold.co/400x400/E5E7EB/4B5563?text=Product';"
                                  alt="<?php echo e($product->title); ?>"
                                  class="w-full h-48 object-cover transition-transform duration-300 hover:scale-105">
@@ -30,6 +26,7 @@
                         <?php endif; ?>
                     </a>
 
+                    
                     
                     
 

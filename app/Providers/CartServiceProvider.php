@@ -14,6 +14,7 @@ use App\Contracts\Repositories\CartRepositoryInterface;
 use App\Repositories\Eloquent\CartRepository;
 use App\Contracts\Repositories\ProductRepositoryInterface;
 use App\Repositories\Eloquent\ProductRepository;
+use App\Contracts\ProductServiceInterface; // اضافه شده: برای تزریق به ImprovedCartService
 use Illuminate\Contracts\Events\Dispatcher;
 
 class CartServiceProvider extends ServiceProvider
@@ -24,6 +25,7 @@ class CartServiceProvider extends ServiceProvider
             return new ImprovedCartService(
                 $app->make(CartRepositoryInterface::class),
                 $app->make(ProductRepositoryInterface::class),
+                $app->make(ProductServiceInterface::class), // اضافه شده: تزریق ProductServiceInterface
                 $app->make(CartCacheManager::class),
                 $app->make(StockManager::class),
                 $app->make(CartValidator::class),

@@ -45,8 +45,8 @@
                                 <div class="flex items-start p-3 border rounded-md cursor-pointer hover:bg-gray-100 transition-colors duration-200
                                     @if ($address->is_default) border-green-500 bg-green-50 @else border-gray-200 @endif">
                                     <input type="radio" id="address_{{ $address->id }}" name="selected_address_id"
-                                           value="{{ $address->id }}" class="form-radio h-5 w-5 text-green-700 mt-1 cursor-pointer"
-                                           @if ($address->is_default) checked @endif>
+                                            value="{{ $address->id }}" class="form-radio h-5 w-5 text-green-700 mt-1 cursor-pointer"
+                                            @if ($address->is_default) checked @endif>
                                     <label for="address_{{ $address->id }}" class="mr-3 flex-1 cursor-pointer">
                                         <span class="font-medium text-gray-800">{{ $address->title ?: 'آدرس بدون عنوان' }}</span>
                                         <p class="text-gray-600 text-sm">{{ $address->address }}</p>
@@ -78,21 +78,24 @@
                     <div class="space-y-4" id="cart-items-summary"> {{-- Add ID for JS access --}}
                         @forelse ($cartItems as $item)
                             <div class="flex justify-between items-center border-b pb-4 last:border-b-0 last:pb-0"
-                                data-item-id="{{ $item->product->id }}"
-                                data-item-price="{{ $item->product->price }}"
-                                data-item-quantity="{{ $item->quantity }}">
+                                data-item-id="{{ $item['cart_item_id'] }}" {{-- تغییر از product->id به cartItem->id --}}
+                                data-item-price="{{ $item['product_price'] }}"
+                                data-item-quantity="{{ $item['quantity'] }}">
                                 <div class="flex items-center">
                                     {{-- نمایش تصویر محصول یا یک تصویر placeholder --}}
-                                    <img src="{{ $item->product->image ?: 'https://placehold.co/60x60/E5E7EB/4B5563?text=Product' }}" alt="{{ $item->product->title }}" class="w-16 h-16 object-cover rounded-lg ml-3">
+                                    {{-- اولویت با thumbnail_url_small است، سپس image، سپس placeholder --}}
+                                    <img src="{{ $item['thumbnail_url_small'] ?? $item['image'] ?? 'https://placehold.co/60x60/E5E7EB/4B5563?text=Product' }}"
+                                        onerror="this.onerror=null;this.src='https://placehold.co/60x60/E5E7EB/4B5563?text=Product';"
+                                        alt="{{ $item['product_name'] }}" class="w-16 h-16 object-cover rounded-lg ml-3">
                                     <div>
-                                        <h3 class="text-lg font-semibold text-gray-800">{{ $item->product->title }}</h3>
+                                        <h3 class="text-lg font-semibold text-gray-800">{{ $item['product_name'] }}</h3>
                                         {{-- Quantity Controller --}}
                                         <div class="flex items-center mt-1">
                                             <button type="button" class="quantity-btn minus-btn bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-full w-6 h-6 flex items-center justify-center text-lg font-bold transition-colors duration-200" aria-label="کاهش تعداد">
                                                 -
                                             </button>
-                                            <span class="item-quantity mx-2 text-gray-700 text-base font-medium" data-quantity="{{ $item->quantity }}">
-                                                {{ number_format($item->quantity) }}
+                                            <span class="item-quantity mx-2 text-gray-700 text-base font-medium" data-quantity="{{ $item['quantity'] }}">
+                                                {{ number_format($item['quantity']) }}
                                             </span>
                                             <button type="button" class="quantity-btn plus-btn bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-full w-6 h-6 flex items-center justify-center text-lg font-bold transition-colors duration-200" aria-label="افزایش تعداد">
                                                 +
@@ -102,8 +105,8 @@
                                     </div>
                                 </div>
                                 {{-- نمایش قیمت کل برای هر آیتم --}}
-                                <span class="item-subtotal text-green-700 font-bold text-lg" data-subtotal="{{ $item->price * $item->quantity }}">
-                                    {{ number_format($item->price * $item->quantity) }} تومان
+                                <span class="item-subtotal text-green-700 font-bold text-lg" data-subtotal="{{ $item['product_price'] * $item['quantity'] }}">
+                                    {{ number_format($item['product_price'] * $item['quantity']) }} تومان
                                 </span>
                             </div>
                         @empty
@@ -115,8 +118,8 @@
                         {{-- نمایش جمع کل سبد خرید --}}
                         <div class="border-t border-gray-200 pt-4 mt-6 flex justify-between items-center text-xl font-bold text-brown-900">
                             <span>جمع کل:</span>
-                            <span id="cart-total-price" class="text-green-700" data-total-price="{{ $cart->getTotalPrice() }}">
-                                {{ number_format($cart->getTotalPrice()) }} تومان
+                            <span id="cart-total-price" class="text-green-700" data-total-price="{{ $cartTotalPrice }}">
+                                {{ number_format($cartTotalPrice) }} تومان
                             </span>
                         </div>
                     @endif

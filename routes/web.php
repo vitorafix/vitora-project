@@ -10,7 +10,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\Auth\MobileAuthController;
-use App\Http\Controllers\Auth\RegisterController; // این کنترلر شماست که به درستی ایمپورت شده است
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\ProfileCompletionController;
 use App\Http\Middleware\EnsureProfileIsCompleted;
@@ -40,8 +40,8 @@ Route::delete('/cart/remove/{cartItem}', [CartController::class, 'remove'])->nam
 Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
 Route::get('/cart/contents', [CartController::class, 'getContents'])->name('cart.contents');
 
-// مسیر جدید برای به‌روزرسانی تعداد آیتم سبد خرید
-Route::post('/api/cart/update-quantity', [CartController::class, 'updateQuantity']);
+// مسیر قبلی برای به‌روزرسانی تعداد آیتم سبد خرید که اکنون استفاده نمی‌شود، حذف شد.
+// Route::post('/api/cart/update-quantity', [CartController::class, 'updateQuantity']);
 
 
 // صفحات ثابت

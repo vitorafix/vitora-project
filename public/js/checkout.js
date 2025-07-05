@@ -15,8 +15,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const cartTotalPriceElement = document.getElementById('cart-total-price');
 
     // Retrieve data passed from Blade template via data attributes
-    const addressesData = JSON.parse(placeOrderForm.dataset.addresses);
-    const defaultAddressData = JSON.parse(placeOrderForm.dataset.defaultAddress);
+    // Ensure these elements exist before trying to parse data
+    const addressesData = placeOrderForm ? JSON.parse(placeOrderForm.dataset.addresses || '[]') : [];
+    const defaultAddressData = placeOrderForm ? JSON.parse(placeOrderForm.dataset.defaultAddress || 'null') : null;
 
     // Define validation rules using regular expressions
     const validationRules = {
@@ -145,15 +146,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Setup real-time validation for relevant input fields using event delegation
-    placeOrderForm.addEventListener('input', debounce((e) => {
-        const target = e.target;
-        const fieldId = target.id;
-        const value = target.value.trim();
+    if (placeOrderForm) { // Ensure form exists before adding listener
+        placeOrderForm.addEventListener('input', debounce((e) => {
+            const target = e.target;
+            const fieldId = target.id;
+            const value = target.value.trim();
 
-        if (validationRules[fieldId]) {
-            validateField(fieldId, value, validationRules[fieldId], target);
-        }
-    }, 500)); // 500ms debounce
+            if (validationRules[fieldId]) {
+                validateField(fieldId, value, validationRules[fieldId], target);
+            }
+        }, 500)); // 500ms debounce
+    }
 
     /**
      * Updates the progress bar.
@@ -231,26 +234,44 @@ document.addEventListener('DOMContentLoaded', function() {
         const shippingMethod = document.querySelector('input[name="shipping_method"]:checked');
         if (!shippingMethod) {
             const shippingRadioGroup = document.getElementById('shipping_post'); // Point to the first radio in group
-            showFieldError(shippingRadioGroup, errorMessages.shipping_method.required);
-            isValid = false;
-            if (!firstInvalidElement) firstInvalidElement = shippingRadioGroup;
+            if (shippingRadioGroup) { // Check if element exists
+                showFieldError(shippingRadioGroup, errorMessages.shipping_method.required);
+                isValid = false;
+                if (!firstInvalidElement) firstInvalidElement = shippingRadioGroup;
+            } else {
+                // Fallback if the specific radio group element is not found
+                window.showMessage(errorMessages.shipping_method.required, 'error');
+                isValid = false;
+            }
         }
 
         const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
         if (!paymentMethod) {
             const paymentRadioGroup = document.getElementById('payment_online'); // Point to the first radio in group
-            showFieldError(paymentRadioGroup, errorMessages.payment_method.required);
-            isValid = false;
-            if (!firstInvalidElement) firstInvalidElement = paymentRadioGroup;
+            if (paymentRadioGroup) { // Check if element exists
+                showFieldError(paymentRadioGroup, errorMessages.payment_method.required);
+                isValid = false;
+                if (!firstInvalidElement) firstInvalidElement = paymentRadioGroup;
+            } else {
+                // Fallback if the specific radio group element is not found
+                window.showMessage(errorMessages.payment_method.required, 'error');
+                isValid = false;
+            }
         }
 
         // Validate terms and conditions checkbox
         const termsAgreeCheckbox = document.getElementById('terms_agree');
-        if (!termsAgreeCheckbox.checked) {
+        if (termsAgreeCheckbox && !termsAgreeCheckbox.checked) { // Check if element exists
             showFieldError(termsAgreeCheckbox, errorMessages.terms_agree.required);
             isValid = false;
             if (!firstInvalidElement) firstInvalidElement = termsAgreeCheckbox;
+        } else if (!termsAgreeCheckbox) {
+            // If the checkbox is missing but required, this is an issue
+            console.error("Terms and conditions checkbox (terms_agree) not found.");
+            window.showMessage(errorMessages.terms_agree.required, 'error');
+            isValid = false;
         }
+
 
         if (!isValid && firstInvalidElement) {
             firstInvalidElement.focus();
@@ -392,6 +413,8 @@ document.addEventListener('DOMContentLoaded', function() {
      * Saves form data to local storage as a draft.
      */
     function saveDraft() {
+        if (!placeOrderForm) return; // Ensure form exists before trying to save
+
         const formData = new FormData(placeOrderForm);
         const data = Object.fromEntries(formData.entries());
         try {
@@ -406,6 +429,8 @@ document.addEventListener('DOMContentLoaded', function() {
      * Loads form data from local storage draft.
      */
     function loadDraft() {
+        if (!placeOrderForm) return; // Ensure form exists before trying to load
+
         try {
             const draft = localStorage.getItem('orderDraft');
             if (draft) {
@@ -561,63 +586,69 @@ document.addEventListener('DOMContentLoaded', function() {
         formTimeoutId = setTimeout(() => {
             window.showMessage('جلسه شما منقضی شده است. لطفاً صفحه را بازخوانی کنید تا اطلاعات به روز شوند.', 'warning', 7000); // Your session has expired. Please refresh the page to update the information.
             // Optionally disable form fields here to prevent further interaction
-            placeOrderForm.classList.add('pointer-events-none', 'opacity-70');
-            placeOrderBtn.disabled = true;
+            if (placeOrderForm) { // Check if form exists
+                placeOrderForm.classList.add('pointer-events-none', 'opacity-70');
+            }
+            if (placeOrderBtn) { // Check if button exists
+                placeOrderBtn.disabled = true;
+            }
         }, FORM_TIMEOUT);
     }
 
     // Start timeout on initial load and reset on user interaction
     startFormTimeout();
-    placeOrderForm.addEventListener('input', startFormTimeout); // Reset on any input change
-    placeOrderForm.addEventListener('change', startFormTimeout); // Reset on any change (e.g., radio, checkbox)
+    if (placeOrderForm) { // Check if form exists before adding listeners
+        placeOrderForm.addEventListener('input', startFormTimeout); // Reset on any input change
+        placeOrderForm.addEventListener('change', startFormTimeout); // Reset on any change (e.g., radio, checkbox)
 
 
-    placeOrderForm.addEventListener('submit', async function(event) {
-        event.preventDefault(); // Prevent default form submission
+        placeOrderForm.addEventListener('submit', async function(event) {
+            event.preventDefault(); // Prevent default form submission
 
-        // 2. Improved error handling for poor network conditions
-        if (!navigator.onLine) {
-            window.showMessage('اتصال اینترنت برقرار نیست. لطفاً اتصال خود را بررسی کنید و دوباره تلاش کنید.', 'error'); // Internet connection is not available. Please check your connection and try again.
-            return;
-        }
-
-        const formData = new FormData(placeOrderForm);
-        const data = Object.fromEntries(formData.entries());
-
-        // --- Client-side validation using helper function ---
-        if (!validateFormFields(data)) {
-            showProgress(0, 1); // Reset progress bar
-            return; // If client-side validation fails, stop form submission.
-        }
-        // --- End client-side validation ---
-
-        setLoadingState(true); // Set loading state for the form and button
-        showProgress(0, 4); // Initialize progress bar for 3 retries + final success step
-
-        try {
-            const result = await placeOrderWithRetry(data); // Use the new function with retry mechanism
-
-            // If we reach here, the order has been successfully placed
-            window.showMessage(result.message, 'success');
-            localStorage.removeItem('orderDraft'); // Clear draft on successful order
-            if (result.orderId) {
-                // Clear form timeout on successful submission
-                if (formTimeoutId) clearTimeout(formTimeoutId);
-                setTimeout(() => {
-                    window.location.href = `/order/confirmation/${result.orderId}`;
-                }, 1500);
-            } else {
-                console.warn('Order ID not returned from server. Cart might need manual clearing.'); // Order ID not returned from server. Cart might need manual clearing.
+            // 2. Improved error handling for poor network conditions
+            if (!navigator.onLine) {
+                window.showMessage('اتصال اینترنت برقرار نیست. لطفاً اتصال خود را بررسی کنید و دوباره تلاش کنید.', 'error'); // Internet connection is not available. Please check your connection and try again.
+                return;
             }
-        } catch (error) {
-            // Errors due to all retries failing or non-retryable errors (like 422)
-            console.error('Final order placement attempt failed:', error);
-            // Error message has already been displayed by placeOrderWithRetry or validateFormFields.
-        } finally {
-            setLoadingState(false); // Reset loading state
-            showProgress(0, 1); // Reset progress bar completely
-        }
-    });
+
+            const formData = new FormData(placeOrderForm);
+            const data = Object.fromEntries(formData.entries());
+
+            // --- Client-side validation using helper function ---
+            if (!validateFormFields(data)) {
+                showProgress(0, 1); // Reset progress bar
+                return; // If client-side validation fails, stop form submission.
+            }
+            // --- End client-side validation ---
+
+            setLoadingState(true); // Set loading state for the form and button
+            showProgress(0, 4); // Initialize progress bar for 3 retries + final success step
+
+            try {
+                const result = await placeOrderWithRetry(data); // Use the new function with retry mechanism
+
+                // If we reach here, the order has been successfully placed
+                window.showMessage(result.message, 'success');
+                localStorage.removeItem('orderDraft'); // Clear draft on successful order
+                if (result.orderId) {
+                    // Clear form timeout on successful submission
+                    if (formTimeoutId) clearTimeout(formTimeoutId);
+                    setTimeout(() => {
+                        window.location.href = `/order/confirmation/${result.orderId}`;
+                    }, 1500);
+                } else {
+                    console.warn('Order ID not returned from server. Cart might need manual clearing.'); // Order ID not returned from server. Cart might need manual clearing.
+                }
+            } catch (error) {
+                // Errors due to all retries failing or non-retryable errors (like 422)
+                console.error('Final order placement attempt failed:', error);
+                // Error message has already been displayed by placeOrderWithRetry or validateFormFields.
+            } finally {
+                setLoadingState(false); // Reset loading state
+                showProgress(0, 1); // Reset progress bar completely
+            }
+        });
+    }
 
     // --- Quantity Control Logic (Moved from checkout.blade.php) ---
 
@@ -639,7 +670,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Event listener for quantity buttons
     if (cartItemsSummary) { // Ensure the element exists before adding listener
-        cartItemsSummary.addEventListener('click', function(event) {
+        cartItemsSummary.addEventListener('click', async function(event) { // Added 'async' keyword here
             const target = event.target;
             if (target.classList.contains('quantity-btn')) {
                 const itemElement = target.closest('[data-item-id]');
@@ -651,81 +682,103 @@ document.addEventListener('DOMContentLoaded', function() {
                 let currentQuantity = parseInt(quantitySpan.dataset.quantity);
                 const itemSubtotalElement = itemElement.querySelector('.item-subtotal');
 
+                let oldQuantity = currentQuantity; // Store old quantity for rollback
+
                 if (target.classList.contains('plus-btn')) {
                     currentQuantity++;
                 } else if (target.classList.contains('minus-btn')) {
                     if (currentQuantity > 1) { // Prevent quantity from going below 1
                         currentQuantity--;
+                    } else {
+                        // Optionally, if quantity goes to 0, you might want to ask for confirmation to remove the item
+                        // For now, we prevent it from going below 1
+                        return;
                     }
                 }
 
-                // Update quantity display and data attribute
+                // Update quantity display and data attribute locally first for responsiveness
                 quantitySpan.textContent = formatNumber(currentQuantity);
                 quantitySpan.dataset.quantity = currentQuantity;
 
-                // Update item subtotal
+                // Update item subtotal locally
                 const newSubtotal = itemPrice * currentQuantity;
                 itemSubtotalElement.textContent = `${formatNumber(newSubtotal)} تومان`;
                 itemSubtotalElement.dataset.subtotal = newSubtotal;
 
-                // Update the overall cart total
+                // Update the overall cart total locally
                 updateCartTotal();
 
                 // --- Start AJAX call to update quantity on the server ---
-                fetch('/api/cart/update-quantity', {
-                    method: 'POST', // Or 'PUT' if your backend route is configured for PUT
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': getCsrfToken() // Use the existing getCsrfToken function
-                    },
-                    body: JSON.stringify({
-                        item_id: itemId,
-                        quantity: currentQuantity
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        console.log('Quantity updated successfully on server.');
-                        // Display success message to user
-                        window.showMessage(data.message || 'تعداد محصول با موفقیت به‌روزرسانی شد.', 'success');
+                try {
+                    const response = await fetch(`/cart/update/${itemId}`, { // Use PUT method and correct URL
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': getCsrfToken() // Use the existing getCsrfToken function
+                        },
+                        body: JSON.stringify({
+                            quantity: currentQuantity
+                        })
+                    });
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        window.showMessage(result.message || 'تعداد محصول به‌روزرسانی شد.', 'success');
+                        // If backend returns updated totals, you can use them here
+                        // For now, local update is sufficient as it's already done
                     } else {
-                        console.error('Failed to update quantity on server:', data.message);
-                        // Display error message to user
-                        window.showMessage(data.message || 'خطا در به‌روزرسانی تعداد محصول.', 'error');
-                        // Optionally revert UI quantity if the server update failed due to business logic (e.g., stock)
-                        // This would require storing the original quantity before the fetch call
+                        window.showMessage(result.message || 'خطا در به‌روزرسانی تعداد محصول.', 'error');
+                        // Revert local quantity if server update fails
+                        quantitySpan.textContent = formatNumber(oldQuantity);
+                        quantitySpan.dataset.quantity = oldQuantity;
+                        itemSubtotalElement.textContent = `${formatNumber(itemPrice * oldQuantity)} تومان`;
+                        itemSubtotalElement.dataset.subtotal = itemPrice * oldQuantity;
+                        updateCartTotal(); // Recalculate total with reverted quantity
                     }
-                })
-                .catch(error => {
-                    console.error('Error updating quantity:', error);
+                } catch (error) {
+                    console.error('Error updating cart item quantity:', error);
                     window.showMessage('خطا در ارتباط با سرور. لطفاً اتصال اینترنت خود را بررسی کنید.', 'error');
-                });
-                // --- End of AJAX call ---
+                    // Revert local quantity on network error
+                    quantitySpan.textContent = formatNumber(oldQuantity);
+                    quantitySpan.dataset.quantity = oldQuantity;
+                    itemSubtotalElement.textContent = `${formatNumber(itemPrice * oldQuantity)} تومان`;
+                    itemSubtotalElement.dataset.subtotal = itemPrice * oldQuantity;
+                    updateCartTotal(); // Recalculate total with reverted quantity
+                }
+                // --- End AJAX call to update quantity on the server ---
             }
         });
+    }
 
-        // Initial total calculation on page load (if needed, though Laravel should provide correct initial total)
+    // Initial call to update cart total on load if cart summary exists
+    if (cartItemsSummary && cartTotalPriceElement) {
         updateCartTotal();
     }
-    // --- End Quantity Control Logic ---
-});
 
-/**
- * Sets the loading state for the form and button.
- * @param {boolean} isLoading - True to set loading state, false to remove.
- */
-function setLoadingState(isLoading) {
-    const form = document.getElementById('place-order-form');
-    const btn = document.getElementById('place-order-btn');
-
-    if (isLoading) {
-        form.classList.add('opacity-50', 'pointer-events-none'); // Dim form and disable interactions
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال ثبت سفارش...'; // Placing order...
-        btn.disabled = true;
-    } else {
-        form.classList.remove('opacity-50', 'pointer-events-none');
-        btn.innerHTML = 'ثبت سفارش و پرداخت فرضی <i class="fas fa-credit-card mr-2"></i>'; // Place Order and Hypothetical Payment
-        btn.disabled = false;
+    /**
+     * Sets the loading state for the form and button.
+     * @param {boolean} isLoading - True to set loading state, false to reset.
+     */
+    function setLoadingState(isLoading) {
+        if (placeOrderBtn) {
+            if (isLoading) {
+                placeOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال ثبت سفارش...'; // Placing order...
+                placeOrderBtn.disabled = true;
+                placeOrderBtn.classList.add('opacity-70', 'cursor-not-allowed');
+            } else {
+                placeOrderBtn.innerHTML = 'ثبت سفارش نهایی'; // Finalize Order
+                placeOrderBtn.disabled = false;
+                placeOrderBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+            }
+        }
+        if (placeOrderForm) {
+            // Disable all form inputs to prevent interaction during submission
+            const formElements = placeOrderForm.querySelectorAll('input, select, textarea, button:not(#place-order-btn)');
+            formElements.forEach(el => {
+                if (el !== placeOrderBtn) { // Don't disable the main button twice
+                    el.disabled = isLoading;
+                }
+            });
+        }
     }
-}
+});

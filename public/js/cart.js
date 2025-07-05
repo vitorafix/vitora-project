@@ -69,9 +69,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // --- Start of added check ---
-            if (!data.cartItems || !Array.isArray(data.cartItems)) {
-                console.error('cartItems is undefined or not an array:', data.cartItems);
+            if (!data.items || !Array.isArray(data.items)) { // تغییر از cartItems به items
+                console.error('cartItems is undefined or not an array:', data.items);
                 window.showMessage('Error receiving cart information.', 'error');
                 updateMiniCart(0);
                 cartEmptyMessage.classList.remove('hidden');
@@ -79,13 +78,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 cartSummaryContainer.classList.add('hidden');
                 return;
             }
-            // --- End of added check ---
 
 
             // Clear existing items
             cartItemsContainer.innerHTML = '';
 
-            if (data.cartItems.length === 0) {
+            if (data.items.length === 0) { // تغییر از cartItems به items
                 cartEmptyMessage.classList.remove('hidden');
                 cartItemsContainer.classList.add('hidden');
                 cartSummaryContainer.classList.add('hidden');
@@ -96,29 +94,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 cartSummaryContainer.classList.remove('hidden');
 
                 // Render each cart item
-                data.cartItems.forEach(item => {
+                data.items.forEach(item => { // تغییر از cartItems به items
                     const itemElement = document.createElement('div');
                     itemElement.classList.add('flex', 'items-center', 'justify-between', 'py-4', 'border-b', 'border-gray-200');
                     itemElement.innerHTML = `
                         <div class="flex items-center w-3/5">
-                            <img src="${item.product.image || 'https://placehold.co/80x80/E5E7EB/4B5563?text=Product'}"
+                            <img src="${item.thumbnail_url_small || item.image || 'https://placehold.co/80x80/E5E7EB/4B5563?text=Product'}"
                                  onerror="this.onerror=null;this.src='https://placehold.co/80x80/E5E7EB/4B5563?text=Product';"
-                                 alt="${item.product.title}" class="w-20 h-20 object-cover rounded-lg ml-4 shadow-sm">
-                            <a href="/products/${item.product.id}" class="text-brown-900 hover:text-green-700 font-semibold text-lg product-title-link">${item.product.title}</a>
+                                 alt="${item.product_name}" class="w-20 h-20 object-cover rounded-lg ml-4 shadow-sm">
+                            <a href="/products/${item.product_id}" class="text-brown-900 hover:text-green-700 font-semibold text-lg product-title-link">${item.product_name}</a>
                         </div>
                         <div class="flex items-center w-2/5 justify-end space-x-4 space-x-reverse">
                             <div class="flex items-center border border-gray-300 rounded-lg overflow-hidden">
                                 <button class="quantity-btn p-2 bg-gray-100 hover:bg-gray-200 transition-colors"
-                                        data-cart-item-id="${item.id}" data-action="decrease">-</button>
+                                        data-cart-item-id="${item.cart_item_id}" data-action="decrease">-</button>
                                 <input type="number" value="${item.quantity}"
-                                       class="cart-quantity-input w-16 text-center border-none focus:ring-0 focus:outline-none bg-white text-gray-800"
-                                       min="1" data-cart-item-id="${item.id}" data-product-stock="${item.product.stock}">
+                                        class="cart-quantity-input w-16 text-center border-none focus:ring-0 focus:outline-none bg-white text-gray-800"
+                                        min="1" data-cart-item-id="${item.cart_item_id}" data-product-stock="${item.stock}">
                                 <button class="quantity-btn p-2 bg-gray-100 hover:bg-gray-200 transition-colors"
-                                        data-cart-item-id="${item.id}" data-action="increase">+</button>
+                                        data-cart-item-id="${item.cart_item_id}" data-action="increase">+</button>
                             </div>
-                            <span class="text-brown-800 font-bold w-24 text-center">${new Intl.NumberFormat('fa-IR').format(item.price * item.quantity)} Tomans</span>
+                            <span class="text-brown-800 font-bold w-24 text-center">${new Intl.NumberFormat('fa-IR').format(item.product_price * item.quantity)} Tomans</span>
                             <button class="remove-from-cart-btn text-red-500 hover:text-red-700 transition-colors p-2 rounded-full"
-                                    data-cart-item-id="${item.id}" data-product-title="${item.product.title}">
+                                    data-cart-item-id="${item.cart_item_id}" data-product-title="${item.product_name}">
                                 <i class="fas fa-trash-alt"></i>
                             </button>
                         </div>
@@ -140,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Re-attach event listeners for newly rendered elements
                 attachCartEventListeners();
-                updateMiniCart(data.totalItemsInCart);
+                updateMiniCart(data.totalQuantity); // تغییر از totalItemsInCart به totalQuantity
             }
 
         } catch (error) {
@@ -161,8 +159,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             const data = await response.json();
             if (response.ok) {
-                // Ensure data.totalItemsInCart is not undefined before using it
-                updateMiniCart(data.totalItemsInCart !== undefined ? data.totalItemsInCart : 0);
+                // Ensure data.totalQuantity is not undefined before using it
+                updateMiniCart(data.totalQuantity !== undefined ? data.totalQuantity : 0); // تغییر از totalItemsInCart به totalQuantity
                 // Also fetch mini-cart details after any update
                 // If the details container exists and the mouse is over the trigger, render it
                 if (miniCartDetailsContainer && miniCartTrigger && miniCartTrigger.matches(':hover')) {
@@ -199,16 +197,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // --- Start of added check for mini-cart details ---
-            if (!data.cartItems || !Array.isArray(data.cartItems)) {
-                console.error('cartItems is undefined or not an array in mini-cart details:', data.cartItems);
+            if (!data.items || !Array.isArray(data.items)) { // تغییر از cartItems به items
+                console.error('cartItems is undefined or not an array in mini-cart details:', data.items);
                 miniCartDetailsContainer.innerHTML = '<div class="p-4 text-center text-red-500">Error receiving cart details.</div>';
                 return;
             }
-            // --- End of added check for mini-cart details ---
 
 
-            if (data.cartItems.length === 0) {
+            if (data.items.length === 0) { // تغییر از cartItems به items
                 miniCartDetailsContainer.innerHTML = `
                     <div class="p-4 text-center text-gray-600">
                         Your cart is empty.
@@ -216,17 +212,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
             } else {
                 let itemsHtml = '';
-                data.cartItems.slice(0, 4).forEach(item => { // Display max 3 items
+                data.items.slice(0, 4).forEach(item => { // Display max 3 items // تغییر از cartItems به items
                     itemsHtml += `
                         <div class="flex items-center py-2 border-b border-gray-100 last:border-b-0">
-                            <img src="${item.product.image || 'https://placehold.co/50x50/E5E7EB/4B5563?text=Product'}"
+                            <img src="${item.thumbnail_url_small || item.image || 'https://placehold.co/50x50/E5E7EB/4B5563?text=Product'}"
                                  onerror="this.onerror=null;this.src='https://placehold.co/50x50/E5E7EB/4B5563?text=Product';"
-                                 alt="${item.product.title}" class="w-12 h-12 object-cover rounded-md ml-2">
+                                 alt="${item.product_name}" class="w-12 h-12 object-cover rounded-md ml-2">
                             <div class="flex-grow">
-                                <p class="text-sm font-semibold text-gray-800">${item.product.title}</p>
-                                <p class="text-xs text-gray-600">${item.quantity} × ${new Intl.NumberFormat('fa-IR').format(item.price)} Tomans</p>
+                                <p class="text-sm font-semibold text-gray-800">${item.product_name}</p>
+                                <p class="text-xs text-gray-600">${item.quantity} × ${new Intl.NumberFormat('fa-IR').format(item.product_price)} Tomans</p>
                             </div>
-                            <span class="text-sm font-bold text-brown-800">${new Intl.NumberFormat('fa-IR').format(item.price * item.quantity)} Tomans</span>
+                            <span class="text-sm font-bold text-brown-800">${new Intl.NumberFormat('fa-IR').format(item.product_price * item.quantity)} Tomans</span>
                         </div>
                     `;
                 });
@@ -413,7 +409,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Only send request if quantity actually changes
         if (newQuantity !== parseInt(this.dataset.previousQuantity || this.value)) { // Use dataset for previous if needed
-             await updateCartItem(cartItemId, newQuantity);
+            await updateCartItem(cartItemId, newQuantity);
         }
     }
 
@@ -534,10 +530,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (response.ok) {
                     window.showMessage(`"${productTitle}" added to cart successfully.`, 'success');
                     // Changed: Directly update mini-cart using the count from the response
-                    if (result.totalItemsInCart !== undefined) {
-                        updateMiniCart(result.totalItemsInCart); 
+                    if (result.totalQuantity !== undefined) { // تغییر از totalItemsInCart به totalQuantity
+                        updateMiniCart(result.totalQuantity); // تغییر از totalItemsInCart به totalQuantity
                     } else {
-                        // Fallback: If totalItemsInCart is not in response, fetch it
+                        // Fallback: If totalQuantity is not in response, fetch it
                         fetchCartContentsForMiniCart(); 
                     }
                     

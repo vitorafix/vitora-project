@@ -16,20 +16,24 @@ use Illuminate\View\View; // اضافه کردن ایمپورت View برای ب
 use Illuminate\Http\RedirectResponse; // اضافه کردن ایمپورت RedirectResponse
 use App\Http\Requests\PlaceOrderRequest; // ایمپورت کردن Form Request جدید
 use App\Services\OrderService; // ایمپورت کردن OrderService جدید
+use App\Services\Contracts\CartServiceInterface; // اضافه شده: برای تزریق CartService
 
 class OrderController extends Controller
 {
     protected OrderService $orderService;
+    protected CartServiceInterface $cartService; // اضافه شده: برای دسترسی به CartService
 
     /**
      * Constructor for OrderController.
      * سازنده کنترلر OrderController.
      *
      * @param OrderService $orderService
+     * @param CartServiceInterface $cartService // اضافه شده
      */
-    public function __construct(OrderService $orderService)
+    public function __construct(OrderService $orderService, CartServiceInterface $cartService) // اضافه شده
     {
         $this->orderService = $orderService;
+        $this->cartService = $cartService; // اضافه شده
     }
 
     /**
@@ -40,15 +44,9 @@ class OrderController extends Controller
      */
     private function getOrCreateCart(): Cart
     {
-        if (Auth::check()) {
-            // برای کاربران لاگین شده: سبد خرید بر اساس user_id
-            $cart = Cart::firstOrCreate(['user_id' => Auth::id()]);
-        } else {
-            // برای کاربران مهمان: سبد خرید بر اساس session_id
-            $sessionId = Session::getId();
-            $cart = Cart::firstOrCreate(['session_id' => $sessionId]);
-        }
-        return $cart;
+        // استفاده از ImprovedCartService برای دریافت یا ایجاد سبد خرید
+        // این متد در ImprovedCartService به درستی user_id یا session_id را مدیریت می‌کند.
+        return $this->cartService->getOrCreateCart(Auth::user(), Session::getId());
     }
 
     /**
@@ -66,13 +64,15 @@ class OrderController extends Controller
         if ($routeName === 'checkout.index') {
             // منطق برای نمایش صفحه تسویه حساب (checkout)
             $cart = $this->getOrCreateCart();
-            $cartItems = $cart->items()->with('product')->get();
+            
+            // استفاده از getCartContents در ImprovedCartService برای دریافت داده‌های کامل سبد خرید
+            $cartContents = $this->cartService->getCartContents($cart);
 
-            if ($cartItems->isEmpty()) {
+            if ($cartContents->items->isEmpty()) { // بررسی isEmpty روی کالکشن itemsData
                 return redirect()->route('cart.index')->with('error', 'سبد خرید شما خالی است و نمی‌توانید سفارش ثبت کنید.');
             }
 
-            // --- اضافه شده: واکشی آدرس‌های کاربر و آدرس پیش‌فرض ---
+            // --- واکشی آدرس‌های کاربر و آدرس پیش‌فرض ---
             $addresses = collect(); // پیش‌فرض یک کالکشن خالی
             $defaultAddress = null;
 
@@ -82,9 +82,16 @@ class OrderController extends Controller
                 // پیدا کردن آدرس پیش‌فرض یا اولین آدرس اگر پیش‌فرضی تنظیم نشده باشد
                 $defaultAddress = $userAddresses->where('is_default', true)->first() ?? $userAddresses->first();
             }
-            // --- پایان اضافه شده ---
+            // --- پایان واکشی آدرس‌ها ---
 
-            return view('checkout', compact('cartItems', 'cart', 'addresses', 'defaultAddress'));
+            // ارسال داده‌های سبد خرید از CartContentsResponse به ویو
+            return view('checkout', [
+                'cartItems' => $cartContents->items,
+                'cartTotalQuantity' => $cartContents->totalQuantity,
+                'cartTotalPrice' => $cartContents->totalPrice,
+                'addresses' => $addresses,
+                'defaultAddress' => $defaultAddress,
+            ]);
         } elseif ($routeName === 'profile.orders.index') {
             // منطق برای نمایش لیست سفارشات کاربر در داشبورد
             if (!Auth::check()) {
@@ -94,7 +101,7 @@ class OrderController extends Controller
             $user = Auth::user();
             // واکشی سفارشات کاربر با آیتم‌ها و محصولات مرتبط (order items and their products)
             // از orderBy برای نمایش جدیدترین سفارشات در ابتدا استفاده شده است.
-            $orders = $user->orders()->with('items.product')->orderBy('created_at', 'desc')->get(); 
+            $orders = $user->orders()->with('items.product')->orderBy('created_at', 'desc')->get();
 
             return view('profile.orders', compact('orders'));
         }

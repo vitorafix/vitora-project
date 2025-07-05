@@ -1,8 +1,10 @@
 <?php
+
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use stdClass; // برای تست یک کلاس ساده
+use App\Services\ProductService; // Import the ProductService
+use App\Contracts\ProductServiceInterface; // Import the ProductServiceInterface
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -13,14 +15,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // هیچ binding مربوط به CartServiceInterface یا Managerهای Cart اینجا نباید باشد.
-        // این بخش باید برای bindingهای عمومی برنامه شما استفاده شود.
+        // Bind the ProductServiceInterface to the ProductService implementation
+        $this->app->bind(ProductServiceInterface::class, ProductService::class);
 
-        // --- شروع کد تست موقت ---
-        $this->app->bind('test.service', function ($app) {
-            return new stdClass();
-        });
-        // --- پایان کد تست موقت ---
+        // Removed the temporary test binding for stdClass
     }
 
     /**
@@ -33,3 +31,4 @@ class AppServiceProvider extends ServiceProvider
         //
     }
 }
+
