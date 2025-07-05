@@ -1,5 +1,5 @@
 <?php
-// File: app/Services/Contracts/CartServiceInterface.php
+
 namespace App\Services\Contracts;
 
 use App\Models\User;

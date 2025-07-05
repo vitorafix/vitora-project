@@ -11,27 +11,31 @@ use App\Services\Managers\CartValidator;
 use App\Services\Managers\CartRateLimiter;
 use App\Services\Managers\CartMetricsManager;
 use App\Contracts\Repositories\CartRepositoryInterface;
-use App\Repositories\Eloquent\CartRepository; // Corrected namespace
+use App\Repositories\Eloquent\CartRepository;
 use App\Contracts\Repositories\ProductRepositoryInterface;
-use App\Repositories\Eloquent\ProductRepository; // Corrected namespace
+use App\Repositories\Eloquent\ProductRepository;
+use Illuminate\Contracts\Events\Dispatcher;
 
 class CartServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     *
-     * @return void
-     */
     public function register(): void
     {
-        // Bind the interface to the concrete implementation
-        $this->app->bind(CartServiceInterface::class, ImprovedCartService::class);
+        $this->app->bind(CartServiceInterface::class, function ($app) {
+            return new ImprovedCartService(
+                $app->make(CartRepositoryInterface::class),
+                $app->make(ProductRepositoryInterface::class),
+                $app->make(CartCacheManager::class),
+                $app->make(StockManager::class),
+                $app->make(CartValidator::class),
+                $app->make(CartRateLimiter::class),
+                $app->make(CartMetricsManager::class),
+                $app->make(Dispatcher::class)
+            );
+        });
 
-        // Bind repository interfaces to their concrete implementations
         $this->app->bind(CartRepositoryInterface::class, CartRepository::class);
         $this->app->bind(ProductRepositoryInterface::class, ProductRepository::class);
 
-        // Register managers as singletons to ensure only one instance exists
         $this->app->singleton(CartCacheManager::class, function ($app) {
             return new CartCacheManager(config('cart.cache_ttl', 3600));
         });
@@ -54,22 +58,15 @@ class CartServiceProvider extends ServiceProvider
             return new CartRateLimiter(config('cart.rate_limit_cooldown', 2));
         });
 
-        $this->app->singleton(CartMetricsManager::class); // Metrics manager might not need specific constructor args
+        $this->app->singleton(CartMetricsManager::class);
     }
 
-    /**
-     * Bootstrap any application services.
-     *
-     * @return void
-     */
     public function boot(): void
     {
-        // Publish config file
         $this->publishes([
             __DIR__.'/../../config/cart.php' => config_path('cart.php'),
         ], 'cart-config');
 
-        // Register the command
         if ($this->app->runningInConsole()) {
             $this->commands([
                 \App\Console\Commands\CleanupExpiredCartsCommand::class,
