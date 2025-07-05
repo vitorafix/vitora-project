@@ -13,11 +13,28 @@
             @forelse ($products as $product)
                 <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 card-hover-effect">
                     <a href="{{ route('products.show', $product->id) }}">
-                        <img src="{{ $product->image ? asset($product->image) : 'https://placehold.co/400x400/E5E7EB/4B5563?text=Product' }}"
-                             onerror="this.onerror=null;this.src='https://placehold.co/400x400/E5E7EB/4B5563?text=Product';"
-                             alt="{{ $product->title }}"
-                             class="w-full h-48 object-cover transition-transform duration-300 hover:scale-105">
+                        @php
+                            $images = $product->image ? explode(',', $product->image) : [];
+                        @endphp
+
+                        @if(count($images) > 0)
+                            {{-- نمایش اولین تصویر به عنوان تصویر شاخص --}}
+                            <img src="{{ asset('images/products/' . trim($images[0]) . '.jpg') }}"
+                                 onerror="this.onerror=null;this.src='https://placehold.co/400x400/E5E7EB/4B5563?text=Product';"
+                                 alt="{{ $product->title }}"
+                                 class="w-full h-48 object-cover transition-transform duration-300 hover:scale-105">
+                        @else
+                            <img src="https://placehold.co/400x400/E5E7EB/4B5563?text=Product"
+                                 alt="تصویر پیش‌فرض"
+                                 class="w-full h-48 object-cover transition-transform duration-300 hover:scale-105">
+                        @endif
                     </a>
+
+                    {{-- اگر خواستی همه تصاویر را نمایش بده، اینجا می‌توانی اضافه کنی --}}
+                    {{-- @foreach ($images as $img)
+                        <img src="{{ asset('images/products/' . trim($img) . '.jpg') }}" alt="{{ $product->title }}" class="w-20 h-20 object-cover inline-block mr-2 mt-2 rounded">
+                    @endforeach --}}
+
                     <div class="p-5 text-center rtl:text-right">
                         <h3 class="text-xl font-semibold text-brown-900 mb-2 truncate">
                             <a href="{{ route('products.show', $product->id) }}" class="hover:text-green-700 transition-colors duration-200">
