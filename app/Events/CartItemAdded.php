@@ -1,114 +1,69 @@
-// File: app/Events/CartItemAdded.php
+<?php
+
 namespace App\Events;
 
-use App\Models\Cart;
-use App\Models\Product;
+use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use App\Models\CartItem; // اضافه شده: برای انتقال آیتم سبد خرید
+use App\Models\Cart;     // اضافه شده: برای انتقال سبد خرید
+use App\Models\Product;  // اضافه شده: برای انتقال اطلاعات محصول
+use App\Models\User;     // اضافه شده: برای انتقال کاربر
 
 class CartItemAdded
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable, InteractsWithSockets, SerializesModels;
 
+    /**
+     * The cart item instance.
+     *
+     * @var \App\Models\CartItem
+     */
+    public CartItem $cartItem;
+
+    /**
+     * The cart instance.
+     *
+     * @var \App\Models\Cart
+     */
     public Cart $cart;
-    public Product $product;
-    public int $quantity;
 
-    public function __construct(Cart $cart, Product $product, int $quantity)
+    /**
+     * The product instance associated with the cart item.
+     *
+     * @var \App\Models\Product
+     */
+    public Product $product;
+
+    /**
+     * The user who performed the action (if authenticated).
+     *
+     * @var \App\Models\User|null
+     */
+    public ?User $user;
+
+    /**
+     * Create a new event instance.
+     *
+     * @param \App\Models\CartItem $cartItem
+     * @param \App\Models\Cart $cart
+     * @param \App\Models\Product $product
+     * @param \App\Models\User|null $user
+     * @return void
+     */
+    public function __construct(CartItem $cartItem, Cart $cart, Product $product, ?User $user = null)
     {
+        $this->cartItem = $cartItem;
         $this->cart = $cart;
         $this->product = $product;
-        $this->quantity = $quantity;
-    }
-}
-
-// File: app/Events/CartItemUpdated.php
-namespace App\Events;
-
-use App\Models\Cart;
-use App\Models\CartItem;
-use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
-
-class CartItemUpdated
-{
-    use Dispatchable, SerializesModels;
-
-    public Cart $cart;
-    public CartItem $cartItem;
-    public int $oldQuantity;
-    public int $newQuantity;
-
-    public function __construct(Cart $cart, CartItem $cartItem, int $oldQuantity, int $newQuantity)
-    {
-        $this->cart = $cart;
-        $this->cartItem = $cartItem;
-        $this->oldQuantity = $oldQuantity;
-        $this->newQuantity = $newQuantity;
-    }
-}
-
-// File: app/Events/CartItemRemoved.php
-namespace App\Events;
-
-use App\Models\Cart;
-use App\Models\CartItem;
-use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
-
-class CartItemRemoved
-{
-    use Dispatchable, SerializesModels;
-
-    public Cart $cart;
-    public CartItem $cartItem;
-
-    public function __construct(Cart $cart, CartItem $cartItem)
-    {
-        $this->cart = $cart;
-        $this->cartItem = $cartItem;
-    }
-}
-
-// File: app/Events/CartCleared.php
-namespace App\Events;
-
-use App\Models\Cart;
-use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
-
-class CartCleared
-{
-    use Dispatchable, SerializesModels;
-
-    public Cart $cart;
-
-    public function __construct(Cart $cart)
-    {
-        $this->cart = $cart;
-    }
-}
-
-// File: app/Events/CartMerged.php
-namespace App\Events;
-
-use App\Models\Cart;
-use App\Models\User;
-use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
-
-class CartMerged
-{
-    use Dispatchable, SerializesModels;
-
-    public Cart $fromCart; // The cart that was merged FROM (e.g., guest cart)
-    public Cart $toCart;   // The cart that was merged INTO (e.g., user cart)
-    public User $user;
-
-    public function __construct(Cart $fromCart, Cart $toCart, User $user)
-    {
-        $this->fromCart = $fromCart;
-        $this->toCart = $toCart;
         $this->user = $user;
     }
+
+    // اگر نیاز به کانال‌های برودکست دارید، می‌توانید متد broadcastOn را اینجا تعریف کنید.
+    // public function broadcastOn(): array
+    // {
+    //     return [
+    //         new PrivateChannel('cart.'.$this->cart->id),
+    //     ];
+    // }
 }
