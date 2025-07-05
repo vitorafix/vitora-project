@@ -18,6 +18,10 @@ return new class extends Migration
             $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
             $table->string('session_id')->nullable()->unique(); // برای سبد خرید مهمان
             $table->timestamps();
+
+            // اضافه شدن: یک کاربر فقط یک سبد خرید می‌تواند داشته باشد
+            // این تضمین می‌کند که برای هر user_id، فقط یک ردیف منحصر به فرد در جدول carts وجود داشته باشد.
+            $table->unique(['user_id']);
         });
     }
 
@@ -29,4 +33,3 @@ return new class extends Migration
         Schema::dropIfExists('carts');
     }
 };
-

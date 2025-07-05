@@ -671,13 +671,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Update the overall cart total
                 updateCartTotal();
 
-                // --- Simulate AJAX call to update quantity on the server ---
-                // In a real application, you would send an AJAX request here
-                // to your Laravel backend to update the cart item quantity.
-                // Example using fetch API:
-                /*
+                // --- Start AJAX call to update quantity on the server ---
                 fetch('/api/cart/update-quantity', {
-                    method: 'POST',
+                    method: 'POST', // Or 'PUT' if your backend route is configured for PUT
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': getCsrfToken() // Use the existing getCsrfToken function
@@ -691,19 +687,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(data => {
                     if (data.success) {
                         console.log('Quantity updated successfully on server.');
-                        // You might want to update other parts of the UI based on server response
+                        // Display success message to user
+                        window.showMessage(data.message || 'تعداد محصول با موفقیت به‌روزرسانی شد.', 'success');
                     } else {
                         console.error('Failed to update quantity on server:', data.message);
-                        // Revert UI changes if server update fails
+                        // Display error message to user
+                        window.showMessage(data.message || 'خطا در به‌روزرسانی تعداد محصول.', 'error');
+                        // Optionally revert UI quantity if the server update failed due to business logic (e.g., stock)
+                        // This would require storing the original quantity before the fetch call
                     }
                 })
                 .catch(error => {
                     console.error('Error updating quantity:', error);
-                    // Revert UI changes if network error
+                    window.showMessage('خطا در ارتباط با سرور. لطفاً اتصال اینترنت خود را بررسی کنید.', 'error');
                 });
-                */
-                console.log(`Simulating update for Item ID: ${itemId}, New Quantity: ${currentQuantity}`);
-                // --- End of simulated AJAX call ---
+                // --- End of AJAX call ---
             }
         });
 

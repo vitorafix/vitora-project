@@ -40,6 +40,10 @@ Route::delete('/cart/remove/{cartItem}', [CartController::class, 'remove'])->nam
 Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
 Route::get('/cart/contents', [CartController::class, 'getContents'])->name('cart.contents');
 
+// مسیر جدید برای به‌روزرسانی تعداد آیتم سبد خرید
+Route::post('/api/cart/update-quantity', [CartController::class, 'updateQuantity']);
+
+
 // صفحات ثابت
 Route::view('/about', 'about')->name('about');
 Route::view('/contact', 'contact')->name('contact');

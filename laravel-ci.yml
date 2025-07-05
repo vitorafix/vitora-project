@@ -1,0 +1,114 @@
+name: Laravel CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  laravel-tests:
+    runs-on: ubuntu-latest
+    
+    # Use matrix strategy to test multiple PHP versions
+    strategy:
+      matrix:
+        php-version: [8.1, 8.2, 8.3]
+        
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: laravel_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+          
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php-version }}
+        extensions: mbstring, xml, bcmath, sqlite, pdo_mysql, pdo_sqlite, zip, curl, gd, redis
+        coverage: xdebug
+
+    - name: Get composer cache directory
+      id: composer-cache
+      run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ${{ steps.composer-cache.outputs.dir }}
+        key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+        restore-keys: ${{ runner.os }}-composer-
+
+    - name: Install dependencies
+      run: composer install --prefer-dist --no-progress --no-interaction --optimize-autoloader
+
+    - name: Copy .env file
+      run: cp .env.example .env
+
+    - name: Generate app key
+      run: php artisan key:generate
+
+    - name: Set up database
+      run: |
+        php artisan config:cache
+        php artisan migrate --force --seed
+
+    - name: Run PHPUnit tests
+      run: php artisan test --coverage --min=80
+
+    - name: Run Laravel Pint (Code Style)
+      run: ./vendor/bin/pint --test
+
+    - name: Run PHPStan (Static Analysis)
+      run: ./vendor/bin/phpstan analyse
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  security-checks:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+
+    - name: Install dependencies
+      run: composer install --prefer-dist --no-progress --no-interaction
+
+    - name: Run security check
+      run: composer audit

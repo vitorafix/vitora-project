@@ -39,7 +39,7 @@
                     {{-- بخش انتخاب آدرس (اگر کاربر آدرس ثبت کرده باشد) --}}
                     @if ($addresses->isNotEmpty())
                     <div class="mb-6 border border-gray-200 rounded-lg p-4 bg-gray-50">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">انتخاب آدرس موجود:</h3>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">انتخاب آدرس :</h3>
                         <div class="space-y-3" id="address-selection-radios">
                             @foreach ($addresses as $address)
                                 <div class="flex items-start p-3 border rounded-md cursor-pointer hover:bg-gray-100 transition-colors duration-200
@@ -58,66 +58,14 @@
                                     @endif
                                 </div>
                             @endforeach
-                            {{-- گزینه برای وارد کردن آدرس جدید --}}
-                            <div class="flex items-start p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-100 transition-colors duration-200">
-                                <input type="radio" id="address_new" name="selected_address_id" value="new" class="form-radio h-5 w-5 text-green-700 mt-1 cursor-pointer"
-                                    @if (!$defaultAddress) checked @endif> {{-- اگر آدرس پیش‌فرضی نبود، این گزینه انتخاب شود --}}
-                                <label for="address_new" class="mr-3 flex-1 cursor-pointer">
-                                    <span class="font-medium text-gray-800">افزودن آدرس جدید</span>
-                                    <p class="text-gray-600 text-sm">فیلدهای زیر را برای وارد کردن آدرس جدید پر کنید.</p>
-                                </label>
-                            </div>
+                            {{-- گزینه برای وارد کردن آدرس جدید حذف شد --}}
                         </div>
                     </div>
                     @else
-                        <p class="text-gray-600 text-sm mb-4">شما هنوز آدرسی ثبت نکرده‌اید. لطفاً فیلدهای زیر را برای آدرس جدید پر کنید.</p>
+                        <p class="text-gray-600 text-sm mb-4">شما هنوز آدرسی ثبت نکرده‌اید. لطفاً آدرس خود را از پروفایل کاربری اضافه کنید.</p>
                     @endif
 
-                    {{-- فیلدهای اطلاعات آدرس که توسط JS پر می‌شوند یا دستی وارد می‌شوند --}}
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {{-- نام --}}
-                        <div>
-                            <label for="first_name" class="block text-gray-700 text-sm font-bold mb-2">نام:</label>
-                            <input type="text" id="first_name" name="first_name" class="form-input block w-full border border-gray-300 rounded-md shadow-sm focus:ring-green-700 focus:border-green-700 p-2.5" placeholder="نام کوچک شما" required aria-describedby="first_name-error">
-                            <div id="first_name-error" class="text-red-500 text-sm mt-1 hidden" role="alert"></div>
-                        </div>
-                        {{-- نام خانوادگی --}}
-                        <div>
-                            <label for="last_name" class="block text-gray-700 text-sm font-bold mb-2">نام خانوادگی:</label>
-                            <input type="text" id="last_name" name="last_name" class="form-input block w-full border border-gray-300 rounded-md shadow-sm focus:ring-green-700 focus:border-green-700 p-2.5" placeholder="نام خانوادگی شما" required aria-describedby="last_name-error">
-                            <div id="last_name-error" class="text-red-500 text-sm mt-1 hidden" role="alert"></div>
-                        </div>
-                        {{-- شماره تلفن --}}
-                        <div class="md:col-span-2"> {{-- این فیلد تمام عرض را اشغال کند --}}
-                            <label for="phone_number" class="block text-gray-700 text-sm font-bold mb-2">شماره تلفن:</label>
-                            <input type="tel" id="phone_number" name="phone_number" class="form-input block w-full border border-gray-300 rounded-md shadow-sm focus:ring-green-700 focus:border-green-700 p-2.5" placeholder="مثال: 09123456789" required aria-describedby="phone_number-error">
-                            <div id="phone_number-error" class="text-red-500 text-sm mt-1 hidden" role="alert"></div>
-                        </div>
-                        {{-- آدرس کامل --}}
-                        <div class="md:col-span-2"> {{-- این فیلد تمام عرض را اشغال کند --}}
-                            <label for="address" class="block text-gray-700 text-sm font-bold mb-2">آدرس کامل:</label>
-                            <textarea id="address" name="address" rows="3" class="form-input block w-full border border-gray-300 rounded-md shadow-sm focus:ring-green-700 focus:border-green-700 p-2.5" placeholder="مثال: تهران، خیابان آزادی، کوچه اول، پلاک ۱۰" required aria-describedby="address-error"></textarea>
-                            <div id="address-error" class="text-red-500 text-sm mt-1 hidden" role="alert"></div>
-                        </div>
-                        {{-- استان --}}
-                        <div>
-                            <label for="province" class="block text-gray-700 text-sm font-bold mb-2">استان:</label>
-                            <input type="text" id="province" name="province" class="form-input block w-full border border-gray-300 rounded-md shadow-sm focus:ring-green-700 focus:border-green-700 p-2.5" placeholder="مثال: تهران" required aria-describedby="province-error">
-                            <div id="province-error" class="text-red-500 text-sm mt-1 hidden" role="alert"></div>
-                        </div>
-                        {{-- شهر --}}
-                        <div>
-                            <label for="city" class="block text-gray-700 text-sm font-bold mb-2">شهر:</label>
-                            <input type="text" id="city" name="city" class="form-input block w-full border border-gray-300 rounded-md shadow-sm focus:ring-green-700 focus:border-green-700 p-2.5" placeholder="مثال: تهران" required aria-describedby="city-error">
-                            <div id="city-error" class="text-red-500 text-sm mt-1 hidden" role="alert"></div>
-                        </div>
-                        {{-- کد پستی --}}
-                        <div class="md:col-span-2"> {{-- این فیلد تمام عرض را اشغال کند --}}
-                            <label for="postal_code" class="block text-gray-700 text-sm font-bold mb-2">کد پستی:</label>
-                            <input type="text" id="postal_code" name="postal_code" class="form-input block w-full border border-gray-300 rounded-md shadow-sm focus:ring-green-700 focus:border-green-700 p-2.5" placeholder="مثال: ۱۲۳۴۵۶۷۸۹۰" required aria-describedby="postal_code-error">
-                            <div id="postal_code-error" class="text-red-500 text-sm mt-1 hidden" role="alert"></div>
-                        </div>
-                    </div>
+                    {{-- فیلدهای اطلاعات آدرس جدید که قبلاً اینجا بودند، حذف شدند --}}
                 </div>
 
                 {{-- بخش خلاصه سبد خرید --}}
@@ -127,19 +75,36 @@
                         خلاصه سبد خرید شما
                         <i class="fas fa-shopping-basket ml-3 text-orange-500"></i>
                     </h2>
-                    <div class="space-y-4">
+                    <div class="space-y-4" id="cart-items-summary"> {{-- Add ID for JS access --}}
                         @forelse ($cartItems as $item)
-                            <div class="flex justify-between items-center border-b pb-4 last:border-b-0 last:pb-0">
+                            <div class="flex justify-between items-center border-b pb-4 last:border-b-0 last:pb-0"
+                                data-item-id="{{ $item->product->id }}"
+                                data-item-price="{{ $item->product->price }}"
+                                data-item-quantity="{{ $item->quantity }}">
                                 <div class="flex items-center">
                                     {{-- نمایش تصویر محصول یا یک تصویر placeholder --}}
                                     <img src="{{ $item->product->image ?: 'https://placehold.co/60x60/E5E7EB/4B5563?text=Product' }}" alt="{{ $item->product->title }}" class="w-16 h-16 object-cover rounded-lg ml-3">
                                     <div>
                                         <h3 class="text-lg font-semibold text-gray-800">{{ $item->product->title }}</h3>
-                                        <p class="text-gray-600 text-sm">{{ number_format($item->quantity) }} عدد</p>
+                                        {{-- Quantity Controller --}}
+                                        <div class="flex items-center mt-1">
+                                            <button type="button" class="quantity-btn minus-btn bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-full w-6 h-6 flex items-center justify-center text-lg font-bold transition-colors duration-200" aria-label="کاهش تعداد">
+                                                -
+                                            </button>
+                                            <span class="item-quantity mx-2 text-gray-700 text-base font-medium" data-quantity="{{ $item->quantity }}">
+                                                {{ number_format($item->quantity) }}
+                                            </span>
+                                            <button type="button" class="quantity-btn plus-btn bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-full w-6 h-6 flex items-center justify-center text-lg font-bold transition-colors duration-200" aria-label="افزایش تعداد">
+                                                +
+                                            </button>
+                                            <span class="mr-2 text-gray-600 text-sm">عدد</span>
+                                        </div>
                                     </div>
                                 </div>
                                 {{-- نمایش قیمت کل برای هر آیتم --}}
-                                <span class="text-green-700 font-bold text-lg">{{ number_format($item->price * $item->quantity) }} تومان</span>
+                                <span class="item-subtotal text-green-700 font-bold text-lg" data-subtotal="{{ $item->price * $item->quantity }}">
+                                    {{ number_format($item->price * $item->quantity) }} تومان
+                                </span>
                             </div>
                         @empty
                             {{-- پیام در صورت خالی بودن سبد خرید --}}
@@ -150,7 +115,9 @@
                         {{-- نمایش جمع کل سبد خرید --}}
                         <div class="border-t border-gray-200 pt-4 mt-6 flex justify-between items-center text-xl font-bold text-brown-900">
                             <span>جمع کل:</span>
-                            <span class="text-green-700">{{ number_format($cart->getTotalPrice()) }} تومان</span>
+                            <span id="cart-total-price" class="text-green-700" data-total-price="{{ $cart->getTotalPrice() }}">
+                                {{ number_format($cart->getTotalPrice()) }} تومان
+                            </span>
                         </div>
                     @endif
                 </div>
@@ -235,5 +202,6 @@
 @endsection
 
 @push('scripts')
+{{-- Removed inline script for quantity control. It's now in checkout.js --}}
 <script src="{{ asset('js/checkout.js') }}"></script>
 @endpush

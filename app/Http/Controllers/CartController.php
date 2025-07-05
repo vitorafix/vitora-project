@@ -3,201 +3,161 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Cart;
-use App\Models\CartItem;
-use App\Models\Product;
-use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use App\Models\CartItem; // همچنان برای Route Model Binding نیاز است
+
+// Contracts
+use App\Contracts\Services\CartServiceInterface; // ایمپورت کردن اینترفیس CartService
+
+// Form Requests (شما باید اینها را ایجاد کنید)
+use App\Http\Requests\Cart\AddToCartRequest;
+use App\Http\Requests\Cart\UpdateCartItemRequest;
+use App\Http\Requests\Cart\UpdateMultipleCartItemsRequest; // اگر متد updateMultipleItems را استفاده می‌کنید
+
+// Custom Exceptions
+use App\Exceptions\BaseCartException; // برای مدیریت متمرکز Exceptionها
 
 class CartController extends Controller
 {
+    protected CartServiceInterface $cartService; // تغییر نوع به اینترفیس
+
     /**
-     * Helper method to get the current user's cart or create one if it doesn't exist.
-     * این متد هر دو نوع کاربر احراز هویت شده و مهمان را مدیریت می‌کند.
+     * Constructor for CartController.
+     * سازنده کنترلر CartController.
      *
-     * @return \App\Models\Cart
+     * @param CartServiceInterface $cartService
      */
-    private function getOrCreateCart(): Cart
+    public function __construct(CartServiceInterface $cartService)
     {
-        if (Auth::check()) {
-            // برای کاربران لاگین شده: سبد خرید بر اساس user_id
-            $cart = Cart::firstOrCreate(['user_id' => Auth::id()]);
-        } else {
-            // برای کاربران مهمان: سبد خرید بر اساس session_id
-            $sessionId = Session::getId();
-            $cart = Cart::firstOrCreate(['session_id' => $sessionId]);
-        }
-        return $cart;
+        $this->cartService = $cartService;
     }
 
     /**
      * Display the cart page.
+     * صفحه سبد خرید را نمایش می‌دهد.
      *
-     * @return \Illuminate\View\View
+     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
      */
     public function index()
     {
-        $cart = $this->getOrCreateCart();
-        // آیتم‌ها همیشه از دیتابیس بارگذاری می‌شوند، چه کاربر لاگین باشد چه مهمان.
-        $cartItems = $cart->items()->with('product')->get();
+        try {
+            // دریافت سبد خرید از سرویس
+            $cart = $this->cartService->getOrCreateCart(Auth::user(), Session::getId());
 
-        return view('cart', compact('cartItems'));
+            // دریافت محتویات کامل سبد خرید برای نمایش
+            $cartContents = $this->cartService->getCartContents($cart);
+
+            // محاسبه مجموع‌ها برای نمایش در Blade
+            $cartTotals = $this->cartService->calculateCartTotals($cart);
+
+            // اعتبارسنجی آیتم‌های سبد خرید (مثلاً موجودی)
+            $cartValidationIssues = $this->cartService->validateCartItems($cart);
+
+            return view('cart', [
+                'cartItems' => $cartContents->items,
+                'cart' => $cart, // ارسال آبجکت کامل سبد خرید
+                'totalQuantity' => $cartContents->totalQuantity,
+                'totalPrice' => $cartContents->totalPrice,
+                'cartTotals' => $cartTotals, // ارسال مجموع‌های محاسبه شده
+                'validationIssues' => $cartValidationIssues, // ارسال مشکلات اعتبارسنجی
+            ]);
+        } catch (BaseCartException $e) {
+            Log::error('Error displaying cart page: ' . $e->getMessage(), ['user_id' => Auth::id(), 'session_id' => Session::getId(), 'exception' => $e->getTraceAsString()]);
+            // در صورت خطا، می‌توانید به صفحه خطا ریدایرکت کنید یا یک پیام نمایش دهید
+            return response()->json(['message' => $e->getMessage()], $e->getCode());
+        } catch (\Throwable $e) {
+            Log::error('Unexpected error displaying cart page: ' . $e->getMessage(), ['user_id' => Auth::id(), 'session_id' => Session::getId(), 'exception' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'خطا در بارگذاری سبد خرید.'], 500);
+        }
     }
 
     /**
      * Add a product to the cart.
-     * یک محصول را به سبد خرید اضافه می‌کند.
+     * محصولی را به سبد خرید اضافه می‌کند.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Http\Requests\Cart\AddToCartRequest  $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function add(Request $request)
+    public function add(AddToCartRequest $request) // استفاده از Form Request
     {
-        // 1. اعتبارسنجی ورودی
-        $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1',
-        ]);
+        $productId = $request->input('product_id');
+        $quantity = $request->input('quantity');
 
-        $productId = $request->product_id;
-        $quantity = $request->quantity;
+        try {
+            $cart = $this->cartService->getOrCreateCart(Auth::user(), Session::getId());
+            $response = $this->cartService->addOrUpdateCartItem($cart, $productId, $quantity);
 
-        // 2. پیدا کردن محصول
-        $product = Product::find($productId);
+            return response()->json($response->jsonSerialize(), $response->statusCode); // استفاده از CartOperationResponse
 
-        if (!$product) {
-            return response()->json(['message' => 'محصول یافت نشد.'], 404);
+        } catch (BaseCartException $e) {
+            Log::error('Cart operation error in add method: ' . $e->getMessage(), ['product_id' => $productId, 'quantity' => $quantity, 'exception' => $e->getTraceAsString()]);
+            return response()->json(['message' => $e->getMessage()], $e->getCode());
+        } catch (\Throwable $e) {
+            Log::error('Unexpected error in add method: ' . $e->getMessage(), ['product_id' => $productId, 'quantity' => $quantity, 'exception' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'خطا در افزودن محصول به سبد خرید.'], 500);
         }
-
-        // 3. بررسی موجودی انبار
-        if ($product->stock < $quantity) {
-            return response()->json(['message' => 'موجودی کافی برای این محصول وجود ندارد. موجودی فعلی: ' . $product->stock], 400);
-        }
-
-        $message = ''; // مقداردهی اولیه
-
-        if (Auth::check()) {
-            // کاربر لاگین کرده است: آیتم را به سبد خرید دیتابیسی اضافه کنید
-            $user = Auth::user();
-            $message = $this->addItemToDatabaseCart($user, $productId, $quantity, $product);
-        } else {
-            // کاربر مهمان است: آیتم را مستقیماً به دیتابیس اضافه کنید (با استفاده از session_id)
-            $sessionId = Session::getId();
-            $cart = Cart::firstOrCreate(['session_id' => $sessionId]); // دریافت یا ایجاد سبد خرید مهمان در دیتابیس
-
-            $cartItem = CartItem::where('cart_id', $cart->id)
-                                ->where('product_id', $productId)
-                                ->first();
-
-            if ($cartItem) {
-                $newQuantity = $cartItem->quantity + $quantity;
-                if ($product->stock < $newQuantity) {
-                    return response()->json(['message' => 'موجودی کافی برای افزودن بیشتر این محصول وجود ندارد.'], 400);
-                }
-                $cartItem->quantity = $newQuantity;
-                $cartItem->save();
-                $message = 'تعداد محصول در سبد خرید به‌روزرسانی شد!';
-            } else {
-                CartItem::create([
-                    'cart_id' => $cart->id,
-                    'product_id' => $productId,
-                    'quantity' => $quantity,
-                    'price' => $product->price, // قیمت را در زمان افزودن ذخیره کنید
-                ]);
-                $message = 'محصول با موفقیت به سبد خرید شما اضافه شد (مهمان)!';
-            }
-        }
-
-        // 6. محاسبه تعداد کل آیتم‌ها در سبد خرید (همیشه از دیتابیس، چون حالا مهمان‌ها هم در دیتابیس هستند)
-        $cart = $this->getOrCreateCart(); // دریافت سبد خرید صحیح (کاربر یا مهمان)
-        $totalItemsInCart = $cart->items()->sum('quantity');
-
-        return response()->json([
-            'message' => $message,
-            'totalItemsInCart' => $totalItemsInCart
-        ], 200);
     }
 
     /**
-     * Update the quantity of a product in the cart.
-     * تعداد یک محصول را در سبد خرید به‌روزرسانی می‌کند.
+     * Update the quantity of a cart item.
+     * تعداد یک آیتم سبد خرید را به‌روزرسانی می‌کند.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\CartItem  $cartItem
+     * @param  \App\Http\Requests\Cart\UpdateCartItemRequest  $request
+     * @param  \App\Models\CartItem  $cartItem (Route Model Binding)
      * @return \Illuminate\Http\JsonResponse
      */
-    public function update(Request $request, CartItem $cartItem)
+    public function update(UpdateCartItemRequest $request, CartItem $cartItem) // استفاده از Form Request
     {
-        // 1. اعتبارسنجی ورودی
-        $request->validate([
-            'quantity' => 'required|integer|min:0', // اجازه 0 برای حذف (یا منطق حذف جداگانه)
-        ]);
+        $newQuantity = $request->input('quantity');
 
-        $newQuantity = $request->quantity;
+        try {
+            // سرویس خودش مالکیت را بررسی می‌کند
+            $response = $this->cartService->updateCartItemQuantity(
+                $cartItem,
+                $newQuantity,
+                Auth::user(),
+                Session::getId()
+            );
 
-        // 2. بررسی اینکه cartItem واقعاً متعلق به سبد خرید فعلی کاربر است
-        $cart = $this->getOrCreateCart();
-        if ($cartItem->cart_id !== $cart->id) {
-            return response()->json(['message' => 'عملیات غیرمجاز.'], 403);
+            return response()->json($response->jsonSerialize(), $response->statusCode); // استفاده از CartOperationResponse
+
+        } catch (BaseCartException $e) {
+            Log::error('Cart operation error in update method: ' . $e->getMessage(), ['cart_item_id' => $cartItem->id, 'new_quantity' => $newQuantity, 'exception' => $e->getTraceAsString()]);
+            return response()->json(['message' => $e->getMessage()], $e->getCode());
+        } catch (\Throwable $e) {
+            Log::error('Unexpected error in update method: ' . $e->getMessage(), ['cart_item_id' => $cartItem->id, 'new_quantity' => $newQuantity, 'exception' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'خطا در به‌روزرسانی تعداد محصول.'], 500);
         }
-
-        // 3. پیدا کردن محصول مرتبط
-        $product = $cartItem->product;
-
-        if (!$product) {
-            return response()->json(['message' => 'محصول مرتبط یافت نشد.'], 404);
-        }
-
-        // 4. مدیریت حذف آیتم اگر quantity 0 باشد
-        if ($newQuantity === 0) {
-            $cartItem->delete();
-            $message = 'محصول از سبد خرید حذف شد.';
-        } else {
-            // 5. بررسی موجودی انبار برای تعداد جدید
-            if ($product->stock < $newQuantity) {
-                return response()->json(['message' => 'موجودی کافی برای این تعداد وجود ندارد. موجودی فعلی: ' . $product->stock], 400);
-            }
-            $cartItem->quantity = $newQuantity;
-            $cartItem->save();
-            $message = 'تعداد محصول در سبد خرید به‌روزرسانی شد.';
-        }
-
-        // 6. محاسبه تعداد کل آیتم‌ها در سبد خرید
-        $totalItemsInCart = $cart->items()->sum('quantity');
-
-        return response()->json([
-            'message' => $message,
-            'totalItemsInCart' => $totalItemsInCart
-        ], 200);
     }
 
     /**
      * Remove a product from the cart.
-     * یک محصول را از سبد خرید حذف می‌کند.
+     * محصولی را از سبد خرید حذف می‌کند.
      *
-     * @param  \App\Models\CartItem  $cartItem
+     * @param  \App\Models\CartItem  $cartItem (Route Model Binding)
      * @return \Illuminate\Http\JsonResponse
      */
     public function remove(CartItem $cartItem)
     {
-        // 1. بررسی اینکه cartItem واقعاً متعلق به سبد خرید فعلی کاربر است
-        $cart = $this->getOrCreateCart();
-        if ($cartItem->cart_id !== $cart->id) {
-            return response()->json(['message' => 'عملیات غیرمجاز.'], 403);
+        try {
+            // سرویس خودش مالکیت را بررسی می‌کند
+            $response = $this->cartService->removeCartItem(
+                $cartItem,
+                Auth::user(),
+                Session::getId()
+            );
+
+            return response()->json($response->jsonSerialize(), $response->statusCode); // استفاده از CartOperationResponse
+
+        } catch (BaseCartException $e) {
+            Log::error('Cart operation error in remove method: ' . $e->getMessage(), ['cart_item_id' => $cartItem->id, 'exception' => $e->getTraceAsString()]);
+            return response()->json(['message' => $e->getMessage()], $e->getCode());
+        } catch (\Throwable $e) {
+            Log::error('Unexpected error in remove method: ' . $e->getMessage(), ['cart_item_id' => $cartItem->id, 'exception' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'خطا در حذف محصول از سبد خرید.'], 500);
         }
-
-        // 2. حذف آیتم
-        $cartItem->delete();
-
-        // 3. محاسبه تعداد کل آیتم‌ها در سبد خرید
-        $totalItemsInCart = $cart->items()->sum('quantity');
-
-        return response()->json([
-            'message' => 'محصول با موفقیت از سبد خرید حذف شد!',
-            'totalItemsInCart' => $totalItemsInCart
-        ], 200);
     }
 
     /**
@@ -208,127 +168,84 @@ class CartController extends Controller
      */
     public function clear()
     {
-        $cart = $this->getOrCreateCart();
-        $cart->items()->delete(); // حذف تمام آیتم‌های سبد خرید از دیتابیس
+        try {
+            $cart = $this->cartService->getOrCreateCart(Auth::user(), Session::getId());
+            $response = $this->cartService->clearCart($cart);
 
-        // نیازی به پاک کردن guest_cart_items از سشن نیست، زیرا آیتم‌های مهمان اکنون در دیتابیس ذخیره می‌شوند.
+            return response()->json($response->jsonSerialize(), $response->statusCode); // استفاده از CartOperationResponse
 
-        return response()->json([
-            'message' => 'سبد خرید با موفقیت خالی شد!',
-            'totalItemsInCart' => 0
-        ], 200);
+        } catch (BaseCartException $e) {
+            Log::error('Cart operation error in clear method: ' . $e->getMessage(), ['user_id' => Auth::id(), 'session_id' => Session::getId(), 'exception' => $e->getTraceAsString()]);
+            return response()->json(['message' => $e->getMessage()], $e->getCode());
+        } catch (\Throwable $e) {
+            Log::error('Unexpected error in clear method: ' . $e->getMessage(), ['user_id' => Auth::id(), 'session_id' => Session::getId(), 'exception' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'خطا در خالی کردن سبد خرید.'], 500);
+        }
     }
 
     /**
-     * Get current cart contents and total.
-     * توسط app.js برای پر کردن mini-cart و main cart استفاده می‌شود.
+     * Get cart contents for mini-cart display.
+     * محتویات سبد خرید را برای نمایش در مینی‌کارت دریافت می‌کند.
      *
      * @return \Illuminate\Http\JsonResponse
      */
     public function getContents()
     {
-        $cart = $this->getOrCreateCart();
-        // آیتم‌ها همیشه از دیتابیس بارگذاری می‌شوند، چه کاربر لاگین باشد چه مهمان.
-        $cartItems = $cart->items()->with('product')->get();
+        try {
+            $cart = $this->cartService->getOrCreateCart(Auth::user(), Session::getId());
+            $cartContents = $this->cartService->getCartContents($cart);
 
-        $totalPrice = $cartItems->sum(function($item) {
-            return $item->quantity * $item->price;
-        });
-        $totalItemsInCart = $cartItems->sum('quantity');
+            return response()->json($cartContents->jsonSerialize()); // CartContentsResponse نیز JsonSerializable است
 
-        return response()->json([
-            'cartItems' => $cartItems,
-            'totalPrice' => $totalPrice,
-            'totalItemsInCart' => $totalItemsInCart
-        ], 200);
+        } catch (BaseCartException $e) {
+            Log::error('Cart operation error in getContents method: ' . $e->getMessage(), ['user_id' => Auth::id(), 'session_id' => Session::getId(), 'exception' => $e->getTraceAsString()]);
+            return response()->json(['message' => $e->getMessage()], $e->getCode());
+        } catch (\Throwable $e) {
+            Log::error('Unexpected error in getContents method: ' . $e->getMessage(), ['user_id' => Auth::id(), 'session_id' => Session::getId(), 'exception' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'خطا در دریافت محتویات سبد خرید.'], 500);
+        }
     }
 
     /**
-     * منطق ادغام سبد خرید مهمان با سبد خرید دیتابیسی کاربر.
-     * این متد توسط MobileAuthController پس از لاگین/ثبت‌نام فراخوانی می‌شود.
+     * Update the quantity of a cart item via AJAX from checkout page.
+     * این متد برای به‌روزرسانی تعداد آیتم از صفحه تسویه حساب استفاده می‌شود.
      *
-     * @param User $user
-     * @param array $guestItems
-     * @return void
+     * @param UpdateCartItemRequest $request
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function mergeGuestCart(User $user, array $guestItems)
+    public function updateQuantity(UpdateCartItemRequest $request): \Illuminate\Http\JsonResponse
     {
-        // از یک تراکنش (transaction) برای اطمینان از یکپارچگی داده‌ها استفاده کنید.
-        DB::transaction(function () use ($user, $guestItems) {
-            // 1. ابتدا سبد خرید کاربر را پیدا کنید یا اگر وجود ندارد، ایجاد کنید.
-            $cart = Cart::firstOrCreate([
-                'user_id' => $user->id
-            ]);
+        // 'item_id' در اینجا در واقع 'cart_item_id' است.
+        // FormRequest اعتبارسنجی می‌کند که این ID وجود دارد و معتبر است.
+        $cartItemId = $request->item_id;
+        $newQuantity = $request->quantity;
 
-            foreach ($guestItems as $guestItem) {
-                $productId = $guestItem['product_id'];
-                $quantity = $guestItem['quantity'];
-
-                // 2. بررسی کنید که آیا این محصول از قبل در سبد خرید کاربر (بر اساس cart_id) وجود دارد یا خیر
-                $cartItem = CartItem::where('cart_id', $cart->id)
-                                    ->where('product_id', $productId)
-                                    ->first();
-
-                if ($cartItem) {
-                    // اگر محصول از قبل وجود دارد، فقط تعداد آن را افزایش دهید
-                    $cartItem->quantity += $quantity;
-                    $cartItem->save();
-                } else {
-                    // اگر محصول جدید است، آن را به سبد خرید کاربر اضافه کنید
-                    CartItem::create([
-                        'cart_id' => $cart->id,
-                        'product_id' => $productId,
-                        'quantity' => $quantity,
-                        'price' => $guestItem['price'] ?? Product::find($productId)->price,
-                    ]);
-                }
+        try {
+            // آیتم را پیدا می‌کنیم تا به سرویس پاس دهیم.
+            // اطمینان حاصل کنید که این آیتم متعلق به کاربر/سشن فعلی است (سرویس این را بررسی می‌کند).
+            $cartItem = CartItem::find($cartItemId);
+            if (!$cartItem) {
+                return response()->json(['success' => false, 'message' => 'آیتم سبد خرید یافت نشد.'], 404);
             }
-        });
+
+            $response = $this->cartService->updateCartItemQuantity(
+                $cartItem,
+                $newQuantity,
+                Auth::user(),
+                Session::getId()
+            );
+
+            return response()->json($response->jsonSerialize(), $response->statusCode);
+
+        } catch (BaseCartException $e) {
+            Log::error('Cart operation error in updateQuantity method: ' . $e->getMessage(), ['cart_item_id' => $cartItemId, 'new_quantity' => $newQuantity, 'exception' => $e->getTraceAsString()]);
+            return response()->json(['message' => $e->getMessage()], $e->getCode());
+        } catch (\Throwable $e) {
+            Log::error('Unexpected error in updateQuantity method: ' . $e->getMessage(), ['cart_item_id' => $cartItemId, 'new_quantity' => $newQuantity, 'exception' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'خطا در به‌روزرسانی تعداد محصول.'], 500);
+        }
     }
 
-    /**
-     * متد کمکی برای افزودن آیتم به سبد خرید دیتابیسی (برای کاربران لاگین کرده).
-     *
-     * @param User $user
-     * @param int $productId
-     * @param int $quantity
-     * @param Product $product
-     * @return string
-     */
-    protected function addItemToDatabaseCart(User $user, int $productId, int $quantity, Product $product): string
-    {
-        $message = '';
-        DB::transaction(function () use ($user, $productId, $quantity, $product, &$message) {
-            // 1. ابتدا سبد خرید کاربر را پیدا کنید یا اگر وجود ندارد، ایجاد کنید.
-            $cart = Cart::firstOrCreate([
-                'user_id' => $user->id
-            ]);
-
-            $cartItem = CartItem::where('cart_id', $cart->id)
-                                ->where('product_id', $productId)
-                                ->first();
-
-            if ($cartItem) {
-                // اگر آیتم قبلاً در سبد خرید بود، تعداد آن را افزایش دهید
-                $newQuantity = $cartItem->quantity + $quantity;
-                if ($product->stock < $newQuantity) {
-                    $message = 'موجودی کافی برای افزودن بیشتر این محصول وجود ندارد.';
-                    return;
-                }
-                $cartItem->quantity = $newQuantity;
-                $cartItem->save();
-                $message = 'تعداد محصول در سبد خرید به‌روزرسانی شد!';
-            } else {
-                // اگر آیتم جدید است، آن را به سبد خرید اضافه کنید
-                CartItem::create([
-                    'cart_id' => $cart->id,
-                    'product_id' => $productId,
-                    'quantity' => $quantity,
-                    'price' => $product->price,
-                ]);
-                $message = 'محصول با موفقیت به سبد خرید اضافه شد!';
-            }
-        });
-        return $message;
-    }
+    // متد mergeGuestCart از کنترلر حذف شده و فقط در CartService نگهداری می‌شود.
+    // public function mergeGuestCart(User $user, string $guestSessionId): void { /* ... */ }
 }
