@@ -1,5 +1,5 @@
 <?php
-// File: app/Providers/CartServiceProvider.php
+
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
@@ -10,6 +10,10 @@ use App\Services\Managers\StockManager;
 use App\Services\Managers\CartValidator;
 use App\Services\Managers\CartRateLimiter;
 use App\Services\Managers\CartMetricsManager;
+use App\Contracts\Repositories\CartRepositoryInterface;
+use App\Repositories\Eloquent\CartRepository; // Corrected namespace
+use App\Contracts\Repositories\ProductRepositoryInterface;
+use App\Repositories\Eloquent\ProductRepository; // Corrected namespace
 
 class CartServiceProvider extends ServiceProvider
 {
@@ -22,6 +26,10 @@ class CartServiceProvider extends ServiceProvider
     {
         // Bind the interface to the concrete implementation
         $this->app->bind(CartServiceInterface::class, ImprovedCartService::class);
+
+        // Bind repository interfaces to their concrete implementations
+        $this->app->bind(CartRepositoryInterface::class, CartRepository::class);
+        $this->app->bind(ProductRepositoryInterface::class, ProductRepository::class);
 
         // Register managers as singletons to ensure only one instance exists
         $this->app->singleton(CartCacheManager::class, function ($app) {
@@ -66,15 +74,6 @@ class CartServiceProvider extends ServiceProvider
             $this->commands([
                 \App\Console\Commands\CleanupExpiredCartsCommand::class,
             ]);
-        }
-    }
-}
-
-
-
-            $this->error("Error during cart cleanup: " . $e->getMessage());
-            Log::error("Cart cleanup command failed: " . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
-            return Command::FAILURE;
         }
     }
 }

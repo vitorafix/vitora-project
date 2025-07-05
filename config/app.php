@@ -46,7 +46,8 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
-        App\Providers\OtpServiceProvider::class, // ✅ این خط را اضافه کنید!
+        App\Providers\OtpServiceProvider::class,
+        App\Providers\CartServiceProvider::class, // Added this line
     ],
 
 ];

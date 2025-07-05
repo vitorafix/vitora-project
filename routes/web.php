@@ -7,10 +7,10 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
-use App\Http\Controllers\ProfileController; // مطمئن شوید این خط وجود دارد
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\Auth\MobileAuthController;
-use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\RegisterController; // این کنترلر شماست که به درستی ایمپورت شده است
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\ProfileCompletionController;
 use App\Http\Middleware\EnsureProfileIsCompleted;
@@ -91,8 +91,12 @@ Route::prefix('auth')->name('auth.')->group(function () {
     Route::post('/register', [RegisterController::class, 'register'])->name('register');
 });
 
-// توجه: اگر از فایل auth.php استاندارد لاراول استفاده می‌کنید این خط را نگه دارید
-// در غیر این صورت می‌توانید حذف کنید تا تداخل نداشته باشد
+// توجه: مشکل "Class "App\Http\Controllers\Auth\RegisteredUserController" does not exist"
+// به احتمال زیاد از فایل 'auth.php' نشأت می‌گیرد.
+// اگر از Laravel Breeze یا Jetstream استفاده نمی‌کنید و تمام مسیرهای احراز هویت را
+// در همین فایل 'web.php' مدیریت می‌کنید، می‌توانید خط زیر را کامنت کنید.
+// در غیر این صورت، باید فایل 'auth.php' را باز کرده و هرگونه ارجاع به
+// 'RegisteredUserController' را به 'RegisterController' تغییر دهید.
 require __DIR__.'/auth.php';
 
 // روت‌هایی که نیاز به احراز هویت دارند
