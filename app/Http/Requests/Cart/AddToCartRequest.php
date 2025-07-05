@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Cart;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Models\User; // اضافه شده برای بررسی کاربر
 use App\Models\Product; // اضافه شده برای بررسی موجودی و محصول
 use App\Models\ProductVariant; // اضافه شده برای بررسی واریانت محصول
 use Illuminate\Support\Facades\Log; // اضافه شده برای لاگ‌گیری
@@ -23,13 +24,13 @@ class AddToCartRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        // بررسی لاگین بودن کاربر
+        // اگر کاربر لاگین نکرده باشد، به او اجازه می‌دهیم که به سبد خرید اضافه کند (کاربر مهمان).
         if (!auth()->check()) {
-            return false;
+            return true; // به کاربران مهمان اجازه افزودن به سبد خرید داده می‌شود
         }
 
-        // بررسی‌های اضافی مثل وضعیت کاربر، سطح دسترسی و غیره
-        // فرض می‌کنیم کاربر باید فعال باشد
+        // اگر کاربر لاگین کرده باشد، بررسی می‌کنیم که وضعیت او 'active' باشد.
+        // این کار برای جلوگیری از افزودن محصول توسط کاربران غیرفعال یا تعلیق شده است.
         return auth()->user()->status === 'active';
     }
 
