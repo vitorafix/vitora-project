@@ -323,7 +323,7 @@ class ImprovedCartService implements CartServiceInterface
                     'quantity' => $validatedQuantity,
                     'price' => $product->price,
                 ]);
-                $this->eventDispatcher->dispatch(new \App\Events\CartItemAdded($cart, $product, $validatedQuantity));
+                $this->eventDispatcher->dispatch(new \App\Events\CartItemAdded($cartItem, $cart, $product, $cart->user));
                 Log::info('New cart item added', ['cart_id' => $cart->id, 'product_id' => $productId, 'quantity' => $validatedQuantity]);
             }
 
