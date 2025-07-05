@@ -1,262 +1,167 @@
 <?php
-
+// File: app/Services/Responses/CartContentsResponse.php
 namespace App\Services\Responses;
 
-use Illuminate\Http\Request;
-use App\Models\CartItem;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache; // بهبود: اضافه شد برای کشینگ
-use Illuminate\Http\JsonResponse;
-use App\Services\Contracts\CartServiceInterface;
-use App\Http\Requests\AddToCartRequest;
-use App\Http\Requests\UpdateCartItemRequest; // بهبود: اضافه شد برای Form Request
-use App\Http\Resources\CartResource;
+use JsonSerializable; // ایمپورت کردن اینترفیس JsonSerializable برای قابلیت تبدیل به JSON
+use InvalidArgumentException; // ایمپورت کردن InvalidArgumentException برای اعتبارسنجی
+use Illuminate\Support\Collection; // برای استفاده از Collection در متد hasItem
 
-// ایمپورت کردن Exception های سفارشی از ImprovedCartService
-use App\Exceptions\ProductNotFoundException;
-use App\Exceptions\InsufficientStockException;
-use App\Exceptions\UnauthorizedCartAccessException;
-use App\Exceptions\CartOperationException;
-use App\Exceptions\CartInvalidArgumentException;
-use App\Exceptions\CartLimitExceededException;
-
-
-class CartController extends Controller
+/**
+ * کلاس CartContentsResponse برای کپسوله کردن محتویات کامل سبد خرید.
+ * این کلاس به عنوان یک DTO (Data Transfer Object) عمل می‌کند تا داده‌های سبد خرید
+ * (آیتم‌ها، تعداد کل، و قیمت کل) را به صورت استاندارد برای مصرف توسط فرانت‌اند یا
+ * سایر بخش‌های برنامه ارائه دهد.
+ */
+class CartContentsResponse implements JsonSerializable
 {
-    protected CartServiceInterface $cartService;
-
     /**
-     * Constructor for CartController.
-     * سازنده کنترلر CartController.
+     * سازنده کلاس CartContentsResponse.
      *
-     * @param CartServiceInterface $cartService
+     * @param array $items آرایه‌ای از آیتم‌های سبد خرید، هر کدام شامل جزئیات محصول.
+     * @param int $totalQuantity تعداد کل محصولات.
+     * @param float $totalPrice قیمت کل محصولات.
+     * @param \App\Models\CartItem[] $items (Type Hint دقیق‌تر: آرایه‌ای از آبجکت‌های CartItem)
      */
-    public function __construct(CartServiceInterface $cartService)
-    {
-        $this->cartService = $cartService;
-
-        // بهبود: افزودن Middleware به متدهای کنترلر
-        // 'index' و 'getContents' برای کاربران مهمان نیز قابل دسترسی هستند.
-        $this->middleware('auth')->except(['index', 'getContents']);
-        // نکته: Rate Limiting در سطح کنترلر معمولاً در فایل web.php یا Kernel.php تعریف می‌شود.
-        // مثال برای web.php: Route::post('/cart/add', [CartController::class, 'add'])->middleware('throttle:10,1');
-    }
-
-    /**
-     * متد کمکی خصوصی برای دریافت یا ایجاد سبد خرید فعلی کاربر/مهمان.
-     * بهبود: جلوگیری از تکرار منطق دریافت Cart.
-     *
-     * @return \App\Models\Cart
-     */
-    private function getCurrentCart(): \App\Models\Cart
-    {
-        return $this->cartService->getOrCreateCart(Auth::user(), Session::getId());
-    }
-
-    /**
-     * متد کمکی خصوصی برای مدیریت Exception ها و برگرداندن پاسخ JSON استاندارد.
-     * بهبود: Extract کردن Exception Handling.
-     *
-     * @param \Exception $e
-     * @return \Illuminate\Http\JsonResponse
-     */
-    private function handleCartException(\Exception $e): JsonResponse
-    {
-        Log::error('Cart operation failed: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
-
-        return match(get_class($e)) {
-            ProductNotFoundException::class => response()->json(['success' => false, 'message' => $e->getMessage()], 404),
-            InsufficientStockException::class => response()->json(['success' => false, 'message' => $e->getMessage()], 400),
-            UnauthorizedCartAccessException::class => response()->json(['success' => false, 'message' => $e->getMessage()], 403),
-            CartInvalidArgumentException::class => response()->json(['success' => false, 'message' => $e->getMessage()], 422),
-            CartLimitExceededException::class => response()->json(['success' => false, 'message' => $e->getMessage()], 400),
-            CartOperationException::class => response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode() ?: 500),
-            default => response()->json(['success' => false, 'message' => 'خطای سیستم. لطفاً دوباره تلاش کنید.'], 500)
-        };
-    }
-
-    /**
-     * Display the cart page.
-     * صفحه سبد خرید را نمایش می‌دهد.
-     *
-     * @return \Illuminate\View\View
-     */
-    public function index(): \Illuminate\View\View
-    {
-        // دریافت سبد خرید از سرویس با استفاده از متد کمکی
-        $cartContents = $this->cartService->getCartContents($this->getCurrentCart());
-
-        // CartContentsResponse یک DTO است که شامل items, totalQuantity, totalPrice می‌شود.
-        // شما می‌توانید مستقیماً از آن در ویو استفاده کنید یا آن را به آرایه تبدیل کنید.
-        $cartItems = $cartContents->items;
-        $totalQuantity = $cartContents->totalQuantity;
-        $totalPrice = $cartContents->totalPrice;
-
-        return view('cart', compact('cartItems', 'totalQuantity', 'totalPrice'));
-    }
-
-    /**
-     * Add a product to the cart.
-     * محصولی را به سبد خرید اضافه می‌کند.
-     *
-     * @param  \App\Http\Requests\AddToCartRequest  $request // بهبود: استفاده از Form Request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function add(AddToCartRequest $request): JsonResponse
-    {
-        $productId = $request->input('product_id');
-        $quantity = $request->input('quantity');
-
-        try {
-            $result = $this->cartService->addOrUpdateCartItem(
-                $this->getCurrentCart(),
-                $productId,
-                $quantity
-            );
-
-            return response()->json($result, $result['status_code']);
-
-        } catch (\Exception $e) {
-            return $this->handleCartException($e); // بهبود: استفاده از متد کمکی
+    public function __construct(
+        public readonly array $items,
+        public readonly int $totalQuantity,
+        public readonly float $totalPrice
+    ) {
+        // 1. اعتبارسنجی داده‌ها: اطمینان از عدم منفی بودن مقادیر
+        if ($totalQuantity < 0) {
+            throw new InvalidArgumentException('Total quantity cannot be negative.'); // تعداد کل نمی‌تواند منفی باشد.
+        }
+        if ($totalPrice < 0) {
+            throw new InvalidArgumentException('Total price cannot be negative.'); // قیمت کل نمی‌تواند منفی باشد.
         }
     }
 
     /**
-     * Update the quantity of a cart item.
-     * تعداد یک آیتم سبد خرید را به‌روزرسانی می‌کند.
+     * متد jsonSerialize برای قابلیت تبدیل به JSON.
+     * این متد توسط تابع json_encode() فراخوانی می‌شود تا مشخص کند کدام داده‌ها
+     * باید در خروجی JSON قرار گیرند.
      *
-     * @param  \App\Http\Requests\UpdateCartItemRequest  $request // بهبود: استفاده از Form Request
-     * @param  \App\Models\CartItem  $cartItem
-     * @return \Illuminate\Http\JsonResponse
+     * @return array آرایه‌ای از داده‌ها که به JSON تبدیل خواهند شد.
      */
-    public function update(UpdateCartItemRequest $request, CartItem $cartItem): JsonResponse
+    public function jsonSerialize(): array
     {
-        $newQuantity = $request->input('quantity');
-
-        try {
-            // بررسی مالکیت آیتم سبد خرید قبل از به‌روزرسانی
-            if (!$this->cartService->userOwnsCartItem($cartItem, Auth::user(), Session::getId())) {
-                throw new UnauthorizedCartAccessException('شما اجازه دسترسی به این آیتم سبد خرید را ندارید.');
-            }
-
-            $result = $this->cartService->updateCartItemQuantity(
-                $cartItem,
-                $newQuantity,
-                Auth::user(),
-                Session::getId()
-            );
-
-            return response()->json($result, $result['status_code']);
-
-        } catch (\Exception $e) {
-            return $this->handleCartException($e); // بهبود: استفاده از متد کمکی
-        }
+        return [
+            'items' => $this->items,
+            'total_quantity' => $this->totalQuantity,
+            // 3. فرمت‌بندی قیمت: اضافه کردن قیمت فرمت شده
+            'total_price' => number_format($this->totalPrice, 2, '.', ''), // قیمت کل به صورت رشته با دو رقم اعشار
+            'formatted_total_price_usd' => $this->getFormattedPrice('USD', '$'), // قیمت کل با نماد دلار
+            // می‌توانید در اینجا فیلدهای اضافی مانند 'cart_id' یا 'user_id' را نیز اضافه کنید
+            // اگر این اطلاعات برای مصرف‌کننده پاسخ مفید هستند.
+        ];
     }
 
     /**
-     * Remove a product from the cart.
-     * محصولی را از سبد خرید حذف می‌کند.
+     * بررسی می‌کند که آیا سبد خرید خالی است یا خیر.
      *
-     * @param  \App\Models\CartItem  $cartItem
-     * @return \Illuminate\Http\JsonResponse
+     * @return bool اگر سبد خرید خالی باشد (بدون آیتم یا با تعداد کل صفر)، true برمی‌گرداند.
      */
-    public function remove(CartItem $cartItem): JsonResponse
+    public function isEmpty(): bool
     {
-        try {
-            // بررسی مالکیت آیتم سبد خرید قبل از حذف
-            if (!$this->cartService->userOwnsCartItem($cartItem, Auth::user(), Session::getId())) {
-                throw new UnauthorizedCartAccessException('شما اجازه دسترسی به این آیتم سبد خرید را ندارید.');
-            }
-
-            $result = $this->cartService->removeCartItem(
-                $cartItem,
-                Auth::user(),
-                Session::getId()
-            );
-
-            return response()->json($result, $result['status_code']);
-
-        } catch (\Exception $e) {
-            return $this->handleCartException($e); // بهبود: استفاده از متد کمکی
-        }
+        // 4. متدهای کمکی: بررسی خالی بودن سبد خرید
+        return empty($this->items) || $this->totalQuantity === 0;
     }
 
     /**
-     * Clear the entire cart.
-     * کل سبد خرید را خالی می‌کند.
+     * تعداد آیتم‌های منحصر به فرد در سبد خرید را برمی‌گرداند.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return int تعداد آیتم‌های منحصر به فرد.
      */
-    public function clear(): JsonResponse
+    public function getItemCount(): int
     {
-        try {
-            $result = $this->cartService->clearCart(
-                $this->getCurrentCart()
-            );
-
-            return response()->json($result, $result['status_code']);
-
-        } catch (\Exception $e) {
-            return $this->handleCartException($e); // بهبود: استفاده از متد کمکی
-        }
+        // 4. متدهای کمکی: دریافت تعداد آیتم‌های منحصر به فرد
+        return count($this->items);
     }
 
     /**
-     * Get cart contents for mini-cart display.
-     * محتویات سبد خرید را برای نمایش در مینی‌کارت دریافت می‌کند.
+     * محاسبه متوسط قیمت هر آیتم در سبد خرید.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return float متوسط قیمت هر آیتم. اگر تعداد کل صفر باشد، 0 برمی‌گرداند.
      */
-    public function getContents(): JsonResponse
+    public function getAveragePrice(): float
     {
-        $cacheKey = "cart_contents_" . (Auth::id() ?? Session::getId());
-
-        // بهبود: Cache کردن نتایج
-        $cartContents = Cache::remember($cacheKey, 300, function() {
-            return $this->cartService->getCartContents($this->getCurrentCart());
-        });
-
-        // بهبود: استفاده از Resource Class برای فرمت‌دهی پاسخ
-        return CartResource::make($cartContents);
+        // 2. متد اضافی برای محاسبه متوسط قیمت
+        return $this->totalQuantity > 0 ? $this->totalPrice / $this->totalQuantity : 0;
     }
 
     /**
-     * Update the quantity of a cart item via AJAX from checkout page.
-     * تعداد یک آیتم سبد خرید را از طریق AJAX در صفحه تسویه حساب به‌روزرسانی می‌کند.
+     * قیمت کل را با فرمت ارز مشخص شده برمی‌گرداند.
      *
-     * @param \Illuminate\Http\Request  $request
-     * @param \App\Models\CartItem $cartItem // بهبود: استفاده از Route Model Binding
-     * @return \Illuminate\Http\JsonResponse
+     * @param string $currency کد ارز (مثلاً 'USD', 'EUR').
+     * @param string $symbol نماد ارز (مثلاً '$', '€').
+     * @return string قیمت فرمت شده.
      */
-    public function updateQuantity(Request $request, CartItem $cartItem): JsonResponse
+    public function getFormattedPrice(string $currency = 'USD', string $symbol = '$'): string
     {
-        // بهبود: استفاده از Request Validation به جای Form Request برای این متد
-        // اگرچه می‌توانید یک Form Request جداگانه برای آن بسازید.
-        $request->validate([
-            'quantity' => 'required|integer|min:1',
-        ]);
+        // 3. پشتیبانی از چندین ارز: متد کمکی برای فرمت‌بندی قیمت
+        // در یک سناریوی واقعی، منطق تبدیل ارز و فرمت‌بندی پیچیده‌تر خواهد بود.
+        return $symbol . number_format($this->totalPrice, 2);
+    }
 
-        $newQuantity = $request->input('quantity');
+    /**
+     * بررسی می‌کند که آیا آیتمی با شناسه محصول مشخص در سبد خرید وجود دارد یا خیر.
+     *
+     * @param int $productId شناسه محصول مورد جستجو.
+     * @return bool اگر آیتم یافت شود، true و در غیر این صورت false.
+     */
+    public function hasItem(int $productId): bool
+    {
+        // 4. متد برای جستجوی آیتم
+        // از Collection لاراول برای جستجوی آسان‌تر استفاده می‌شود.
+        // فرض بر این است که هر آیتم در آرایه $items دارای کلید 'product_id' است.
+        return collect($this->items)->contains('product_id', $productId);
+    }
 
-        try {
-            // بهبود: بررسی مالکیت آیتم سبد خرید با استفاده از متد سرویس
-            if (!$this->cartService->userOwnsCartItem($cartItem, Auth::user(), Session::getId())) {
-                throw new UnauthorizedCartAccessException('شما اجازه دسترسی به این آیتم سبد خرید را ندارید.');
-            }
-
-            $result = $this->cartService->updateCartItemQuantity(
-                $cartItem,
-                $newQuantity,
-                Auth::user(),
-                Session::getId()
-            );
-
-            return response()->json($result, $result['status_code']);
-
-        } catch (\Exception $e) {
-            return $this->handleCartException($e); // بهبود: استفاده از متد کمکی
+    /**
+     * محاسبه قیمت کل با اعمال تخفیف درصدی.
+     *
+     * @param float $discountPercentage درصد تخفیف (مثلاً 10 برای 10%).
+     * @return float قیمت کل پس از اعمال تخفیف.
+     * @throws InvalidArgumentException اگر درصد تخفیف منفی یا بیشتر از 100 باشد.
+     */
+    public function getPriceWithDiscount(float $discountPercentage): float
+    {
+        if ($discountPercentage < 0 || $discountPercentage > 100) {
+            throw new InvalidArgumentException('Discount percentage must be between 0 and 100.'); // درصد تخفیف باید بین 0 تا 100 باشد.
         }
+        return $this->totalPrice * (1 - $discountPercentage / 100);
+    }
+
+    /**
+     * گروه‌بندی آیتم‌های سبد خرید بر اساس دسته‌بندی.
+     *
+     * @return \Illuminate\Support\Collection گروه‌بندی آیتم‌ها بر اساس دسته‌بندی.
+     * فرض بر این است که هر آیتم در آرایه $items دارای کلید 'category' است.
+     */
+    public function getItemsByCategory(): Collection
+    {
+        // فرض بر این است که هر آیتم در آرایه $items دارای کلید 'category' است.
+        // اگر این کلید وجود ندارد، باید ساختار داده آیتم‌ها را بررسی کنید.
+        return collect($this->items)->groupBy('category');
+    }
+
+    /**
+     * صادرات داده‌های سبد خرید به فرمت CSV.
+     *
+     * @return string رشته CSV حاوی اطلاعات محصولات، تعداد و قیمت.
+     * فرض بر این است که هر آیتم در آرایه $items دارای کلیدهای 'product_name', 'quantity', 'product_price' است.
+     */
+    public function toCsv(): string
+    {
+        $csv = "Product,Quantity,Price\n"; // سربرگ CSV
+        foreach ($this->items as $item) {
+            // فرض بر این است که هر آیتم دارای کلیدهای 'product_name', 'quantity', 'product_price' است.
+            // اگر نام کلیدها متفاوت است، آنها را بر اساس ساختار واقعی آیتم‌های خود تنظیم کنید.
+            $productName = $item['product_name'] ?? 'N/A';
+            $quantity = $item['quantity'] ?? 0;
+            $price = $item['product_price'] ?? 0.0;
+            $csv .= "{$productName},{$quantity},{$price}\n";
+        }
+        return $csv;
     }
 }

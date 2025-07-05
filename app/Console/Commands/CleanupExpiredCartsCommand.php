@@ -1,8 +1,10 @@
+<?php
 // File: app/Console/Commands/CleanupExpiredCartsCommand.php
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Services\Contracts\CartServiceInterface; // استفاده از اینترفیس
+use Illuminate\Support\Facades\Log; // بهبود: اضافه کردن ایمپورت صریح برای Log Facade
 
 class CleanupExpiredCartsCommand extends Command
 {
@@ -54,6 +56,7 @@ class CleanupExpiredCartsCommand extends Command
             return Command::SUCCESS;
         } catch (\Exception $e) {
             $this->error("Error during cart cleanup: " . $e->getMessage());
+            // لاگ کردن خطا با جزئیات کامل برای دیباگ
             Log::error("Cart cleanup command failed: " . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
             return Command::FAILURE;
         }

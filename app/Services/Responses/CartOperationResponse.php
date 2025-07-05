@@ -2,22 +2,36 @@
 // File: app/Services/Responses/CartOperationResponse.php
 namespace App\Services\Responses;
 
-use JsonSerializable;
+use JsonSerializable; // ایمپورت کردن اینترفیس JsonSerializable برای قابلیت تبدیل به JSON
 
+/**
+ * کلاس CartOperationResponse برای استانداردسازی پاسخ‌های عملیات سبد خرید.
+ * این کلاس یک DTO (Data Transfer Object) است که نتیجه یک عملیات (موفقیت‌آمیز یا ناموفق)
+ * را به همراه پیام، داده‌های مرتبط و کد وضعیت HTTP کپسوله می‌کند.
+ */
 class CartOperationResponse implements JsonSerializable
 {
+    /**
+     * سازنده کلاس CartOperationResponse.
+     *
+     * @param bool $success وضعیت موفقیت‌آمیز بودن عملیات (true برای موفقیت، false برای شکست).
+     * @param string $message پیامی که نتیجه عملیات را توضیح می‌دهد (مثلاً "محصول با موفقیت اضافه شد").
+     * @param mixed|null $data داده‌های اختیاری مرتبط با عملیات (مثلاً جزئیات آیتم سبد خرید).
+     * @param int $statusCode کد وضعیت HTTP برای پاسخ (مثلاً 200 برای OK، 400 برای Bad Request).
+     */
     public function __construct(
         public readonly bool $success,
         public readonly string $message,
-        public readonly mixed $data = null, // بهبود: تغییر ?array به mixed برای انعطاف‌پذیری بیشتر
+        public readonly mixed $data = null,
         public readonly int $statusCode = 200
     ) {}
 
     /**
-     * Specify data which should be serialized to JSON
-     * داده‌هایی که باید به JSON تبدیل شوند را مشخص می‌کند.
+     * متد jsonSerialize برای قابلیت تبدیل به JSON.
+     * این متد توسط تابع json_encode() فراخوانی می‌شود تا مشخص کند کدام داده‌ها
+     * باید در خروجی JSON قرار گیرند.
      *
-     * @return array
+     * @return array آرایه‌ای از داده‌ها که به JSON تبدیل خواهند شد.
      */
     public function jsonSerialize(): array
     {
@@ -30,13 +44,13 @@ class CartOperationResponse implements JsonSerializable
     }
 
     /**
-     * Create a successful operation response.
-     * یک پاسخ عملیات موفقیت‌آمیز ایجاد می‌کند.
+     * متد کارخانه‌ای (Factory Method) برای ایجاد یک پاسخ موفقیت‌آمیز.
+     * این متد یک راه تمیز و خوانا برای ساخت نمونه‌های موفقیت‌آمیز فراهم می‌کند.
      *
-     * @param string $message The success message.
-     * @param mixed|null $data Optional data to include in the response.
-     * @param int $statusCode The HTTP status code.
-     * @return static
+     * @param string $message پیام موفقیت.
+     * @param mixed|null $data داده‌های اختیاری برای شامل شدن در پاسخ.
+     * @param int $statusCode کد وضعیت HTTP (پیش‌فرض 200 OK).
+     * @return static یک نمونه جدید از CartOperationResponse.
      */
     public static function success(string $message, mixed $data = null, int $statusCode = 200): self
     {
@@ -44,13 +58,13 @@ class CartOperationResponse implements JsonSerializable
     }
 
     /**
-     * Create a failed operation response.
-     * یک پاسخ عملیات ناموفق ایجاد می‌کند.
+     * متد کارخانه‌ای (Factory Method) برای ایجاد یک پاسخ ناموفق.
+     * این متد یک راه تمیز و خوانا برای ساخت نمونه‌های ناموفق فراهم می‌کند.
      *
-     * @param string $message The error message.
-     * @param int $statusCode The HTTP status code.
-     * @param mixed|null $data Optional data to include in the response.
-     * @return static
+     * @param string $message پیام خطا.
+     * @param int $statusCode کد وضعیت HTTP (پیش‌فرض 400 Bad Request).
+     * @param mixed|null $data داده‌های اختیاری برای شامل شدن در پاسخ (می‌تواند شامل جزئیات خطا باشد).
+     * @return static یک نمونه جدید از CartOperationResponse.
      */
     public static function fail(string $message, int $statusCode = 400, mixed $data = null): self
     {
