@@ -9,7 +9,7 @@ use App\Exceptions\ImageProcessingException; // Use the custom exception
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage; // Import Storage facade
 use Illuminate\View\View; // Use for type hinting view return type
-// use App\Models\ProductImage; // No direct use needed here as we are eager loading through Product model
+use App\Models\Category; // Import Category model to pass to create/edit views
 
 class ProductController extends Controller
 {
@@ -68,13 +68,13 @@ class ProductController extends Controller
      */
     public function create(): View
     {
-        return view('product-create');
+        $categories = Category::all(); // Fetch all categories to populate the dropdown
+        return view('product-create', compact('categories'));
     }
 
     /**
      * Store a newly created product in storage.
-     * This method will need significant updates to handle multiple image uploads
-     * and saving them to the product_images table.
+     * Handles main image and multiple gallery images.
      *
      * @param  \App\Http\Requests\ProductStoreRequest  $request
      * @return \Illuminate\Http\RedirectResponse
@@ -85,9 +85,12 @@ class ProductController extends Controller
         $validatedData = $request->validated();
 
         try {
-            // Use the service to create the product, passing validated data and the image file
-            // This part will need modification in your ProductService to handle multiple images.
-            $this->productService->createProduct($validatedData, $request->file('image'));
+            // Use the service to create the product, passing validated data, main image, and gallery images
+            $this->productService->createProduct(
+                $validatedData,
+                $request->file('image'), // Main image
+                $request->file('gallery_images') ?? [] // Array of gallery images, default to empty array if none
+            );
 
             return redirect()->route('products.index')->with('success', 'محصول با موفقیت اضافه شد.');
         } catch (ImageProcessingException $e) {
@@ -110,13 +113,13 @@ class ProductController extends Controller
     {
         // Eager load images for the editing form to display existing images.
         $product->load('images');
-        return view('product-edit', compact('product'));
+        $categories = Category::all(); // Fetch all categories to populate the dropdown
+        return view('product-edit', compact('product', 'categories'));
     }
 
     /**
      * Update the specified product in storage.
-     * This method will need significant updates to handle multiple image uploads,
-     * updates, and deletions in the product_images table.
+     * Handles main image, multiple gallery images, and deletion of existing images.
      *
      * @param  \App\Http\Requests\ProductStoreRequest  $request
      * @param  \App\Models\Product  $product
@@ -129,12 +132,13 @@ class ProductController extends Controller
 
         try {
             // Use the service to update the product
-            // This part will need modification in your ProductService to handle multiple images.
             $this->productService->updateProduct(
                 $product,
                 $validatedData,
-                $request->file('image'), // This will likely become $request->file('images') for multiple
-                $request->boolean('remove_image') // This logic will also need to be expanded
+                $request->file('image'), // New main image
+                $request->boolean('remove_image'), // Flag to remove existing main image
+                $request->file('gallery_images') ?? [], // Array of new gallery images
+                $request->input('remove_gallery_images') ?? [] // Array of IDs of gallery images to remove
             );
 
             return redirect()->route('products.index')->with('success', 'محصول با موفقیت به‌روزرسانی شد.');

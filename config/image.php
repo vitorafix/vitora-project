@@ -19,8 +19,9 @@ return [
     
     // تنظیمات ذخیره‌سازی
     'disk' => env('IMAGE_DISK', 'public'),
-    'directory' => env('IMAGE_DIRECTORY', 'images/products'),
-    
+    'directory' => env('IMAGE_DIRECTORY', 'images/products'), // دایرکتوری برای تصاویر اصلی
+    'gallery_directory' => env('IMAGE_GALLERY_DIRECTORY', 'images/products/gallery'), // NEW: دایرکتوری برای تصاویر گالری
+
     // تنظیمات تولید تصاویر مختلف
     'thumbnails' => [
         'small' => [
@@ -51,7 +52,8 @@ return [
         'enabled' => env('IMAGE_WATERMARK_ENABLED', false),
         'path' => env('IMAGE_WATERMARK_PATH', 'watermark.png'),
         'position' => env('IMAGE_WATERMARK_POSITION', 'bottom-right'),
-        'opacity' => env('IMAGE_WATERMARK_OPACITY', 50)
+        'opacity' => env('IMAGE_WATERMARK_OPACITY', 50),
+        'apply_to_thumbnails' => env('IMAGE_WATERMARK_APPLY_TO_THUMBNAILS', false), // NEW: آیا واترمارک روی تصاویر بندانگشتی هم اعمال شود؟
     ],
     
     // تنظیمات backup

@@ -33,6 +33,18 @@ Route::get('/products', [ProductController::class, 'index'])->name('products.ind
 // تغییر مسیر نمایش محصول برای استفاده از slug بجای id:
 Route::get('/products/{product:slug}', [ProductController::class, 'show'])->name('products.show');
 
+// مسیرهای جدید برای مدیریت محصولات (ایجاد، ویرایش، ذخیره، به‌روزرسانی، حذف)
+// این مسیرها معمولاً نیاز به احراز هویت یا میدل‌ور ادمین دارند.
+// برای سادگی، فعلاً آن‌ها را در اینجا قرار می‌دهیم، اما می‌توانید آن‌ها را در یک گروه middleware('auth') یا middleware('admin') قرار دهید.
+Route::prefix('admin/products')->name('products.')->group(function () {
+    Route::get('/create', [ProductController::class, 'create'])->name('create');
+    Route::post('/', [ProductController::class, 'store'])->name('store');
+    Route::get('/{product:slug}/edit', [ProductController::class, 'edit'])->name('edit');
+    Route::put('/{product:slug}', [ProductController::class, 'update'])->name('update');
+    Route::delete('/{product:slug}', [ProductController::class, 'destroy'])->name('destroy');
+});
+
+
 // سبد خرید (مسیرهای مربوط به نمایش صفحه و عملیات از طریق فرم‌های وب)
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 // مسیرهای API برای عملیات سبد خرید (add, update, remove, clear, contents) باید در routes/api.php باشند.

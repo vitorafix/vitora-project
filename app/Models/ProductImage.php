@@ -1,153 +1,166 @@
 <?php
 
-namespace App\Observers;
+namespace App\Models;
 
-use App\Models\ProductImage;
-use Illuminate\Support\Facades\Log; // For logging purposes, optional
-use Illuminate\Support\Facades\Storage; // For file management in updating event
-use Illuminate\Support\Facades\Cache; // For cache management in updated event
-// use App\Events\ProductImageUploaded; // Uncomment if you have this event for notifications
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage; // For using the Storage facade
+use App\Observers\ProductImageObserver; // Import the observer
 
-class ProductImageObserver
+class ProductImage extends Model
 {
+    use HasFactory;
+
     /**
-     * Handle the ProductImage "creating" event.
-     * این متد قبل از ذخیره یک رکورد جدید ProductImage فراخوانی می‌شود.
+     * The table associated with the model.
      *
-     * @param  \App\Models\ProductImage  $productImage
-     * @return void
+     * @var string
      */
-    public function creating(ProductImage $productImage): void
+    protected $table = 'product_images';
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'product_id',
+        'image_path',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     * Added casts for timestamps.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
+    /**
+     * The accessors to append to the model's array form.
+     * This ensures 'image_url' is always included when converting to array/JSON.
+     *
+     * @var array
+     */
+    protected $appends = [
+        'image_url',
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     * Useful for security if certain fields should not be exposed in API responses.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        // 'image_path', // Uncomment if you want to hide the raw path in API responses
+    ];
+
+    /**
+     * Get the product that owns the image.
+     * A product image belongs to one product (Many-to-One relationship).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function product()
     {
-        // Add any logic here that needs to run before a new ProductImage is created.
-        // For example, generating a unique ID or validating data.
-        Log::info('ProductImage creating event fired for image: ' . $productImage->image_path);
+        return $this->belongsTo(Product::class);
     }
 
     /**
-     * Handle the ProductImage "created" event.
-     * این متد پس از ذخیره یک رکورد جدید ProductImage فراخوانی می‌شود.
-     * Includes example for notification system.
+     * Accessor to get the full image URL of the product image.
+     * This method makes 'image_url' available as a virtual attribute.
+     * Optimized to use empty() and provide a placeholder.
      *
-     * @param  \App\Models\ProductImage  $productImage
-     * @return void
+     * @return string
      */
-    public function created(ProductImage $productImage): void
+    public function getImageUrlAttribute(): string
     {
-        // Add any logic here that needs to run after a new ProductImage has been created.
-        // For example, sending notifications or updating related records.
-        Log::info('ProductImage created event fired for image ID: ' . $productImage->id);
-
-        // Example: Dispatch an event for notification system
-        // if (class_exists(ProductImageUploaded::class)) {
-        //     event(new ProductImageUploaded($productImage));
-        // }
-    }
-
-    /**
-     * Handle the ProductImage "updating" event.
-     * این متد قبل از به‌روزرسانی یک رکورد ProductImage موجود فراخوانی می‌شود.
-     * Includes example for managing old image files.
-     *
-     * @param  \App\Models\ProductImage  $productImage
-     * @return void
-     */
-    public function updating(ProductImage $productImage): void
-    {
-        // Add any logic here that needs to run before an existing ProductImage is updated.
-        // Example: Check if image_path has changed and delete the old file.
-        if ($productImage->isDirty('image_path')) {
-            $oldPath = $productImage->getOriginal('image_path');
-            if ($oldPath && Storage::disk('public')->exists($oldPath)) {
-                Storage::disk('public')->delete($oldPath);
-                Log::info('Old image deleted for ProductImage ID: ' . $productImage->id . ' - Path: ' . $oldPath);
-            }
+        // If the 'image_path' column in the database is empty (no image uploaded),
+        // return a default placeholder URL.
+        if (empty($this->image_path)) {
+            // Default placeholder image URL
+            return 'https://placehold.co/600x600/E5E7EB/4B5563?text=No+Image'; // Using the existing placeholder for consistency
         }
-        Log::info('ProductImage updating event fired for image ID: ' . $productImage->id);
+
+        // Use Storage::disk('public')->url() to convert the relative path to a full URL.
+        // 'public' is the disk name defined in your .env file as FILESYSTEM_DISK=public.
+        // $this->image_path is the relative path like 'images/products/gallery/1.jpg' coming from the database.
+        return Storage::disk('public')->url($this->image_path);
     }
 
     /**
-     * Handle the ProductImage "updated" event.
-     * این متد پس از به‌روزرسانی یک رکورد ProductImage موجود فراخوانی می‌شود.
-     * Includes example for cache management.
+     * Helper method to delete the associated image file from storage.
      *
-     * @param  \App\Models\ProductImage  $productImage
-     * @return void
+     * @return bool
      */
-    public function updated(ProductImage $productImage): void
+    public function deleteImage(): bool
     {
-        // Add any logic here that needs to run after an existing ProductImage has been updated.
-        // Example: Clear cache related to this product's images.
-        Cache::forget("product_images_{$productImage->product_id}");
-        Log::info('ProductImage updated event fired for image ID: ' . $productImage->id . ' - Cache cleared.');
+        if ($this->image_path && Storage::disk('public')->exists($this->image_path)) {
+            return Storage::disk('public')->delete($this->image_path);
+        }
+        return true; // Return true even if no image exists or path is empty
     }
 
     /**
-     * Handle the ProductImage "deleting" event.
-     * این متد قبل از حذف یک رکورد ProductImage فراخوانی می‌شود.
-     * (توجه: متد deleteImage() در خود مدل ProductImage فراخوانی می‌شود،
-     * اما می‌توانید منطق اضافی را در اینجا اضافه کنید.)
+     * Helper method to check if an image file exists for this record.
      *
-     * @param  \App\Models\ProductImage  $productImage
-     * @return void
+     * @return bool
      */
-    public function deleting(ProductImage $productImage): void
+    public function hasImage(): bool
     {
-        // Add any logic here that needs to run before a ProductImage is deleted.
-        // For example, preventing deletion based on certain conditions.
-        Log::info('ProductImage deleting event fired for image ID: ' . $productImage->id);
+        return !empty($this->image_path) && Storage::disk('public')->exists($this->image_path);
     }
 
     /**
-     * Handle the ProductImage "deleted" event.
-     * این متد پس از حذف یک رکورد ProductImage فراخوانی می‌شود.
+     * Define validation rules for ProductImage.
      *
-     * @param  \App\Models\ProductImage  $productImage
-     * @return void
+     * @return array
      */
-    public function deleted(ProductImage $productImage): void
+    public static function rules(): array
     {
-        // Add any logic here that needs to run after a ProductImage has been deleted.
-        // For example, cleaning up related data or logging.
-        Log::info('ProductImage deleted event fired for image ID: ' . $productImage->id);
+        return [
+            'product_id' => 'required|exists:products,id',
+            'image_path' => 'required|string|max:255',
+        ];
     }
 
     /**
-     * Handle the ProductImage "restoring" event.
-     * این متد قبل از بازیابی یک رکورد ProductImage (فقط برای Soft Deletes) فراخوانی می‌شود.
+     * Scope a query to only include images for a specific product.
      *
-     * @param  \App\Models\ProductImage  $productImage
-     * @return void
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param int $productId
+     * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function restoring(ProductImage $productImage): void
+    public function scopeForProduct($query, int $productId)
     {
-        // Add any logic here that needs to run before a soft-deleted ProductImage is restored.
-        Log::info('ProductImage restoring event fired for image ID: ' . $productImage->id);
+        return $query->where('product_id', $productId);
     }
 
     /**
-     * Handle the ProductImage "restored" event.
-     * این متد پس از بازیابی یک رکورد ProductImage (فقط برای Soft Deletes) فراخوانی می‌شود.
+     * The "booting" method of the model.
+     * Used to register event listeners and observers.
      *
-     * @param  \App\Models\ProductImage  $productImage
      * @return void
      */
-    public function restored(ProductImage $productImage): void
+    protected static function boot()
     {
-        // Add any logic here that needs to run after a soft-deleted ProductImage has been restored.
-        Log::info('ProductImage restored event fired for image ID: ' . $productImage->id);
-    }
+        parent::boot();
 
-    /**
-     * Handle the ProductImage "forceDeleted" event.
-     * این متد پس از حذف دائمی یک رکورد ProductImage (فقط برای Soft Deletes) فراخوانی می‌شود.
-     *
-     * @param  \App\Models\ProductImage  $productImage
-     * @return void
-     */
-    public function forceDeleted(ProductImage $productImage): void
-    {
-        // Add any logic here that needs to run after a ProductImage has been permanently deleted.
-        Log::info('ProductImage forceDeleted event fired for image ID: ' . $productImage->id);
+        // Register a 'deleting' event listener to automatically delete the image file
+        // from storage when a ProductImage record is deleted from the database.
+        // This is an alternative to using an Observer for simple cases, but for comprehensive
+        // lifecycle management, an Observer (like ProductImageObserver) is preferred.
+        static::deleting(function ($productImage) {
+            $productImage->deleteImage();
+        });
+
+        // Register the ProductImageObserver for more comprehensive lifecycle management.
+        // Uncomment this line after you have moved ProductImageObserver.php to app/Observers/
+        // and registered it in AppServiceProvider.php (or EventServiceProvider.php).
+        // ProductImage::observe(ProductImageObserver::class);
     }
 }
