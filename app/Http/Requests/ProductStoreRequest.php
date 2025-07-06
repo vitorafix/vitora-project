@@ -1,140 +1,88 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Requests;
 
-use App\Models\Product;
-use App\Http\Requests\ProductStoreRequest; // Import the Form Request
-use App\Services\ProductService; // Import the Product Service
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage; // Import Storage facade
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule; // برای استفاده از Rule::unique
 
-class ProductController extends Controller
+class ProductStoreRequest extends FormRequest
 {
-    protected $productService;
-
     /**
-     * Constructor to inject the ProductService.
+     * Determine if the user is authorized to make this request.
+     * تعیین می‌کند که آیا کاربر مجاز به انجام این درخواست است یا خیر.
      *
-     * @param ProductService $productService
+     * @return bool
      */
-    public function __construct(ProductService $productService)
+    public function authorize(): bool
     {
-        $this->productService = $productService;
+        // در اکثر موارد، این باید true باشد مگر اینکه منطق مجوز خاصی داشته باشید.
+        // مثلاً فقط کاربران ادمین بتوانند محصول اضافه/آپدیت کنند.
+        // برای سادگی، فعلاً true قرار می‌دهیم.
+        return true;
     }
 
     /**
-     * Display a listing of the products.
+     * Get the validation rules that apply to the request.
+     * دریافت قوانین اعتبارسنجی که برای درخواست اعمال می‌شوند.
      *
-     * @return \Illuminate\View\View
+     * @return array<string, \Illuminate\Contracts\Validation\Rule|array|string>
      */
-    public function index()
+    public function rules(): array
     {
-        // Fetch products using the service or directly from the model if service only handles CRUD
-        $products = Product::latest()->paginate(12);
-        return view('products', compact('products'));
+        // تشخیص اینکه آیا درخواست برای ایجاد (store) است یا به‌روزرسانی (update)
+        $isUpdate = $this->route('product') !== null;
+        $productId = $isUpdate ? $this->route('product')->id : null;
+
+        return [
+            'title' => [
+                'required',
+                'string',
+                'max:255',
+                // عنوان باید در جدول محصولات یکتا باشد، به جز برای محصول فعلی در حالت به‌روزرسانی
+                Rule::unique('products')->ignore($productId),
+            ],
+            'description' => 'nullable|string',
+            'price' => 'required|numeric|min:0', // قیمت باید عددی و حداقل 0 باشد
+            'stock' => 'required|integer|min:0', // موجودی باید عدد صحیح و حداقل 0 باشد
+            'category_id' => 'required|integer|exists:categories,id', // باید یک category_id معتبر باشد
+            'image' => [
+                $isUpdate ? 'nullable' : 'required', // تصویر در هنگام ایجاد الزامی، در به‌روزرسانی اختیاری
+                'image', // باید یک فایل تصویری باشد
+                'mimes:jpeg,png,jpg,gif,webp', // فرمت‌های مجاز
+                'max:5120', // حداکثر حجم 5 مگابایت (5120 کیلوبایت)
+            ],
+            'remove_image' => 'boolean', // برای به‌روزرسانی: یک فیلد بولی برای حذف تصویر موجود
+        ];
     }
 
     /**
-     * Display the specified product.
+     * Get the error messages for the defined validation rules.
+     * دریافت پیام‌های خطای سفارشی برای قوانین اعتبارسنجی تعریف شده.
      *
-     * @param  \App\Models\Product  $product
-     * @return \Illuminate\View\View
+     * @return array<string, string>
      */
-    public function show(Product $product)
+    public function messages(): array
     {
-        $relatedProducts = Product::where('category_id', $product->category_id)
-            ->where('id', '!=', $product->id)
-            ->inRandomOrder()
-            ->limit(4)
-            ->get();
-
-        return view('product-single', compact('product', 'relatedProducts'));
-    }
-
-    /**
-     * Show the form for creating a new product.
-     * (اگر فرم ساخت محصول داری)
-     *
-     * @return \Illuminate\View\View
-     */
-    public function create()
-    {
-        return view('product-create');
-    }
-
-    /**
-     * Store a newly created product in storage.
-     *
-     * @param  \App\Http\Requests\ProductStoreRequest  $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function store(ProductStoreRequest $request)
-    {
-        // Validation is handled by ProductStoreRequest
-        $validatedData = $request->validated();
-
-        try {
-            // Use the service to create the product, passing validated data and the image file
-            $this->productService->createProduct($validatedData, $request->file('image'));
-
-            return redirect()->route('products.index')->with('success', 'محصول با موفقیت اضافه شد.');
-        } catch (\Exception $e) {
-            // Handle any exceptions during product creation (e.g., image upload error)
-            return back()->withInput()->with('error', 'خطا در ایجاد محصول: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Show the form for editing the specified product.
-     *
-     * @param  \App\Models\Product  $product
-     * @return \Illuminate\View\View
-     */
-    public function edit(Product $product)
-    {
-        return view('product-edit', compact('product'));
-    }
-
-    /**
-     * Update the specified product in storage.
-     *
-     * @param  \App\Http\Requests\ProductStoreRequest  $request // Reusing the same request for validation
-     * @param  \App\Models\Product  $product
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function update(ProductStoreRequest $request, Product $product)
-    {
-        // Validation is handled by ProductStoreRequest
-        $validatedData = $request->validated();
-
-        try {
-            // Use the service to update the product
-            $this->productService->updateProduct($product, $validatedData, $request->file('image'), $request->boolean('remove_image'));
-
-            return redirect()->route('products.index')->with('success', 'محصول با موفقیت به‌روزرسانی شد.');
-        } catch (\Exception $e) {
-            // Handle any exceptions during product update
-            return back()->withInput()->with('error', 'خطا در به‌روزرسانی محصول: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Remove the specified product from storage.
-     *
-     * @param  \App\Models\Product  $product
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function destroy(Product $product)
-    {
-        try {
-            // Use the service to delete the product
-            $this->productService->deleteProduct($product);
-
-            return redirect()->route('products.index')->with('success', 'محصول با موفقیت حذف شد.');
-        } catch (\Exception $e) {
-            // Handle any exceptions during product deletion
-            return back()->with('error', 'خطا در حذف محصول: ' . $e->getMessage());
-        }
+        return [
+            'title.required' => 'عنوان محصول الزامی است.',
+            'title.string' => 'عنوان محصول باید متنی باشد.',
+            'title.max' => 'عنوان محصول نباید بیشتر از ۲۵۵ کاراکتر باشد.',
+            'title.unique' => 'این عنوان محصول قبلاً ثبت شده است.',
+            'description.string' => 'توضیحات محصول باید متنی باشد.',
+            'price.required' => 'قیمت محصول الزامی است.',
+            'price.numeric' => 'قیمت محصول باید عددی باشد.',
+            'price.min' => 'قیمت محصول نمی‌تواند منفی باشد.',
+            'stock.required' => 'موجودی محصول الزامی است.',
+            'stock.integer' => 'موجودی محصول باید یک عدد صحیح باشد.',
+            'stock.min' => 'موجودی محصول نمی‌تواند منفی باشد.',
+            'category_id.required' => 'انتخاب دسته بندی محصول الزامی است.',
+            'category_id.integer' => 'شناسه دسته بندی باید یک عدد صحیح باشد.',
+            'category_id.exists' => 'دسته بندی انتخاب شده معتبر نیست.',
+            'image.required' => 'تصویر محصول الزامی است.',
+            'image.image' => 'فایل آپلود شده باید یک تصویر باشد.',
+            'image.mimes' => 'فرمت تصویر باید jpeg، png، jpg، gif یا webp باشد.',
+            'image.max' => 'حجم تصویر نباید بیشتر از ۵ مگابایت باشد.',
+            'remove_image.boolean' => 'فیلد حذف تصویر باید بولی باشد.',
+        ];
     }
 }
-
