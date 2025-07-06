@@ -4,7 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage; // اضافه شده برای مدیریت تصاویر
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Product extends Model
 {
@@ -22,7 +23,8 @@ class Product extends Model
         'stock',
         'image',
         'category_id',
-        'status', // اضافه شده: برای هماهنگی با اعتبارسنجی status در AddToCartRequest
+        'status',
+        'slug',
     ];
 
     /**
@@ -31,16 +33,14 @@ class Product extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'price' => 'decimal:2', // قیمت را به صورت عدد اعشاری با 2 رقم دقت تبدیل می‌کند
-        'stock' => 'integer',   // موجودی را به صورت عدد صحیح تبدیل می‌کند
-        'status' => 'boolean',  // وضعیت را به صورت boolean تبدیل می‌کند (اگر 0/1 باشد)
-        // اگر status از نوع enum در دیتابیس است، نیازی به cast به boolean نیست و می‌توانید آن را حذف کنید.
+        'price' => 'decimal:2',
+        'stock' => 'integer',
+        'status' => 'boolean',
     ];
 
     /**
      * Get the category that owns the product.
-     *
-     * یک محصول متعلق به یک دسته‌بندی است (Many-to-One relationship).
+     * A product belongs to one category (Many-to-One relationship).
      */
     public function category()
     {
@@ -48,13 +48,82 @@ class Product extends Model
     }
 
     /**
-     * Get the product variants for the product.
+     * Define the relationship to product images.
+     * A product can have many images (One-to-Many relationship).
      *
-     * یک محصول می‌تواند چندین واریانت داشته باشد (One-to-Many relationship).
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
-    public function variants()
+    public function images()
     {
-        return $this->hasMany(ProductVariant::class);
+        return $this->hasMany(ProductImage::class); // Requires use App\Models\ProductImage;
+    }
+
+    /**
+     * The "booted" method of the model.
+     *
+     * @return void
+     */
+    protected static function booted(): void
+    {
+        // Delete main image when product is deleted
+        static::deleting(function ($product) {
+            if ($product->image && Storage::disk('public')->exists($product->image)) {
+                Storage::disk('public')->delete($product->image);
+            }
+            // Also delete all associated product images when the product is deleted
+            $product->images()->each(function ($image) {
+                if (Storage::disk('public')->exists($image->image_path)) {
+                    Storage::disk('public')->delete($image->image_path);
+                }
+                $image->delete();
+            });
+        });
+    }
+
+    /**
+     * Accessor to get the full image URL of the product.
+     * This method makes 'image_url' available as a virtual attribute.
+     *
+     * @return string
+     */
+    public function getImageUrlAttribute(): string
+    {
+        // If the 'image' column in the database is empty (no image uploaded for the product),
+        // return a default placeholder URL.
+        if (!$this->image) {
+            // Default placeholder image URL
+            return 'https://placehold.co/600x600/E5E7EB/4B5563?text=No+Image';
+        }
+
+        // Use Storage::disk('public')->url() to convert the relative path to a full URL.
+        // 'public' is the disk name defined in your .env file as FILESYSTEM_DISK=public.
+        // $this->image is the relative path like 'images/products/1.jpg' coming from the database.
+        return Storage::disk('public')->url($this->image);
+    }
+
+    /**
+     * Accessor for formatted price.
+     * Returns the price formatted with commas and 'تومان'.
+     *
+     * @return string
+     */
+    public function getFormattedPriceAttribute(): string
+    {
+        return number_format($this->price, 0) . ' تومان';
+    }
+
+    /**
+     * Mutator for the 'title' attribute.
+     * Converts the first letter of each word to uppercase and the rest to lowercase.
+     * Also generates a slug from the title.
+     *
+     * @param string $value
+     * @return void
+     */
+    public function setTitleAttribute(string $value): void
+    {
+        $this->attributes['title'] = Str::ucwords(Str::lower($value));
+        $this->attributes['slug'] = Str::slug($value);
     }
 
     /**
@@ -65,7 +134,7 @@ class Product extends Model
      */
     public function scopeActive($query)
     {
-        return $query->where('status', true); // فرض بر این است که status boolean است یا 'active'
+        return $query->where('status', true);
     }
 
     /**
@@ -80,74 +149,22 @@ class Product extends Model
     }
 
     /**
-     * Get the formatted price of the product.
+     * Scope a query to search products by title or description.
+     * Improved to encapsulate the OR condition.
      *
-     * @return string
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $search
+     * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function getFormattedPriceAttribute()
+    public function scopeSearch($query, string $search)
     {
-        // بهبود: حذف 0 از number_format برای قیمت‌های بزرگتر
-        return number_format($this->price) . ' تومان';
-    }
-
-    /**
-     * Check if the product is available (in stock and active).
-     *
-     * @return bool
-     */
-    public function getIsAvailableAttribute()
-    {
-        return $this->stock > 0 && $this->status;
-    }
-
-    /**
-     * Get the URL for the product image.
-     *
-     * @return string
-     */
-    public function getImageUrlAttribute()
-    {
-        // استفاده از Storage::url برای مسیرهای ذخیره‌سازی عمومی
-        if ($this->image) {
-            return Storage::url('products/' . $this->image);
-        }
-        return asset('images/no-image.png');
-    }
-
-    /**
-     * Get the validation rules for the product.
-     *
-     * @return array<string, string>
-     */
-    public static function rules(): array
-    {
-        return [
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
-            'category_id' => 'required|exists:categories,id',
-            'status' => 'boolean', // یا in:active,inactive اگر enum است
-        ];
-    }
-
-    /**
-     * The "booted" method of the model.
-     *
-     * @return void
-     */
-    protected static function booted(): void
-    {
-        // حذف تصویر هنگام حذف محصول
-        static::deleting(function ($product) {
-            if ($product->image) {
-                // فرض می‌کنیم تصاویر در storage/app/public/products ذخیره می‌شوند
-                Storage::delete('public/products/' . $product->image);
-            }
+        return $query->where(function ($q) use ($search) {
+            $q->where('title', 'like', "%{$search}%")
+              ->orWhere('description', 'like', "%{$search}%");
         });
     }
 
-    // روابط اضافی مفید (در صورت نیاز به فعال‌سازی، use مربوطه را اضافه کنید)
+    // Additional useful relationships (uncomment and add necessary 'use' statements if needed)
     /**
      * Get the order items for the product.
      *
@@ -155,7 +172,7 @@ class Product extends Model
      */
     // public function orderItems()
     // {
-    //     return $this->hasMany(OrderItem::class); // نیاز به use App\Models\OrderItem;
+    //     return $this->hasMany(OrderItem::class); // Requires use App\Models\OrderItem;
     // }
 
     /**
@@ -165,6 +182,6 @@ class Product extends Model
      */
     // public function reviews()
     // {
-    //     return $this->hasMany(Review::class); // نیاز به use App\Models\Review;
+    //     return $this->hasMany(Review::class); // Requires use App\Models\Review;
     // }
 }

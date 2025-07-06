@@ -8,6 +8,8 @@ use App\Contracts\ProductServiceInterface; // Use the interface for dependency i
 use App\Exceptions\ImageProcessingException; // Use the custom exception
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage; // Import Storage facade
+use Illuminate\View\View; // Use for type hinting view return type
+// use App\Models\ProductImage; // No direct use needed here as we are eager loading through Product model
 
 class ProductController extends Controller
 {
@@ -22,24 +24,33 @@ class ProductController extends Controller
 
     /**
      * Display a listing of the products.
+     * Includes eager loading of category and images.
      *
      * @return \Illuminate\View\View
      */
-    public function index()
+    public function index(): View
     {
-        $products = Product::latest()->paginate(12);
+        // Eager load the 'category' and 'images' relationships to avoid N+1 query problem.
+        // The 'images' relationship is defined in the Product model.
+        // We are chaining 'with' to your existing query.
+        $products = Product::with(['category', 'images'])->latest()->paginate(12);
         // Pass the productService instance to the view
         return view('products', compact('products'))->with('productService', $this->productService);
     }
 
     /**
      * Display the specified product.
+     * Includes eager loading of category and images.
      *
      * @param  \App\Models\Product  $product
      * @return \Illuminate\View\View
      */
-    public function show(Product $product)
+    public function show(Product $product): View
     {
+        // Eager load the 'category' and 'images' relationships for a single product.
+        // This ensures that when you access $product->images, they are already loaded.
+        $product->load(['category', 'images']);
+
         $relatedProducts = Product::where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
             ->inRandomOrder()
@@ -55,24 +66,27 @@ class ProductController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function create()
+    public function create(): View
     {
         return view('product-create');
     }
 
     /**
      * Store a newly created product in storage.
+     * This method will need significant updates to handle multiple image uploads
+     * and saving them to the product_images table.
      *
      * @param  \App\Http\Requests\ProductStoreRequest  $request
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function store(ProductStoreRequest $request)
+    public function store(ProductStoreRequest $request): \Illuminate\Http\RedirectResponse
     {
         // Validation is handled by ProductStoreRequest
         $validatedData = $request->validated();
 
         try {
             // Use the service to create the product, passing validated data and the image file
+            // This part will need modification in your ProductService to handle multiple images.
             $this->productService->createProduct($validatedData, $request->file('image'));
 
             return redirect()->route('products.index')->with('success', 'محصول با موفقیت اضافه شد.');
@@ -87,34 +101,40 @@ class ProductController extends Controller
 
     /**
      * Show the form for editing the specified product.
+     * Eager loads images for the editing form.
      *
      * @param  \App\Models\Product  $product
      * @return \Illuminate\View\View
      */
-    public function edit(Product $product)
+    public function edit(Product $product): View
     {
+        // Eager load images for the editing form to display existing images.
+        $product->load('images');
         return view('product-edit', compact('product'));
     }
 
     /**
      * Update the specified product in storage.
+     * This method will need significant updates to handle multiple image uploads,
+     * updates, and deletions in the product_images table.
      *
      * @param  \App\Http\Requests\ProductStoreRequest  $request
      * @param  \App\Models\Product  $product
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function update(ProductStoreRequest $request, Product $product)
+    public function update(ProductStoreRequest $request, Product $product): \Illuminate\Http\RedirectResponse
     {
         // Validation is handled by ProductStoreRequest
         $validatedData = $request->validated();
 
         try {
             // Use the service to update the product
+            // This part will need modification in your ProductService to handle multiple images.
             $this->productService->updateProduct(
                 $product,
                 $validatedData,
-                $request->file('image'),
-                $request->boolean('remove_image')
+                $request->file('image'), // This will likely become $request->file('images') for multiple
+                $request->boolean('remove_image') // This logic will also need to be expanded
             );
 
             return redirect()->route('products.index')->with('success', 'محصول با موفقیت به‌روزرسانی شد.');
@@ -129,14 +149,16 @@ class ProductController extends Controller
 
     /**
      * Remove the specified product from storage.
+     * Image deletion is now handled by the Product model's 'deleting' event and ProductImage Observer.
      *
      * @param  \App\Models\Product  $product
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function destroy(Product $product)
+    public function destroy(Product $product): \Illuminate\Http\RedirectResponse
     {
         try {
             // Use the service to delete the product
+            // The Product model's 'deleting' event will handle the deletion of associated images.
             $this->productService->deleteProduct($product);
 
             return redirect()->route('products.index')->with('success', 'محصول با موفقیت حذف شد.');
@@ -149,4 +171,3 @@ class ProductController extends Controller
         }
     }
 }
-
