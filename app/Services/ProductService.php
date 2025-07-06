@@ -3,94 +3,148 @@
 namespace App\Services;
 
 use App\Models\Product;
+use App\Models\ProductImage; // Import the ProductImage model
 use Illuminate\Http\UploadedFile;
 use Intervention\Image\Facades\Image;
 use Illuminate\Support\Facades\Storage;
-use App\Contracts\ProductServiceInterface; // Ensure this is imported
-use App\Exceptions\ImageProcessingException; // Ensure this is imported
+use App\Contracts\ProductServiceInterface;
+use App\Exceptions\ImageProcessingException;
+use Illuminate\Support\Facades\DB; // For database transactions
 
 class ProductService implements ProductServiceInterface
 {
     /**
      * Create a new product.
+     * Handles main image and multiple gallery images.
      *
      * @param array $data Validated data for the product.
-     * @param UploadedFile|null $image The uploaded image file.
+     * @param UploadedFile|null $mainImage The uploaded main image file.
+     * @param array $galleryImages Array of uploaded gallery image files.
      * @return Product
      * @throws ImageProcessingException If image upload fails.
      */
-    public function createProduct(array $data, ?UploadedFile $image = null): Product
+    public function createProduct(array $data, ?UploadedFile $mainImage = null, array $galleryImages = []): Product
     {
-        $imagePath = null;
-        if ($image) {
-            // Upload and process the main image and its thumbnails
-            $imagePath = $this->uploadAndProcessImage($image);
-        }
+        DB::beginTransaction(); // Start a database transaction
 
-        // Merge the image path with other product data
-        return Product::create(array_merge($data, ['image' => $imagePath]));
+        try {
+            $mainImagePath = null;
+            if ($mainImage) {
+                // Upload and process the main image and its thumbnails
+                $mainImagePath = $this->uploadAndProcessMainImage($mainImage);
+            }
+
+            // Merge the main image path with other product data
+            $product = Product::create(array_merge($data, ['image' => $mainImagePath]));
+
+            // Handle gallery images
+            if (!empty($galleryImages)) {
+                $this->uploadAndAttachGalleryImages($product, $galleryImages);
+            }
+
+            DB::commit(); // Commit the transaction
+            return $product;
+        } catch (ImageProcessingException $e) {
+            DB::rollBack(); // Rollback on image processing error
+            throw $e;
+        } catch (\Exception $e) {
+            DB::rollBack(); // Rollback on any other exception
+            throw new ImageProcessingException('Failed to create product: ' . $e->getMessage());
+        }
     }
 
     /**
      * Update an existing product.
+     * Handles main image, multiple gallery images, and deletion of existing images.
      *
      * @param Product $product The product instance to update.
      * @param array $data Validated data for the product.
-     * @param UploadedFile|null $newImage The new uploaded image file.
-     * @param bool $removeImage Flag to indicate if the existing image should be removed.
+     * @param UploadedFile|null $newMainImage The new uploaded main image file.
+     * @param bool $removeMainImage Flag to indicate if the existing main image should be removed.
+     * @param array $newGalleryImages Array of new uploaded gallery image files.
+     * @param array $removeGalleryImageIds Array of IDs of gallery images to be removed.
      * @return Product
      * @throws ImageProcessingException If image upload/deletion fails.
      */
-    public function updateProduct(Product $product, array $data, ?UploadedFile $newImage = null, bool $removeImage = false): Product
-    {
-        $currentImagePath = $product->image;
+    public function updateProduct(
+        Product $product,
+        array $data,
+        ?UploadedFile $newMainImage = null,
+        bool $removeMainImage = false,
+        array $newGalleryImages = [],
+        array $removeGalleryImageIds = []
+    ): Product {
+        DB::beginTransaction(); // Start a database transaction
 
-        if ($newImage) {
-            // Delete old image and its thumbnails if a new one is uploaded
-            if ($currentImagePath) {
-                $this->deleteAllImageVersions($currentImagePath);
+        try {
+            $currentMainImagePath = $product->image;
+
+            // Handle main image update/removal
+            if ($newMainImage) {
+                // Delete old main image and its thumbnails if a new one is uploaded
+                if ($currentMainImagePath) {
+                    $this->deleteAllMainImageVersions($currentMainImagePath);
+                }
+                $currentMainImagePath = $this->uploadAndProcessMainImage($newMainImage);
+            } elseif ($removeMainImage) {
+                // If remove_image flag is true, delete the current main image and its thumbnails
+                if ($currentMainImagePath) {
+                    $this->deleteAllMainImageVersions($currentMainImagePath);
+                }
+                $currentMainImagePath = null;
             }
-            $currentImagePath = $this->uploadAndProcessImage($newImage);
-        } elseif ($removeImage) {
-            // If remove_image flag is true, delete the current image and its thumbnails
-            if ($currentImagePath) {
-                $this->deleteAllImageVersions($currentImagePath);
+
+            // Update the product with new data and main image path
+            $product->update(array_merge($data, ['image' => $currentMainImagePath]));
+
+            // Handle new gallery images
+            if (!empty($newGalleryImages)) {
+                $this->uploadAndAttachGalleryImages($product, $newGalleryImages);
             }
-            $currentImagePath = null;
+
+            // Handle removal of existing gallery images
+            if (!empty($removeGalleryImageIds)) {
+                $this->deleteGalleryImages($product, $removeGalleryImageIds);
+            }
+
+            DB::commit(); // Commit the transaction
+            return $product;
+        } catch (ImageProcessingException $e) {
+            DB::rollBack(); // Rollback on image processing error
+            throw $e;
+        } catch (\Exception $e) {
+            DB::rollBack(); // Rollback on any other exception
+            throw new ImageProcessingException('Failed to update product: ' . $e->getMessage());
         }
-
-        // Update the product with new data and image path
-        $product->update(array_merge($data, ['image' => $currentImagePath]));
-
-        return $product;
     }
 
     /**
      * Delete a product.
+     * The Product model's 'deleting' event and ProductImage Observer now handle image deletions.
      *
      * @param Product $product The product instance to delete.
      * @return bool
-     * @throws ImageProcessingException If image deletion fails.
+     * @throws ImageProcessingException If product deletion fails.
      */
     public function deleteProduct(Product $product): bool
     {
-        // Delete associated image and its thumbnails before deleting the product
-        if ($product->image) {
-            $this->deleteAllImageVersions($product->image);
+        // Image deletion (main and gallery) is now handled by the Product model's 'deleting' event
+        // and ProductImage Observer, so no explicit image deletion logic is needed here.
+        try {
+            return $product->delete(); // This will trigger the deleting events
+        } catch (\Exception $e) {
+            throw new ImageProcessingException('Failed to delete product: ' . $e->getMessage());
         }
-
-        // Delete the product (will soft delete if SoftDeletes trait is used)
-        return $product->delete();
     }
 
     /**
      * Uploads and processes the main image and generates thumbnails.
      *
-     * @param UploadedFile $image The uploaded image file.
+     * @param UploadedFile $image The uploaded main image file.
      * @return string The path to the stored main image.
      * @throws ImageProcessingException If image processing or storage fails, or validation fails.
      */
-    protected function uploadAndProcessImage(UploadedFile $image): string
+    protected function uploadAndProcessMainImage(UploadedFile $image): string
     {
         // Get configurable settings from config/image.php
         $maxWidth = config('image.max_width', 1200);
@@ -206,13 +260,86 @@ class ProductService implements ProductServiceInterface
     }
 
     /**
+     * Uploads and processes a single gallery image.
+     *
+     * @param UploadedFile $image The uploaded gallery image file.
+     * @return string The path to the stored gallery image.
+     * @throws ImageProcessingException If image processing or storage fails.
+     */
+    protected function uploadAndProcessGalleryImage(UploadedFile $image): string
+    {
+        $quality = config('image.quality', 85);
+        $disk = config('image.disk', 'public');
+        $directory = config('image.gallery_directory', 'images/products/gallery'); // New config for gallery directory
+
+        // Generate a unique filename
+        $filename = uniqid() . '_' . time() . '.webp';
+        $imagePath = $directory . '/' . $filename;
+
+        try {
+            $img = Image::make($image->getPathname());
+            $img->orientate()->strip(); // Orientate and strip metadata
+            // Resize gallery images if needed, e.g., to a max width/height for display
+            $img->resize(800, 600, function ($constraint) { // Example resize for gallery images
+                $constraint->aspectRatio();
+                $constraint->upsize();
+            });
+            Storage::disk($disk)->put($imagePath, $img->encode('webp', $quality));
+            return $imagePath;
+        } catch (\Exception $e) {
+            throw ImageProcessingException::uploadFailed('Failed to upload gallery image: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Attaches uploaded gallery images to a product.
+     *
+     * @param Product $product The product instance.
+     * @param array $galleryImages Array of UploadedFile instances.
+     * @return void
+     * @throws ImageProcessingException
+     */
+    protected function uploadAndAttachGalleryImages(Product $product, array $galleryImages): void
+    {
+        foreach ($galleryImages as $imageFile) {
+            if ($imageFile instanceof UploadedFile && $imageFile->isValid()) {
+                $imagePath = $this->uploadAndProcessGalleryImage($imageFile);
+                $product->images()->create(['image_path' => $imagePath]);
+            }
+        }
+    }
+
+    /**
+     * Deletes specified gallery images from a product.
+     *
+     * @param Product $product The product instance.
+     * @param array $imageIds Array of ProductImage IDs to delete.
+     * @return void
+     * @throws ImageProcessingException
+     */
+    protected function deleteGalleryImages(Product $product, array $imageIds): void
+    {
+        // Fetch ProductImage models to ensure they belong to this product and trigger observers
+        $imagesToDelete = $product->images()->whereIn('id', $imageIds)->get();
+
+        foreach ($imagesToDelete as $image) {
+            try {
+                $image->delete(); // This will trigger the ProductImageObserver to delete the file
+            } catch (\Exception $e) {
+                throw new ImageProcessingException('Failed to delete gallery image: ' . $e->getMessage());
+            }
+        }
+    }
+
+    /**
      * Deletes the main image and all its associated thumbnail versions.
+     * Renamed from deleteAllImageVersions for clarity.
      *
      * @param string $mainImagePath The path of the main image to delete.
      * @return bool
      * @throws ImageProcessingException If image deletion fails.
      */
-    protected function deleteAllImageVersions(string $mainImagePath): bool
+    protected function deleteAllMainImageVersions(string $mainImagePath): bool
     {
         $disk = config('image.disk', 'public');
         $directory = config('image.directory', 'images/products');

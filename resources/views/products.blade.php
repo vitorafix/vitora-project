@@ -9,37 +9,39 @@
             محصولات ما
         </h1>
 
+        {{-- Displaying session messages --}}
+        @if (session('success'))
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <strong class="font-bold">موفقیت!</strong>
+                <span class="block sm:inline">{{ session('success') }}</span>
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <strong class="font-bold">خطا!</strong>
+                <span class="block sm:inline">{{ session('error') }}</span>
+            </div>
+        @endif
+
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             @forelse ($products as $product)
                 <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 card-hover-effect">
-                    <a href="{{ route('products.show', $product->id) }}">
-                        {{-- استفاده از productService برای دریافت URL تصویر اصلی --}}
-                        @if($product->image)
-                            <img src="{{ $productService->getImageUrl($product->image) }}"
-                                 onerror="this.onerror=null;this.src='https://placehold.co/400x400/E5E7EB/4B5563?text=Product';"
-                                 alt="{{ $product->title }}"
-                                 class="w-full h-48 object-cover transition-transform duration-300 hover:scale-105">
-                        @else
-                            <img src="https://placehold.co/400x400/E5E7EB/4B5563?text=Product"
-                                 alt="تصویر پیش‌فرض"
-                                 class="w-full h-48 object-cover transition-transform duration-300 hover:scale-105">
-                        @endif
+                    {{-- Link to product single page, now using slug for SEO-friendly URLs --}}
+                    <a href="{{ route('products.show', $product->slug) }}">
+                        {{-- Display the first image from the 'images' relationship (gallery images) --}}
+                        {{-- If no gallery images are associated, fall back to the main 'image_url' accessor --}}
+                        {{-- The $product->image_url accessor itself provides a placeholder if no main image exists --}}
+                        <img src="{{ $product->images->first()->image_url ?? $product->image_url }}"
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x400/E5E7EB/4B5563?text=Product';"
+                             alt="{{ $product->title }}"
+                             class="w-full h-48 object-cover transition-transform duration-300 hover:scale-105">
                     </a>
-
-                    {{-- اگر خواستی همه تصاویر را نمایش بده، اینجا می‌توانی اضافه کنی --}}
-                    {{-- برای نمایش تصاویر بندانگشتی (مثلاً small) --}}
-                    {{-- @if($product->image)
-                        @php
-                            $thumbnailUrl = $productService->getThumbnailUrl($product->image, 'small');
-                        @endphp
-                        @if($thumbnailUrl)
-                            <img src="{{ $thumbnailUrl }}" alt="{{ $product->title }} small thumbnail" class="w-20 h-20 object-cover inline-block mr-2 mt-2 rounded">
-                        @endif
-                    @endif --}}
 
                     <div class="p-5 text-center rtl:text-right">
                         <h3 class="text-xl font-semibold text-brown-900 mb-2 truncate">
-                            <a href="{{ route('products.show', $product->id) }}" class="hover:text-green-700 transition-colors duration-200">
+                            {{-- Link to product single page, now using slug --}}
+                            <a href="{{ route('products.show', $product->slug) }}" class="hover:text-green-700 transition-colors duration-200">
                                 {{ $product->title }}
                             </a>
                         </h3>

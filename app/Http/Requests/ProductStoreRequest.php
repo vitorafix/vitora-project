@@ -46,12 +46,22 @@ class ProductStoreRequest extends FormRequest
             'stock' => 'required|integer|min:0', // موجودی باید عدد صحیح و حداقل 0 باشد
             'category_id' => 'required|integer|exists:categories,id', // باید یک category_id معتبر باشد
             'image' => [
-                $isUpdate ? 'nullable' : 'required', // تصویر در هنگام ایجاد الزامی، در به‌روزرسانی اختیاری
+                $isUpdate ? 'nullable' : 'required', // تصویر اصلی در هنگام ایجاد الزامی، در به‌روزرسانی اختیاری
                 'image', // باید یک فایل تصویری باشد
                 'mimes:jpeg,png,jpg,gif,webp', // فرمت‌های مجاز
                 'max:5120', // حداکثر حجم 5 مگابایت (5120 کیلوبایت)
             ],
+            // New rule for multiple gallery images
+            'gallery_images.*' => [ // Applies to each item in the gallery_images array
+                'nullable', // Images are optional
+                'image', // Each item must be an image file
+                'mimes:jpeg,png,jpg,gif,webp', // Allowed formats
+                'max:5120', // Max size 5MB
+            ],
             'remove_image' => 'boolean', // برای به‌روزرسانی: یک فیلد بولی برای حذف تصویر موجود
+            // New rule for managing existing gallery images (e.g., deletion by ID)
+            'remove_gallery_images' => 'nullable|array', // An array of image IDs to be removed
+            'remove_gallery_images.*' => 'integer|exists:product_images,id', // Each item must be an integer and exist in product_images table
         ];
     }
 
@@ -81,8 +91,14 @@ class ProductStoreRequest extends FormRequest
             'image.required' => 'تصویر محصول الزامی است.',
             'image.image' => 'فایل آپلود شده باید یک تصویر باشد.',
             'image.mimes' => 'فرمت تصویر باید jpeg، png، jpg، gif یا webp باشد.',
-            'image.max' => 'حجم تصویر نباید بیشتر از ۵ مگابایت باشد.',
-            'remove_image.boolean' => 'فیلد حذف تصویر باید بولی باشد.',
+            'image.max' => 'حجم تصویر اصلی نباید بیشتر از ۵ مگابایت باشد.', // Changed message for clarity
+            'gallery_images.*.image' => 'فایل‌های گالری باید تصویر باشند.',
+            'gallery_images.*.mimes' => 'فرمت فایل‌های گالری باید jpeg، png، jpg، gif یا webp باشد.',
+            'gallery_images.*.max' => 'حجم هر یک از فایل‌های گالری نباید بیشتر از ۵ مگابایت باشد.',
+            'remove_image.boolean' => 'فیلد حذف تصویر اصلی باید بولی باشد.',
+            'remove_gallery_images.array' => 'فیلد حذف تصاویر گالری باید آرایه‌ای از شناسه‌ها باشد.',
+            'remove_gallery_images.*.integer' => 'شناسه تصاویر گالری برای حذف باید عددی باشد.',
+            'remove_gallery_images.*.exists' => 'یکی از شناسه‌های تصاویر گالری برای حذف معتبر نیست.',
         ];
     }
 }
