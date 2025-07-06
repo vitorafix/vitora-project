@@ -81,24 +81,33 @@ class Product extends Model
     }
 
     /**
-     * Accessor to get the full image URL of the product.
-     * This method makes 'image_url' available as a virtual attribute.
+     * Accessor برای دریافت آدرس URL تصویر محصول.
+     * این متد ابتدا تصاویر گالری، سپس فیلد 'image' خود محصول و در نهایت تصویر پیش‌فرض را بررسی می‌کند.
      *
      * @return string
      */
-    public function getImageUrlAttribute(): string
+    public function getImageUrlAttribute()
     {
-        // If the 'image' column in the database is empty (no image uploaded for the product),
-        // return a default placeholder URL.
-        if (!$this->image) {
-            // Default placeholder image URL
-            return 'https://placehold.co/600x600/E5E7EB/4B5563?text=No+Image';
+        // 1. اگر رابطه 'images' لود شده باشد و حداقل یک تصویر در گالری وجود داشته باشد،
+        // آدرس اولین تصویر گالری را برمی‌گرداند.
+        // همچنین بررسی می‌کند که آیا فایل تصویر در دیسک وجود دارد یا خیر.
+        if ($this->relationLoaded('images') && $this->images->count() > 0) {
+            // اطمینان از وجود فیلد image_url در مدل ProductImage
+            // و اینکه آیا آدرس تصویر معتبر است
+            if (!empty($this->images->first()->image_url) && Storage::disk('public')->exists($this->images->first()->image_url)) {
+                return asset('storage/' . $this->images->first()->image_url);
+            }
         }
 
-        // Use Storage::disk('public')->url() to convert the relative path to a full URL.
-        // 'public' is the disk name defined in your .env file as FILESYSTEM_DISK=public.
-        // $this->image is the relative path like 'images/products/1.jpg' coming from the database.
-        return Storage::disk('public')->url($this->image);
+        // 2. اگر فیلد 'image' در خود محصول (جدول products) خالی نباشد و فایل آن در storage/app/public موجود باشد،
+        // آدرس آن را با استفاده از asset('storage/') برمی‌گرداند.
+        // فرض بر این است که 'image' حاوی مسیر نسبی مانند 'images/products/1.jpg' است.
+        if (!empty($this->image) && Storage::disk('public')->exists($this->image)) {
+            return asset('storage/' . $this->image);
+        }
+
+        // 3. در صورت عدم وجود هیچ تصویری، آدرس تصویر پیش‌فرض را برمی‌گرداند.
+        return 'https://placehold.co/400x400/E5E7EB/4B5563?text=Product';
     }
 
     /**

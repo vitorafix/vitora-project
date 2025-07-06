@@ -79,7 +79,9 @@
             <?php $__empty_1 = true; $__currentLoopData = $latestProducts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 transform transition-transform duration-300 hover:scale-105 hover:shadow-xl group">
                     <div class="relative overflow-hidden">
-                        <img src="<?php echo e($product->image ?: 'https://placehold.co/400x400/E5E7EB/4B5563?text=Product'); ?>" alt="<?php echo e($product->title); ?>" class="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-110">
+                        
+                        <img src="<?php echo e($product->image_url); ?>" alt="<?php echo e($product->title); ?>" class="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-110"
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x400/E5E7EB/4B5563?text=Product';">
                         <div class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                             <a href="<?php echo e(route('products.show', $product->id)); ?>" class="btn-primary-outline text-white border-white">
                                 مشاهده جزئیات
@@ -95,7 +97,7 @@
                                     data-product-id="<?php echo e($product->id); ?>"
                                     data-product-title="<?php echo e($product->title); ?>"
                                     data-product-price="<?php echo e($product->price); ?>"
-                                    data-product-image="<?php echo e($product->image ?: 'https://placehold.co/400x400/E5E7EB/4B5563?text=Product'); ?>">
+                                    data-product-image="<?php echo e($product->image_url); ?>"> 
                                 <i class="fas fa-cart-plus ml-2"></i>
                                 افزودن به سبد
                             </button>
@@ -121,7 +123,9 @@
             <?php $__currentLoopData = $featuredProducts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 transform transition-transform duration-300 hover:scale-105 hover:shadow-xl group">
                     <div class="relative overflow-hidden">
-                        <img src="<?php echo e($product->image ?: 'https://placehold.co/400x400/E5E7EB/4B5563?text=Product'); ?>" alt="<?php echo e($product->title); ?>" class="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-110">
+                        
+                        <img src="<?php echo e($product->image_url); ?>" alt="<?php echo e($product->title); ?>" class="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-110"
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x400/E5E7EB/4B5563?text=Product';">
                         <div class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                             <a href="<?php echo e(route('products.show', $product->id)); ?>" class="btn-primary-outline text-white border-white">
                                 مشاهده جزئیات
@@ -137,7 +141,7 @@
                                     data-product-id="<?php echo e($product->id); ?>"
                                     data-product-title="<?php echo e($product->title); ?>"
                                     data-product-price="<?php echo e($product->price); ?>"
-                                    data-product-image="<?php echo e($product->image ?: 'https://placehold.co/400x400/E5E7EB/4B5563?text=Product'); ?>">
+                                    data-product-image="<?php echo e($product->image_url); ?>"> 
                                 <i class="fas fa-cart-plus ml-2"></i>
                                 افزودن به سبد
                             </button>

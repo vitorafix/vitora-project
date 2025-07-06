@@ -29,13 +29,11 @@
                 <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 card-hover-effect">
                     {{-- Link to product single page, now using slug for SEO-friendly URLs --}}
                     <a href="{{ route('products.show', $product->slug) }}">
-                        {{-- Display the first image from the 'images' relationship (gallery images) --}}
-                        {{-- If no gallery images are associated, fall back to the main 'image_url' accessor --}}
-                        {{-- The $product->image_url accessor itself provides a placeholder if no main image exists --}}
-                        <img src="{{ $product->images->first()->image_url ?? $product->image_url }}"
-                             onerror="this.onerror=null;this.src='https://placehold.co/400x400/E5E7EB/4B5563?text=Product';"
+                        {{-- Display the product image using the image_url accessor --}}
+                        <img src="{{ $product->image_url }}"
                              alt="{{ $product->title }}"
-                             class="w-full h-48 object-cover transition-transform duration-300 hover:scale-105">
+                             class="w-full h-48 object-cover transition-transform duration-300 hover:scale-105"
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x400/E5E7EB/4B5563?text=Product';">
                     </a>
 
                     <div class="p-5 text-center rtl:text-right">
@@ -55,7 +53,8 @@
                             <button class="add-to-cart-btn btn-primary w-full py-2 flex items-center justify-center text-lg"
                                     data-product-id="{{ $product->id }}"
                                     data-product-title="{{ $product->title }}"
-                                    data-product-price="{{ $product->price }}">
+                                    data-product-price="{{ $product->price }}"
+                                    data-product-image="{{ $product->image_url }}"> {{-- اضافه شدن data-product-image --}}
                                 <i class="fas fa-cart-plus ml-2"></i>
                                 افزودن به سبد
                             </button>

@@ -9,30 +9,37 @@
             محصولات ما
         </h1>
 
+        
+        <?php if(session('success')): ?>
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <strong class="font-bold">موفقیت!</strong>
+                <span class="block sm:inline"><?php echo e(session('success')); ?></span>
+            </div>
+        <?php endif; ?>
+
+        <?php if(session('error')): ?>
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <strong class="font-bold">خطا!</strong>
+                <span class="block sm:inline"><?php echo e(session('error')); ?></span>
+            </div>
+        <?php endif; ?>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             <?php $__empty_1 = true; $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                 <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 card-hover-effect">
-                    <a href="<?php echo e(route('products.show', $product->id)); ?>">
+                    
+                    <a href="<?php echo e(route('products.show', $product->slug)); ?>">
                         
-                        <?php if($product->image): ?>
-                            <img src="<?php echo e($productService->getImageUrl($product->image)); ?>"
-                                 onerror="this.onerror=null;this.src='https://placehold.co/400x400/E5E7EB/4B5563?text=Product';"
-                                 alt="<?php echo e($product->title); ?>"
-                                 class="w-full h-48 object-cover transition-transform duration-300 hover:scale-105">
-                        <?php else: ?>
-                            <img src="https://placehold.co/400x400/E5E7EB/4B5563?text=Product"
-                                 alt="تصویر پیش‌فرض"
-                                 class="w-full h-48 object-cover transition-transform duration-300 hover:scale-105">
-                        <?php endif; ?>
+                        <img src="<?php echo e($product->image_url); ?>"
+                             alt="<?php echo e($product->title); ?>"
+                             class="w-full h-48 object-cover transition-transform duration-300 hover:scale-105"
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x400/E5E7EB/4B5563?text=Product';">
                     </a>
-
-                    
-                    
-                    
 
                     <div class="p-5 text-center rtl:text-right">
                         <h3 class="text-xl font-semibold text-brown-900 mb-2 truncate">
-                            <a href="<?php echo e(route('products.show', $product->id)); ?>" class="hover:text-green-700 transition-colors duration-200">
+                            
+                            <a href="<?php echo e(route('products.show', $product->slug)); ?>" class="hover:text-green-700 transition-colors duration-200">
                                 <?php echo e($product->title); ?>
 
                             </a>
@@ -47,7 +54,8 @@
                             <button class="add-to-cart-btn btn-primary w-full py-2 flex items-center justify-center text-lg"
                                     data-product-id="<?php echo e($product->id); ?>"
                                     data-product-title="<?php echo e($product->title); ?>"
-                                    data-product-price="<?php echo e($product->price); ?>">
+                                    data-product-price="<?php echo e($product->price); ?>"
+                                    data-product-image="<?php echo e($product->image_url); ?>"> 
                                 <i class="fas fa-cart-plus ml-2"></i>
                                 افزودن به سبد
                             </button>

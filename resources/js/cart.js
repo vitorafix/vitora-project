@@ -71,12 +71,17 @@ class CartManager {
         try {
             const data = await fetchCartContents();
 
-            // بررسی معتبر بودن داده‌های دریافتی
-            if (!data || !Array.isArray(data.items) || typeof data.totalQuantity !== 'number' || typeof data.totalPrice !== 'number') {
+            // بررسی معتبر بودن داده‌های دریافتی با استفاده از نام‌گذاری کلیدهای snake_case
+            if (!data || !Array.isArray(data.items) || typeof data.total_quantity !== 'number' || typeof data.total_price !== 'number') {
                 throw new Error('Invalid cart data received from API.');
             }
 
-            this.cartData = data; // به‌روزرسانی وضعیت داخلی سبد خرید
+            // به‌روزرسانی وضعیت داخلی سبد خرید با نگاشت کلیدهای snake_case به camelCase
+            this.cartData = {
+                items: data.items,
+                totalQuantity: data.total_quantity, // اصلاح شد
+                totalPrice: data.total_price       // اصلاح شد
+            };
 
             // رندر کردن مینی‌کارت و سبد اصلی با داده‌های جدید
             renderMiniCartDetails(this.cartData.items, this.cartData.totalQuantity, this.cartData.totalPrice);

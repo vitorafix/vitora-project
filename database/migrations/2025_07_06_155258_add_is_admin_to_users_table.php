@@ -1,15 +1,22 @@
-// ...
-public function up(): void
-{
-    Schema::table('users', function (Blueprint $table) {
-        $table->boolean('is_admin')->default(false)->after('status'); // یا بعد از هر ستون دیگری که مناسب می‌دانید
-    });
-}
+<?php
 
-public function down(): void
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class AddIsAdminToUsersTable extends Migration
 {
-    Schema::table('users', function (Blueprint $table) {
-        $table->dropColumn('is_admin');
-    });
+    public function up(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->boolean('is_admin')->default(false)->after('status');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('is_admin');
+        });
+    }
 }
-// ...
