@@ -39,7 +39,7 @@ use App\Exceptions\CartLimitExceededException;
 use App\Exceptions\BaseCartException;
 
 // Events (شما باید این کلاس‌ها را در App\Events/ ایجاد کنید)
-// class CartItemAdded { use \Illuminate\Foundation\Events\Dispatchable; public Cart $cart; public Product $product; public int $quantity; public function __construct(Cart $cart, Product $product, int $quantity) { $this->cart = $cart; $this->product = $product; $this->quantity = $quantity; } }
+// class CartItemAdded { use \Illuminate\Foundation\Events\Dispatchable; public Cart $cart; public Product $product; public int $quantity; public function __construct(Cart $cart, Product $product, int $quantity) { $this->cart = $cart; $this->product = $product; public int $quantity; public function __construct(Cart $cart, Product $product, int $quantity) { $this->cart = $cart; $this->product = $product; $this->quantity = $quantity; } }
 // class CartItemUpdated { use \Illuminate\Foundation\Events\Dispatchable; public Cart $cart; public CartItem $cartItem; public int $oldQuantity; public int $newQuantity; public function __construct(Cart $cart, CartItem $cartItem, int $oldQuantity, int $newQuantity) { $this->cart = $cart; $this->cartItem = $cartItem; $this->oldQuantity = $oldQuantity; $this->newQuantity = $newQuantity; } }
 // class CartItemRemoved { use \Illuminate\Foundation\Events\Dispatchable; public Cart $cart; public CartItem $cartItem; public function __construct(Cart $cart, CartItem $cartItem) { $this->cart = $cart; $this->cartItem = $cartItem; } }
 // class CartCleared { use \Illuminate\Foundation\Events\Dispatchable; public Cart $cart; public function __construct(Cart $cart) { $this->cart = $cart; } }
@@ -538,6 +538,7 @@ class ImprovedCartService implements CartServiceInterface
                     'image' => $this->productService->getImageUrl($item->product->image),
                     'thumbnail_url_small' => $this->productService->getThumbnailUrl($item->product->image, 'small'),
                     'slug' => $item->product->slug,
+                    'stock' => $item->product->stock, // اضافه شده: موجودی محصول
                 ];
                 $totalQuantity += $item->quantity;
                 $totalPrice += $subtotal;

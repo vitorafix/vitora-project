@@ -1,70 +1,123 @@
 <?php
-// File: app/Services/Responses/CartOperationResponse.php
 
 namespace App\Services\Responses;
 
-use JsonSerializable;
+use JsonSerializable; // برای اطمینان از اینکه کلاس به درستی به JSON تبدیل شود
 
-/**
- * Class CartOperationResponse standardizes cart operation responses.
- * This is a DTO (Data Transfer Object) that encapsulates the result of an operation,
- * including its success status, a message, optional data, and an HTTP status code.
- */
 class CartOperationResponse implements JsonSerializable
 {
-    /**
-     * Constructor.
-     *
-     * @param bool $success Indicates whether the operation was successful.
-     * @param string $message Describes the result of the operation.
-     * @param mixed|null $data Optional related data.
-     * @param int $statusCode HTTP status code.
-     */
-    public function __construct(
-        public readonly bool $success,
-        public readonly string $message,
-        public readonly mixed $data = null,
-        public readonly int $statusCode = 200
-    ) {}
+    public bool $success;
+    public string $message;
+    public mixed $data;
+    public int $code;
 
     /**
-     * Specify data to be serialized to JSON.
+     * سازنده کلاس CartOperationResponse.
+     *
+     * @param bool $success آیا عملیات موفقیت‌آمیز بوده است؟
+     * @param string $message پیام مربوط به نتیجه عملیات.
+     * @param mixed $data داده‌های اضافی که باید برگردانده شوند (اختیاری).
+     * @param int $code کد وضعیت HTTP (اختیاری، پیش‌فرض 200).
+     */
+    public function __construct(bool $success, string $message, mixed $data = null, int $code = 200)
+    {
+        $this->success = $success;
+        $this->message = $message;
+        $this->data = $data;
+        $this->code = $code;
+    }
+
+    /**
+     * ایجاد یک پاسخ موفقیت‌آمیز.
+     *
+     * @param string $message پیام موفقیت.
+     * @param mixed $data داده‌های اضافی.
+     * @param int $code کد وضعیت HTTP.
+     * @return self
+     */
+    public static function success(string $message, mixed $data = null, int $code = 200): self
+    {
+        return new self(true, $message, $data, $code);
+    }
+
+    /**
+     * ایجاد یک پاسخ ناموفق.
+     *
+     * @param string $message پیام خطا.
+     * @param int $code کد وضعیت HTTP.
+     * @param mixed $data داده‌های اضافی.
+     * @return self
+     */
+    public static function fail(string $message, int $code = 400, mixed $data = null): self
+    {
+        return new self(false, $message, $data, $code);
+    }
+
+    /**
+     * بررسی می‌کند که آیا عملیات موفقیت‌آمیز بوده است.
+     *
+     * @return bool
+     */
+    public function isSuccess(): bool
+    {
+        return $this->success;
+    }
+
+    /**
+     * دریافت پیام عملیات.
+     *
+     * @return string
+     */
+    public function getMessage(): string
+    {
+        return $this->message;
+    }
+
+    /**
+     * دریافت داده‌های عملیات.
+     *
+     * @return mixed
+     */
+    public function getData(): mixed
+    {
+        return $this->data;
+    }
+
+    /**
+     * دریافت کد وضعیت HTTP.
+     *
+     * @return int
+     */
+    public function getCode(): int
+    {
+        return $this->code;
+    }
+
+    /**
+     * متد toArray() برای تبدیل شیء به آرایه.
+     * این متد برای زمانی که می‌خواهیم داده‌ها را به صورت آرایه به کنترلر برگردانیم مفید است.
      *
      * @return array
      */
-    public function jsonSerialize(): array
+    public function toArray(): array
     {
         return [
             'success' => $this->success,
             'message' => $this->message,
             'data' => $this->data,
-            'status_code' => $this->statusCode,
+            'code' => $this->code, // این 'code' مربوط به HTTP status نیست، بلکه کد داخلی پاسخ است.
+                                   // در فرانت‌اند از HTTP status اصلی پاسخ استفاده می‌شود.
         ];
     }
 
     /**
-     * Factory method for a successful response.
+     * متد jsonSerialize() برای سریالایز کردن شیء به JSON.
+     * این متد به طور خودکار توسط تابع json_encode() یا متد response()->json() لاراول فراخوانی می‌شود.
      *
-     * @param string $message
-     * @param mixed|null $data
-     * @param int $statusCode
-     * @return static
+     * @return array
      */
-    public static function success(string $message, mixed $data = null, int $statusCode = 200): self
+    public function jsonSerialize(): array
     {
-        return new self(true, $message, $data, $statusCode);
-    }
-
-    /**
-     * Factory method for a failed response.
-     *
-     * @param string $message
-     * @param int $statusCode
-     * @param mixed|null $data
-     * @return static
-     */
-    public static function fail(string $message, int $statusCode = 400, mixed $data = null): self
-    {
-        return new self(false, $message, $data, $statusCode);
+        return $this->toArray();
     }
 }

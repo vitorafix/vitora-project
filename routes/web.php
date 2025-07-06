@@ -32,13 +32,14 @@ Route::get('/', [PageController::class, 'home'])->name('home');
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
 
-// سبد خرید
+// سبد خرید (مسیرهای مربوط به نمایش صفحه و عملیات از طریق فرم‌های وب)
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
-Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
-Route::put('/cart/update/{cartItem}', [CartController::class, 'update'])->name('cart.update');
-Route::delete('/cart/remove/{cartItem}', [CartController::class, 'remove'])->name('cart.remove');
-Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
-Route::get('/cart/contents', [CartController::class, 'getContents'])->name('cart.contents');
+// مسیرهای API برای عملیات سبد خرید (add, update, remove, clear, contents) باید در routes/api.php باشند.
+// Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add'); // این مسیر به API منتقل شد
+// Route::put('/cart/update/{cartItem}', [CartController::class, 'update'])->name('cart.update'); // این مسیر به API منتقل شد
+// Route::delete('/cart/remove/{cartItem}', [CartController::class, 'remove'])->name('cart.remove'); // این مسیر به API منتقل شد
+// Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear'); // این مسیر به API منتقل شد
+// Route::get('/cart/contents', [CartController::class, 'getContents'])->name('cart.contents'); // این مسیر به API منتقل شد
 
 // مسیر قبلی برای به‌روزرسانی تعداد آیتم سبد خرید که اکنون استفاده نمی‌شود، حذف شد.
 // Route::post('/api/cart/update-quantity', [CartController::class, 'updateQuantity']);

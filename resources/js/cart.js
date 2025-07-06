@@ -1,646 +1,511 @@
-// resources/js/cart.js
+// cart.js
+// This file handles all client-side logic for the shopping cart,
+// including adding/removing items, updating quantities,
+// displaying cart contents in both mini-cart and main cart page,
+// and interacting with backend APIs.
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Get reference to the cart item count display element in the navigation (Mini-Cart)
-    const cartItemCountSpan = document.getElementById('cart-item-count');
-    // Reference to the mini-cart details container that appears on hover
-    const miniCartDetailsContainer = document.getElementById('mini-cart-details-container');
-    // Reference to the mini-cart icon or button that the hover event is applied to
-    const miniCartTrigger = document.getElementById('mini-cart-trigger');
+    // --- DOM Elements Caching ---
+    const miniCartBtn = document.getElementById('mini-cart-btn');
+    const miniCartDropdown = document.getElementById('mini-cart-dropdown');
+    const miniCartItemsContainer = document.getElementById('mini-cart-items-container');
+    const miniCartTotalQuantity = document.getElementById('mini-cart-total-quantity');
+    const miniCartTotalPrice = document.getElementById('mini-cart-total-price');
+    const miniCartEmptyMessage = document.getElementById('mini-cart-empty-message');
+    const miniCartCheckoutBtn = document.getElementById('mini-cart-checkout-btn');
+    const miniCartViewCartBtn = document.getElementById('mini-cart-view-cart-btn');
 
-    // References to the custom confirmation modal elements
-    const confirmationModalOverlay = document.getElementById('confirmation-modal-overlay');
-    const confirmationModalTitle = document.getElementById('confirmation-modal-title');
-    const confirmationModalMessage = document.getElementById('confirmation-modal-message');
-    const confirmationModalConfirmBtn = document.getElementById('confirmation-modal-confirm-btn');
-    const confirmationModalCancelBtn = document.getElementById('confirmation-modal-cancel-btn');
-    const confirmationModalCloseBtn = document.getElementById('confirmation-modal-close-btn');
+    const addProductToCartBtns = document.querySelectorAll('.add-to-cart-btn'); // For product listing page
 
-    // Variable to store the callback function for modal confirmation
-    let confirmCallback = null;
+    // Elements for the main cart page (if present)
+    const mainCartItemsContainer = document.getElementById('cart-items-container');
+    const mainCartEmptyMessage = document.getElementById('cart-empty-message');
+    const mainCartSummary = document.getElementById('cart-summary');
+    const mainCartTotalPriceElement = document.getElementById('cart-total-price'); // Assuming this exists in main cart summary
 
-    // Variable to hold the hover timer (to prevent immediate closing)
-    let miniCartHoverTimer;
-    const HOVER_DELAY = 300; // milliseconds to show details
-    const HIDE_DELAY = 300; // milliseconds to hide details
+    // --- Helper Functions ---
 
-    /**
-     * Displays the mini-cart display (item count in the navigation bar).
-     * @param {number} count - The total number of items in the cart.
-     */
-    function updateMiniCart(count) {
-        if (cartItemCountSpan) {
-            cartItemCountSpan.textContent = count;
-            if (count > 0) {
-                cartItemCountSpan.classList.remove('hidden');
-            } else {
-                cartItemCountSpan.classList.add('hidden');
-            }
-        }
+    // Get CSRF Token from meta tag
+    function getCsrfToken() {
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        return csrfMeta ? csrfMeta.getAttribute('content') : '';
+    }
+
+    // Function to format numbers with commas (Persian locale)
+    function formatNumber(num) {
+        return new Intl.NumberFormat('fa-IR').format(num);
     }
 
     /**
-     * Fetches current cart contents from the server and renders the main cart page.
+     * Shows a message box to the user.
+     * @param {string} message - The message to display.
+     * @param {string} type - 'success', 'error', 'info', 'warning'.
+     * @param {number} duration - Duration in milliseconds for the message to disappear. Default 3000.
      */
-    async function renderMainCart() {
-        const cartItemsContainer = document.getElementById('cart-items-container');
-        const cartSummaryContainer = document.getElementById('cart-summary');
-        const cartEmptyMessage = document.getElementById('cart-empty-message');
-
-        if (!cartItemsContainer || !cartSummaryContainer || !cartEmptyMessage) {
-            // If these elements are not on the current page (e.g., product-single, home),
-            // we only update the mini-cart.
-            fetchCartContentsForMiniCart();
+    window.showMessage = function(message, type = 'info', duration = 3000) {
+        const messageBox = document.getElementById('message-box');
+        const messageText = document.getElementById('message-text');
+        if (!messageBox || !messageText) {
+            console.warn('Message box elements not found.');
             return;
         }
 
+        messageText.innerHTML = message; // Use innerHTML to allow for <br>
+        messageBox.className = 'fixed bottom-5 right-5 p-4 rounded-lg shadow-lg text-white z-50 transition-transform transform translate-x-full';
+
+        switch (type) {
+            case 'success':
+                messageBox.classList.add('bg-green-500');
+                break;
+            case 'error':
+                messageBox.classList.add('bg-red-500');
+                break;
+            case 'info':
+                messageBox.classList.add('bg-blue-500');
+                break;
+            case 'warning':
+                messageBox.classList.add('bg-orange-500');
+                break;
+            default:
+                messageBox.classList.add('bg-gray-700');
+        }
+
+        // Show the message box
+        setTimeout(() => {
+            messageBox.classList.remove('translate-x-full');
+            messageBox.classList.add('translate-x-0');
+        }, 50); // Small delay for animation
+
+        // Hide the message box after duration
+        setTimeout(() => {
+            messageBox.classList.remove('translate-x-0');
+            messageBox.classList.add('translate-x-full');
+        }, duration);
+    };
+
+
+    // --- Cart API Interactions ---
+
+    /**
+     * Fetches cart contents from the backend API.
+     * @returns {Promise<Object>} A promise that resolves to the cart data.
+     */
+    async function fetchCartContents() {
         try {
-            const response = await fetch('/cart/contents', {
+            // *** IMPORTANT: Corrected URL to include /api/ ***
+            const response = await fetch('/api/cart/contents', {
                 method: 'GET',
                 headers: {
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': getCsrfToken() // Include CSRF token for GET if needed by middleware
                 }
             });
-            const data = await response.json();
 
             if (!response.ok) {
-                // Handle API error
-                window.showMessage(data.message || 'Error loading cart.', 'error');
-                return;
+                // If response is not OK, try to parse JSON error message
+                const errorData = await response.json().catch(() => ({ message: 'خطای ناشناخته از سرور.' }));
+                throw new Error(errorData.message || 'خطا در دریافت محتویات سبد خرید.');
             }
 
-            if (!data.items || !Array.isArray(data.items)) { // تغییر از cartItems به items
-                console.error('cartItems is undefined or not an array:', data.items);
-                window.showMessage('Error receiving cart information.', 'error');
-                updateMiniCart(0);
-                cartEmptyMessage.classList.remove('hidden');
-                cartItemsContainer.classList.add('hidden');
-                cartSummaryContainer.classList.add('hidden');
-                return;
-            }
-
-
-            // Clear existing items
-            cartItemsContainer.innerHTML = '';
-
-            if (data.items.length === 0) { // تغییر از cartItems به items
-                cartEmptyMessage.classList.remove('hidden');
-                cartItemsContainer.classList.add('hidden');
-                cartSummaryContainer.classList.add('hidden');
-                updateMiniCart(0); // Update mini-cart if main cart is empty
-            } else {
-                cartEmptyMessage.classList.add('hidden');
-                cartItemsContainer.classList.remove('hidden');
-                cartSummaryContainer.classList.remove('hidden');
-
-                // Render each cart item
-                data.items.forEach(item => { // تغییر از cartItems به items
-                    const itemElement = document.createElement('div');
-                    itemElement.classList.add('flex', 'items-center', 'justify-between', 'py-4', 'border-b', 'border-gray-200');
-                    itemElement.innerHTML = `
-                        <div class="flex items-center w-3/5">
-                            <img src="${item.thumbnail_url_small || item.image || 'https://placehold.co/80x80/E5E7EB/4B5563?text=Product'}"
-                                 onerror="this.onerror=null;this.src='https://placehold.co/80x80/E5E7EB/4B5563?text=Product';"
-                                 alt="${item.product_name}" class="w-20 h-20 object-cover rounded-lg ml-4 shadow-sm">
-                            <a href="/products/${item.product_id}" class="text-brown-900 hover:text-green-700 font-semibold text-lg product-title-link">${item.product_name}</a>
-                        </div>
-                        <div class="flex items-center w-2/5 justify-end space-x-4 space-x-reverse">
-                            <div class="flex items-center border border-gray-300 rounded-lg overflow-hidden">
-                                <button class="quantity-btn p-2 bg-gray-100 hover:bg-gray-200 transition-colors"
-                                        data-cart-item-id="${item.cart_item_id}" data-action="decrease">-</button>
-                                <input type="number" value="${item.quantity}"
-                                        class="cart-quantity-input w-16 text-center border-none focus:ring-0 focus:outline-none bg-white text-gray-800"
-                                        min="1" data-cart-item-id="${item.cart_item_id}" data-product-stock="${item.stock}">
-                                <button class="quantity-btn p-2 bg-gray-100 hover:bg-gray-200 transition-colors"
-                                        data-cart-item-id="${item.cart_item_id}" data-action="increase">+</button>
-                            </div>
-                            <span class="text-brown-800 font-bold w-24 text-center">${new Intl.NumberFormat('fa-IR').format(item.product_price * item.quantity)} Tomans</span>
-                            <button class="remove-from-cart-btn text-red-500 hover:text-red-700 transition-colors p-2 rounded-full"
-                                    data-cart-item-id="${item.cart_item_id}" data-product-title="${item.product_name}">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </div>
-                    `;
-                    cartItemsContainer.appendChild(itemElement);
-                });
-
-                // Render summary
-                cartSummaryContainer.innerHTML = `
-                    <div class="flex justify-between items-center text-xl font-bold text-brown-900 pb-4 border-b-2 border-green-700 mb-4">
-                        <span>Total:</span>
-                        <span>${new Intl.NumberFormat('fa-IR').format(data.totalPrice)} Tomans</span>
-                    </div>
-                    <a href="/checkout" class="btn-primary w-full flex items-center justify-center">
-                        <i class="fas fa-credit-card ml-2"></i>
-                        Proceed to Checkout
-                    </a>
-                `;
-
-                // Re-attach event listeners for newly rendered elements
-                attachCartEventListeners();
-                updateMiniCart(data.totalQuantity); // تغییر از totalItemsInCart به totalQuantity
-            }
-
+            const data = await response.json();
+            return data;
         } catch (error) {
             console.error('Error fetching cart contents:', error);
-            window.showMessage('Error loading cart. Please try again.', 'error');
-            updateMiniCart(0); // Assume 0 if error in fetching
+            window.showMessage(error.message || 'خطا در بارگذاری سبد خرید.', 'error');
+            return { items: [], totalQuantity: 0, totalPrice: 0 }; // Return default empty cart on error
         }
     }
 
     /**
-     * Fetches current cart contents from the server to update only the mini-cart.
+     * Adds a product to the cart or updates its quantity via API.
+     * @param {number} productId - The ID of the product.
+     * @param {number} quantity - The quantity to add/update.
+     * @returns {Promise<Object>} A promise that resolves to the API response.
      */
-    async function fetchCartContentsForMiniCart() {
+    async function addOrUpdateCartItem(productId, quantity = 1) {
         try {
-            const response = await fetch('/cart/contents', {
-                method: 'GET',
-                headers: { 'Accept': 'application/json' }
-            });
-            const data = await response.json();
-            if (response.ok) {
-                // Ensure data.totalQuantity is not undefined before using it
-                updateMiniCart(data.totalQuantity !== undefined ? data.totalQuantity : 0); // تغییر از totalItemsInCart به totalQuantity
-                // Also fetch mini-cart details after any update
-                // If the details container exists and the mouse is over the trigger, render it
-                if (miniCartDetailsContainer && miniCartTrigger && miniCartTrigger.matches(':hover')) {
-                    renderMiniCartDetails();
-                }
-            } else {
-                console.error('Error fetching mini-cart contents:', data.message);
-                updateMiniCart(0);
-            }
-        } catch (error) {
-            console.error('Network error fetching mini-cart contents:', error);
-            updateMiniCart(0);
-        }
-    }
-
-    /**
-     * Renders the detailed view of the mini-cart in a dropdown.
-     */
-    async function renderMiniCartDetails() {
-        if (!miniCartDetailsContainer) return;
-
-        miniCartDetailsContainer.innerHTML = '<div class="p-4 text-center text-gray-600">Loading...</div>';
-        miniCartDetailsContainer.classList.add('active'); // Show by adding active class
-
-        try {
-            const response = await fetch('/cart/contents', {
-                method: 'GET',
-                headers: { 'Accept': 'application/json' }
-            });
-            const data = await response.json();
-
-            if (!response.ok) {
-                miniCartDetailsContainer.innerHTML = '<div class="p-4 text-center text-red-500">Error loading cart.</div>';
-                return;
-            }
-
-            if (!data.items || !Array.isArray(data.items)) { // تغییر از cartItems به items
-                console.error('cartItems is undefined or not an array in mini-cart details:', data.items);
-                miniCartDetailsContainer.innerHTML = '<div class="p-4 text-center text-red-500">Error receiving cart details.</div>';
-                return;
-            }
-
-
-            if (data.items.length === 0) { // تغییر از cartItems به items
-                miniCartDetailsContainer.innerHTML = `
-                    <div class="p-4 text-center text-gray-600">
-                        Your cart is empty.
-                    </div>
-                `;
-            } else {
-                let itemsHtml = '';
-                data.items.slice(0, 4).forEach(item => { // Display max 3 items // تغییر از cartItems به items
-                    itemsHtml += `
-                        <div class="flex items-center py-2 border-b border-gray-100 last:border-b-0">
-                            <img src="${item.thumbnail_url_small || item.image || 'https://placehold.co/50x50/E5E7EB/4B5563?text=Product'}"
-                                 onerror="this.onerror=null;this.src='https://placehold.co/50x50/E5E7EB/4B5563?text=Product';"
-                                 alt="${item.product_name}" class="w-12 h-12 object-cover rounded-md ml-2">
-                            <div class="flex-grow">
-                                <p class="text-sm font-semibold text-gray-800">${item.product_name}</p>
-                                <p class="text-xs text-gray-600">${item.quantity} × ${new Intl.NumberFormat('fa-IR').format(item.product_price)} Tomans</p>
-                            </div>
-                            <span class="text-sm font-bold text-brown-800">${new Intl.NumberFormat('fa-IR').format(item.product_price * item.quantity)} Tomans</span>
-                        </div>
-                    `;
-                });
-
-                miniCartDetailsContainer.innerHTML = `
-                    <div class="p-4">
-                        ${itemsHtml}
-                        <div class="flex justify-between items-center pt-4 mt-2 border-t border-gray-200 mb-4">
-                            <span class="text-base font-bold text-brown-900">Total:</span>
-                            <span class="text-base font-bold text-brown-900">${new Intl.NumberFormat('fa-IR').format(data.totalPrice)} Tomans</span>
-                        </div>
-                        <a href="/cart" class="btn-secondary w-full text-center mt-4 py-2 text-sm">
-                            View Cart
-                        </a>
-                    </div>
-                `;
-            }
-        } catch (error) {
-            console.error('Error fetching mini-cart details:', error);
-            miniCartDetailsContainer.innerHTML = '<div class="p-4 text-center text-red-500">Error loading cart details.</div>';
-        }
-    }
-
-    /**
-     * Attaches event listeners to cart quantity buttons, input fields, and remove buttons.
-     * (Called after initial render and after any AJAX updates that re-render cart items)
-     */
-    function attachCartEventListeners() {
-        // Event listeners for quantity buttons (+/-)
-        document.querySelectorAll('.quantity-btn').forEach(button => {
-            button.removeEventListener('click', handleQuantityChange); // Prevent duplicate listeners
-            button.addEventListener('click', handleQuantityChange);
-        });
-
-        // Event listeners for quantity input field (direct input)
-        document.querySelectorAll('.cart-quantity-input').forEach(input => {
-            input.removeEventListener('change', handleQuantityInputChange); // Prevent duplicate listeners
-            input.addEventListener('change', handleQuantityInputChange);
-        });
-
-        // Event listeners for remove buttons
-        document.querySelectorAll('.remove-from-cart-btn').forEach(button => {
-            button.removeEventListener('click', showRemoveConfirmationModal); // Changed to use custom modal
-            button.addEventListener('click', showRemoveConfirmationModal); // Changed to use custom modal
-        });
-    }
-
-    /**
-     * Shows a custom confirmation modal.
-     * @param {string} title - The title of the modal.
-     * @param {string} message - The message to display.
-     * @param {Function} onConfirm - Callback function to execute if 'Confirm' is clicked.
-     */
-    function showConfirmationModal(title, message, onConfirm) {
-        if (!confirmationModalOverlay || !confirmationModalTitle || !confirmationModalMessage || !confirmationModalConfirmBtn || !confirmationModalCancelBtn || !confirmationModalCloseBtn) {
-            console.error("Confirmation modal elements not found in app.blade.php. Falling back to browser's confirm.");
-            // Fallback to browser's confirm if elements are missing
-            if (window.confirm(message)) {
-                onConfirm(true); // Pass true for confirmation if fallback is used
-            } else {
-                onConfirm(false); // Pass false for cancellation if fallback is used
-            }
-            return;
-        }
-
-        confirmationModalTitle.textContent = title;
-        confirmationModalMessage.textContent = message;
-        confirmationModalOverlay.classList.add('active'); // Show modal
-
-        // Store the callback
-        confirmCallback = onConfirm;
-
-        // Clear previous listeners to prevent multiple executions
-        confirmationModalConfirmBtn.removeEventListener('click', handleModalConfirm);
-        confirmationModalCancelBtn.removeEventListener('click', handleModalCancel);
-        confirmationModalCloseBtn.removeEventListener('click', handleModalCancel);
-
-        // Add new listeners
-        confirmationModalConfirmBtn.addEventListener('click', handleModalConfirm);
-        confirmationModalCancelBtn.addEventListener('click', handleModalCancel);
-        confirmationModalCloseBtn.addEventListener('click', handleModalCancel);
-
-        // Allow closing with Escape key
-        document.addEventListener('keydown', handleEscapeKey);
-    }
-
-    /**
-     * Hides the custom confirmation modal.
-     */
-    function hideConfirmationModal() {
-        if (confirmationModalOverlay) {
-            confirmationModalOverlay.classList.remove('active');
-        }
-        confirmCallback = null; // Clear callback
-        // Remove escape key listener
-        document.removeEventListener('keydown', handleEscapeKey);
-    }
-
-    /**
-     * Handler for confirm button in custom modal.
-     */
-    function handleModalConfirm() {
-        if (confirmCallback) {
-            confirmCallback(true); // Pass true to indicate confirmation
-        }
-        hideConfirmationModal();
-    }
-
-    /**
-     * Handler for cancel button or close button in custom modal.
-     */
-    function handleModalCancel() {
-        if (confirmCallback) {
-            confirmCallback(false); // Pass false to indicate cancellation
-        }
-        hideConfirmationModal();
-    }
-
-    /**
-     * Handles Escape key press to close modal.
-     */
-    function handleEscapeKey(event) {
-        if (event.key === 'Escape') {
-            handleModalCancel();
-        }
-    }
-
-
-    /**
-     * Handles quantity change when '+' or '-' buttons are clicked.
-     * @param {Event} event
-     */
-    async function handleQuantityChange(event) {
-        const cartItemId = this.dataset.cartItemId;
-        const action = this.dataset.action;
-        const inputElement = this.closest('.flex').querySelector('.cart-quantity-input');
-        let currentQuantity = parseInt(inputElement.value);
-        const productStock = parseInt(inputElement.dataset.productStock);
-
-        let newQuantity = currentQuantity;
-        if (action === 'increase') {
-            newQuantity = currentQuantity + 1;
-        } else if (action === 'decrease') {
-            newQuantity = currentQuantity - 1;
-        }
-
-        // Validate new quantity against stock
-        if (newQuantity > productStock) {
-            window.showMessage(`Insufficient stock for this quantity. Current stock: ${productStock}`, 'error');
-            return;
-        }
-        if (newQuantity < 0) { // Should not happen with min="1" but as a safeguard
-            newQuantity = 0;
-        }
-
-        // Only send request if quantity actually changes
-        if (newQuantity !== currentQuantity) {
-            await updateCartItem(cartItemId, newQuantity);
-        }
-    }
-
-    /**
-     * Handles quantity change when user directly inputs a value.
-     * @param {Event} event
-     */
-    async function handleQuantityInputChange(event) {
-        const cartItemId = this.dataset.cartItemId;
-        let newQuantity = parseInt(this.value);
-        const productStock = parseInt(this.dataset.productStock);
-
-        // Basic validation for input field
-        if (isNaN(newQuantity) || newQuantity < 0) {
-            newQuantity = 1; // Default to 1 if invalid
-            this.value = newQuantity; // Update input field
-            window.showMessage('Invalid quantity. Minimum 1.', 'error');
-            return;
-        }
-
-        if (newQuantity > productStock) {
-            window.showMessage(`Insufficient stock for this quantity. Current stock: ${productStock}`, 'error');
-            this.value = productStock; // Set to max available stock
-            newQuantity = productStock;
-        }
-
-        // Only send request if quantity actually changes
-        if (newQuantity !== parseInt(this.dataset.previousQuantity || this.value)) { // Use dataset for previous if needed
-            await updateCartItem(cartItemId, newQuantity);
-        }
-    }
-
-
-    /**
-     * Sends an AJAX request to update a cart item's quantity.
-     * @param {number} cartItemId - The ID of the cart item.
-     * @param {number} quantity - The new quantity.
-     */
-    async function updateCartItem(cartItemId, quantity) {
-        try {
-            const response = await fetch(`/cart/update/${cartItemId}`, {
-                method: 'PUT', // Changed to PUT as per backend route
+            // *** IMPORTANT: Corrected URL to include /api/ ***
+            const response = await fetch('/api/cart/add', {
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': getCsrfToken()
                 },
-                body: JSON.stringify({ quantity: quantity })
+                body: JSON.stringify({ product_id: productId, quantity: quantity })
             });
+
             const result = await response.json();
 
-            if (response.ok) {
-                window.showMessage(result.message, 'success');
-                renderMainCart(); // Re-render cart to show updated totals/items
-            } else {
-                window.showMessage(result.message || 'Error updating cart.', 'error');
-                // If there's an error (e.g., stock issue), re-render to revert quantity
-                renderMainCart();
+            if (!response.ok) {
+                throw new Error(result.message || 'خطا در افزودن محصول به سبد خرید.');
             }
+
+            window.showMessage(result.message || 'محصول به سبد خرید اضافه شد.', 'success');
+            return result;
         } catch (error) {
-            console.error('Error updating cart item:', error);
-            window.showMessage('Server communication error. Please check your internet connection.', 'error');
-            renderMainCart(); // Re-render on network error to show original state
+            console.error('Error adding/updating cart item:', error);
+            window.showMessage(error.message || 'خطا در افزودن محصول به سبد خرید.', 'error');
+            throw error; // Re-throw to allow calling context to handle
         }
     }
 
     /**
-     * Handles removing a cart item using the custom confirmation modal.
-     * @param {Event} event
+     * Updates the quantity of a specific cart item via API.
+     * @param {number} cartItemId - The ID of the cart item.
+     * @param {number} newQuantity - The new quantity.
+     * @returns {Promise<Object>} A promise that resolves to the API response.
      */
-    async function showRemoveConfirmationModal(event) {
-        const cartItemId = this.dataset.cartItemId;
-        
-        // Find the main container for the current cart item (the one with 'flex' at the top level for the row)
-        const itemMainContainer = this.closest('.flex.items-center.justify-between.py-4.border-b.border-gray-200');
+    async function updateCartItemQuantity(cartItemId, newQuantity) {
+        try {
+            // *** IMPORTANT: Corrected URL to include /api/ ***
+            const response = await fetch(`/api/cart/update/${cartItemId}`, {
+                method: 'PUT', // Use PUT for updates
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': getCsrfToken()
+                },
+                body: JSON.stringify({ quantity: newQuantity })
+            });
 
-        let itemTitle = 'Product'; // Fallback value
-        if (itemMainContainer) {
-            // Query within this main container for the product title link, which is inside the first flex child div
-            const titleLinkElement = itemMainContainer.querySelector('.w-3\\/5 a'); 
-            if (titleLinkElement) {
-                itemTitle = titleLinkElement.textContent.trim();
-            } else {
-                console.warn("Could not find product title link within the item container.");
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || 'خطا در به‌روزرسانی تعداد محصول.');
             }
-        } else {
-            console.warn("Could not find the main item container for the delete button.");
+
+            window.showMessage(result.message || 'تعداد محصول به‌روزرسانی شد.', 'success');
+            return result;
+        } catch (error) {
+            console.error('Error updating cart item quantity:', error);
+            window.showMessage(error.message || 'خطا در به‌روزرسانی تعداد محصول.', 'error');
+            throw error;
         }
+    }
 
-        showConfirmationModal(
-            'Remove Product from Cart', // Title
-            `Are you sure you want to remove "${itemTitle}" from your cart?`, // Message
-            async (confirmed) => {
-                if (confirmed) {
-                    try {
-                        const response = await fetch(`/cart/remove/${cartItemId}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                            }
-                        });
-                        const result = await response.json();
-
-                        if (response.ok) {
-                            window.showMessage(result.message, 'success');
-                            renderMainCart(); // Re-render cart after removal
-                        } else {
-                            window.showMessage(result.message || 'Error removing product from cart.', 'error');
-                        }
-                    } catch (error) {
-                        console.error('Error removing cart item:', error);
-                        window.showMessage('Server communication error. Please check your internet connection.', 'error');
-                    }
+    /**
+     * Removes a specific cart item via API.
+     * @param {number} cartItemId - The ID of the cart item to remove.
+     * @returns {Promise<Object>} A promise that resolves to the API response.
+     */
+    async function removeCartItem(cartItemId) {
+        try {
+            // *** IMPORTANT: Corrected URL to include /api/ ***
+            const response = await fetch(`/api/cart/remove/${cartItemId}`, {
+                method: 'DELETE', // Use DELETE for removal
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': getCsrfToken()
                 }
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || 'خطا در حذف محصول از سبد خرید.');
             }
-        );
+
+            window.showMessage(result.message || 'محصول از سبد خرید حذف شد.', 'success');
+            return result;
+        } catch (error) {
+            console.error('Error removing cart item:', error);
+            window.showMessage(error.message || 'خطا در حذف محصول از سبد خرید.', 'error');
+            throw error;
+        }
+    }
+
+    /**
+     * Clears all items from the cart via API.
+     * @returns {Promise<Object>} A promise that resolves to the API response.
+     */
+    async function clearCart() {
+        try {
+            // *** IMPORTANT: Corrected URL to include /api/ ***
+            const response = await fetch('/api/cart/clear', {
+                method: 'POST', // Or DELETE, depending on your backend
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': getCsrfToken()
+                }
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || 'خطا در پاکسازی سبد خرید.');
+            }
+
+            window.showMessage(result.message || 'سبد خرید خالی شد.', 'success');
+            return result;
+        } catch (error) {
+            console.error('Error clearing cart:', error);
+            window.showMessage(error.message || 'خطا در پاکسازی سبد خرید.', 'error');
+            throw error;
+        }
     }
 
 
-    // Event listener for "Add to Cart" buttons on product pages (or anywhere a product is displayed)
-    const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
-    addToCartButtons.forEach(button => {
+    // --- Rendering Functions ---
+
+    /**
+     * Renders the mini-cart dropdown contents.
+     * @param {Array} items - Array of cart items.
+     * @param {number} totalQuantity - Total quantity of items.
+     * @param {number} totalPrice - Total price of items.
+     */
+    function renderMiniCartDetails(items, totalQuantity, totalPrice) {
+        if (!miniCartItemsContainer || !miniCartTotalQuantity || !miniCartTotalPrice || !miniCartEmptyMessage) {
+            console.warn('Mini-cart elements not found, skipping mini-cart rendering.');
+            return;
+        }
+
+        miniCartTotalQuantity.textContent = formatNumber(totalQuantity);
+        miniCartTotalPrice.textContent = `${formatNumber(totalPrice)} تومان`;
+
+        miniCartItemsContainer.innerHTML = ''; // Clear previous items
+
+        if (items && items.length > 0) {
+            miniCartEmptyMessage.classList.add('hidden');
+            miniCartItemsContainer.classList.remove('hidden');
+            if (miniCartCheckoutBtn) miniCartCheckoutBtn.classList.remove('hidden');
+            if (miniCartViewCartBtn) miniCartViewCartBtn.classList.remove('hidden');
+
+
+            items.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0';
+                itemElement.innerHTML = `
+                    <div class="flex items-center">
+                        <img src="${item.product.thumbnail_url_small || item.product.image_url || 'https://placehold.co/60x60/E5E7EB/4B5563?text=Product'}"
+                             onerror="this.onerror=null;this.src='https://placehold.co/60x60/E5E7EB/4B5563?text=Product';"
+                             alt="${item.product.title}" class="w-12 h-12 object-cover rounded-md ml-3">
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">${item.product.title}</p>
+                            <p class="text-xs text-gray-600">${formatNumber(item.quantity)} × ${formatNumber(item.product.price)} تومان</p>
+                        </div>
+                    </div>
+                    <div class="text-sm font-semibold text-green-700">
+                        ${formatNumber(item.quantity * item.product.price)} تومان
+                    </div>
+                `;
+                miniCartItemsContainer.appendChild(itemElement);
+            });
+        } else {
+            miniCartEmptyMessage.classList.remove('hidden');
+            miniCartItemsContainer.classList.add('hidden');
+            if (miniCartCheckoutBtn) miniCartCheckoutBtn.classList.add('hidden');
+            if (miniCartViewCartBtn) miniCartViewCartBtn.classList.add('hidden');
+        }
+    }
+
+    /**
+     * Renders the main cart page contents.
+     * @param {Array} items - Array of cart items.
+     * @param {number} totalQuantity - Total quantity of items.
+     * @param {number} totalPrice - Total price of items.
+     */
+    function renderMainCart(items, totalQuantity, totalPrice) {
+        if (!mainCartItemsContainer || !mainCartEmptyMessage || !mainCartSummary || !mainCartTotalPriceElement) {
+            console.warn('Main cart elements not found, skipping main cart rendering.');
+            return;
+        }
+
+        mainCartItemsContainer.innerHTML = ''; // Clear previous items
+
+        if (items && items.length > 0) {
+            mainCartEmptyMessage.classList.add('hidden');
+            mainCartItemsContainer.classList.remove('hidden');
+            mainCartSummary.classList.remove('hidden');
+
+            items.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'flex justify-between items-center border-b pb-4 last:border-b-0 last:pb-0';
+                itemElement.dataset.itemId = item.id; // Use cart item ID
+                itemElement.dataset.itemPrice = item.product.price; // Use product price from item.product
+                itemElement.dataset.itemQuantity = item.quantity; // Current quantity
+                itemElement.dataset.productStock = item.product.stock; // اضافه شده: موجودی محصول
+
+                itemElement.innerHTML = `
+                    <div class="flex items-center">
+                        <img src="${item.product.thumbnail_url_small || item.product.image_url || 'https://placehold.co/80x80/E5E7EB/4B5563?text=Product'}"
+                             onerror="this.onerror=null;this.src='https://placehold.co/80x80/E5E7EB/4B5563?text=Product';"
+                             alt="${item.product.title}" class="w-16 h-16 object-cover rounded-lg ml-3">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800">${item.product.title}</h3>
+                            <div class="flex items-center mt-1">
+                                <button type="button" class="quantity-btn minus-btn bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-full w-6 h-6 flex items-center justify-center text-lg font-bold transition-colors duration-200" aria-label="کاهش تعداد">
+                                    -
+                                </button>
+                                <span class="item-quantity mx-2 text-gray-700 text-base font-medium" data-quantity="${item.quantity}">
+                                    ${formatNumber(item.quantity)}
+                                </span>
+                                <button type="button" class="quantity-btn plus-btn bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-full w-6 h-6 flex items-center justify-center text-lg font-bold transition-colors duration-200" aria-label="افزایش تعداد">
+                                    +
+                                </button>
+                                <span class="mr-2 text-gray-600 text-sm">عدد</span>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="item-subtotal text-green-700 font-bold text-lg" data-subtotal="${item.product.price * item.quantity}">
+                        ${formatNumber(item.product.price * item.quantity)} تومان
+                    </span>
+                `;
+                mainCartItemsContainer.appendChild(itemElement);
+            });
+
+            // Update main cart total price
+            mainCartTotalPriceElement.textContent = `${formatNumber(totalPrice)} تومان`;
+            mainCartTotalPriceElement.dataset.totalPrice = totalPrice; // Update data attribute
+        } else {
+            mainCartEmptyMessage.classList.remove('hidden');
+            mainCartItemsContainer.classList.add('hidden');
+            mainCartSummary.classList.add('hidden');
+        }
+    }
+
+
+    // --- Event Listeners ---
+
+    // Toggle mini-cart dropdown
+    if (miniCartBtn && miniCartDropdown) {
+        miniCartBtn.addEventListener('click', function() {
+            miniCartDropdown.classList.toggle('hidden');
+            if (!miniCartDropdown.classList.contains('hidden')) {
+                // Fetch and render mini-cart contents when opened
+                fetchCartContents().then(data => {
+                    renderMiniCartDetails(data.items, data.totalQuantity, data.totalPrice);
+                });
+            }
+        });
+
+        // Close mini-cart when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!miniCartBtn.contains(event.target) && !miniCartDropdown.contains(event.target)) {
+                miniCartDropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    // Add to cart button on product listing pages
+    addProductToCartBtns.forEach(button => {
         button.addEventListener('click', async function() {
             const productId = this.dataset.productId;
-            const productTitle = this.dataset.productTitle;
-            const productPrice = this.dataset.productPrice;
-
-            const originalText = this.innerHTML;
-            this.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> Adding...';
-            this.disabled = true;
+            const productTitle = this.dataset.productTitle; // For message
+            const productPrice = this.dataset.productPrice; // For message
 
             try {
-                const response = await fetch('/cart/add', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify({
-                        product_id: productId,
-                        quantity: 1, // Default to 1 for quick add
-                        price: productPrice
-                    })
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    window.showMessage(`"${productTitle}" added to cart successfully.`, 'success');
-                    // Changed: Directly update mini-cart using the count from the response
-                    if (result.totalQuantity !== undefined) { // تغییر از totalItemsInCart به totalQuantity
-                        updateMiniCart(result.totalQuantity); // تغییر از totalItemsInCart به totalQuantity
-                    } else {
-                        // Fallback: If totalQuantity is not in response, fetch it
-                        fetchCartContentsForMiniCart(); 
-                    }
-                    
-                    // If on cart page, re-render it
-                    if (document.getElementById('cart-items-container')) {
-                        renderMainCart();
-                    }
-                } else {
-                    window.showMessage(result.message || 'An error occurred while adding the product to the cart.', 'error');
+                const response = await addOrUpdateCartItem(productId, 1); // Add 1 quantity
+                // After successful add, update both mini-cart and main cart (if on cart page)
+                const updatedCartData = await fetchCartContents();
+                renderMiniCartDetails(updatedCartData.items, updatedCartData.totalQuantity, updatedCartData.totalPrice);
+                // If on the main cart page, re-render it too
+                if (mainCartItemsContainer && mainCartSummary) {
+                    renderMainCart(updatedCartData.items, updatedCartData.totalQuantity, updatedCartData.totalPrice);
                 }
-
             } catch (error) {
-                window.showMessage('Server communication error. Please check your internet connection.', 'error');
-                console.error('Network or parsing error:', error);
-            } finally {
-                this.innerHTML = originalText;
-                this.disabled = false;
+                // Error message already shown by addOrUpdateCartItem
             }
         });
     });
 
-    // Event listener for "Place Order" button on the checkout page
-    const placeOrderForm = document.getElementById('place-order-form');
-    if (placeOrderForm) {
-        placeOrderForm.addEventListener('submit', async function(event) {
-            event.preventDefault(); // Prevent default form submission
+    // Event listener for quantity buttons in main cart page
+    if (mainCartItemsContainer) {
+        mainCartItemsContainer.addEventListener('click', async function(event) {
+            const target = event.target;
+            if (target.classList.contains('quantity-btn')) {
+                const itemElement = target.closest('[data-item-id]');
+                if (!itemElement) return;
 
-            const placeOrderBtn = this.querySelector('button[type="submit"]');
-            const originalBtnText = placeOrderBtn.innerHTML;
-            placeOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> Placing order...';
-            placeOrderBtn.disabled = true;
+                const itemId = itemElement.dataset.itemId; // This is cart_item_id
+                const itemPrice = parseFloat(itemElement.dataset.itemPrice);
+                const productStock = parseInt(itemElement.dataset.productStock); // اضافه شده: موجودی محصول
+                const quantitySpan = itemElement.querySelector('.item-quantity');
+                let currentQuantity = parseInt(quantitySpan.dataset.quantity);
+                const itemSubtotalElement = itemElement.querySelector('.item-subtotal');
 
-            const formData = new FormData(placeOrderForm);
-            const data = Object.fromEntries(formData.entries());
+                let oldQuantity = currentQuantity; // Store old quantity for rollback
 
-            try {
-                const response = await fetch('/order/place', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify(data)
-                });
-                const result = await response.json();
-
-                if (response.ok) {
-                    window.showMessage(result.message, 'success');
-                    // Redirect to order confirmation page
-                    window.location.href = `/order/confirmation/${result.orderId}`;
-                } else {
-                    // Handle validation errors from the backend (status 422)
-                    if (response.status === 422 && result.errors) {
-                        let errorMessage = 'Please check the input information: <br>';
-                        for (const field in result.errors) {
-                            errorMessage += `- ${result.errors[field].join(', ')}<br>`;
-                        }
-                        window.showMessage(errorMessage, 'error', 5000); // Show for longer
+                if (target.classList.contains('plus-btn')) {
+                    if (currentQuantity < productStock) { // اضافه شده: بررسی موجودی
+                        currentQuantity++;
                     } else {
-                        window.showMessage(result.message || 'Error placing order.', 'error');
+                        window.showMessage(`موجودی کافی برای افزودن بیشتر این محصول وجود ندارد. موجودی فعلی: ${formatNumber(productStock)}`, 'warning');
+                        return; // جلوگیری از افزایش بیشتر از موجودی
                     }
-                    console.error('Order placement error:', result);
+                } else if (target.classList.contains('minus-btn')) {
+                    if (currentQuantity > 1) { // Prevent quantity from going below 1
+                        currentQuantity--;
+                    } else {
+                        // If quantity goes to 0, remove the item
+                        const confirmRemove = confirm('آیا مطمئن هستید که می‌خواهید این محصول را از سبد خرید حذف کنید؟');
+                        if (confirmRemove) {
+                            try {
+                                await removeCartItem(itemId);
+                                // Re-fetch and re-render entire cart after removal
+                                const updatedCartData = await fetchCartContents();
+                                renderMainCart(updatedCartData.items, updatedCartData.totalQuantity, updatedCartData.totalPrice);
+                                renderMiniCartDetails(updatedCartData.items, updatedCartData.totalQuantity, updatedCartData.totalPrice);
+                                return; // Exit function after removal
+                            } catch (error) {
+                                // Error message already shown by removeCartItem
+                                return; // Exit function on error
+                            }
+                        } else {
+                            return; // User cancelled removal, do nothing
+                        }
+                    }
                 }
-            } catch (error) {
-                console.error('Error placing order (network/parsing):', error);
-                window.showMessage('Server communication error. Please check your internet connection.', 'error');
-            } finally {
-                placeOrderBtn.innerHTML = originalBtnText;
-                placeOrderBtn.disabled = false;
+
+                // Update quantity display and data attribute locally first for responsiveness
+                quantitySpan.textContent = formatNumber(currentQuantity);
+                quantitySpan.dataset.quantity = currentQuantity;
+
+                // Update item subtotal locally
+                const newSubtotal = itemPrice * currentQuantity;
+                itemSubtotalElement.textContent = `${formatNumber(newSubtotal)} تومان`;
+                itemSubtotalElement.dataset.subtotal = newSubtotal;
+
+                // Update the overall cart total locally (will be re-calculated by renderMainCart later)
+                // updateCartTotal(); // No longer needed directly here as renderMainCart handles it
+
+                // --- Start AJAX call to update quantity on the server ---
+                try {
+                    await updateCartItemQuantity(itemId, currentQuantity);
+                    // After successful update, re-fetch and re-render entire cart to ensure consistency
+                    const updatedCartData = await fetchCartContents();
+                    renderMainCart(updatedCartData.items, updatedCartData.totalQuantity, updatedCartData.totalPrice);
+                    renderMiniCartDetails(updatedCartData.items, updatedCartData.totalQuantity, updatedCartData.totalPrice);
+                } catch (error) {
+                    console.error('Error updating cart item quantity:', error);
+                    window.showMessage('خطا در ارتباط با سرور. لطفاً اتصال اینترنت خود را بررسی کنید.', 'error');
+                    // Revert local quantity if server update fails
+                    quantitySpan.textContent = formatNumber(oldQuantity);
+                    quantitySpan.dataset.quantity = oldQuantity;
+                    itemSubtotalElement.textContent = `${formatNumber(itemPrice * oldQuantity)} تومان`;
+                    itemSubtotalElement.dataset.subtotal = itemPrice * oldQuantity;
+                    // updateCartTotal(); // Re-calculate total with reverted quantity
+                    // Re-render main cart to ensure consistency
+                    const updatedCartData = await fetchCartContents();
+                    renderMainCart(updatedCartData.items, updatedCartData.totalQuantity, updatedCartData.totalPrice);
+                    renderMiniCartDetails(updatedCartData.items, updatedCartData.totalQuantity, updatedCartData.totalPrice);
+                }
+                // --- End AJAX call to update quantity on the server ---
             }
         });
     }
 
-    // Event listeners for mini-cart hover functionality
-    if (miniCartTrigger && miniCartDetailsContainer) {
-        miniCartTrigger.addEventListener('mouseenter', () => {
-            clearTimeout(miniCartHoverTimer);
-            miniCartHoverTimer = setTimeout(() => {
-                renderMiniCartDetails();
-            }, HOVER_DELAY);
+    // --- Initial Load ---
+
+    // Initial fetch and render for mini-cart (always load on page load for header)
+    fetchCartContents().then(data => {
+        renderMiniCartDetails(data.items, data.totalQuantity, data.totalPrice);
+    });
+
+    // Initial fetch and render for main cart page (only if on cart page)
+    if (mainCartItemsContainer && mainCartSummary) {
+        fetchCartContents().then(data => {
+            renderMainCart(data.items, data.totalQuantity, data.totalPrice);
         });
-
-        miniCartTrigger.addEventListener('mouseleave', () => {
-            clearTimeout(miniCartHoverTimer);
-            miniCartHoverTimer = setTimeout(() => {
-                miniCartDetailsContainer.classList.remove('active');
-            }, HIDE_DELAY);
-        });
-
-        // Keep mini-cart details open if mouse enters the details container itself
-        miniCartDetailsContainer.addEventListener('mouseenter', () => {
-            clearTimeout(miniCartHoverTimer);
-        });
-
-        miniCartDetailsContainer.addEventListener('mouseleave', () => {
-            clearTimeout(miniCartHoverTimer);
-            miniCartHoverTimer = setTimeout(() => {
-                miniCartDetailsContainer.classList.remove('active');
-            }, HIDE_DELAY);
-        });
-    }
-
-
-    // Initial render of main cart if on cart page, and mini-cart everywhere
-    if (document.getElementById('cart-items-container')) {
-        renderMainCart();
-    } else {
-        fetchCartContentsForMiniCart(); // Fetch for mini-cart only if not on full cart page
     }
 });
