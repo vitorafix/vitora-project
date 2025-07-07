@@ -14,6 +14,12 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\ProfileCompletionController;
 use App\Http\Middleware\EnsureProfileIsCompleted;
+use App\Http\Controllers\Editor\EditorDashboardController; // اضافه کردن کنترلر داشبورد ویرایشگر
+use App\Http\Controllers\Editor\PostController as EditorPostController; // اضافه کردن کنترلر پست ویرایشگر
+// اگر CommentController و CategoryController مخصوص ویرایشگر دارید، آنها را نیز اضافه کنید
+// use App\Http\Controllers\Editor\CommentController as EditorCommentController;
+// use App\Http\Controllers\Editor\CategoryController as EditorCategoryController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -28,26 +34,12 @@ use App\Http\Middleware\EnsureProfileIsCompleted;
 // صفحه اصلی
 Route::get('/', [PageController::class, 'home'])->name('home');
 
-// محصولات
+// محصولات (قابل مشاهده برای همه)
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
-// تغییر مسیر نمایش محصول برای استفاده از slug بجای id:
 Route::get('/products/{product:slug}', [ProductController::class, 'show'])->name('products.show');
-
-// مسیرهای جدید برای مدیریت محصولات (ایجاد، ویرایش، ذخیره، به‌روزرسانی، حذف)
-// این مسیرها معمولاً نیاز به احراز هویت یا میدل‌ور ادمین دارند.
-// برای سادگی، فعلاً آن‌ها را در اینجا قرار می‌دهیم، اما می‌توانید آن‌ها را در یک گروه middleware('auth') یا middleware('admin') قرار دهید.
-Route::prefix('admin/products')->name('products.')->group(function () {
-    Route::get('/create', [ProductController::class, 'create'])->name('create');
-    Route::post('/', [ProductController::class, 'store'])->name('store');
-    Route::get('/{product:slug}/edit', [ProductController::class, 'edit'])->name('edit');
-    Route::put('/{product:slug}', [ProductController::class, 'update'])->name('update');
-    Route::delete('/{product:slug}', [ProductController::class, 'destroy'])->name('destroy');
-});
-
 
 // سبد خرید (مسیرهای مربوط به نمایش صفحه و عملیات از طریق فرم‌های وب)
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
-// مسیرهای API برای عملیات سبد خرید (add, update, remove, clear, contents) باید در routes/api.php باشند.
 
 // صفحات ثابت
 Route::view('/about', 'about')->name('about');
@@ -64,9 +56,6 @@ Route::get('/blog/{id}', [BlogController::class, 'show'])->name('blog.show');
 // جستجو
 Route::get('/search', [SearchController::class, 'search'])->name('search');
 
-// پنل ادمین
-Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
-
 // روت‌های احراز هویت موبایلی و OTP
 Route::prefix('auth')->name('auth.')->group(function () {
     Route::get('/mobile-login', [MobileAuthController::class, 'showMobileLoginForm'])->name('mobile-login-form');
@@ -79,10 +68,10 @@ Route::prefix('auth')->name('auth.')->group(function () {
     Route::post('/register', [RegisterController::class, 'register'])->name('register');
 });
 
-// روت‌هایی که نیاز به احراز هویت دارند
+// روت‌هایی که نیاز به احراز هویت دارند (برای همه کاربران لاگین شده)
 Route::middleware('auth')->group(function () {
 
-    Route::view('/dashboard', 'dashboard')->name('dashboard');
+    Route::view('/dashboard', 'dashboard')->name('dashboard'); // این داشبورد عمومی است
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::put('/profile/personal', [ProfileController::class, 'updateProfile'])->name('profile.personal_update');
@@ -110,4 +99,44 @@ Route::middleware('auth')->group(function () {
         Route::get('/checkout', [OrderController::class, 'index'])->name('checkout.index');
         Route::post('/order/place', [OrderController::class, 'placeOrder'])->name('orders.place');
     });
+
+    // --- اعمال میدل‌ورهای Spatie برای مدیریت دسترسی‌ها ---
+
+    // پنل ادمین: فقط کاربران با نقش 'admin' دسترسی دارند
+    Route::middleware(['role:admin'])->group(function () {
+        Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+
+        // مسیرهای مدیریت محصولات: نیاز به نقش 'admin' یا مجوزهای خاص
+        Route::prefix('admin/products')->name('products.')->group(function () {
+            // این مسیرها نیاز به مجوز 'create post' دارند
+            Route::get('/create', [ProductController::class, 'create'])->name('create')->middleware('permission:create post');
+            Route::post('/', [ProductController::class, 'store'])->name('store')->middleware('permission:create post');
+
+            // این مسیرها نیاز به مجوز 'edit post' دارند
+            Route::get('/{product:slug}/edit', [ProductController::class, 'edit'])->name('edit')->middleware('permission:edit post');
+            Route::put('/{product:slug}', [ProductController::class, 'update'])->name('update')->middleware('permission:edit post');
+
+            // این مسیر نیاز به مجوز 'delete post' دارد
+            Route::delete('/{product:slug}', [ProductController::class, 'destroy'])->name('destroy')->middleware('permission:delete post');
+        });
+
+        // مثال: مسیرهای مدیریت بلاگ برای ادمین (اگر وجود دارند)
+        // Route::prefix('admin/blog')->name('admin.blog.')->group(function () {
+        //     Route::get('/', [BlogController::class, 'adminIndex'])->name('index')->middleware('permission:view posts');
+        //     Route::get('/create', [BlogController::class, 'adminCreate'])->name('create')->middleware('permission:create post');
+        // });
+    });
+
+    // پنل ویرایشگر: فقط کاربران با نقش 'editor' دسترسی دارند
+    Route::middleware(['role:editor'])->prefix('editor')->name('editor.')->group(function () {
+        Route::get('/dashboard', [EditorDashboardController::class, 'index'])->name('dashboard');
+
+        // مسیرهای مدیریت پست‌ها برای ویرایشگر
+        // از EditorPostController استفاده می‌کنیم
+        Route::resource('/posts', EditorPostController::class);
+        // اگر CommentController و CategoryController مخصوص ویرایشگر دارید، روت‌های آنها را اینجا اضافه کنید
+        // Route::resource('/comments', EditorCommentController::class)->only(['index', 'destroy']);
+        // Route::resource('/categories', EditorCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
+    });
+
 });

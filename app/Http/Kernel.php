@@ -61,7 +61,13 @@ class Kernel extends HttpKernel
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
-        'profile.completed' => \App\Http\Middleware\EnsureProfileIsCompleted::class, // این خط اضافه شد
+        'profile.completed' => \App\Http\Middleware\EnsureProfileIsCompleted::class,
+
+        // --- اضافه کردن میدل‌ورهای Spatie Laravel Permission ---
+        'role' => \Spatie\Permission\Middlewares\RoleMiddleware::class,
+        'permission' => \Spatie\Permission\Middlewares\PermissionMiddleware::class,
+        'role_or_permission' => \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class,
+        // --- پایان اضافه کردن میدل‌ورهای Spatie ---
     ];
 
     /**
@@ -81,4 +87,3 @@ class Kernel extends HttpKernel
         \Illuminate\Auth\Middleware\Authorize::class,
     ];
 }
-

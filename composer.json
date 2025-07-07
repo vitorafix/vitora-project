@@ -11,7 +11,8 @@
     "laravel/framework": "^11.0",
     "laravel/sanctum": "^4.0",
     "laravel/tinker": "^2.3",
-    "rap2hpoutre/laravel-log-viewer": "^2.4"
+    "rap2hpoutre/laravel-log-viewer": "^2.4",
+    "spatie/laravel-permission": "^6.12"
   },
   "require-dev": {
     "barryvdh/laravel-debugbar": "*",

@@ -6,13 +6,14 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens; // اگر از Sanctum استفاده می‌کنید
+use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne; // اضافه کردن HasOne برای رابطه با LegalInfo
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Spatie\Permission\Traits\HasRoles; // اضافه کردن این خط برای استفاده از قابلیت های Spatie
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles; // اضافه کردن HasRoles به لیست Trait ها
 
     /**
      * The attributes that are mass assignable.
@@ -21,12 +22,11 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
-        'lastname', // اضافه شده: برای هماهنگی با مهاجرت و منطق ثبت‌نام
+        'lastname',
         'mobile_number',
-        'email',
+        'email', // اگرچه برای ورود استفاده نمی‌شود، ممکن است برای اطلاعات پروفایل لازم باشد
         // 'password', // حذف شده: احراز هویت با OTP است
         'profile_completed',
-        // اضافه شدن فیلدهای جدید پروفایل (first_name حذف شد تا با name تداخل نداشته باشد)
         'national_id',
         'birth_date',
         'phone',

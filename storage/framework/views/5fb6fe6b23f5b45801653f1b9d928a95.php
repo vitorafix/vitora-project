@@ -3,24 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', config('app.name', 'چای ابراهیم - عطر و طعم اصیل ایرانی'))</title>
+    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
+    <title><?php echo $__env->yieldContent('title', config('app.name', 'چای ابراهیم - عطر و طعم اصیل ایرانی')); ?></title>
 
-    {{-- Vazirmatn Font --}}
+    
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    {{-- Font Awesome CDN --}}
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
-    {{-- Vite Assets for CSS and JS --}}
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css', 'resources/js/app.js']); ?>
 
-    {{-- CDN for Chart.js (used in dashboard) --}}
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    {{-- CDN for SheetJS (Excel export) --}}
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    {{-- CDN for jsPDF (PDF export) --}}
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    {{-- CDN for html2canvas (for PDF from HTML) --}}
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
@@ -218,7 +218,7 @@
 </head>
 <body class="font-sans antialiased flex h-screen overflow-hidden">
 
-    {{-- Sidebar - Moved from dashboard.blade.php --}}
+    
     <aside id="sidebar" class="sidebar bg-white shadow-lg fixed top-0 right-0 h-full overflow-y-auto z-50 flex flex-col sidebar-expanded">
         <div class="p-4 flex items-center justify-between border-b border-gray-200">
             <h1 class="text-2xl font-bold text-brown-900 nav-text">پنل مدیریت</h1>
@@ -324,11 +324,12 @@
 
     <!-- Main Content Area Wrapper -->
     <div id="main-content-wrapper" class="flex-grow p-4 main-content-shifted overflow-auto h-screen">
-        {{-- Page Heading (for Breeze dashboard/profile pages) --}}
-        @isset($header)
+        
+        <?php if(isset($header)): ?>
             <header class="bg-white shadow rounded-lg p-4 mb-4 flex items-center justify-between">
                 <h2 class="text-xl font-semibold text-brown-900">
-                    {{ $header }}
+                    <?php echo e($header); ?>
+
                 </h2>
                 <div class="flex items-center space-x-4 space-x-reverse">
                     <span class="text-gray-600 text-sm" id="current-time"></span>
@@ -348,8 +349,8 @@
                     </div>
                 </div>
             </header>
-        @else
-            {{-- Default Header for Admin Panel Sections --}}
+        <?php else: ?>
+            
             <header class="bg-white shadow rounded-lg p-4 mb-4 flex items-center justify-between">
                 <h2 id="current-section-title" class="text-xl font-semibold text-brown-900">داشبورد</h2>
                 <div class="flex items-center space-x-4 space-x-reverse">
@@ -370,22 +371,22 @@
                     </div>
                 </div>
             </header>
-        @endisset
+        <?php endif; ?>
 
-        {{-- Main content area --}}
+        
         <main class="flex-grow">
-            {{-- Hero Section (Slideshow) - only for home page, not admin panel --}}
-            @yield('hero_section')
+            
+            <?php echo $__env->yieldContent('hero_section'); ?>
 
-            {{-- Content Slot / Section - for admin panel sections --}}
-            @if (isset($slot))
-                {{ $slot }} {{-- This is for Breeze pages (like dashboard, login, register) --}}
-            @else
-                @yield('content') {{-- This is for your custom admin panel sections --}}
-            @endif
+            
+            <?php if(isset($slot)): ?>
+                <?php echo e($slot); ?> 
+            <?php else: ?>
+                <?php echo $__env->yieldContent('content'); ?> 
+            <?php endif; ?>
         </main>
 
-        {{-- Custom Confirmation Modal --}}
+        
         <div id="confirmation-modal-overlay" class="custom-modal-overlay hidden">
             <div class="custom-modal-content">
                 <button id="confirmation-modal-close-btn" class="custom-modal-close-btn">
@@ -406,11 +407,11 @@
         </div>
     </div>
 
-    {{-- Footer Component - Only if not an admin panel page, or if you want it on admin pages too --}}
-    {{-- @include('partials.footer') --}}
+    
+    
 
-    {{-- Stack for custom scripts pushed from child views (like checkout.blade.php) --}}
-    @stack('scripts')
+    
+    <?php echo $__env->yieldPushContent('scripts'); ?>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -532,6 +533,7 @@
             }
         });
     </script>
-    {{-- REMOVED THIS LINE: <script src="{{ asset('js/search.js') }}"></script> --}}
+    
 </body>
 </html>
+<?php /**PATH C:\xampp\htdocs\myshop\resources\views/layouts/app.blade.php ENDPATH**/ ?>
