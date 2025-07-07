@@ -4,76 +4,102 @@ namespace App\Services;
 
 use App\Models\Cart;
 use App\Models\Order;
-use App\Models\Product;
+use App\Models\Product; // برای کاهش موجودی محصول
+use App\Models\User; // برای استفاده از مدل User
 use App\Repositories\OrderRepository;
-use Illuminate\Support\Facades\Auth;
+// use App\Services\Contracts\CartServiceInterface; // حذف شد: دیگر نیازی به تزریق CartService نیست
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Session;
+// use Illuminate\Support\Facades\Auth; // حذف شد: user از طریق پارامتر دریافت می‌شود
+// use Illuminate\Support\Facades\Session; // حذف شد: session_id از طریق cart یا user دریافت می‌شود
 
-class OrderService
+// اگر اینترفیس App\Contracts\Services\OrderService را دارید، باید آن را implement کنید
+// use App\Contracts\Services\OrderService as OrderServiceInterface;
+
+class OrderService // implements OrderServiceInterface // اگر اینترفیس را دارید، این خط را فعال کنید
 {
     protected OrderRepository $orderRepository;
-    protected CartService $cartService; // برای تعامل با منطق سبد خرید
+    // protected CartService $cartService; // حذف شد: سبد خرید مستقیماً به متد createOrder ارسال می‌شود
 
     /**
      * Constructor for OrderService.
      * سازنده کلاس OrderService.
      *
      * @param OrderRepository $orderRepository
-     * @param CartService $cartService
+     * @param CartService $cartService // حذف شد
      */
-    public function __construct(OrderRepository $orderRepository, CartService $cartService)
+    public function __construct(OrderRepository $orderRepository /*, CartService $cartService */)
     {
         $this->orderRepository = $orderRepository;
-        $this->cartService = $cartService;
+        // $this->cartService = $cartService; // حذف شد
     }
 
     /**
-     * Place a new order from the current cart.
-     * یک سفارش جدید را از سبد خرید فعلی ثبت می‌کند.
+     * Create a new order from the given cart and order data.
+     * یک سفارش جدید را از سبد خرید و داده‌های سفارش مشخص شده ثبت می‌کند.
      *
-     * @param array $orderData داده‌های سفارش شامل اطلاعات مشتری و آدرس.
+     * @param array $orderData داده‌های سفارش شامل اطلاعات مشتری و آدرس (از PlaceOrderRequest).
+     * @param Cart $cart سبد خرید فعلی که سفارش از آن ایجاد می‌شود.
+     * @param User|null $user کاربر احراز هویت شده، در صورت وجود.
      * @return Order
      * @throws \Exception در صورت بروز خطا در فرآیند ثبت سفارش.
      */
-    public function placeOrder(array $orderData): Order
+    public function createOrder(array $orderData, Cart $cart, ?User $user = null): Order
     {
-        Log::info('Attempting to place new order', ['order_data' => $orderData]);
+        Log::info('Attempting to create new order', ['order_data' => $orderData, 'cart_id' => $cart->id, 'user_id' => $user ? $user->id : null]);
 
         // شروع تراکنش پایگاه داده برای اطمینان از یکپارچگی عملیات
         DB::beginTransaction();
 
         try {
-            // دریافت سبد خرید فعلی کاربر (یا مهمان)
-            $cart = $this->cartService->getOrCreateCart(Auth::user(), Session::getId());
-            $cartItems = $cart->items()->with('product')->get();
+            // اطمینان از لود شدن آیتم‌های سبد خرید با محصولات مرتبط
+            $cart->loadMissing('items.product', 'items.productVariant');
+            $cartItems = $cart->items;
 
-            // بررسی خالی نبودن سبد خرید
+            // بررسی خالی نبودن سبد خرید (اگرچه CheckoutController هم این کار را می‌کند، اینجا برای اطمینان مجدد است)
             if ($cartItems->isEmpty()) {
                 throw new \Exception('سبد خرید شما خالی است و نمی‌توانید سفارش ثبت کنید.');
             }
 
-            // محاسبه جمع کل سفارش
-            $totalAmount = $cart->getTotalPrice();
+            // محاسبه جمع کل سفارش (می‌تواند از cart->total یا cart->subtotal و محاسبه حمل و نقل/تخفیف باشد)
+            // با توجه به اینکه cartTotals از CheckoutController هم می‌آید، می‌توانید از آن استفاده کنید
+            // یا getTotalPrice() را از مدل Cart فراخوانی کنید.
+            $totalAmount = $cart->getTotalPrice(); // فرض می‌کنیم این متد قیمت کل را محاسبه می‌کند
 
             // آماده‌سازی داده‌های سفارش برای ذخیره در دیتابیس
             $orderCreationData = [
-                'user_id' => Auth::id(), // اگر کاربر لاگین باشد، user_id ست می‌شود، در غیر این صورت null
-                'session_id' => Auth::check() ? null : Session::getId(), // اگر کاربر مهمان باشد، session_id ست می‌شود
+                'user_id' => $user ? $user->id : null, // اگر کاربر لاگین باشد
+                'session_id' => $user ? null : $cart->session_id, // اگر کاربر مهمان باشد، session_id سبد خرید را استفاده کنید
                 'total_amount' => $totalAmount,
                 'status' => 'pending', // وضعیت اولیه سفارش
-                'first_name' => $orderData['first_name'],
-                'last_name' => $orderData['last_name'],
-                'phone_number' => $orderData['phone_number'],
-                'address' => $orderData['address'],
-                'city' => $orderData['city'],
-                'province' => $orderData['province'],
-                'postal_code' => $orderData['postal_code'],
-                'shipping_method' => $orderData['shipping_method'], // اضافه شدن روش ارسال
-                'payment_method' => $orderData['payment_method'],   // اضافه شدن روش پرداخت
-                'delivery_notes' => $orderData['delivery_notes'] ?? null, // اضافه شدن یادداشت برای پیک
+                // اطلاعات آدرس و تماس از $orderData (که از PlaceOrderRequest می‌آید)
+                'first_name' => $orderData['first_name'] ?? ($user->name ?? null), // اگر از آدرس انتخاب شده باشد، این فیلدها ممکن است در $orderData نباشند
+                'last_name' => $orderData['last_name'] ?? ($user->lastname ?? null),
+                'phone_number' => $orderData['phone_number'] ?? ($user->phone_number ?? null),
+                'address' => $orderData['address'] ?? null,
+                'city' => $orderData['city'] ?? null,
+                'province' => $orderData['province'] ?? null,
+                'postal_code' => $orderData['postal_code'] ?? null,
+                'shipping_method' => $orderData['shipping_method'],
+                'payment_method' => $orderData['payment_method'],
+                'delivery_notes' => $orderData['delivery_notes'] ?? null,
+                'address_id' => $orderData['selected_address_id'] ?? null, // اگر آدرس موجود انتخاب شده باشد
             ];
+
+            // اگر آدرس از طریق selected_address_id انتخاب شده است، جزئیات آن را از مدل Address دریافت کنید
+            if (isset($orderData['selected_address_id']) && $orderData['selected_address_id'] !== 'new') {
+                $address = $user->addresses()->find($orderData['selected_address_id']);
+                if ($address) {
+                    $orderCreationData['first_name'] = $address->first_name;
+                    $orderCreationData['last_name'] = $address->last_name;
+                    $orderCreationData['phone_number'] = $address->phone_number;
+                    $orderCreationData['address'] = $address->address;
+                    $orderCreationData['city'] = $address->city;
+                    $orderCreationData['province'] = $address->province;
+                    $orderCreationData['postal_code'] = $address->postal_code;
+                }
+            }
+
 
             // ایجاد رکورد سفارش در جدول orders از طریق Repository
             $order = $this->orderRepository->createOrder($orderCreationData);
@@ -81,42 +107,45 @@ class OrderService
 
             // ایجاد آیتم‌های سفارش و کاهش موجودی محصول
             foreach ($cartItems as $cartItem) {
-                $product = Product::find($cartItem->product_id);
+                // استفاده از product یا productVariant لود شده از cartItem
+                $entityForStock = $cartItem->productVariant ?? $cartItem->product;
 
                 // بررسی مجدد موجودی قبل از کاهش (Double Check)
-                if (!$product || $product->stock < $cartItem->quantity) {
-                    throw new \Exception('موجودی کافی برای محصول ' . ($product ? $product->title : 'ناشناس') . ' وجود ندارد.');
+                if (!$entityForStock || $entityForStock->stock < $cartItem->quantity) {
+                    throw new \Exception('موجودی کافی برای محصول ' . ($entityForStock ? $entityForStock->title : 'ناشناس') . ' وجود ندارد.');
                 }
 
                 // کاهش موجودی محصول در انبار
-                $product->decrement('stock', $cartItem->quantity);
-                Log::info('Product stock decremented', ['product_id' => $product->id, 'quantity' => $cartItem->quantity, 'new_stock' => $product->stock]);
+                $entityForStock->decrement('stock', $cartItem->quantity);
+                Log::info('Product stock decremented', ['product_id' => $entityForStock->id, 'quantity' => $cartItem->quantity, 'new_stock' => $entityForStock->stock]);
+
+                // اضافه کردن آیتم به سفارش
+                $this->orderRepository->addOrderItem($order, [
+                    'product_id' => $cartItem->product_id,
+                    'product_variant_id' => $cartItem->product_variant_id,
+                    'quantity' => $cartItem->quantity,
+                    'price' => $cartItem->price,
+                    // می‌توانید اطلاعات بیشتری از محصول را اینجا ذخیره کنید
+                ]);
             }
-
-            // اضافه کردن آیتم‌های سبد خرید به سفارش از طریق Repository
-            $this->orderRepository->addOrderItems($order, $cartItems);
-            Log::info('Order items added to order', ['order_id' => $order->id]);
-
-            // خالی کردن سبد خرید و حذف آن پس از ثبت موفق سفارش
-            $cart->items()->delete(); // حذف تمام آیتم‌های سبد خرید
-            $cart->delete(); // حذف خود سبد خرید
-            Log::info('Cart cleared and deleted after successful order placement', ['cart_id' => $cart->id]);
 
             // اتمام تراکنش و ذخیره تغییرات
             DB::commit();
-            Log::info('Order placement transaction committed successfully', ['order_id' => $order->id]);
+            Log::info('Order creation transaction committed successfully', ['order_id' => $order->id]);
 
             // می‌توانید در اینجا منطق ارسال ایمیل تایید، پیامک و ... را اضافه کنید
             // dispatch(new SendOrderConfirmationEmail($order));
 
             return $order;
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // در صورت بروز خطا، تراکنش را Rollback کنید
             DB::rollBack();
-            Log::error('Order placement failed: ' . $e->getMessage(), [
+            Log::error('Order creation failed: ' . $e->getMessage(), [
                 'exception' => $e->getTraceAsString(),
-                'order_data' => $orderData
+                'order_data' => $orderData,
+                'cart_id' => $cart->id,
+                'user_id' => $user ? $user->id : null
             ]);
             throw $e; // پرتاب مجدد استثنا برای مدیریت در سطح بالاتر (کنترلر)
         }

@@ -16,6 +16,7 @@ use App\Http\Controllers\ProfileCompletionController;
 use App\Http\Middleware\EnsureProfileIsCompleted;
 use App\Http\Controllers\Editor\EditorDashboardController;
 use App\Http\Controllers\Editor\PostController as EditorPostController;
+use App\Http\Controllers\CheckoutController; // اضافه شده: برای استفاده از CheckoutController
 
 /*
 |--------------------------------------------------------------------------
@@ -70,6 +71,13 @@ Route::middleware(['auth', 'profile.completed'])->group(function () {
         Route::post('/update/{product}', [CartController::class, 'update'])->name('update');
         Route::delete('/remove/{product}', [CartController::class, 'remove'])->name('remove');
         Route::post('/clear', [CartController::class, 'clear'])->name('clear');
+    });
+
+    // اضافه شده: مسیرهای تسویه حساب
+    Route::prefix('checkout')->name('checkout.')->group(function () {
+        Route::get('/', [CheckoutController::class, 'index'])->name('index');
+        // می‌توانید مسیرهای دیگری مانند store (برای ثبت سفارش) را نیز در اینجا اضافه کنید
+        // Route::post('/place-order', [CheckoutController::class, 'placeOrder'])->name('placeOrder');
     });
 
     Route::prefix('orders')->name('orders.')->group(function () {
