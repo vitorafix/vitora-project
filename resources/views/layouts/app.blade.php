@@ -184,6 +184,9 @@
     </style>
 </head>
 <body>
+    {{-- در اینجا ناوبری اصلی سایت (که شامل مینی‌سبد خرید است) را include می‌کنیم --}}
+    @include('layouts.navigation') {{-- فرض بر این است که فایل ناوبری شما در resources/views/layouts/navigation.blade.php قرار دارد --}}
+
     {{-- This yield is for the main body content, including the admin panel layout --}}
     @yield('body_content')
 
