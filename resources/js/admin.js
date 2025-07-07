@@ -1,66 +1,19 @@
-// resources/js/admin.js
-
-// Import necessary modules from app.js and charts.js
-// فرض بر این است که این فایل‌ها در کنار admin.js قرار دارند و توابع مورد نیاز را export می‌کنند.
-import { showMessage, showConfirmationModal, logAdminAction, adminActivityLog, currentUser } from './app.js';
+// خط import مشکل‌ساز را حذف می‌کنیم.
+// import { showMessage, showConfirmationModal, logAdminAction, adminActivityLog, currentUser } from './app.js';
 import { initializeMonthlySalesChart, updateChartOnResize } from './charts.js';
-import * as jalaali from 'jalaali-js'; // برای تبدیل تاریخ میلادی به شمسی
+import * as jalaali from 'jalaali-js';
 
-// Simulated user data
-// این آرایه شامل اطلاعات کاربران نمونه است. در یک سیستم واقعی، این اطلاعات از یک پایگاه داده بارگذاری می‌شوند.
-let users = [
-    { id: 1, username: 'admin', email: 'admin@example.com', role: 'admin', lastLocation: '192.168.1.100', created_at: '2023-01-15T10:00:00Z', status: 'active', phone: '09121234567' },
-    { id: 2, username: 'ali.ahmadi', email: 'ali.a@example.com', role: 'user', lastLocation: '172.20.10.2', created_at: '2023-02-20T11:30:00Z', status: 'active', phone: '09122345678' },
-    { id: 3, username: 'reza.karimi', email: 'reza.k@example.com', role: 'user', lastLocation: '192.168.1.101', created_at: '2023-03-01T09:00:00Z', status: 'inactive', phone: '09123456789' },
-    { id: 4, username: 'sara.naseri', email: 'sara.n@example.com', role: 'editor', lastLocation: '10.0.0.5', created_at: '2023-04-10T14:00:00Z', status: 'active', phone: '09124567890' },
-    { id: 5, username: 'mohsen.alavi', email: 'mohsen.a@example.com', role: 'moderator', lastLocation: '192.168.1.102', created_at: '2023-05-05T08:00:00Z', status: 'active', phone: '09125678901' },
-    { id: 6, username: 'fatemeh.hasani', email: 'fatemeh.h@example.com', role: 'user', lastLocation: '172.20.10.3', created_at: '2023-06-01T16:00:00Z', status: 'suspended', phone: '09126789012' },
-    { id: 7, username: 'javad.zare', email: 'javad.z@example.com', role: 'user', lastLocation: '192.168.1.103', created_at: '2023-07-12T09:45:00Z', status: 'active', phone: '09127890123' },
-    { id: 8, username: 'narges.amini', email: 'narges.a@example.com', role: 'editor', lastLocation: '10.0.0.6', created_at: '2023-08-25T13:15:00Z', status: 'active', phone: '09128901234' },
-    { id: 9, username: 'amir.rostami', email: 'amir.r@example.com', role: 'user', lastLocation: '192.168.1.104', created_at: '2023-09-03T10:00:00Z', status: 'inactive', phone: '09129012345' },
-    { id: 10, username: 'zahra.shahidi', email: 'zahra.sh@example.com', role: 'user', lastLocation: '172.20.10.4', created_at: '2023-10-18T17:00:00Z', status: 'active', phone: '09120123456' },
-];
+// The hardcoded user array has been removed as requested.
+// The user list will now be initially empty and should be populated from a data source like an API.
+export let users = [];
 
-// Current state for user management table
-let currentPage = 1;
-let itemsPerPage = 5;
-let currentSortColumn = 'id';
-let currentSortDirection = 'asc';
-let currentSearchQuery = '';
-let selectedUserIds = new Set(); // برای نگهداری شناسه‌های کاربران انتخاب شده جهت عملیات گروهی
-
-// Utility function to map user roles and statuses to Tailwind CSS classes
-const statusClasses = {
-    'active': 'bg-green-100 text-green-800',
-    'inactive': 'bg-red-100 text-red-800',
-    'suspended': 'bg-yellow-100 text-yellow-800'
-};
-
-const roleClasses = {
-    'admin': 'bg-red-100 text-red-800',
-    'user': 'bg-green-100 text-green-800',
-    'editor': 'bg-blue-100 text-blue-800',
-    'moderator': 'bg-purple-100 text-purple-800'
-};
-
-const roleDisplayNames = {
-    'admin': 'مدیر',
-    'user': 'کاربر',
-    'editor': 'ویرایشگر',
-    'moderator': 'مدیر محتوا'
-};
-
-/**
- * Renders the admin activity log.
- * فعالیت‌های اخیر ادمین را در پنل نمایش می‌دهد.
- */
 export function renderActivityLog() {
     const logContainer = document.getElementById('admin-activity-log');
     if (!logContainer) return;
 
     logContainer.innerHTML = '';
-    // نمایش جدیدترین فعالیت‌ها در بالا
-    adminActivityLog.slice().reverse().forEach(log => {
+    // adminActivityLog اکنون از طریق window.adminActivityLog قابل دسترسی است.
+    window.adminActivityLog.slice().reverse().forEach(log => {
         const logEntry = document.createElement('div');
         logEntry.className = 'p-2 bg-gray-50 rounded-md text-sm text-gray-700';
         logEntry.innerHTML = `
@@ -71,11 +24,6 @@ export function renderActivityLog() {
     });
 }
 
-/**
- * Shows a specific section of the admin panel and updates the title.
- * بخش مورد نظر از پنل ادمین را نمایش داده و عنوان آن را به‌روزرسانی می‌کند.
- * @param {string} sectionId - The ID of the section to show (e.g., 'dashboard', 'user-management').
- */
 window.showSection = function(sectionId) {
     const sections = document.querySelectorAll('.section-content');
     sections.forEach(section => {
@@ -87,19 +35,16 @@ window.showSection = function(sectionId) {
     }
 
     const titleElement = document.getElementById('current-section-title');
-    // پیدا کردن عنصر ناوبری مرتبط برای دریافت متن عنوان
     const navTextElement = document.querySelector(`[onclick="showSection('${sectionId}')"] .nav-text`);
     if (titleElement && navTextElement) {
         titleElement.textContent = navTextElement.textContent;
     }
 
-    // بستن دراپ‌داون نوتیفیکیشن در صورت باز بودن
     const notificationDropdown = document.getElementById('notification-dropdown');
     if (notificationDropdown) {
         notificationDropdown.classList.add('hidden');
     }
 
-    // بستن اکشن‌های گزارش شناور در صورت باز بودن
     const floatingReportToggle = document.getElementById('toggle-report-actions');
     const reportActionsContainer = document.getElementById('report-actions-container');
     if (floatingReportToggle && reportActionsContainer) {
@@ -107,67 +52,55 @@ window.showSection = function(sectionId) {
         floatingReportToggle.setAttribute('aria-expanded', 'false');
     }
 
-    // اجرای توابع خاص برای هر بخش
     if (sectionId === 'dashboard') {
         initializeMonthlySalesChart();
-        updateChartOnResize(); // اطمینان از رندر صحیح چارت پس از تغییر اندازه
+        updateChartOnResize();
     } else if (sectionId === 'user-management') {
-        fetchUsers(); // بارگذاری کاربران هنگام ورود به بخش مدیریت کاربران
+        fetchUsers();
     }
 };
 
-/**
- * Simulates user logout.
- * خروج کاربر از سیستم را شبیه‌سازی می‌کند.
- */
 window.logoutUser = function() {
-    showMessage('شما از سیستم خارج شدید.', 'info');
-    logAdminAction(currentUser.username, 'خروج از پنل', 'خروج موفق از سیستم');
+    // showMessage اکنون به طور مستقیم در دسترس است.
+    window.showMessage('شما از سیستم خارج شدید.', 'info');
     console.log('User logged out.');
-    // در یک سیستم واقعی، اینجا به صفحه ورود هدایت می‌شوید یا توکن احراز هویت حذف می‌شود.
 };
 
-/**
- * Fetches and renders user data with pagination, sorting, and searching.
- * داده‌های کاربران را با قابلیت صفحه‌بندی، مرتب‌سازی و جستجو بارگذاری و نمایش می‌دهد.
- * @param {number} page - The current page number.
- * @param {number} per_page - Number of items per page.
- * @param {string} sort_by - Column to sort by.
- * @param {string} sort_direction - Sorting direction ('asc' or 'desc').
- * @param {string} search - Search query string.
- */
+let currentPage = 1;
+let itemsPerPage = 5;
+let currentSortColumn = 'id';
+let currentSortDirection = 'asc';
+let currentSearchQuery = '';
+let selectedUserIds = new Set();
+
 async function fetchUsers(page = currentPage, per_page = itemsPerPage, sort_by = currentSortColumn, sort_direction = currentSortDirection, search = currentSearchQuery) {
-    // Cache DOM elements for better performance
     const loadingState = document.getElementById('loading-state');
     const userListBody = document.getElementById('user-list-body');
     const noUsersMessage = document.getElementById('no-users-message');
-    const selectAllCheckbox = document.getElementById('select-all');
 
     if (loadingState) loadingState.classList.remove('hidden');
-    if (userListBody) userListBody.innerHTML = ''; // Clear previous list
-    if (noUsersMessage) noUsersMessage.classList.add('hidden'); // Hide no users message initially
+    if (userListBody) userListBody.innerHTML = '';
+    if (noUsersMessage) noUsersMessage.classList.add('hidden');
 
     try {
-        // Simulate API call delay
+        // This is a simulation. In a real application, you would fetch users from an API.
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        // Filter users based on search query
         const filteredUsers = users.filter(user =>
             user.username.toLowerCase().includes(search.toLowerCase()) ||
             user.email.toLowerCase().includes(search.toLowerCase()) ||
             user.role.toLowerCase().includes(search.toLowerCase())
         );
 
-        // Sort users based on selected column and direction
         const sortedUsers = [...filteredUsers].sort((a, b) => {
             let valA = a[sort_by];
             let valB = b[sort_by];
 
-            // Handle specific column types for sorting
             if (sort_by === 'id') {
                 valA = parseInt(valA);
                 valB = parseInt(valB);
-            } else if (sort_by === 'created_at') {
+            }
+            if (sort_by === 'created_at') {
                 valA = new Date(valA).getTime();
                 valB = new Date(valB).getTime();
             }
@@ -183,89 +116,90 @@ async function fetchUsers(page = currentPage, per_page = itemsPerPage, sort_by =
         const endIndex = startIndex + per_page;
         const paginatedUsers = sortedUsers.slice(startIndex, endIndex);
 
-        // Update current state variables
         currentPage = page;
         currentSortColumn = sort_by;
         currentSortDirection = sort_direction;
         currentSearchQuery = search;
 
         renderUserList(paginatedUsers);
-        renderPagination(totalPages, page);
-        updateSelectedUsersCount(); // Update count and bulk action visibility
+        renderPagination(totalPages, currentPage);
+        updateSelectedUsersCount();
 
-        // Show message if no users are found after filtering/searching
         if (paginatedUsers.length === 0 && noUsersMessage) {
             noUsersMessage.classList.remove('hidden');
         }
 
     } catch (error) {
         console.error('Error fetching users:', error);
-        showMessage('خطا در بارگذاری لیست کاربران.', 'error');
+        window.showMessage('خطا در بارگذاری لیست کاربران.', 'error');
         if (noUsersMessage) noUsersMessage.classList.remove('hidden');
         if (userListBody) userListBody.innerHTML = `<tr><td colspan="9" class="py-3 px-6 text-center text-red-500">خطا در بارگذاری اطلاعات.</td></tr>`;
     } finally {
-        if (loadingState) loadingState.classList.add('hidden'); // Hide loading state
+        if (loadingState) loadingState.classList.add('hidden');
     }
 }
 
-/**
- * Renders the list of users in the table body.
- * لیست کاربران را در بدنه جدول نمایش می‌دهد.
- * @param {Array<Object>} usersToRender - Array of user objects to render.
- */
 function renderUserList(usersToRender) {
     const userListBody = document.getElementById('user-list-body');
     if (!userListBody) return;
 
-    userListBody.innerHTML = ''; // Clear existing rows
-    selectedUserIds.clear(); // Clear selected users for new render
+    userListBody.innerHTML = '';
+    selectedUserIds.clear();
     const selectAllCheckbox = document.getElementById('select-all');
-    if (selectAllCheckbox) selectAllCheckbox.checked = false; // Uncheck select all
-    toggleBulkActionsVisibility(); // Hide bulk actions initially
+    if (selectAllCheckbox) selectAllCheckbox.checked = false;
+    toggleBulkActionsVisibility();
 
     if (usersToRender.length === 0) {
-        document.getElementById('no-users-message')?.classList.remove('hidden');
+        const noUsersMessage = document.getElementById('no-users-message');
+        if (noUsersMessage) {
+            noUsersMessage.classList.remove('hidden');
+        }
         return;
     } else {
-        document.getElementById('no-users-message')?.classList.add('hidden');
+        const noUsersMessage = document.getElementById('no-users-message');
+        if (noUsersMessage) {
+            noUsersMessage.classList.add('hidden');
+        }
     }
-
-    // Use a DocumentFragment for efficient DOM manipulation
-    const fragment = document.createDocumentFragment();
 
     usersToRender.forEach(user => {
         const row = document.createElement('tr');
         row.className = 'border-b border-gray-200 hover:bg-gray-50';
 
-        // Format creation date to Jalaali calendar
-        let formattedDate = 'نامشخص';
-        if (user.created_at) {
-            const createdAtDate = new Date(user.created_at);
-            const jalaliDate = jalaali.toJalaali(createdAtDate.getFullYear(), createdAtDate.getMonth() + 1, createdAtDate.getDate());
-            formattedDate = `${jalaliDate.jy}/${String(jalaliDate.jm).padStart(2, '0')}/${String(jalaliDate.jd).padStart(2, '0')}`;
-        }
+        const createdAtDate = new Date(user.created_at);
+        const jalaliDate = jalaali.toJalaali(createdAtDate.getFullYear(), createdAtDate.getMonth() + 1, createdAtDate.getDate());
+        const formattedDate = `${jalaliDate.jy}/${String(jalaliDate.jm).padStart(2, '0')}/${String(jalaliDate.jd).padStart(2, '0')}`;
 
-        const statusClass = statusClasses[user.status] || 'bg-gray-100 text-gray-800';
-        const roleClass = roleClasses[user.role] || 'bg-gray-100 text-gray-800';
-        const roleDisplayName = roleDisplayNames[user.role] || user.role;
+        const statusClass = {
+            'active': 'bg-green-100 text-green-800',
+            'inactive': 'bg-red-100 text-red-800',
+            'suspended': 'bg-yellow-100 text-yellow-800'
+        }[user.status] || 'bg-gray-100 text-gray-800';
+
+        const roleClass = {
+            'admin': 'bg-red-100 text-red-800',
+            'user': 'bg-green-100 text-green-800',
+            'editor': 'bg-blue-100 text-blue-800',
+            'moderator': 'bg-purple-100 text-purple-800'
+        }[user.role] || 'bg-gray-100 text-gray-800';
 
         row.innerHTML = `
             <td class="py-3 px-6 text-right">
-                <input type="checkbox" class="user-checkbox rounded text-green-600 focus:ring-green-500" data-user-id="${user.id}" ${selectedUserIds.has(user.id) ? 'checked' : ''}>
+                <input type="checkbox" class="user-checkbox rounded text-green-600 focus:ring-green-500" data-user-id="${user.id}">
             </td>
             <td class="py-3 px-6 text-right whitespace-nowrap">${user.id}</td>
             <td class="py-3 px-6 text-right whitespace-nowrap">${user.username}</td>
             <td class="py-3 px-6 text-right whitespace-nowrap">${user.email}</td>
             <td class="py-3 px-6 text-right whitespace-nowrap">
                 <span class="px-2 py-1 font-semibold leading-tight rounded-full ${roleClass}">
-                    ${roleDisplayName}
+                    ${user.role === 'admin' ? 'مدیر' : user.role === 'user' ? 'کاربر' : user.role === 'editor' ? 'ویرایشگر' : user.role === 'moderator' ? 'مدیر محتوا' : user.role}
                 </span>
             </td>
             <td class="py-3 px-6 text-right whitespace-nowrap">${user.lastLocation}</td>
             <td class="py-3 px-6 text-right whitespace-nowrap">${formattedDate}</td>
             <td class="py-3 px-6 text-right whitespace-nowrap">
                 <span class="px-2 py-1 font-semibold leading-tight rounded-full ${statusClass}">
-                    ${user.status === 'active' ? 'فعال' : user.status === 'inactive' ? 'غیرفعال' : user.status === 'suspended' ? 'معلق' : user.status}
+                    ${user.status === 'active' ? 'فعال' : user.status === 'inactive' ? 'غیرفعال' : user.status}
                 </span>
             </td>
             <td class="py-3 px-6 text-center whitespace-nowrap">
@@ -279,46 +213,33 @@ function renderUserList(usersToRender) {
                 </div>
             </td>
         `;
-        fragment.appendChild(row);
+        userListBody.appendChild(row);
     });
-    userListBody.appendChild(fragment);
 
-    // Event delegation for user checkboxes (attaching to parent table body)
-    userListBody.addEventListener('change', (event) => {
-        if (event.target.classList.contains('user-checkbox')) {
-            handleUserCheckboxClick(event);
-        }
+    userListBody.querySelectorAll('.user-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', handleUserCheckboxClick);
     });
 }
 
-/**
- * Renders the pagination controls.
- * کنترل‌های صفحه‌بندی را نمایش می‌دهد.
- * @param {number} totalPages - Total number of pages.
- * @param {number} currentPage - The current active page.
- */
 function renderPagination(totalPages, currentPage) {
     const paginationContainer = document.getElementById('pagination-container');
     if (!paginationContainer) return;
 
-    paginationContainer.innerHTML = ''; // Clear existing pagination
+    paginationContainer.innerHTML = '';
 
-    if (totalPages <= 1) return; // No pagination needed for 1 or less pages
+    if (totalPages <= 1) return;
 
-    // Previous button
     const prevButton = document.createElement('button');
     prevButton.className = `px-3 py-1 rounded-md border border-gray-300 ${currentPage === 1 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}`;
-    prevButton.innerHTML = `<i class="fas fa-chevron-right"></i>`; // Icon for right arrow (for RTL)
+    prevButton.innerHTML = `<i class="fas fa-chevron-right"></i>`;
     prevButton.disabled = currentPage === 1;
     prevButton.addEventListener('click', () => fetchUsers(currentPage - 1));
     paginationContainer.appendChild(prevButton);
 
-    // Page number buttons
-    const maxPagesToShow = 5; // Max number of page buttons to display
+    const maxPagesToShow = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
     let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
 
-    // Adjust startPage if not enough pages to fill maxPagesToShow from current position
     if (endPage - startPage + 1 < maxPagesToShow) {
         startPage = Math.max(1, endPage - maxPagesToShow + 1);
     }
@@ -326,27 +247,20 @@ function renderPagination(totalPages, currentPage) {
     for (let i = startPage; i <= endPage; i++) {
         const pageButton = document.createElement('button');
         pageButton.className = `px-3 py-1 rounded-md border border-gray-300 mx-1 ${i === currentPage ? 'bg-brown-900 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`;
-        pageButton.textContent = i.toLocaleString('fa-IR'); // Display page numbers in Persian
+        pageButton.textContent = i.toLocaleString('fa-IR');
         pageButton.addEventListener('click', () => fetchUsers(i));
         paginationContainer.appendChild(pageButton);
     }
 
-    // Next button
     const nextButton = document.createElement('button');
     nextButton.className = `px-3 py-1 rounded-md border border-gray-300 ${currentPage === totalPages ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-100'}`;
-    nextButton.innerHTML = `<i class="fas fa-chevron-left"></i>`; // Icon for left arrow (for RTL)
+    nextButton.innerHTML = `<i class="fas fa-chevron-left"></i>`;
     nextButton.disabled = currentPage === totalPages;
     nextButton.addEventListener('click', () => fetchUsers(currentPage + 1));
     paginationContainer.appendChild(nextButton);
 }
 
-/**
- * Displays the user creation/edit modal and populates it with user data if editing.
- * مودال ایجاد/ویرایش کاربر را نمایش می‌دهد و در صورت ویرایش، اطلاعات کاربر را پر می‌کند.
- * @param {number|null} userId - The ID of the user to edit, or null for a new user.
- */
 window.showUserModal = function(userId = null) {
-    // Cache modal elements
     const modalOverlay = document.getElementById('user-modal-overlay');
     const modalTitle = document.getElementById('user-modal-title');
     const userIdInput = document.getElementById('user-id');
@@ -361,81 +275,160 @@ window.showUserModal = function(userId = null) {
     const passwordConfirmRequired = document.getElementById('password-confirm-required');
     const formMethodInput = document.getElementById('user-form-method');
 
-    resetUserForm(); // Reset form fields and validation messages
+    // بررسی وجود elements ضروری
+    if (!modalOverlay || !modalTitle || !passwordInput || !passwordConfirmationInput) {
+        console.error('Required modal elements not found');
+        window.showMessage('خطا در بارگذاری فرم کاربر.', 'error');
+        return;
+    }
+
+    resetUserForm();
 
     if (userId) {
-        // Editing an existing user
         const user = users.find(u => u.id === userId);
         if (!user) {
-            showMessage('کاربر یافت نشد.', 'error');
+            window.showMessage('کاربر یافت نشد.', 'error');
             return;
         }
+        
         modalTitle.textContent = 'ویرایش کاربر';
-        userIdInput.value = user.id;
-        usernameInput.value = user.username;
-        emailInput.value = user.email;
-        roleSelect.value = user.role;
-        statusSelect.value = user.status;
-        phoneInput.value = user.phone || ''; // Ensure phone is not null/undefined
-
-        // Passwords are not required for editing unless explicitly changed
-        passwordInput.removeAttribute('required');
-        passwordConfirmationInput.removeAttribute('required');
-        if (passwordRequired) passwordRequired.classList.add('hidden');
-        if (passwordConfirmRequired) passwordConfirmRequired.classList.add('hidden');
-
-        formMethodInput.value = 'PUT'; // Indicate update operation
+        
+        // تنظیم مقادیر با بررسی وجود elements
+        if (userIdInput) userIdInput.value = user.id;
+        if (usernameInput) usernameInput.value = user.username;
+        if (emailInput) emailInput.value = user.email;
+        if (roleSelect) roleSelect.value = user.role;
+        if (statusSelect) statusSelect.value = user.status;
+        if (phoneInput) phoneInput.value = user.phone || '';
+        
+        console.log('User ID exists. Setting password fields to not required.');
+        
+        // اصلاح اصلی - بررسی وجود element قبل از تنظیم required
+        if (passwordInput) {
+            passwordInput.required = false;
+            console.log('passwordInput.required set to false.');
+        } else {
+            console.error('passwordInput element not found');
+        }
+        
+        if (passwordConfirmationInput) {
+            passwordConfirmationInput.required = false;
+            console.log('passwordConfirmationInput.required set to false.');
+        } else {
+            console.error('passwordConfirmationInput element not found');
+        }
+        
+        if (passwordRequired) {
+            console.log('passwordRequired element found. Hiding it.');
+            passwordRequired.classList.add('hidden');
+        } else {
+            console.log('passwordRequired element NOT found.');
+        }
+        
+        if (passwordConfirmRequired) {
+            console.log('passwordConfirmRequired element found. Hiding it.');
+            passwordConfirmRequired.classList.add('hidden');
+        } else {
+            console.log('passwordConfirmRequired element NOT found.');
+        }
+        
+        if (formMethodInput) formMethodInput.value = 'PUT';
+        
     } else {
-        // Adding a new user
         modalTitle.textContent = 'افزودن کاربر جدید';
-        userIdInput.value = ''; // Clear user ID for new user
+        if (userIdInput) userIdInput.value = '';
+        
+        console.log('New user. Setting password fields to required.');
+        
+        // اصلاح اصلی - بررسی وجود element قبل از تنظیم required
+        if (passwordInput) {
+            console.log('Attempting to set passwordInput.required = true;');
+            passwordInput.required = true;
+            console.log('passwordInput.required set to true.');
+        } else {
+            console.error('passwordInput element not found');
+        }
+        
+        if (passwordConfirmationInput) {
+            console.log('Attempting to set passwordConfirmationInput.required = true;');
+            passwordConfirmationInput.required = true;
+            console.log('passwordConfirmationInput.required set to true.');
+        } else {
+            console.error('passwordConfirmationInput element not found');
+        }
 
-        // Passwords are required for new users
-        passwordInput.setAttribute('required', 'required');
-        passwordConfirmationInput.setAttribute('required', 'required');
-        if (passwordRequired) passwordRequired.classList.remove('hidden');
-        if (passwordConfirmRequired) passwordConfirmRequired.classList.remove('hidden');
+        if (passwordRequired) {
+            console.log('passwordRequired element found. Showing it.');
+            passwordRequired.classList.remove('hidden');
+        } else {
+            console.log('passwordRequired element NOT found.');
+        }
+        
+        if (passwordConfirmRequired) {
+            console.log('passwordConfirmRequired element found. Showing it.');
+            passwordConfirmRequired.classList.remove('hidden');
+        } else {
+            console.log('passwordConfirmRequired element NOT found.');
+        }
 
-        formMethodInput.value = 'POST'; // Indicate create operation
+        if (formMethodInput) formMethodInput.value = 'POST';
     }
 
     modalOverlay.classList.remove('hidden');
-    modalOverlay.classList.add('active'); // Show the modal
-};
+    modalOverlay.classList.add('active');
+}
 
-/**
- * Resets the user form, clears input values, and hides validation messages.
- * فرم کاربر را ریست کرده، مقادیر ورودی را پاک می‌کند و پیام‌های اعتبارسنجی را پنهان می‌کند.
- */
 function resetUserForm() {
     const userForm = document.getElementById('user-form');
     if (userForm) {
-        userForm.reset(); // Reset all form fields
-        userForm.querySelectorAll('.invalid-feedback').forEach(el => el.classList.add('hidden')); // Hide all error messages
-        userForm.querySelectorAll('input, select').forEach(el => el.classList.remove('border-red-500')); // Remove error borders
-        document.getElementById('form-errors')?.classList.add('hidden'); // Hide general form errors
-        document.getElementById('error-list')?.innerHTML = ''; // Clear error list
+        userForm.reset();
+        userForm.querySelectorAll('.invalid-feedback').forEach(el => el.classList.add('hidden'));
+        userForm.querySelectorAll('input, select').forEach(el => el.classList.remove('border-red-500'));
+        const formErrorsDiv = document.getElementById('form-errors');
+        if (formErrorsDiv) {
+            formErrorsDiv.classList.add('hidden');
+        }
+        const errorList = document.getElementById('error-list');
+        if (errorList) { // Fix applied here
+            errorList.innerHTML = '';
+        }
     }
 }
 
-/**
- * Validates the user form inputs.
- * ورودی‌های فرم کاربر را اعتبارسنجی می‌کند.
- * @param {HTMLFormElement} form - The form element to validate.
- * @returns {boolean} - True if the form is valid, false otherwise.
- */
+// اصلاح function validateUserForm (حدود خط 310-370)
 function validateUserForm(form) {
+    if (!form) {
+        console.error('Form element is null');
+        return false;
+    }
+
     let isValid = true;
     const errorList = document.getElementById('error-list');
     const formErrorsDiv = document.getElementById('form-errors');
+    
+    if (errorList) {
+        errorList.innerHTML = '';
+    }
+    if (formErrorsDiv) {
+        formErrorsDiv.classList.add('hidden');
+    }
 
-    // Clear previous errors
-    errorList.innerHTML = '';
-    formErrorsDiv.classList.add('hidden');
-    form.querySelectorAll('.invalid-feedback').forEach(el => el.classList.add('hidden'));
-    form.querySelectorAll('input, select').forEach(el => el.classList.remove('border-red-500'));
+    // پاک کردن خطاهای قبلی با بررسی وجود elements
+    const invalidFeedbacks = form.querySelectorAll('.invalid-feedback');
+    invalidFeedbacks.forEach(el => {
+        if (el && el.classList) {
+            el.classList.add('hidden');
+        }
+    });
 
-    // Cache input elements
+    const formInputs = form.querySelectorAll('input, select');
+    formInputs.forEach(el => {
+        if (el && el.classList) {
+            el.classList.remove('border-red-500');
+        }
+    });
+
+    // بررسی وجود inputs
     const usernameInput = document.getElementById('username');
     const emailInput = document.getElementById('email');
     const roleSelect = document.getElementById('role');
@@ -443,195 +436,221 @@ function validateUserForm(form) {
     const passwordConfirmationInput = document.getElementById('password_confirmation');
     const phoneInput = document.getElementById('phone');
 
-    // Validate username
-    if (usernameInput.value.trim() === '') {
+    if (usernameInput && usernameInput.value.trim() === '') {
         displayFieldError(usernameInput, 'نام کاربری نمی‌تواند خالی باشد.');
         isValid = false;
     }
-
-    // Validate email
-    if (emailInput.value.trim() === '' || !/\S+@\S+\.\S+/.test(emailInput.value)) {
+    
+    if (emailInput && (emailInput.value.trim() === '' || !/\S+@\S+\.\S+/.test(emailInput.value))) {
         displayFieldError(emailInput, 'ایمیل نامعتبر است.');
         isValid = false;
     }
-
-    // Validate role
-    if (roleSelect.value === '') {
+    
+    if (roleSelect && roleSelect.value === '') {
         displayFieldError(roleSelect, 'نقش کاربر را انتخاب کنید.');
         isValid = false;
     }
 
-    // Validate password for new users or if password fields are not empty for existing users
-    const isNewUser = !document.getElementById('user-id').value;
-    if (isNewUser || (passwordInput.value !== '' || passwordConfirmationInput.value !== '')) {
-        if (passwordInput.value.length < 8) {
-            displayFieldError(passwordInput, 'رمز عبور باید حداقل 8 کاراکتر باشد.');
-            isValid = false;
-        }
-        if (passwordInput.value !== passwordConfirmationInput.value) {
-            displayFieldError(passwordConfirmationInput, 'رمز عبور و تکرار آن مطابقت ندارند.');
-            isValid = false;
+    const userIdInput = document.getElementById('user-id');
+    const isNewUser = !userIdInput || !userIdInput.value;
+    
+    if (passwordInput && passwordConfirmationInput) {
+        if (isNewUser || (passwordInput.value !== '' || passwordConfirmationInput.value !== '')) {
+            if (passwordInput.value.length < 8) {
+                displayFieldError(passwordInput, 'رمز عبور باید حداقل 8 کاراکتر باشد.');
+                isValid = false;
+            }
+            if (passwordInput.value !== passwordConfirmationInput.value) {
+                displayFieldError(passwordConfirmationInput, 'رمز عبور و تکرار آن مطابقت ندارند.');
+                isValid = false;
+            }
         }
     }
 
-    // Validate phone number (optional but good to have)
-    if (phoneInput.value.trim() !== '' && !/^09\d{9}$/.test(phoneInput.value)) {
+    if (phoneInput && phoneInput.value.trim() !== '' && !/^09\d{9}$/.test(phoneInput.value)) {
         displayFieldError(phoneInput, 'شماره تلفن نامعتبر است. (مثال: 09123456789)');
         isValid = false;
     }
 
-    // Show general form errors if any field is invalid
-    if (!isValid) {
+    if (!isValid && formErrorsDiv) {
         formErrorsDiv.classList.remove('hidden');
     }
+    
     return isValid;
 }
 
-/**
- * Displays a validation error message for a specific input field.
- * پیام خطای اعتبارسنجی را برای یک فیلد ورودی خاص نمایش می‌دهد.
- * @param {HTMLElement} inputElement - The input element that has the error.
- * @param {string} message - The error message to display.
- */
+// اصلاح function displayFieldError (حدود خط 370-390)
 function displayFieldError(inputElement, message) {
+    // بررسی وجود inputElement
+    if (!inputElement) {
+        console.error('inputElement is null or undefined');
+        return;
+    }
+    
     const errorDiv = inputElement.nextElementSibling;
     if (errorDiv && errorDiv.classList.contains('invalid-feedback')) {
         errorDiv.textContent = message;
         errorDiv.classList.remove('hidden');
     }
-    inputElement.classList.add('border-red-500'); // Add red border to indicate error
-
+    
+    // اضافه کردن کلاس error با بررسی وجود classList
+    if (inputElement.classList) {
+        inputElement.classList.add('border-red-500');
+    }
+    
     const errorList = document.getElementById('error-list');
     if (errorList) {
         const li = document.createElement('li');
-        li.textContent = message;
-        errorList.appendChild(li); // Add error to the general error list
+        if (li) {
+            li.textContent = message;
+            errorList.appendChild(li);
+        }
     }
 }
 
-/**
- * Handles the submission of the user form (add/edit user).
- * ارسال فرم کاربر (افزودن/ویرایش کاربر) را مدیریت می‌کند.
- * @param {Event} event - The form submission event.
- */
+
+// اصلاح function handleUserFormSubmit (حدود خط 390-450)
 async function handleUserFormSubmit(event) {
-    event.preventDefault(); // Prevent default form submission
+    event.preventDefault();
     const form = event.target;
 
     if (!validateUserForm(form)) {
-        showMessage('لطفاً خطاهای فرم را برطرف کنید.', 'error');
+        window.showMessage('لطفاً خطاهای فرم را برطرف کنید.', 'error');
         return;
     }
 
-    // Get form data
-    const userId = document.getElementById('user-id').value;
-    const username = document.getElementById('username').value;
-    const email = document.getElementById('email').value;
-    const role = document.getElementById('role').value;
-    const status = document.getElementById('status').value;
-    const phone = document.getElementById('phone').value;
-    const password = document.getElementById('password').value; // Only if provided
+    // بررسی وجود elements قبل از استفاده
+    const userIdInput = document.getElementById('user-id');
+    const usernameInput = document.getElementById('username');
+    const emailInput = document.getElementById('email');
+    const roleSelect = document.getElementById('role');
+    const statusSelect = document.getElementById('status');
+    const phoneInput = document.getElementById('phone');
+    const passwordInput = document.getElementById('password');
+    const passwordConfirmInput = document.getElementById('password_confirmation');
+
+    if (!usernameInput || !emailInput || !roleSelect || !statusSelect) {
+        window.showMessage('خطا در بارگذاری فرم. لطفاً صفحه را reload کنید.', 'error');
+        return;
+    }
+
+    const userId = userIdInput ? userIdInput.value : '';
+    const username = usernameInput.value;
+    const email = emailInput.value;
+    const role = roleSelect.value;
+    const status = statusSelect.value;
+    const phone = phoneInput ? phoneInput.value : '';
+    const password = passwordInput ? passwordInput.value : '';
 
     const userData = { username, email, role, status, phone };
     if (password) {
         userData.password = password;
-        userData.password_confirmation = document.getElementById('password_confirmation').value;
+        if (passwordConfirmInput) {
+            userData.password_confirmation = passwordConfirmInput.value;
+        }
     }
 
     const submitBtn = document.getElementById('submit-btn');
+    if (!submitBtn) {
+        console.error('Submit button not found');
+        return;
+    }
+
     const originalBtnText = submitBtn.innerHTML;
-    submitBtn.disabled = true; // Disable button during submission
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i><span>در حال ذخیره...</span>'; // Show loading spinner
+    
+    // اصلاح اصلی - بررسی وجود submitBtn قبل از تنظیم properties
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i><span>در حال ذخیره...</span>';
+    }
+
 
     try {
-        // Simulate API call delay for saving data
         await new Promise(resolve => setTimeout(resolve, 800));
 
         if (userId) {
-            // Update existing user
             const userIndex = users.findIndex(u => u.id === parseInt(userId));
             if (userIndex !== -1) {
-                users[userIndex] = { ...users[userIndex], ...userData }; // Merge existing data with new
-                showMessage('کاربر با موفقیت ویرایش شد.', 'success');
-                logAdminAction(currentUser.username, 'ویرایش کاربر', `کاربر ${username} (شناسه: ${userId}) ویرایش شد.`);
+                users[userIndex] = { ...users[userIndex], ...userData };
+                window.showMessage('کاربر با موفقیت ویرایش شد.', 'success');
+                window.logAdminAction(window.currentUser.username, 'ویرایش کاربر', `کاربر ${username} (شناسه: ${userId}) ویرایش شد.`);
             } else {
-                showMessage('کاربر برای ویرایش یافت نشد.', 'error');
+                window.showMessage('کاربر برای ویرایش یافت نشد.', 'error');
             }
         } else {
-            // Add new user
-            const newId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1; // Generate new ID
+            const newId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1;
             const newUser = {
                 id: newId,
                 username: username,
                 email: email,
                 role: role,
-                lastLocation: 'N/A', // Placeholder for new user
-                created_at: new Date().toISOString(), // Set current date
+                lastLocation: 'N/A',
+                created_at: new Date().toISOString(),
                 status: status,
                 phone: phone
             };
             users.push(newUser);
-            showMessage('کاربر جدید با موفقیت اضافه شد.', 'success');
-            logAdminAction(currentUser.username, 'افزودن کاربر', `کاربر ${username} اضافه شد.`);
+            window.showMessage('کاربر جدید با موفقیت اضافه شد.', 'success');
+            window.logAdminAction(window.currentUser.username, 'افزودن کاربر', `کاربر ${username} اضافه شد.`);
         }
-
-        // Close modal and refresh user list
-        document.getElementById('user-modal-overlay').classList.add('hidden');
-        document.getElementById('user-modal-overlay').classList.remove('active');
+        
+        const userModalOverlay = document.getElementById('user-modal-overlay');
+        if (userModalOverlay) {
+            userModalOverlay.classList.add('hidden');
+            userModalOverlay.classList.remove('active');
+        }
+        
         fetchUsers();
+        
     } catch (error) {
         console.error('Error saving user:', error);
-        showMessage('خطا در ذخیره کاربر: ' + error.message, 'error');
+        window.showMessage('خطا در ذخیره کاربر: ' + error.message, 'error');
     } finally {
-        submitBtn.disabled = false; // Re-enable button
-        submitBtn.innerHTML = originalBtnText; // Restore original button text
+        // بررسی وجود submitBtn قبل از reset کردن
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+        }
     }
 }
 
-/**
- * Deletes a user after confirmation.
- * یک کاربر را پس از تایید حذف می‌کند.
- * @param {number} userId - The ID of the user to delete.
- */
 window.deleteUser = function(userId) {
     const userToDelete = users.find(u => u.id === userId);
     if (!userToDelete) {
-        showMessage('کاربر یافت نشد.', 'error');
+        window.showMessage('کاربر یافت نشد.', 'error');
         return;
     }
 
-    showConfirmationModal(
+    // showConfirmationModal اکنون به طور مستقیم در دسترس است.
+    window.showConfirmationModal(
         'تایید حذف کاربر',
         `آیا از حذف کاربر "${userToDelete.username}" مطمئن هستید؟ این عملیات قابل بازگشت نیست.`,
-        async () => { // On confirm
+        async () => {
             try {
-                // Simulate API call delay for deletion
                 await new Promise(resolve => setTimeout(resolve, 500));
-                const initialLength = users.length;
-                users = users.filter(user => !selectedUserIds.has(user.id)); // Remove user from array
+                
+                const userIndex = users.findIndex(user => user.id === userId);
 
-                if (users.length < initialLength) {
-                    showMessage('کاربر با موفقیت حذف شد.', 'success');
-                    logAdminAction(currentUser.username, 'حذف کاربر', `کاربر ${userToDelete.username} (شناسه: ${userId}) حذف شد.`);
+                if (userIndex > -1) {
+                    users.splice(userIndex, 1);
+                    window.showMessage('کاربر با موفقیت حذف شد.', 'success');
+                    window.logAdminAction(window.currentUser.username, 'حذف کاربر', `کاربر ${userToDelete.username} (شناسه: ${userId}) حذف شد.`);
                 } else {
-                    showMessage('خطا در حذف کاربر.', 'error');
+                    window.showMessage('خطا در حذف کاربر. کاربر یافت نشد.', 'error');
                 }
-                fetchUsers(); // Refresh user list
+                
+                fetchUsers(currentPage); 
             } catch (error) {
                 console.error('Error deleting user:', error);
-                showMessage('خطا در حذف کاربر: ' + error.message, 'error');
+                window.showMessage('خطا در حذف کاربر: ' + error.message, 'error');
             }
         },
-        () => { // On cancel
-            showMessage('عملیات حذف لغو شد.', 'info');
+        () => {
+            window.showMessage('عملیات حذف کاربر لغو شد.', 'info');
         }
     );
 };
 
-/**
- * Toggles the visibility of bulk action buttons based on selected users.
- * نمایش دکمه‌های عملیات گروهی را بر اساس تعداد کاربران انتخاب شده تغییر می‌دهد.
- */
 function toggleBulkActionsVisibility() {
     const bulkActionsContainer = document.getElementById('bulk-actions');
     if (bulkActionsContainer) {
@@ -643,16 +662,11 @@ function toggleBulkActionsVisibility() {
     }
 }
 
-/**
- * Updates the state of the "select all" checkbox and bulk action visibility.
- * وضعیت چک‌باکس "انتخاب همه" و نمایش عملیات گروهی را به‌روزرسانی می‌کند.
- */
 function updateSelectedUsersCount() {
     const selectAllCheckbox = document.getElementById('select-all');
     const userCheckboxes = document.querySelectorAll('.user-checkbox');
-
-    // Check if all displayed users are selected
-    if (userCheckboxes.length > 0 && selectedUserIds.size === userCheckboxes.length) {
+    
+    if (userCheckboxes.length > 0 && selectedUserIds.size === userCheckboxes.length && selectedUserIds.size > 0) {
         if (selectAllCheckbox) selectAllCheckbox.checked = true;
     } else {
         if (selectAllCheckbox) selectAllCheckbox.checked = false;
@@ -661,15 +675,10 @@ function updateSelectedUsersCount() {
     toggleBulkActionsVisibility();
 }
 
-/**
- * Handles the click event for the "select all" checkbox.
- * رویداد کلیک برای چک‌باکس "انتخاب همه" را مدیریت می‌کند.
- * @param {Event} event - The change event.
- */
 function handleSelectAllClick(event) {
     const isChecked = event.target.checked;
     document.querySelectorAll('.user-checkbox').forEach(checkbox => {
-        checkbox.checked = isChecked; // Set individual checkboxes
+        checkbox.checked = isChecked;
         const userId = parseInt(checkbox.dataset.userId);
         if (isChecked) {
             selectedUserIds.add(userId);
@@ -677,14 +686,9 @@ function handleSelectAllClick(event) {
             selectedUserIds.delete(userId);
         }
     });
-    updateSelectedUsersCount(); // Update count and visibility
+    updateSelectedUsersCount();
 }
 
-/**
- * Handles the click event for individual user checkboxes.
- * رویداد کلیک برای چک‌باکس‌های کاربران را مدیریت می‌کند.
- * @param {Event} event - The change event.
- */
 function handleUserCheckboxClick(event) {
     const userId = parseInt(event.target.dataset.userId);
     if (event.target.checked) {
@@ -692,29 +696,21 @@ function handleUserCheckboxClick(event) {
     } else {
         selectedUserIds.delete(userId);
     }
-    updateSelectedUsersCount(); // Update count and visibility
+    updateSelectedUsersCount();
 }
 
-/**
- * Performs bulk actions (delete, activate, deactivate) on selected users.
- * عملیات گروهی (حذف، فعال‌سازی، غیرفعال‌سازی) را روی کاربران انتخاب شده انجام می‌دهد.
- * @param {string} actionType - The type of action ('delete', 'activate', 'deactivate').
- */
 async function handleBulkAction(actionType) {
     if (selectedUserIds.size === 0) {
-        showMessage('هیچ کاربری انتخاب نشده است.', 'info');
+        window.showMessage('هیچ کاربری انتخاب نشده است.', 'info');
         return;
     }
 
-    // Get usernames for confirmation message
     const usersToActOn = Array.from(selectedUserIds).map(id => users.find(u => u.id === id)).filter(Boolean);
     const usernames = usersToActOn.map(u => u.username).join(', ');
-
     let confirmMessage = '';
     let successMessage = '';
     let logAction = '';
 
-    // Set messages based on action type
     if (actionType === 'delete') {
         confirmMessage = `آیا از حذف ${selectedUserIds.size} کاربر انتخاب شده (${usernames}) مطمئن هستید؟ این عملیات قابل بازگشت نیست.`;
         successMessage = 'کاربران انتخاب شده با موفقیت حذف شدند.';
@@ -728,19 +724,19 @@ async function handleBulkAction(actionType) {
         successMessage = 'کاربران انتخاب شده با موفقیت غیرفعال شدند.';
         logAction = 'غیرفعال‌سازی گروهی کاربران';
     } else {
-        return; // Invalid action type
+        return;
     }
 
-    showConfirmationModal(
+    // showConfirmationModal اکنون به طور مستقیم در دسترس است.
+    window.showConfirmationModal(
         'تایید عملیات گروهی',
         confirmMessage,
-        async () => { // On confirm
+        async () => {
             try {
-                // Simulate API call delay
                 await new Promise(resolve => setTimeout(resolve, 800));
 
                 if (actionType === 'delete') {
-                    users = users.filter(user => !selectedUserIds.has(user.id)); // Remove selected users
+                    users = users.filter(user => !selectedUserIds.has(user.id));
                 } else {
                     users.forEach(user => {
                         if (selectedUserIds.has(user.id)) {
@@ -749,27 +745,30 @@ async function handleBulkAction(actionType) {
                         }
                     });
                 }
-
-                showMessage(successMessage, 'success');
-                logAdminAction(currentUser.username, logAction, `عملیات روی کاربران: ${usernames}`);
-                selectedUserIds.clear(); // Clear selection after action
-                fetchUsers(); // Refresh user list
+                
+                window.showMessage(successMessage, 'success');
+                window.logAdminAction(window.currentUser.username, logAction, `عملیات روی کاربران: ${usernames}`);
+                selectedUserIds.clear();
+                fetchUsers();
             } catch (error) {
                 console.error('Error performing bulk action:', error);
-                showMessage('خطا در انجام عملیات گروهی: ' + error.message, 'error');
+                window.showMessage('خطا در انجام عملیات گروهی: ' + error.message, 'error');
             }
         },
-        () => { // On cancel
-            showMessage('عملیات گروهی لغو شد.', 'info');
+        () => {
+            window.showMessage('عملیات گروهی لغو شد.', 'info');
         }
     );
 }
 
-/**
- * Sets up event listeners for the sidebar toggle.
- * شنونده‌های رویداد برای دکمه باز و بسته کردن سایدبار را تنظیم می‌کند.
- */
-function setupSidebarToggle() {
+export function setupAdminPanelListeners() {
+    if (!window.location.pathname.startsWith('/admin/')) {
+        console.log("در صفحه ادمین نیستیم، تنظیم شنونده‌های پنل ادمین نادیده گرفته می‌شود.");
+        return;
+    }
+    console.log("در صفحه ادمین هستیم، شنونده‌های پنل ادمین تنظیم می‌شوند.");
+
+
     const sidebarToggle = document.getElementById('sidebar-toggle');
     const sidebar = document.getElementById('sidebar');
     const mainContentWrapper = document.getElementById('main-content-wrapper');
@@ -786,42 +785,28 @@ function setupSidebarToggle() {
                 text.classList.toggle('hidden');
             });
 
-            // Update chart on resize after sidebar transition
             setTimeout(() => {
                 updateChartOnResize();
             }, 300);
         });
     }
-}
 
-/**
- * Sets up event listeners for the notification dropdown.
- * شنونده‌های رویداد برای دراپ‌داون نوتیفیکیشن را تنظیم می‌کند.
- */
-function setupNotificationDropdown() {
     const notificationButton = document.getElementById('notification-button');
     const notificationDropdown = document.getElementById('notification-dropdown');
 
     if (notificationButton && notificationDropdown) {
         notificationButton.addEventListener('click', (event) => {
             notificationDropdown.classList.toggle('hidden');
-            event.stopPropagation(); // Prevent document click from closing it immediately
+            event.stopPropagation();
         });
 
-        // Close dropdown when clicking outside
         document.addEventListener('click', (event) => {
             if (!notificationDropdown.contains(event.target) && !notificationButton.contains(event.target)) {
                 notificationDropdown.classList.add('hidden');
             }
         });
     }
-}
 
-/**
- * Sets up event listeners for the floating report actions.
- * شنونده‌های رویداد برای اکشن‌های گزارش شناور را تنظیم می‌کند.
- */
-function setupReportActions() {
     const floatingReportToggle = document.getElementById('toggle-report-actions');
     const reportActionsContainer = document.getElementById('report-actions-container');
 
@@ -834,7 +819,6 @@ function setupReportActions() {
             reportActionsContainer.classList.toggle('active');
         });
 
-        // Close report actions when clicking outside
         document.addEventListener('click', (event) => {
             if (!reportActionsContainer.contains(event.target) && !floatingReportToggle.contains(event.target)) {
                 reportActionsContainer.classList.add('hidden');
@@ -843,7 +827,6 @@ function setupReportActions() {
             }
         });
 
-        // Close report actions when clicking on a link inside
         reportActionsContainer.querySelectorAll('a').forEach(link => {
             link.addEventListener('click', () => {
                 reportActionsContainer.classList.add('hidden');
@@ -852,15 +835,6 @@ function setupReportActions() {
             });
         });
     }
-}
-
-/**
- * Sets up and updates the real-time clock in the header.
- * ساعت بلادرنگ در هدر را تنظیم و به‌روزرسانی می‌کند.
- */
-function setupClock() {
-    const timeElement = document.getElementById('current-time');
-    if (!timeElement) return;
 
     function updateClock() {
         const now = new Date();
@@ -872,62 +846,45 @@ function setupClock() {
             month: '2-digit',
             year: 'numeric'
         };
-        timeElement.textContent = now.toLocaleString('fa-IR', options).replace(',', ' -');
+        const timeElement = document.getElementById('current-time');
+        if (timeElement) {
+            timeElement.textContent = now.toLocaleString('fa-IR', options).replace(',', ' -');
+        }
     }
-    setInterval(updateClock, 1000); // Update every second
-    updateClock(); // Initial call
-}
+    setInterval(updateClock, 1000);
+    updateClock();
 
-/**
- * Sets up the user search input functionality.
- * قابلیت جستجوی کاربران را تنظیم می‌کند.
- */
-function setupUserSearch() {
     const userSearchInput = document.getElementById('user-search');
     if (userSearchInput) {
         let searchTimeout;
         userSearchInput.addEventListener('keyup', () => {
-            clearTimeout(searchTimeout); // Clear previous timeout
+            clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 fetchUsers(1, itemsPerPage, currentSortColumn, currentSortDirection, userSearchInput.value.trim());
-            }, 300); // Debounce search input
+            }, 300);
         });
     }
-}
 
-/**
- * Sets up sorting functionality for the user table headers.
- * قابلیت مرتب‌سازی را برای هدرهای جدول کاربران را تنظیم می‌کند.
- */
-function setupUserTableSorting() {
     document.querySelectorAll('#user-management-content th[data-sort]').forEach(header => {
         header.addEventListener('click', () => {
             const sortColumn = header.dataset.sort;
             let sortDirection = 'asc';
-            // Toggle sort direction if clicking on the same column
             if (currentSortColumn === sortColumn) {
                 sortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
             }
             fetchUsers(1, itemsPerPage, sortColumn, sortDirection, currentSearchQuery);
         });
     });
-}
 
-/**
- * Sets up event listeners for user modal related buttons.
- * شنونده‌های رویداد برای دکمه‌های مربوط به مودال کاربر را تنظیم می‌کند.
- */
-function setupUserModalButtons() {
     const addUserButton = document.getElementById('add-user-btn');
     if (addUserButton) {
-        addUserButton.addEventListener('click', () => window.showUserModal(null)); // Open modal for new user
+        addUserButton.addEventListener('click', () => window.showUserModal(null));
     }
 
     const userModalCloseBtn = document.getElementById('user-modal-close-btn');
     const userFormCancelBtn = document.getElementById('user-form-cancel-btn');
     const userModalOverlay = document.getElementById('user-modal-overlay');
 
-    // Close modal listeners
     if (userModalCloseBtn) {
         userModalCloseBtn.addEventListener('click', () => {
             userModalOverlay.classList.add('hidden');
@@ -940,24 +897,12 @@ function setupUserModalButtons() {
             userModalOverlay.classList.remove('active');
         });
     }
-}
 
-/**
- * Sets up the event listener for user form submission.
- * شنونده رویداد برای ارسال فرم کاربر را تنظیم می‌کند.
- */
-function setupUserFormSubmission() {
     const userForm = document.getElementById('user-form');
     if (userForm) {
         userForm.addEventListener('submit', handleUserFormSubmit);
     }
-}
 
-/**
- * Sets up event listeners for bulk actions (select all, delete, activate, deactivate).
- * شنونده‌های رویداد برای عملیات گروهی (انتخاب همه، حذف، فعال‌سازی، غیرفعال‌سازی) را تنظیم می‌کند.
- */
-function setupBulkActions() {
     const selectAllCheckbox = document.getElementById('select-all');
     if (selectAllCheckbox) {
         selectAllCheckbox.addEventListener('change', handleSelectAllClick);
@@ -968,43 +913,21 @@ function setupBulkActions() {
     document.getElementById('bulk-deactivate')?.addEventListener('click', () => handleBulkAction('deactivate'));
 }
 
-/**
- * Initializes all event listeners and functionalities for the admin panel.
- * تمامی شنونده‌های رویداد و قابلیت‌های پنل ادمین را مقداردهی اولیه می‌کند.
- */
-export function setupAdminPanelListeners() {
-    // Only set up listeners if we are on an admin path
-    if (!window.location.pathname.startsWith('/admin/')) {
-        console.log("Not on admin page, skipping admin panel listener setup.");
-        return;
-    }
-    console.log("On admin page, setting up admin panel listeners.");
-
-    setupSidebarToggle();
-    setupNotificationDropdown();
-    setupReportActions();
-    setupClock();
-    setupUserSearch();
-    setupUserTableSorting();
-    setupUserModalButtons();
-    setupUserFormSubmission();
-    setupBulkActions();
-}
-
-// Ensure DOM is fully loaded before running initial setup
 window.onload = () => {
-    // Check if we are on an admin-related path
     if (window.location.pathname.startsWith('/admin/')) {
-        window.showSection('dashboard'); // Default to dashboard on load
-        renderActivityLog(); // Render activity log
+        window.showSection('dashboard');
+        renderActivityLog();
 
-        // Simulate admin login logging
-        const storedAdmin = users.find(u => u.username === currentUser.username);
+        // currentUser اکنون از طریق window.currentUser قابل دسترسی است.
+        const storedAdmin = users.find(u => u.username === window.currentUser.username);
         if (storedAdmin) {
-            logAdminAction(currentUser.username, 'ورود به پنل', 'ورود موفق به سیستم');
+            window.logAdminAction(window.currentUser.username, 'ورود به پنل', 'ورود موفق به سیستم');
         } else {
-            showMessage('کاربر ادمین شبیه‌سازی شده یافت نشد. به عنوان کاربر پیش‌فرض عمل می‌کنیم.', 'info');
+            // This message is expected now since the users array is initially empty.
+            window.showMessage('کاربر ادمین شبیه‌سازی شده یافت نشد. به عنوان کاربر پیش‌فرض عمل می‌کنیم.', 'info');
         }
     }
-    setupAdminPanelListeners(); // Setup all general listeners
+    // setupAdminPanelListeners به عنوان یک تابع export شده در admin.js باقی می‌ماند
+    // و از app.js فراخوانی می‌شود.
+    setupAdminPanelListeners();
 };

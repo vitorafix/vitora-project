@@ -1,5 +1,5 @@
 <?php
-// File: app/Services/Managers/CartValidator.php (این کامنت به اینجا منتقل شد)
+// File: app/Services/Managers/CartValidator.php
 namespace App\Services\Managers;
 
 use App\Models\Cart;
@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use App\Exceptions\CartInvalidArgumentException; // Custom exception
 use App\Exceptions\CartLimitExceededException; // Custom exception
+use App\Exceptions\UnauthorizedCartAccessException; // Added: For ensureCartOwnership
 
 class CartValidator
 {
@@ -71,6 +72,69 @@ class CartValidator
             throw new CartInvalidArgumentException('برای دریافت یا ایجاد سبد خرید، شناسه کاربر یا شناسه سشن الزامی است.'); // User or session ID is required to get or create a cart.
         }
     }
+
+    /**
+     * Ensures that either a user or a session ID is provided for cart operations.
+     * این متد اطمینان حاصل می‌کند که برای عملیات سبد خرید، یا شناسه کاربر یا شناسه سشن ارائه شده باشد.
+     * این متد برای رفع خطای "Call to undefined method ensureValidCartIdentifier" اضافه شده است.
+     *
+     * @param User|null $user
+     * @param string|null $sessionId
+     * @throws CartInvalidArgumentException
+     */
+    public function ensureValidCartIdentifier(?User $user = null, ?string $sessionId = null): void
+    {
+        // از متد موجود validateUserOrSession برای انجام اعتبارسنجی استفاده می‌کنیم.
+        $this->validateUserOrSession($user, $sessionId);
+    }
+
+    /**
+     * Ensures the given user or session ID owns the cart.
+     * این متد اطمینان حاصل می‌کند که کاربر یا شناسه سشن داده شده، مالک سبد خرید است.
+     *
+     * @param Cart $cart
+     * @param User|null $user
+     * @param string|null $sessionId
+     * @return bool
+     * @throws UnauthorizedCartAccessException
+     */
+    public function ensureCartOwnership(Cart $cart, ?User $user, ?string $sessionId): bool
+    {
+        if ($user && $cart->user_id === $user->id) {
+            return true;
+        }
+
+        if ($sessionId && $cart->session_id === $sessionId) {
+            return true;
+        }
+
+        Log::warning('Unauthorized cart access attempt.', [
+            'cart_id' => $cart->id,
+            'attempted_user_id' => $user ? $user->id : null,
+            'attempted_session_id' => $sessionId,
+            'cart_owner_user_id' => $cart->user_id,
+            'cart_owner_session_id' => $cart->session_id,
+        ]);
+        throw new UnauthorizedCartAccessException('شما مجاز به دسترسی به این سبد خرید نیستید.');
+    }
+
+    /**
+     * Ensures a product has sufficient stock.
+     * این متد اطمینان حاصل می‌کند که یک محصول موجودی کافی دارد.
+     *
+     * @param \App\Models\Product $product
+     * @param int $requestedQuantity
+     * @param int $availableStock
+     * @param string $entityName
+     * @throws \App\Exceptions\Cart\InsufficientStockException
+     */
+    public function ensureProductHasSufficientStock(\App\Models\Product $product, int $requestedQuantity, int $availableStock, string $entityName): void
+    {
+        if ($requestedQuantity > $availableStock) {
+            throw new \App\Exceptions\Cart\InsufficientStockException("موجودی کافی برای {$entityName} وجود ندارد. موجودی فعلی: {$availableStock}");
+        }
+    }
+
 
     /**
      * Performs a health check for the cart validator.

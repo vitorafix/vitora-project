@@ -1,6 +1,7 @@
 // resources/js/export.js
 
-import { showMessage } from './app.js'; // Import showMessage from app.js
+// این خط import را حذف می‌کنیم، زیرا showMessage به صورت سراسری در window تعریف شده است.
+// import { showMessage } from './app.js';
 
 export function setupExportButtons() {
     // Export to Excel (using SheetJS)
@@ -17,7 +18,12 @@ export function setupExportButtons() {
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "گزارش محصولات");
             XLSX.writeFile(wb, "گزارش_محصولات.xlsx");
-            showMessage('فایل اکسل با موفقیت صادر شد.', 'success');
+            // استفاده از window.showMessage به جای showMessage مستقیم
+            if (typeof window.showMessage === 'function') {
+                window.showMessage('فایل اکسل با موفقیت صادر شد.', 'success');
+            } else {
+                console.log('فایل اکسل با موفقیت صادر شد.');
+            }
         });
     }
 
@@ -69,7 +75,12 @@ export function setupExportButtons() {
                         heightLeft -= pageHeight;
                     }
                     doc.save("گزارش.pdf");
-                    showMessage('فایل PDF با موفقیت صادر شد.', 'success');
+                    // استفاده از window.showMessage به جای showMessage مستقیم
+                    if (typeof window.showMessage === 'function') {
+                        window.showMessage('فایل PDF با موفقیت صادر شد.', 'success');
+                    } else {
+                        console.log('فایل PDF با موفقیت صادر شد.');
+                    }
 
                     // Revert display style if temporarily changed
                     if (isHidden) {
@@ -78,7 +89,12 @@ export function setupExportButtons() {
                     }
                 }).catch(error => {
                     console.error("Error generating PDF:", error);
-                    showMessage('خطا در تولید PDF: ' + error.message, 'error');
+                    // استفاده از window.showMessage به جای showMessage مستقیم
+                    if (typeof window.showMessage === 'function') {
+                        window.showMessage('خطا در تولید PDF: ' + error.message, 'error');
+                    } else {
+                        console.log('خطا در تولید PDF: ' + error.message);
+                    }
                     // Ensure display style is reverted even on error
                     if (content.classList.contains('temp-visible-for-pdf')) {
                         content.style.display = '';
@@ -86,7 +102,12 @@ export function setupExportButtons() {
                     }
                 });
             } else {
-                showMessage('محتوای گزارش برای تولید PDF یافت نشد.', 'error');
+                // استفاده از window.showMessage به جای showMessage مستقیم
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage('محتوای گزارش برای تولید PDF یافت نشد.', 'error');
+                } else {
+                    console.log('محتوای گزارش برای تولید PDF یافت نشد.');
+                }
             }
         });
     }

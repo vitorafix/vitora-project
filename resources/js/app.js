@@ -11,18 +11,14 @@ import { setupExportButtons } from './export.js'; // Export functions are genera
 import * as jalaali from 'jalaali-js';
 window.jalaali = jalaali;
 
-// Import admin panel specific logic
-// This import ensures admin.js code is bundled, but its execution is conditional
-import { setupAdminPanelListeners, logAdminAction, renderActivityLog } from './admin.js';
-
 // --- Global Data and Functions ---
-// These are general-purpose or shared across different parts of the application.
+// این‌ها توابع و داده‌های سراسری هستند که در سراسر برنامه قابل دسترسی خواهند بود.
 // Mock Data for admin activity log (can be moved to a shared data file if needed elsewhere)
-export const adminActivityLog = [
+window.adminActivityLog = [
     { timestamp: new Date(), username: 'سیستم', action: 'راه‌اندازی پنل', details: 'سیستم آماده کار است.' }
 ];
 
-export let currentUser = { id: 1, username: 'admin', role: 'مدیر', lastLocation: '192.168.1.100' }; // Simulating logged-in admin
+window.currentUser = { id: 1, username: 'admin', role: 'مدیر', lastLocation: '192.168.1.100' }; // Simulating logged-in admin
 
 
 /**
@@ -105,6 +101,24 @@ window.showConfirmationModal = function(title, message, onConfirm, onCancel) {
     cancelBtn.addEventListener('click', handleCancel);
 };
 
+/**
+ * Logs an admin action to the activity log.
+ * این تابع به صورت سراسری در دسترس خواهد بود.
+ * @param {string} username - The username of the admin performing the action.
+ * @param {string} action - The action performed (e.g., 'ویرایش کاربر').
+ * @param {string} details - Additional details about the action.
+ */
+window.logAdminAction = function(username, action, details) {
+    window.adminActivityLog.push({
+        timestamp: new Date(),
+        username: username,
+        action: action,
+        details: details
+    });
+    // Assuming renderActivityLog is available in admin.js and will be called there
+    // after an action to update the UI.
+};
+
 
 // --- Initial Setup and Event Listeners ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -115,7 +129,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // This function now contains the path check internally as well, but this outer check
     // prevents unnecessary execution for public pages.
     if (window.location.pathname.startsWith('/admin/')) {
-        setupAdminPanelListeners();
+        // setupAdminPanelListeners از admin.js ایمپورت نشده است، بلکه مستقیماً فراخوانی می‌شود
+        // مطمئن شوید که admin.js به درستی در HTML بارگذاری شده است تا این تابع در دسترس باشد.
+        if (typeof setupAdminPanelListeners === 'function') {
+            setupAdminPanelListeners();
+        } else {
+            console.error("setupAdminPanelListeners function not found. Ensure admin.js is loaded.");
+        }
     }
 });
 
