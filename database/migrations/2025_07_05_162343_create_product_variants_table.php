@@ -8,28 +8,33 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     *
+     * @return void
      */
-    public function up(): void
+    public function up()
     {
         Schema::create('product_variants', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('product_id')->constrained('products')->onDelete('cascade'); // کلید خارجی به جدول products
-            $table->string('name'); // مثلاً "رنگ: قرمز", "سایز: L"
-            $table->decimal('price_adjustment', 10, 2)->default(0); // تنظیم قیمت نسبت به محصول اصلی
-            $table->integer('stock')->default(0); // موجودی واریانت
-            $table->json('attributes')->nullable(); // برای ذخیره ویژگی‌های JSON مانند {'color': 'red', 'size': 'L'}
+            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
+            $table->string('name'); // e.g., 'Color', 'Size'
+            $table->string('value'); // e.g., 'Red', 'Large'
+            $table->decimal('price_adjustment', 10, 2)->default(0.00); // Price difference from base product
+            $table->integer('stock')->default(0); // Stock for this specific variant
             $table->timestamps();
 
-            // اضافه کردن unique constraint روی ترکیب product_id و name
-            $table->unique(['product_id', 'name']);
+            // Add a unique constraint to prevent duplicate variants for the same product
+            $table->unique(['product_id', 'name', 'value']);
         });
     }
 
     /**
      * Reverse the migrations.
+     *
+     * @return void
      */
-    public function down(): void
+    public function down()
     {
         Schema::dropIfExists('product_variants');
     }
 };
+

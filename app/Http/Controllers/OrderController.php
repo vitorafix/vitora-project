@@ -7,33 +7,43 @@ use App\Models\Cart;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
-use App\Models\Address; // اضافه کردن ایمپورت Address model
+use App\Models\Address; // Import Address model
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log; // برای لاگ کردن خطاها
-use Illuminate\View\View; // اضافه کردن ایمپورت View برای بازگشت مناسب متد
-use Illuminate\Http\RedirectResponse; // اضافه کردن ایمپورت RedirectResponse
-use App\Http\Requests\PlaceOrderRequest; // ایمپورت کردن Form Request جدید
-use App\Services\OrderService; // ایمپورت کردن OrderService جدید
-use App\Services\Contracts\CartServiceInterface; // اضافه شده: برای تزریق CartService
+use Illuminate\Support\Facades\Log; // For logging errors
+use Illuminate\View\View; // Import View for proper method return type
+use Illuminate\Http\RedirectResponse; // Import RedirectResponse
+use Illuminate\Http\JsonResponse; // Import JsonResponse for API methods
+
+use App\Http\Requests\PlaceOrderRequest; // Import new Form Request
+use App\Services\OrderService; // Import new OrderService
+use App\Services\Contracts\CartServiceInterface; // Added: For CartService injection
+
+// New: Import custom exceptions for more specific error handling
+use App\Exceptions\Cart\InsufficientStockException;
+use App\Exceptions\BaseCartException; // Ensure this is also caught for general cart errors
+use App\Exceptions\ProductNotFoundException; // If OrderService might throw this
+
+// New: Import API Resources
+use App\Http\Resources\OrderResource;
 
 class OrderController extends Controller
 {
     protected OrderService $orderService;
-    protected CartServiceInterface $cartService; // اضافه شده: برای دسترسی به CartService
+    protected CartServiceInterface $cartService; // Added: For CartService access
 
     /**
      * Constructor for OrderController.
      * سازنده کنترلر OrderController.
      *
      * @param OrderService $orderService
-     * @param CartServiceInterface $cartService // اضافه شده
+     * @param CartServiceInterface $cartService
      */
-    public function __construct(OrderService $orderService, CartServiceInterface $cartService) // اضافه شده
+    public function __construct(OrderService $orderService, CartServiceInterface $cartService)
     {
         $this->orderService = $orderService;
-        $this->cartService = $cartService; // اضافه شده
+        $this->cartService = $cartService;
     }
 
     /**
@@ -129,6 +139,7 @@ class OrderController extends Controller
             $validatedData = $request->validated();
 
             // فراخوانی سرویس برای ثبت سفارش
+            // OrderService مسئول مدیریت موجودی و کوپن اعمال شده به سبد خرید خواهد بود.
             $order = $this->orderService->placeOrder($validatedData);
 
             // بازگرداندن پاسخ موفقیت‌آمیز
@@ -137,8 +148,20 @@ class OrderController extends Controller
                 'orderId' => $order->id
             ], 200);
 
-        } catch (\Exception $e) {
-            // ثبت خطا در لاگ برای اشکال‌زدایی
+        } catch (InsufficientStockException $e) {
+            // مدیریت خطای کمبود موجودی
+            Log::error('Order Placement Error - Insufficient Stock: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
+            return response()->json(['message' => $e->getMessage()], 400); // 400 Bad Request
+        } catch (ProductNotFoundException $e) {
+            // مدیریت خطای محصول یافت نشد
+            Log::error('Order Placement Error - Product Not Found: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'محصولی در سبد خرید یافت نشد یا نامعتبر است.'], 404); // 404 Not Found
+        } catch (BaseCartException $e) {
+            // مدیریت خطاهای عمومی سبد خرید که ممکن است توسط OrderService پرتاب شوند
+            Log::error('Order Placement Error - Cart Exception: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
+            return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 400);
+        } catch (\Throwable $e) {
+            // ثبت خطا در لاگ برای اشکال‌زدایی عمومی
             Log::error('Order Placement Error: ' . $e->getMessage() . ' on line ' . $e->getLine() . ' in file ' . $e->getFile());
             // بازگرداندن پاسخ خطا
             return response()->json(['message' => 'خطا در ثبت سفارش. لطفاً دوباره تلاش کنید.'], 500);
@@ -165,5 +188,30 @@ class OrderController extends Controller
         // eager loading آیتم‌های سفارش و محصولات مرتبط برای نمایش در صفحه تایید
         $order->load('items.product');
         return view('order-confirmation', compact('order'));
+    }
+
+    /**
+     * Get order details for API display.
+     * جزئیات یک سفارش خاص را برای نمایش در API دریافت می‌کند.
+     * از OrderResource برای فرمت‌بندی پاسخ استفاده می‌کند.
+     *
+     * @param Order $order
+     * @return \App\Http\Resources\OrderResource|\Illuminate\Http\JsonResponse
+     */
+    public function showApi(Order $order): OrderResource|JsonResponse
+    {
+        // اطمینان از اینکه کاربر فقط می‌تواند سفارشات خودش را مشاهده کند
+        // این منطق باید مشابه showConfirmation باشد
+        if (Auth::check() && $order->user_id !== Auth::id()) {
+            return response()->json(['message' => 'شما اجازه دسترسی به این سفارش را ندارید.'], 403);
+        } elseif (!Auth::check() && $order->session_id !== Session::getId()) {
+            return response()->json(['message' => 'شما اجازه دسترسی به این سفارش را ندارید.'], 403);
+        }
+
+        // eager loading آیتم‌های سفارش و محصولات مرتبط
+        $order->load('items.product');
+
+        // استفاده از OrderResource برای تبدیل مدل Order به فرمت JSON مناسب
+        return new OrderResource($order);
     }
 }

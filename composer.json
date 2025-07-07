@@ -14,7 +14,7 @@
     "rap2hpoutre/laravel-log-viewer": "^2.4"
   },
   "require-dev": {
-    "barryvdh/laravel-debugbar": "^3.14",
+    "barryvdh/laravel-debugbar": "*",
     "fakerphp/faker": "^1.23",
     "laravel/breeze": "^2.3",
     "laravel/pail": "^1.2.2",

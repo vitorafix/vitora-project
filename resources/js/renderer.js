@@ -9,7 +9,7 @@
  * @property {number} price
  * @property {number} stock
  * @property {string} thumbnail_url_small
- * @property {string} image_url
+ * @property {string} image_url // اضافه شده برای هماهنگی با Accessor
  * @property {string} image // برای آیتم‌های سبد اصلی
  */
 
@@ -19,7 +19,7 @@
  * @property {number} product_id
  * @property {number} quantity
  * @property {number} subtotal
- * @property {ProductDetails} product // برای مینی‌کارت
+ * @property {ProductDetails} product // برای مینی‌کارت و سبد اصلی (شامل image_url)
  * @property {string} product_name // برای سبد اصلی
  * @property {number} product_price // برای سبد اصلی
  * @property {number} stock // برای سبد اصلی
@@ -104,9 +104,10 @@ function safeRender(renderFn, fallbackFn = null) {
  * @returns {string} رشته HTML برای تصویر.
  */
 function createImageTemplate(item, size = 'small') {
-    // برای مینی‌کارت، اطلاعات محصول در item.product است. برای سبد اصلی، مستقیماً در item.
-    const imageUrl = size === 'small' ? item.product?.thumbnail_url_small || item.product?.image_url : item.thumbnail_url_small || item.image;
-    const altText = size === 'small' ? item.product?.title : item.product_name;
+    // از item.product.image_url استفاده می‌کنیم که از Accessor مدل Product می‌آید.
+    // این فرض می‌کند که API بک‌اند، آبجکت 'product' را با 'image_url' برای هر آیتم سبد خرید برمی‌گرداند.
+    const imageUrl = item.product?.image_url;
+    const altText = item.product?.title || item.product_name || 'Product'; // فال‌بک برای متن جایگزین
     const fallbackUrl = size === 'small' ? 'https://placehold.co/60x60/E5E7EB/4B5563?text=Product' : 'https://placehold.co/80x80/E5E7EB/4B5563?text=Product';
     const width = size === 'small' ? 'w-12' : 'w-16';
     const height = size === 'small' ? 'h-12' : 'h-16';
@@ -114,7 +115,7 @@ function createImageTemplate(item, size = 'small') {
     return `
         <img src="${imageUrl || fallbackUrl}"
              onerror="this.onerror=null;this.src='${fallbackUrl}';"
-             alt="${altText || 'Product'}" class="${width} ${height} object-cover rounded-md ml-3">
+             alt="${altText}" class="${width} ${height} object-cover rounded-md ml-3">
     `;
 }
 

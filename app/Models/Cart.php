@@ -18,6 +18,21 @@ class Cart extends Model
     protected $fillable = [
         'user_id',
         'session_id', // برای سبد خرید مهمان
+        'coupon_id', // New: To store the ID of the applied coupon
+        'discount_amount', // New: To store the discount amount applied by the coupon
+        'subtotal', // New: To store the subtotal before discount/shipping/tax
+        'total', // New: To store the final total after all calculations
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'discount_amount' => 'decimal:2',
+        'subtotal' => 'decimal:2',
+        'total' => 'decimal:2',
     ];
 
     /**
@@ -30,6 +45,15 @@ class Cart extends Model
     }
 
     /**
+     * Get the coupon that was applied to the cart.
+     * یک سبد خرید می‌تواند یک کد تخفیف داشته باشد (Many-to-One relationship).
+     */
+    public function coupon()
+    {
+        return $this->belongsTo(Coupon::class);
+    }
+
+    /**
      * Calculate the total price of items in the cart.
      * مجموع قیمت تمامی آیتم‌های موجود در سبد خرید را محاسبه و برمی‌گرداند.
      *
@@ -39,6 +63,8 @@ class Cart extends Model
     {
         // با استفاده از eager loading قبلی، آیتم‌ها از قبل لود شده‌اند.
         // اگر آیتم‌ها لود نشده باشند، N+1 query ایجاد می‌کند. بهتر است قبل از فراخوانی، items() با with('product') لود شود.
+        // This method might become less relevant if `total` is stored and updated by the service.
+        // However, it can still be used for on-the-fly calculation if needed.
         return $this->items->sum(function ($item) {
             return $item->quantity * $item->price;
         });
@@ -61,3 +87,4 @@ class Cart extends Model
         return static::firstOrCreate(['session_id' => $sessionId]);
     }
 }
+

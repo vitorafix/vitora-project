@@ -19,6 +19,7 @@ class CartItem extends Model
         'product_id',
         'quantity',
         'price',
+        'product_variant_id', // Added: To store the associated product variant
     ];
 
     /**
@@ -40,4 +41,15 @@ class CartItem extends Model
     {
         return $this->belongsTo(Product::class);
     }
+
+    /**
+     * Get the product variant associated with the cart item.
+     *
+     * یک آیتم سبد خرید می‌تواند به یک واریانت محصول مرتبط باشد (Many-to-One relationship).
+     */
+    public function productVariant()
+    {
+        return $this->belongsTo(ProductVariant::class);
+    }
 }
+

@@ -2,226 +2,220 @@
 
 namespace App\Services\Contracts;
 
-use App\Models\User;
 use App\Models\Cart;
 use App\Models\CartItem;
-use App\Models\Product;
+use App\Models\User;
 use App\Services\Responses\CartContentsResponse;
-use App\Services\Responses\CartOperationResponse; // added
-use Carbon\Carbon; // added for Type Hint
+use App\Services\Responses\CartOperationResponse;
+use Carbon\Carbon;
 
 interface CartServiceInterface
 {
     /**
-     * Get existing cart or create new one based on user or session.
+     * Get or create a cart for a given user or session.
+     * دریافت یا ایجاد یک سبد خرید برای کاربر یا جلسه مشخص.
      *
-     * @param User|null $user
+     * @param \App\Models\User|null $user
      * @param string|null $sessionId
-     * @return Cart
+     * @return \App\Models\Cart
      */
     public function getOrCreateCart(?User $user = null, ?string $sessionId = null): Cart;
 
     /**
-     * Merge guest cart with user cart when user logs in.
+     * Merge a guest cart into a user's cart upon login.
+     * ادغام سبد خرید مهمان با سبد خرید کاربر پس از ورود.
      *
-     * @param User $user
+     * @param \App\Models\User $user
      * @param string $guestSessionId
      * @return void
      */
     public function mergeGuestCart(User $user, string $guestSessionId): void;
 
     /**
-     * Assign guest cart to newly registered user.
+     * Assigns a guest cart to a newly registered user.
+     * اختصاص سبد خرید مهمان به کاربر تازه ثبت نام شده.
      *
      * @param string $guestSessionId
-     * @param User $newUser
+     * @param \App\Models\User $newUser
      * @return void
      */
     public function assignGuestCartToNewUser(string $guestSessionId, User $newUser): void;
 
     /**
-     * Add new item or update existing item quantity in the cart.
+     * Add product to cart or update quantity.
+     * محصول را به سبد خرید اضافه یا تعداد آن را به‌روزرسانی می‌کند.
      *
-     * @param Cart $cart
+     * @param \App\Models\Cart $cart
      * @param int $productId
      * @param int $quantity
-     * @return CartOperationResponse
+     * @param int|null $productVariantId
+     * @return \App\Services\Responses\CartOperationResponse
      */
-    public function addOrUpdateCartItem(Cart $cart, int $productId, int $quantity): CartOperationResponse;
+    public function addOrUpdateCartItem(Cart $cart, int $productId, int $quantity, ?int $productVariantId = null): CartOperationResponse;
 
     /**
-     * Update specific cart item quantity.
+     * Update quantity of a specific cart item.
+     * تعداد یک آیتم خاص در سبد خرید را به‌روزرسانی می‌کند.
      *
-     * @param CartItem $cartItem
+     * @param \App\Models\CartItem $cartItem
      * @param int $newQuantity
-     * @param User|null $user
+     * @param \App\Models\User|null $user
      * @param string|null $sessionId
-     * @return CartOperationResponse
+     * @return \App\Services\Responses\CartOperationResponse
      */
-    public function updateCartItemQuantity(
-        CartItem $cartItem,
-        int $newQuantity,
-        ?User $user = null,
-        ?string $sessionId = null
-    ): CartOperationResponse;
+    public function updateCartItemQuantity(CartItem $cartItem, int $newQuantity, ?User $user = null, ?string $sessionId = null): CartOperationResponse;
 
     /**
-     * Remove specific item from cart.
+     * Remove a specific cart item.
+     * یک آیتم خاص را از سبد خرید حذف می‌کند.
      *
-     * @param CartItem $cartItem
-     * @param User|null $user
+     * @param \App\Models\CartItem $cartItem
+     * @param \App\Models\User|null $user
      * @param string|null $sessionId
-     * @return CartOperationResponse
+     * @return \App\Services\Responses\CartOperationResponse
      */
-    public function removeCartItem(
-        CartItem $cartItem,
-        ?User $user = null,
-        ?string $sessionId = null
-    ): CartOperationResponse;
+    public function removeCartItem(CartItem $cartItem, ?User $user = null, ?string $sessionId = null): CartOperationResponse;
 
     /**
-     * Clear all items from cart and optionally delete the cart itself.
+     * Clear all items from the cart.
+     * همه آیتم‌ها را از سبد خرید پاک می‌کند.
      *
-     * @param Cart $cart
-     * @return CartOperationResponse
+     * @param \App\Models\Cart $cart
+     * @return \App\Services\Responses\CartOperationResponse
      */
     public function clearCart(Cart $cart): CartOperationResponse;
 
     /**
-     * Get complete cart contents with calculations for display.
+     * Get cart contents for display.
+     * محتویات سبد خرید را برای نمایش دریافت می‌کند.
      *
-     * @param Cart $cart
-     * @return CartContentsResponse
+     * @param \App\Models\Cart $cart
+     * @return \App\Services\Responses\CartContentsResponse
      */
     public function getCartContents(Cart $cart): CartContentsResponse;
 
     /**
-     * Update multiple cart items in a single bulk operation.
+     * Update multiple items in the cart (e.g., from a form submission).
+     * به‌روزرسانی چندین آیتم در سبد خرید (مثلاً از طریق ارسال فرم).
      *
-     * @param Cart $cart
-     * @param array $updates An associative array where keys are product IDs and values are quantities.
-     * @return CartOperationResponse
+     * @param \App\Models\Cart $cart
+     * @param array $updates An array of updates, each containing 'cart_item_id' and 'quantity'.
+     * @return \App\Services\Responses\CartOperationResponse
      */
     public function updateMultipleItems(Cart $cart, array $updates): CartOperationResponse;
 
     /**
-     * Reserve product stock for cart items (typically in a temporary cache).
+     * Cleanup expired guest carts.
+     * پاکسازی سبدهای خرید مهمان منقضی شده.
      *
-     * @param Product $product
-     * @param int $quantity
-     * @param int|null $minutes The duration in minutes for which the stock should be reserved.
-     * @return bool True if stock was successfully reserved, false otherwise.
-     */
-    public function reserveStock(Product $product, int $quantity, ?int $minutes = null): bool;
-
-    /**
-     * Release reserved product stock.
-     *
-     * @param Product $product
-     * @param int $quantity
-     * @return bool True if stock was successfully released, false otherwise.
-     */
-    public function releaseStock(Product $product, int $quantity): bool;
-
-    /**
-     * Clean up expired guest carts and release their stock.
-     *
-     * @param int|null $daysCutoff Number of days after which a cart is considered expired.
-     * @return int The number of expired carts cleaned up.
+     * @param int|null $daysCutoff
+     * @return int The number of carts cleaned up.
      */
     public function cleanupExpiredCarts(?int $daysCutoff = null): int;
 
     /**
-     * Check if the given user or session owns a specific cart item.
+     * Check if a user (or session) owns a specific cart item.
+     * بررسی مالکیت یک آیتم سبد خرید توسط کاربر (یا جلسه).
      *
-     * @param CartItem $cartItem
-     * @param User|null $user
+     * @param \App\Models\CartItem $cartItem
+     * @param \App\Models\User|null $user
      * @param string|null $sessionId
      * @return bool
      */
     public function userOwnsCartItem(CartItem $cartItem, ?User $user, ?string $sessionId): bool;
 
     /**
-     * Get a cart by its ID with ownership validation.
+     * Get a cart by its ID, ensuring ownership.
+     * دریافت یک سبد خرید بر اساس شناسه آن، با اطمینان از مالکیت.
      *
      * @param int $cartId
-     * @param User|null $user
+     * @param \App\Models\User|null $user
      * @param string|null $sessionId
-     * @return Cart|null The cart object if found and owned, null otherwise.
+     * @return \App\Models\Cart|null
      */
     public function getCartById(int $cartId, ?User $user = null, ?string $sessionId = null): ?Cart;
 
     /**
-     * Calculate cart totals, including subtotal, shipping, taxes, and discounts.
+     * Calculate the subtotal, total, shipping, tax, and discount for a cart.
+     * محاسبه مجموع فرعی، مجموع کل، هزینه حمل و نقل، مالیات و تخفیف برای یک سبد خرید.
      *
-     * @param Cart $cart
-     * @return array An associative array of calculated totals.
+     * @param \App\Models\Cart $cart
+     * @return array
      */
     public function calculateCartTotals(Cart $cart): array;
 
     /**
-     * Validate cart items for availability, stock, and current prices.
+     * Validate cart items for issues like insufficient stock or missing products.
+     * اعتبارسنجی آیتم‌های سبد خرید برای مشکلاتی مانند کمبود موجودی یا محصولات گم شده.
      *
-     * @param Cart $cart
-     * @return array An array of validation results (e.g., items with issues).
+     * @param \App\Models\Cart $cart
+     * @return array An array of validation issues.
      */
     public function validateCartItems(Cart $cart): array;
 
     /**
-     * Apply a coupon/discount code to the cart.
+     * Apply a coupon to the cart.
+     * اعمال یک کد تخفیف به سبد خرید.
      *
-     * @param Cart $cart
+     * @param \App\Models\Cart $cart
      * @param string $couponCode
-     * @return CartOperationResponse
+     * @return \App\Services\Responses\CartOperationResponse
      */
     public function applyCoupon(Cart $cart, string $couponCode): CartOperationResponse;
 
     /**
-     * Remove an applied coupon from the cart.
+     * Remove a coupon from the cart.
+     * حذف یک کد تخفیف از سبد خرید.
      *
-     * @param Cart $cart
-     * @return CartOperationResponse
+     * @param \App\Models\Cart $cart
+     * @return \App\Services\Responses\CartOperationResponse
      */
     public function removeCoupon(Cart $cart): CartOperationResponse;
 
     /**
-     * Get the total count of unique items in the cart.
+     * Get the total count of items (sum of quantities) in the cart.
+     * دریافت تعداد کل آیتم‌ها (مجموع تعداد) در سبد خرید.
      *
-     * @param Cart $cart
+     * @param \App\Models\Cart $cart
      * @return int
      */
     public function getCartItemCount(Cart $cart): int;
 
     /**
-     * Transfer cart ownership from one user/session to another user.
+     * Transfer cart ownership from a guest session to a new user.
+     * انتقال مالکیت سبد خرید از جلسه مهمان به کاربر جدید.
      *
-     * @param Cart $cart The cart to transfer.
-     * @param User $newOwner The new user to whom the cart will be assigned.
-     * @return bool True on successful transfer, false otherwise.
+     * @param \App\Models\Cart $cart
+     * @param \App\Models\User $newOwner
+     * @return bool
      */
     public function transferCartOwnership(Cart $cart, User $newOwner): bool;
 
     /**
-     * Check if the cart is empty (contains no items).
+     * Check if the cart is empty.
+     * بررسی خالی بودن سبد خرید.
      *
-     * @param Cart $cart
+     * @param \App\Models\Cart $cart
      * @return bool
      */
     public function isCartEmpty(Cart $cart): bool;
 
     /**
-     * Get the estimated expiry date/time for a guest cart.
+     * Get the expiry date for a guest cart.
+     * دریافت تاریخ انقضای سبد خرید مهمان.
      *
-     * @param Cart $cart
-     * @return Carbon|null The expiry date/time, or null if not applicable (e.g., for user carts).
+     * @param \App\Models\Cart $cart
+     * @return \Carbon\Carbon|null
      */
     public function getCartExpiryDate(Cart $cart): ?Carbon;
 
     /**
-     * Refresh cart item prices from current product prices in the database.
+     * Refresh the prices of items in the cart based on current product prices.
+     * به‌روزرسانی قیمت آیتم‌های سبد خرید بر اساس قیمت‌های فعلی محصول.
      *
-     * @param Cart $cart
-     * @return CartOperationResponse
+     * @param \App\Models\Cart $cart
+     * @return \App\Services\Responses\CartOperationResponse
      */
     public function refreshCartItemPrices(Cart $cart): CartOperationResponse;
 }
+

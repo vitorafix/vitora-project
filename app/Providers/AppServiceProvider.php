@@ -3,8 +3,13 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use App\Services\ProductService; // Import the ProductService
-use App\Contracts\ProductServiceInterface; // Import the ProductServiceInterface
+
+// Import interfaces and implementations
+use App\Contracts\ProductServiceInterface;
+use App\Services\ProductService;
+
+use App\Contracts\Repositories\ProductVariantRepositoryInterface;
+use App\Repositories\ProductVariantRepository;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -15,10 +20,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Bind the ProductServiceInterface to the ProductService implementation
+        // Bind ProductServiceInterface to ProductService
         $this->app->bind(ProductServiceInterface::class, ProductService::class);
 
-        // Removed the temporary test binding for stdClass
+        // Bind ProductVariantRepositoryInterface to ProductVariantRepository
+        $this->app->bind(ProductVariantRepositoryInterface::class, ProductVariantRepository::class);
+
+        // سایر Binding ها را اینجا اضافه کنید
     }
 
     /**
@@ -31,4 +39,3 @@ class AppServiceProvider extends ServiceProvider
         //
     }
 }
-
