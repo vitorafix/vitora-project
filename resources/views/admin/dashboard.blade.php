@@ -1,9 +1,9 @@
-{{-- dashboard.blade.php (Final) --}}
-{{-- This file now extends the base layout and includes dynamic content --}}
+{{-- dashboard.blade.php (Final Layout) --}}
+{{-- This file now extends the admin layout and includes dynamic content --}}
 
-@extends('app') {{-- Changed from layouts.app to app as your main layout is app.blade.php --}}
+@extends('layouts.admin') {{-- Changed to extend the new admin layout --}}
 
-@section('content')
+@section('admin_content') {{-- Content will be injected into admin_content section --}}
     {{-- Include the dashboard content partial --}}
     @include('partials._dashboard')
 

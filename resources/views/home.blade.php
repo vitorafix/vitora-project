@@ -2,14 +2,11 @@
 
 @section('title', 'صفحه اصلی - چای ابراهیم')
 
-{{-- این سکشن 'hero_section' حالا به yield جدید در app.blade.php فرستاده می‌شود --}}
 @section('hero_section')
-    {{-- بخش اسلایدشو اصلی (Hero Carousel) --}}
     <section id="hero-carousel" class="relative overflow-hidden flex flex-col items-center justify-center text-center text-white p-8" style="height: calc(100vh - var(--nav-height, 0px));">
         {{-- اسلاید 1 --}}
-        {{-- opacity-100 برای اسلاید فعلی و opacity-0 برای اسلایدهای مخفی --}}
         <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-100" style="background-image: url('{{ asset('uploads/hero-banner.jpg') }}');">
-            <div class="absolute inset-0 bg-brown-900 opacity-60"></div> {{-- پوشش تیره --}}
+            <div class="absolute inset-0 bg-brown-900 opacity-60"></div>
             <div class="relative z-10 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center h-full">
                 <h1 class="text-4xl md:text-5xl lg::text-6xl font-extrabold mb-4 leading-tight animate-fade-in-up">
                     عطر و طعم اصیل <br> چای ایرانی
@@ -22,9 +19,8 @@
                 </a>
             </div>
         </div>
-
         {{-- اسلاید 2 --}}
-        <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-0" style="background-image: url('{{ asset('uploads/hero-banner2.jpg') }}');"> {{-- نام فایل به hero-banner2.jpg تغییر یافت --}}
+        <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-0" style="background-image: url('{{ asset('uploads/hero-banner2.jpg') }}');">
             <div class="absolute inset-0 bg-green-900 opacity-60"></div>
             <div class="relative z-10 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center h-full">
                 <h1 class="text-4xl md:text-5xl lg::text-6xl font-extrabold mb-4 leading-tight animate-fade-in-up">
@@ -38,9 +34,8 @@
                 </a>
             </div>
         </div>
-
         {{-- اسلاید 3 --}}
-        <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-0" style="background-image: url('{{ asset('uploads/hero-banner3.jpg') }}');"> {{-- نام فایل به hero-banner3.jpg تغییر یافت --}}
+        <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-0" style="background-image: url('{{ asset('uploads/hero-banner3.jpg') }}');">
             <div class="absolute inset-0 bg-blue-900 opacity-60"></div>
             <div class="relative z-10 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center h-full">
                 <h1 class="text-4xl md:text-5xl lg::text-6xl font-extrabold mb-4 leading-tight animate-fade-in-up">
@@ -54,24 +49,19 @@
                 </a>
             </div>
         </div>
-
-        {{-- دکمه‌های ناوبری اسلایدشو --}}
+        {{-- دکمه‌ها و نشانگرها --}}
         <button id="hero-prev-btn" class="absolute top-1/2 right-4 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full z-20 hover:bg-opacity-75 transition-colors duration-300">
             <i class="fas fa-chevron-right text-xl"></i>
         </button>
         <button id="hero-next-btn" class="absolute top-1/2 left-4 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full z-20 hover:bg-opacity-75 transition-colors duration-300">
             <i class="fas fa-chevron-left text-xl"></i>
         </button>
-
-        {{-- نشانگرهای اسلاید --}}
-        <div id="hero-indicators" class="absolute bottom-4 z-20 flex space-x-2">
-            {{-- نشانگرها اینجا توسط جاوااسکریپت اضافه می‌شوند --}}
-        </div>
+        <div id="hero-indicators" class="absolute bottom-4 z-20 flex space-x-2"></div>
     </section>
 @endsection
 
 @section('content')
-    {{-- بخش محصولات جدید --}}
+    {{-- جدیدترین محصولات --}}
     <section class="container mx-auto px-4 py-8 md:py-16">
         <h2 class="text-4xl font-extrabold text-brown-900 mb-10 text-center">
             <i class="fas fa-star text-yellow-500 ml-3"></i>
@@ -81,7 +71,6 @@
             @forelse ($latestProducts as $product)
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 transform transition-transform duration-300 hover:scale-105 hover:shadow-xl group">
                     <div class="relative overflow-hidden">
-                        {{-- استفاده از accessor image_url --}}
                         <img src="{{ $product->image_url }}" alt="{{ $product->title }}" class="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-110"
                              onerror="this.onerror=null;this.src='https://placehold.co/400x400/E5E7EB/4B5563?text=Product';">
                         <div class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -99,7 +88,7 @@
                                     data-product-id="{{ $product->id }}"
                                     data-product-title="{{ $product->title }}"
                                     data-product-price="{{ $product->price }}"
-                                    data-product-image="{{ $product->image_url }}"> {{-- استفاده از accessor image_url --}}
+                                    data-product-image="{{ $product->image_url }}">
                                 <i class="fas fa-cart-plus ml-2"></i>
                                 افزودن به سبد
                             </button>
@@ -115,7 +104,7 @@
         </div>
     </section>
 
-    {{-- بخش محصولات پرفروش --}}
+    {{-- محصولات پرفروش --}}
     <section class="container mx-auto px-4 py-16 text-center">
         <h2 class="text-4xl font-extrabold text-brown-900 mb-12">
             <i class="fas fa-fire text-orange-500 ml-3"></i>
@@ -125,7 +114,6 @@
             @foreach ($featuredProducts as $product)
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 transform transition-transform duration-300 hover:scale-105 hover:shadow-xl group">
                     <div class="relative overflow-hidden">
-                        {{-- استفاده از accessor image_url --}}
                         <img src="{{ $product->image_url }}" alt="{{ $product->title }}" class="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-110"
                              onerror="this.onerror=null;this.src='https://placehold.co/400x400/E5E7EB/4B5563?text=Product';">
                         <div class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -143,7 +131,7 @@
                                     data-product-id="{{ $product->id }}"
                                     data-product-title="{{ $product->title }}"
                                     data-product-price="{{ $product->price }}"
-                                    data-product-image="{{ $product->image_url }}"> {{-- استفاده از accessor image_url --}}
+                                    data-product-image="{{ $product->image_url }}">
                                 <i class="fas fa-cart-plus ml-2"></i>
                                 افزودن به سبد
                             </button>
@@ -157,7 +145,7 @@
         </div>
     </section>
 
-    {{-- بخش نظرات مشتریان --}}
+    {{-- نظرات مشتریان --}}
     <section class="bg-green-100 py-16 px-4">
         <div class="container mx-auto text-center">
             <h2 class="text-4xl font-extrabold text-brown-900 mb-12">
@@ -165,7 +153,6 @@
                 نظرات مشتریان
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {{-- Example Testimonial 1 --}}
                 <div class="bg-white p-8 rounded-xl shadow-md border border-gray-100 text-right">
                     <p class="text-gray-700 italic mb-6">"چای ابراهیم واقعا عطر و طعم بی‌نظیری داره. از وقتی از این چای استفاده می‌کنم، حس شادابی بیشتری دارم."</p>
                     <div class="flex items-center justify-end">
@@ -173,7 +160,6 @@
                         <img src="https://placehold.co/60x60/F3F4F6/6B7280?text=SA" alt="سارا احمدی" class="w-12 h-12 rounded-full object-cover">
                     </div>
                 </div>
-                {{-- Example Testimonial 2 --}}
                 <div class="bg-white p-8 rounded-xl shadow-md border border-gray-100 text-right">
                     <p class="text-gray-700 italic mb-6">"من عاشق دمنوش‌های میوه‌ای چای ابراهیم شدم. هر فنجانش یه دنیا آرامش میده."</p>
                     <div class="flex items-center justify-end">
@@ -181,7 +167,6 @@
                         <img src="https://placehold.co/60x60/F3F4F6/6B7280?text=AG" alt="علی قاسمی" class="w-12 h-12 rounded-full object-cover">
                     </div>
                 </div>
-                {{-- Example Testimonial 3 --}}
                 <div class="bg-white p-8 rounded-xl shadow-md border border-gray-100 text-right">
                     <p class="text-gray-700 italic mb-6">"کیفیت چای سیاهشون بی‌نظیره. همیشه از این برند خرید می‌کنم و راضی‌ام."</p>
                     <div class="flex items-center justify-end">
@@ -193,14 +178,13 @@
         </div>
     </section>
 
-    {{-- بخش مقالات اخیر --}}
+    {{-- مقالات اخیر --}}
     <section class="container mx-auto px-4 py-16 text-center">
         <h2 class="text-4xl font-extrabold text-brown-900 mb-12">
             <i class="fas fa-newspaper text-red-500 ml-3"></i>
             آخرین مقالات وبلاگ
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {{-- Example Blog Post 1 --}}
             <div class="bg-gray-50 rounded-xl shadow-md overflow-hidden card-hover-effect border border-gray-100">
                 <img src="https://placehold.co/400x250/F3F4F6/6B7280?text=تاریخچه+چای" alt="تاریخچه چای" class="w-full h-48 object-cover">
                 <div class="p-6">
@@ -209,7 +193,6 @@
                     <a href="{{ route('blog.show', 1) }}" class="text-green-800 hover:underline font-semibold">بیشتر بخوانید <i class="fas fa-arrow-left text-sm ml-1"></i></a>
                 </div>
             </div>
-            {{-- Example Blog Post 2 --}}
             <div class="bg-gray-50 rounded-xl shadow-md overflow-hidden card-hover-effect border border-gray-100">
                 <img src="https://placehold.co/400x250/F3F4F6/6B7280?text=فواید+چای+سبز" alt="فواید چای سبز" class="w-full h-48 object-cover">
                 <div class="p-6">
@@ -218,7 +201,6 @@
                     <a href="{{ route('blog.show', 2) }}" class="text-green-800 hover:underline font-semibold">بیشتر بخوانید <i class="fas fa-arrow-left text-sm ml-1"></i></a>
                 </div>
             </div>
-            {{-- Example Blog Post 3 --}}
             <div class="bg-gray-50 rounded-xl shadow-md overflow-hidden card-hover-effect border border-gray-100">
                 <img src="{{ asset('uploads/blog-image-3.jpg') }}" alt="آداب و رسوم سرو چای" class="w-full h-48 object-cover">
                 <div class="p-6">
@@ -233,7 +215,7 @@
         </div>
     </section>
 
-    {{-- Contact Us CTA - Centered Container --}}
+    {{-- تماس با ما --}}
     <section class="my-16 p-8 bg-brown-900 text-white rounded-2xl shadow-lg mx-auto max-w-6xl text-center">
         <h2 class="text-3xl md:text-4xl font-bold mb-6">همین امروز با ما تماس بگیرید!</h2>
         <p class="text-lg mb-8 max-w-2xl mx-auto">

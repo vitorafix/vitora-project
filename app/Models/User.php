@@ -21,11 +21,14 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
+        'name', // حفظ فیلد name اگر هنوز استفاده می‌شود
         'lastname',
         'mobile_number',
-        'email', // اگرچه برای ورود استفاده نمی‌شود، ممکن است برای اطلاعات پروفایل لازم باشد
-        // 'password', // حذف شده: احراز هویت با OTP است
+        'email',
+        'username', // اضافه شده: برای نام کاربری در پنل ادمین
+        'password', // اضافه شده: برای مدیریت رمز عبور در پنل ادمین
+        'role',     // اضافه شده: برای مدیریت نقش کاربر
+        'status',   // اضافه شده: برای مدیریت وضعیت کاربر (فعال/غیرفعال/معلق)
         'profile_completed',
         'national_id',
         'birth_date',
@@ -38,7 +41,7 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $hidden = [
-        // 'password', // حذف شده: احراز هویت با OTP است
+        'password', // اکنون که رمز عبور مدیریت می‌شود، باید پنهان باشد
         'remember_token',
     ];
 
@@ -49,8 +52,10 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        // 'password' => 'hashed', // حذف شده: احراز هویت با OTP است
+        'password' => 'hashed', // اضافه شده: برای هش کردن رمز عبور
         'profile_completed' => 'boolean',
+        'created_at' => 'datetime', // اضافه شده: برای اطمینان از cast شدن تاریخ ایجاد
+        'updated_at' => 'datetime', // اضافه شده: برای اطمینان از cast شدن تاریخ به‌روزرسانی
     ];
 
     /**

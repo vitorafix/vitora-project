@@ -12,6 +12,7 @@ import * as jalaali from 'jalaali-js';
 window.jalaali = jalaali;
 
 // Import admin panel specific logic
+// This import ensures admin.js code is bundled, but its execution is conditional
 import { setupAdminPanelListeners, logAdminAction, renderActivityLog } from './admin.js';
 
 // --- Global Data and Functions ---
@@ -110,9 +111,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Setup general export buttons (if any are outside admin panel)
     setupExportButtons();
 
-    // Call the main admin panel setup function
-    // This function contains all specific listeners for the admin dashboard and user management
-    setupAdminPanelListeners();
+    // Call the main admin panel setup function ONLY if on an admin page
+    // This function now contains the path check internally as well, but this outer check
+    // prevents unnecessary execution for public pages.
+    if (window.location.pathname.startsWith('/admin/')) {
+        setupAdminPanelListeners();
+    }
 });
 
 // Note: The hero-carousel logic was previously in app.blade.php for direct JS,

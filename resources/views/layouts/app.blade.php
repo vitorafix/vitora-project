@@ -27,7 +27,7 @@
         /* این استایل برای جلوگیری از نمایش لحظه‌ای المنت‌های x-cloak قبل از بارگذاری Alpine.js ضروری است */
         [x-cloak] { display: none !important; }
 
-        /* CSS برای مدال سفارشی */
+        /* CSS برای مدال سفارشی (اینجا نگه داشته می‌شود چون ممکن است در بخش‌های عمومی هم استفاده شود) */
         .custom-modal-overlay {
             position: fixed;
             top: 0;
@@ -131,61 +131,28 @@
             margin-top: 0.75rem; /* فاصله بین دکمه‌ها و از محتوای بالا */
         }
 
-        /* Custom styles for sidebar transitions */
-        .sidebar {
-            transition: width 0.3s ease-in-out;
-            direction: rtl; /* For RTL text */
-        }
-        .sidebar-expanded {
-            width: 256px; /* w-64 */
-        }
-        .sidebar-collapsed {
-            width: 64px; /* w-16 */
-        }
-        /* Hide text when collapsed */
-        .sidebar-collapsed .nav-text {
-            display: none;
-        }
-        /* Ensure content shifts */
-        #main-content-wrapper { /* New wrapper for main content to handle sidebar shift */
-            transition: margin-right 0.3s ease-in-out;
-        }
-        .main-content-shifted {
-            margin-right: 256px; /* For expanded sidebar */
-        }
-        .main-content-full {
-            margin-right: 64px; /* For collapsed sidebar */
-        }
+        /* Custom styles for sidebar transitions - MOVED TO APP.CSS OR ADMIN.BLADE.PHP'S STYLE BLOCK */
+        /* .sidebar { ... } */
+        /* .sidebar-expanded { ... } */
+        /* .sidebar-collapsed { ... } */
+        /* .sidebar-collapsed .nav-text { ... } */
+        /* #main-content-wrapper { ... } */
+        /* .main-content-shifted { ... } */
+        /* .main-content-full { ... } */
         .section-content {
             display: none;
         }
         .section-content.active {
             display: block;
         }
-        /* Custom scrollbar for activity log */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-        /* Custom styles for the new monthly sales chart */
-        .chart-container {
-            position: relative;
-            height: 300px; /* Adjust height as needed */
-            width: 100%;
-        }
-        #monthlySalesChart {
-            direction: ltr; /* Ensure Chart.js renders correctly for data interpretation */
-        }
+        /* Custom scrollbar for activity log - MOVED TO APP.CSS OR ADMIN.BLADE.PHP'S STYLE BLOCK */
+        /* .custom-scrollbar::-webkit-scrollbar { ... } */
+        /* .custom-scrollbar::-webkit-scrollbar-track { ... } */
+        /* .custom-scrollbar::-webkit-scrollbar-thumb { ... } */
+        /* .custom-scrollbar::-webkit-scrollbar-thumb:hover { ... } */
+        /* Custom styles for the new monthly sales chart - MOVED TO APP.CSS OR ADMIN.BLADE.PHP'S STYLE BLOCK */
+        /* .chart-container { ... } */
+        /* #monthlySalesChart { ... } */
 
         /* Custom Button Styles (from your app.css, ensuring consistency) */
         .btn-primary {
@@ -216,198 +183,9 @@
         }
     </style>
 </head>
-<body class="font-sans antialiased flex h-screen overflow-hidden">
-
-    {{-- Sidebar - Moved from dashboard.blade.php --}}
-    <aside id="sidebar" class="sidebar bg-white shadow-lg fixed top-0 right-0 h-full overflow-y-auto z-50 flex flex-col sidebar-expanded">
-        <div class="p-4 flex items-center justify-between border-b border-gray-200">
-            <h1 class="text-2xl font-bold text-brown-900 nav-text">پنل مدیریت</h1>
-            <button id="sidebar-toggle" class="text-gray-600 hover:text-green-800 focus:outline-none">
-                <i class="fas fa-bars text-xl"></i>
-            </button>
-        </div>
-        <nav class="mt-5 flex-grow space-y-1">
-            <!-- Dashboard -->
-            <a href="#" onclick="showSection('dashboard')" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 group">
-                <i class="fas fa-tachometer-alt fa-fw text-gray-500 group-hover:text-green-700"></i>
-                <span class="ms-3 nav-text">داشبورد</span>
-            </a>
-            <!-- Products -->
-            <a href="#" onclick="showSection('products')" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 group">
-                <i class="fas fa-box-open fa-fw text-gray-500 group-hover:text-green-700"></i>
-                <span class="ms-3 nav-text">محصولات</span>
-            </a>
-            <!-- Orders -->
-            <a href="#" onclick="showSection('orders')" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 group">
-                <i class="fas fa-shopping-cart fa-fw text-gray-500 group-hover:text-green-700"></i>
-                <span class="ms-3 nav-text">سفارشات</span>
-            </a>
-            <!-- Customer Management -->
-            <a href="#" onclick="showSection('customers')" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 group">
-                <i class="fas fa-users fa-fw text-gray-500 group-hover:text-green-700"></i>
-                <span class="ms-3 nav-text">مشتریان</span>
-            </a>
-            <!-- Reports -->
-            <a href="#" onclick="showSection('reports')" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 group">
-                <i class="fas fa-chart-bar fa-fw text-gray-500 group-hover:text-green-700"></i>
-                <span class="ms-3 nav-text">گزارشات</span>
-            </a>
-            <!-- Marketing -->
-            <a href="#" onclick="showSection('marketing')" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 group">
-                <i class="fas fa-bullhorn fa-fw text-gray-500 group-hover:text-green-700"></i>
-                <span class="ms-3 nav-text">بازاریابی</span>
-            </a>
-            <!-- Discounts -->
-            <a href="#" onclick="showSection('discounts')" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 group">
-                <i class="fas fa-tags fa-fw text-gray-500 group-hover:text-green-700"></i>
-                <span class="ms-3 nav-text">تخفیفات</span>
-            </a>
-            <!-- Content Management -->
-            <a href="#" onclick="showSection('content-management')" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 group">
-                <i class="fas fa-file-alt fa-fw text-gray-500 group-hover:text-green-700"></i>
-                <span class="ms-3 nav-text">مدیریت محتوا</span>
-            </a>
-            <!-- Comments -->
-            <a href="#" onclick="showSection('comments')" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 group">
-                <i class="fas fa-comments fa-fw text-gray-500 group-hover:text-green-700"></i>
-                <span class="ms-3 nav-text">نظرات</span>
-            </a>
-            <!-- Support -->
-            <a href="#" onclick="showSection('support')" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 group">
-                <i class="fas fa-life-ring fa-fw text-gray-500 group-hover:text-green-700"></i>
-                <span class="ms-3 nav-text">پشتیبانی</span>
-            </a>
-            <!-- Shipping -->
-            <a href="#" onclick="showSection('shipping')" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 group">
-                <i class="fas fa-truck fa-fw text-gray-500 group-hover:text-green-700"></i>
-                <span class="ms-3 nav-text">حمل و نقل</span>
-            </a>
-            <!-- Payments -->
-            <a href="#" onclick="showSection('payments')" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 group">
-                <i class="fas fa-credit-card fa-fw text-gray-500 group-hover:text-green-700"></i>
-                <span class="ms-3 nav-text">پرداخت‌ها</span>
-            </a>
-            <!-- Analytics -->
-            <a href="#" onclick="showSection('analytics')" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 group">
-                <i class="fas fa-chart-line fa-fw text-gray-500 group-hover:text-green-700"></i>
-                <span class="ms-3 nav-text">تحلیل‌ها</span>
-            </a>
-            <!-- Settings -->
-            <a href="#" onclick="showSection('settings')" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 group">
-                <i class="fas fa-cogs fa-fw text-gray-500 group-hover:text-green-700"></i>
-                <span class="ms-3 nav-text">تنظیمات</span>
-            </a>
-            <!-- User Management -->
-            <a href="#" onclick="showSection('user-management')" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 group">
-                <i class="fas fa-user-cog fa-fw text-gray-500 group-hover:text-green-700"></i>
-                <span class="ms-3 nav-text">مدیریت کاربران</span>
-            </a>
-            <!-- Backup -->
-            <a href="#" onclick="showSection('backup')" class="flex items-center p-2 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 group">
-                <i class="fas fa-database fa-fw text-gray-500 group-hover:text-green-700"></i>
-                <span class="ms-3 nav-text">پشتیبان‌گیری</span>
-            </a>
-        </nav>
-        <!-- User Profile/Logout at bottom -->
-        <div class="p-4 border-t border-gray-200 mt-auto">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <img class="w-8 h-8 rounded-full" src="https://placehold.co/32x32/FF6F61/FFFFFF?text=AD" alt="User avatar">
-                    <span class="ms-2 font-medium text-brown-900 nav-text">مدیر سیستم</span>
-                </div>
-                <button onclick="logoutUser()" class="text-gray-600 hover:text-red-600 focus:outline-none">
-                    <i class="fas fa-sign-out-alt"></i>
-                </button>
-            </div>
-        </div>
-    </aside>
-
-    <!-- Main Content Area Wrapper -->
-    <div id="main-content-wrapper" class="flex-grow p-4 main-content-shifted overflow-auto h-screen">
-        {{-- Page Heading (for Breeze dashboard/profile pages) --}}
-        @isset($header)
-            <header class="bg-white shadow rounded-lg p-4 mb-4 flex items-center justify-between">
-                <h2 class="text-xl font-semibold text-brown-900">
-                    {{ $header }}
-                </h2>
-                <div class="flex items-center space-x-4 space-x-reverse">
-                    <span class="text-gray-600 text-sm" id="current-time"></span>
-                    <div class="relative">
-                        <button id="notification-button" class="text-gray-600 hover:text-green-800 focus:outline-none">
-                            <i class="fas fa-bell text-lg"></i>
-                            <span id="notification-count" class="absolute top-0 right-0 -mt-1 -mr-1 bg-red-600 text-white text-xs rounded-full px-1 py-0.5 hidden">0</span>
-                        </button>
-                        <div id="notification-dropdown" class="absolute left-0 mt-2 w-64 bg-white rounded-lg shadow-lg z-10 hidden">
-                            <div class="p-4 border-b border-gray-200 text-brown-900">اعلانات</div>
-                            <ul id="notification-list" class="divide-y divide-gray-200">
-                                <!-- Notifications will be loaded here -->
-                                <li class="p-3 text-gray-500">موردی برای نمایش نیست.</li>
-                            </ul>
-                            <div class="p-3 text-center text-green-700 hover:text-green-800 cursor-pointer">مشاهده همه</div>
-                        </div>
-                    </div>
-                </div>
-            </header>
-        @else
-            {{-- Default Header for Admin Panel Sections --}}
-            <header class="bg-white shadow rounded-lg p-4 mb-4 flex items-center justify-between">
-                <h2 id="current-section-title" class="text-xl font-semibold text-brown-900">داشبورد</h2>
-                <div class="flex items-center space-x-4 space-x-reverse">
-                    <span class="text-gray-600 text-sm" id="current-time"></span>
-                    <div class="relative">
-                        <button id="notification-button" class="text-gray-600 hover:text-green-800 focus:outline-none">
-                            <i class="fas fa-bell text-lg"></i>
-                            <span id="notification-count" class="absolute top-0 right-0 -mt-1 -mr-1 bg-red-600 text-white text-xs rounded-full px-1 py-0.5 hidden">0</span>
-                        </button>
-                        <div id="notification-dropdown" class="absolute left-0 mt-2 w-64 bg-white rounded-lg shadow-lg z-10 hidden">
-                            <div class="p-4 border-b border-gray-200 text-brown-900">اعلانات</div>
-                            <ul id="notification-list" class="divide-y divide-gray-200">
-                                <!-- Notifications will be loaded here -->
-                                <li class="p-3 text-gray-500">موردی برای نمایش نیست.</li>
-                            </ul>
-                            <div class="p-3 text-center text-green-700 hover:text-green-800 cursor-pointer">مشاهده همه</div>
-                        </div>
-                    </div>
-                </div>
-            </header>
-        @endisset
-
-        {{-- Main content area --}}
-        <main class="flex-grow">
-            {{-- Hero Section (Slideshow) - only for home page, not admin panel --}}
-            @yield('hero_section')
-
-            {{-- Content Slot / Section - for admin panel sections --}}
-            @if (isset($slot))
-                {{ $slot }} {{-- This is for Breeze pages (like dashboard, login, register) --}}
-            @else
-                @yield('content') {{-- This is for your custom admin panel sections --}}
-            @endif
-        </main>
-
-        {{-- Custom Confirmation Modal --}}
-        <div id="confirmation-modal-overlay" class="custom-modal-overlay hidden">
-            <div class="custom-modal-content">
-                <button id="confirmation-modal-close-btn" class="custom-modal-close-btn">
-                    <i class="fas fa-times"></i>
-                </button>
-                <i class="fas fa-question-circle text-amber-600 text-5xl mb-6"></i>
-                <h3 class="text-2xl font-bold text-brown-900 mb-4" id="confirmation-modal-title">تایید عملیات</h3>
-                <p class="text-gray-700 text-lg mb-8" id="confirmation-modal-message">آیا از انجام این عملیات مطمئن هستید؟</p>
-                <div class="flex justify-center gap-6">
-                    <button id="confirmation-modal-confirm-btn" class="btn-primary flex items-center justify-center min-w-[120px]">
-                        <i class="fas fa-check ml-2"></i> بله، مطمئنم
-                    </button>
-                    <button id="confirmation-modal-cancel-btn" class="btn-secondary flex items-center justify-center min-w-[120px]">
-                        <i class="fas fa-times ml-2"></i> لغو
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Footer Component - Only if not an admin panel page, or if you want it on admin pages too --}}
-    {{-- @include('partials.footer') --}}
+<body>
+    {{-- This yield is for the main body content, including the admin panel layout --}}
+    @yield('body_content')
 
     {{-- Stack for custom scripts pushed from child views (like checkout.blade.php) --}}
     @stack('scripts')
@@ -532,6 +310,5 @@
             }
         });
     </script>
-    {{-- REMOVED THIS LINE: <script src="{{ asset('js/search.js') }}"></script> --}}
 </body>
 </html>

@@ -1,13 +1,10 @@
 <?php $__env->startSection('title', 'صفحه اصلی - چای ابراهیم'); ?>
 
-
 <?php $__env->startSection('hero_section'); ?>
-    
     <section id="hero-carousel" class="relative overflow-hidden flex flex-col items-center justify-center text-center text-white p-8" style="height: calc(100vh - var(--nav-height, 0px));">
         
-        
         <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-100" style="background-image: url('<?php echo e(asset('uploads/hero-banner.jpg')); ?>');">
-            <div class="absolute inset-0 bg-brown-900 opacity-60"></div> 
+            <div class="absolute inset-0 bg-brown-900 opacity-60"></div>
             <div class="relative z-10 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center h-full">
                 <h1 class="text-4xl md:text-5xl lg::text-6xl font-extrabold mb-4 leading-tight animate-fade-in-up">
                     عطر و طعم اصیل <br> چای ایرانی
@@ -20,9 +17,8 @@
                 </a>
             </div>
         </div>
-
         
-        <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-0" style="background-image: url('<?php echo e(asset('uploads/hero-banner2.jpg')); ?>');"> 
+        <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-0" style="background-image: url('<?php echo e(asset('uploads/hero-banner2.jpg')); ?>');">
             <div class="absolute inset-0 bg-green-900 opacity-60"></div>
             <div class="relative z-10 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center h-full">
                 <h1 class="text-4xl md:text-5xl lg::text-6xl font-extrabold mb-4 leading-tight animate-fade-in-up">
@@ -36,9 +32,8 @@
                 </a>
             </div>
         </div>
-
         
-        <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-0" style="background-image: url('<?php echo e(asset('uploads/hero-banner3.jpg')); ?>');"> 
+        <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-0" style="background-image: url('<?php echo e(asset('uploads/hero-banner3.jpg')); ?>');">
             <div class="absolute inset-0 bg-blue-900 opacity-60"></div>
             <div class="relative z-10 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center h-full">
                 <h1 class="text-4xl md:text-5xl lg::text-6xl font-extrabold mb-4 leading-tight animate-fade-in-up">
@@ -52,7 +47,6 @@
                 </a>
             </div>
         </div>
-
         
         <button id="hero-prev-btn" class="absolute top-1/2 right-4 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full z-20 hover:bg-opacity-75 transition-colors duration-300">
             <i class="fas fa-chevron-right text-xl"></i>
@@ -60,11 +54,7 @@
         <button id="hero-next-btn" class="absolute top-1/2 left-4 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full z-20 hover:bg-opacity-75 transition-colors duration-300">
             <i class="fas fa-chevron-left text-xl"></i>
         </button>
-
-        
-        <div id="hero-indicators" class="absolute bottom-4 z-20 flex space-x-2">
-            
-        </div>
+        <div id="hero-indicators" class="absolute bottom-4 z-20 flex space-x-2"></div>
     </section>
 <?php $__env->stopSection(); ?>
 
@@ -79,7 +69,6 @@
             <?php $__empty_1 = true; $__currentLoopData = $latestProducts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 transform transition-transform duration-300 hover:scale-105 hover:shadow-xl group">
                     <div class="relative overflow-hidden">
-                        
                         <img src="<?php echo e($product->image_url); ?>" alt="<?php echo e($product->title); ?>" class="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-110"
                              onerror="this.onerror=null;this.src='https://placehold.co/400x400/E5E7EB/4B5563?text=Product';">
                         <div class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -97,7 +86,7 @@
                                     data-product-id="<?php echo e($product->id); ?>"
                                     data-product-title="<?php echo e($product->title); ?>"
                                     data-product-price="<?php echo e($product->price); ?>"
-                                    data-product-image="<?php echo e($product->image_url); ?>"> 
+                                    data-product-image="<?php echo e($product->image_url); ?>">
                                 <i class="fas fa-cart-plus ml-2"></i>
                                 افزودن به سبد
                             </button>
@@ -123,7 +112,6 @@
             <?php $__currentLoopData = $featuredProducts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 transform transition-transform duration-300 hover:scale-105 hover:shadow-xl group">
                     <div class="relative overflow-hidden">
-                        
                         <img src="<?php echo e($product->image_url); ?>" alt="<?php echo e($product->title); ?>" class="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-110"
                              onerror="this.onerror=null;this.src='https://placehold.co/400x400/E5E7EB/4B5563?text=Product';">
                         <div class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -141,7 +129,7 @@
                                     data-product-id="<?php echo e($product->id); ?>"
                                     data-product-title="<?php echo e($product->title); ?>"
                                     data-product-price="<?php echo e($product->price); ?>"
-                                    data-product-image="<?php echo e($product->image_url); ?>"> 
+                                    data-product-image="<?php echo e($product->image_url); ?>">
                                 <i class="fas fa-cart-plus ml-2"></i>
                                 افزودن به سبد
                             </button>
@@ -163,7 +151,6 @@
                 نظرات مشتریان
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                
                 <div class="bg-white p-8 rounded-xl shadow-md border border-gray-100 text-right">
                     <p class="text-gray-700 italic mb-6">"چای ابراهیم واقعا عطر و طعم بی‌نظیری داره. از وقتی از این چای استفاده می‌کنم، حس شادابی بیشتری دارم."</p>
                     <div class="flex items-center justify-end">
@@ -171,7 +158,6 @@
                         <img src="https://placehold.co/60x60/F3F4F6/6B7280?text=SA" alt="سارا احمدی" class="w-12 h-12 rounded-full object-cover">
                     </div>
                 </div>
-                
                 <div class="bg-white p-8 rounded-xl shadow-md border border-gray-100 text-right">
                     <p class="text-gray-700 italic mb-6">"من عاشق دمنوش‌های میوه‌ای چای ابراهیم شدم. هر فنجانش یه دنیا آرامش میده."</p>
                     <div class="flex items-center justify-end">
@@ -179,7 +165,6 @@
                         <img src="https://placehold.co/60x60/F3F4F6/6B7280?text=AG" alt="علی قاسمی" class="w-12 h-12 rounded-full object-cover">
                     </div>
                 </div>
-                
                 <div class="bg-white p-8 rounded-xl shadow-md border border-gray-100 text-right">
                     <p class="text-gray-700 italic mb-6">"کیفیت چای سیاهشون بی‌نظیره. همیشه از این برند خرید می‌کنم و راضی‌ام."</p>
                     <div class="flex items-center justify-end">
@@ -198,7 +183,6 @@
             آخرین مقالات وبلاگ
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            
             <div class="bg-gray-50 rounded-xl shadow-md overflow-hidden card-hover-effect border border-gray-100">
                 <img src="https://placehold.co/400x250/F3F4F6/6B7280?text=تاریخچه+چای" alt="تاریخچه چای" class="w-full h-48 object-cover">
                 <div class="p-6">
@@ -207,7 +191,6 @@
                     <a href="<?php echo e(route('blog.show', 1)); ?>" class="text-green-800 hover:underline font-semibold">بیشتر بخوانید <i class="fas fa-arrow-left text-sm ml-1"></i></a>
                 </div>
             </div>
-            
             <div class="bg-gray-50 rounded-xl shadow-md overflow-hidden card-hover-effect border border-gray-100">
                 <img src="https://placehold.co/400x250/F3F4F6/6B7280?text=فواید+چای+سبز" alt="فواید چای سبز" class="w-full h-48 object-cover">
                 <div class="p-6">
@@ -216,7 +199,6 @@
                     <a href="<?php echo e(route('blog.show', 2)); ?>" class="text-green-800 hover:underline font-semibold">بیشتر بخوانید <i class="fas fa-arrow-left text-sm ml-1"></i></a>
                 </div>
             </div>
-            
             <div class="bg-gray-50 rounded-xl shadow-md overflow-hidden card-hover-effect border border-gray-100">
                 <img src="<?php echo e(asset('uploads/blog-image-3.jpg')); ?>" alt="آداب و رسوم سرو چای" class="w-full h-48 object-cover">
                 <div class="p-6">
