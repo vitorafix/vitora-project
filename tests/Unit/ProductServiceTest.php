@@ -2,124 +2,101 @@
 
 namespace Tests\Unit;
 
-use PHPUnit\Framework\TestCase;
-use App\Services\ProductService; // Assuming your ProductService is in this namespace
+use Tests\TestCase;
 use App\Models\Product;
+use App\Repositories\Eloquent\ProductRepository; // فرض می‌کنیم از این ریپازیتوری استفاده می‌کنید
+use App\Services\ProductService; // فرض می‌کنیم ProductService را تست می‌کنید
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Mockery;
+use Illuminate\Support\Facades\DB; // اضافه شده: برای استفاده از DB Facade
+use App\Exceptions\ProductNotFoundException; // اضافه شده: برای استفاده از Exception
 
 class ProductServiceTest extends TestCase
 {
-    use RefreshDatabase; // Use if you need database interactions
+    use RefreshDatabase;
 
-    protected $productService;
+    protected ProductService $productService;
+    protected ProductRepository $productRepository;
 
     protected function setUp(): void
     {
         parent::setUp();
-        // You might need to mock dependencies for ProductService here
-        $this->productService = new ProductService(/* pass mocked dependencies here */);
+        // Mock کردن ProductRepository
+        $this->productRepository = $this->mock(ProductRepository::class);
+        // نمونه‌سازی ProductService با ریپازیتوری Mock شده
+        $this->productService = new ProductService($this->productRepository);
     }
 
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
-    }
-
-    /**
-     * A basic unit test example for creating a product.
-     *
-     * @return void
-     */
-    public function testCreateProduct()
+    /** @test */
+    public function test_create_product(): void
     {
         $productData = [
-            'name' => 'Test Product',
-            'description' => 'This is a test product description.',
-            'price' => 25.99,
+            'title' => 'چای سبز', // 'name' به 'title' تغییر یافت
+            'description' => 'یک چای سبز عالی',
+            'price' => 50000,
             'stock' => 100,
-            'is_active' => true,
+            'status' => 'active',
+            'image' => null,
+            'category_id' => 1, // یا یک category_id معتبر
         ];
+
+        $this->productRepository->shouldReceive('create')->once()->andReturn(new Product($productData));
 
         $product = $this->productService->createProduct($productData);
 
         $this->assertInstanceOf(Product::class, $product);
-        $this->assertEquals($productData['name'], $product->name);
-        $this->assertEquals($productData['price'], $product->price);
-        $this->assertDatabaseHas('products', ['name' => 'Test Product']);
+        $this->assertEquals('چای سبز', $product->title);
     }
 
-    /**
-     * Test updating an existing product.
-     *
-     * @return void
-     */
-    public function testUpdateProduct()
+    /** @test */
+    public function test_update_product(): void
     {
-        $product = Product::factory()->create([
-            'name' => 'Old Name',
-            'price' => 10.00,
-        ]);
+        $product = Product::factory()->create(['title' => 'چای سیاه', 'price' => 50000]); // 'name' به 'title' تغییر یافت
+        $updatedData = ['title' => 'چای سیاه جدید', 'price' => 55000]; // 'name' به 'title' تغییر یافت
 
-        $updateData = [
-            'name' => 'New Name',
-            'price' => 15.50,
-        ];
+        $this->productRepository->shouldReceive('find')->once()->andReturn($product);
+        $this->productRepository->shouldReceive('update')->once()->andReturnUsing(function ($p, $data) {
+            $p->fill($data);
+            return $p;
+        });
 
-        $updatedProduct = $this->productService->updateProduct($product->id, $updateData);
+        $updatedProduct = $this->productService->updateProduct($product->id, $updatedData);
 
-        $this->assertInstanceOf(Product::class, $updatedProduct);
-        $this->assertEquals('New Name', $updatedProduct->name);
-        $this->assertEquals(15.50, $updatedProduct->price);
-        $this->assertDatabaseHas('products', ['id' => $product->id, 'name' => 'New Name', 'price' => 15.50]);
+        $this->assertEquals('چای سیاه جدید', $updatedProduct->title);
+        $this->assertEquals(55000, $updatedProduct->price);
     }
 
-    /**
-     * Test deleting a product.
-     *
-     * @return void
-     */
-    public function testDeleteProduct()
+    /** @test */
+    public function test_delete_product(): void
     {
         $product = Product::factory()->create();
+
+        $this->productRepository->shouldReceive('find')->once()->andReturn($product);
+        $this->productRepository->shouldReceive('delete')->once()->andReturn(true);
 
         $result = $this->productService->deleteProduct($product->id);
 
         $this->assertTrue($result);
-        $this->assertDatabaseMissing('products', ['id' => $product->id]);
     }
 
-    /**
-     * Test retrieving a single product.
-     *
-     * @return void
-     */
-    public function testGetProduct()
+    /** @test */
+    public function test_get_product(): void
     {
-        $product = Product::factory()->create();
+        $product = Product::factory()->create(['title' => 'چای نمونه']); // 'name' به 'title' تغییر یافت
+
+        $this->productRepository->shouldReceive('find')->once()->andReturn($product);
 
         $foundProduct = $this->productService->getProduct($product->id);
 
         $this->assertInstanceOf(Product::class, $foundProduct);
-        $this->assertEquals($product->id, $foundProduct->id);
+        $this->assertEquals('چای نمونه', $foundProduct->title);
     }
 
-    /**
-     * Test retrieving a non-existent product.
-     *
-     * @return void
-     */
-    public function testGetProductNotFound()
+    /** @test */
+    public function test_get_product_not_found(): void
     {
-        $this->expectException(\App\Exceptions\ProductNotFoundException::class); // Assuming this exception
-        $this->productService->getProduct('non-existent-uuid');
+        $this->productRepository->shouldReceive('find')->once()->andReturn(null);
+
+        $this->expectException(ProductNotFoundException::class);
+        $this->productService->getProduct(999);
     }
-
-    // Add more tests for different scenarios:
-    // - get all products
-    // - product image management (if handled by service)
-    // - product variant management (if handled by service)
-    // - etc.
 }
-

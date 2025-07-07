@@ -52,7 +52,7 @@ use App\Exceptions\BaseCartException; // Corrected: App->Exceptions to App\Excep
 // class CartMerged { use \Illuminate\Foundation\Events\Dispatchable; public Cart $fromCart; public Cart $toCart; public User $user; public function __construct(Cart $fromCart, Cart $toCart, User $user) { $this->fromCart = $fromCart; $this->toCart = $toCart; $this->user = $user; } }
 
 
-class ImprovedCartService implements CartServiceInterface
+class CartService implements CartServiceInterface
 {
     protected CartRepositoryInterface $cartRepository;
     protected ProductRepositoryInterface $productRepository;
@@ -403,7 +403,7 @@ class ImprovedCartService implements CartServiceInterface
                 return CartOperationResponse::fail('کد تخفیف نامعتبر یا منقضی شده است.', 400);
             }
         } catch (\Throwable $e) {
-            Log::error('Error applying coupon in ImprovedCartService: ' . $e->getMessage(), ['cart_id' => $cart->id, 'coupon_code' => $couponCode, 'exception' => $e->getTraceAsString()]);
+            Log::error('Error applying coupon in CartService: ' . $e->getMessage(), ['cart_id' => $cart->id, 'coupon_code' => $couponCode, 'exception' => $e->getTraceAsString()]);
             return CartOperationResponse::fail('خطا در اعمال کد تخفیف.', 500);
         }
     }
@@ -427,7 +427,7 @@ class ImprovedCartService implements CartServiceInterface
                 return CartOperationResponse::fail('کد تخفیفی برای حذف وجود ندارد.', 400);
             }
         } catch (\Throwable $e) {
-            Log::error('Error removing coupon in ImprovedCartService: ' . $e->getMessage(), ['cart_id' => $cart->id, 'exception' => $e->getTraceAsString()]);
+            Log::error('Error removing coupon in CartService: ' . $e->getMessage(), ['cart_id' => $cart->id, 'exception' => $e->getTraceAsString()]);
             return CartOperationResponse::fail('خطا در حذف کد تخفیف.', 500);
         }
     }

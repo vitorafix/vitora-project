@@ -4,7 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use App\Services\Contracts\CartServiceInterface;
-use App\Services\ImprovedCartService;
+use App\Services\CartService;
 use App\Services\Managers\CartCacheManager;
 use App\Services\Managers\StockManager; // Corrected: Used StockManager
 use App\Services\Managers\CartValidator; // Corrected: Used CartValidator
@@ -14,7 +14,7 @@ use App\Contracts\Repositories\CartRepositoryInterface;
 use App\Repositories\Eloquent\CartRepository;
 use App\Contracts\Repositories\ProductRepositoryInterface;
 use App\Repositories\Eloquent\ProductRepository;
-use App\Contracts\ProductServiceInterface; // Added: For injection into ImprovedCartService
+use App\Contracts\ProductServiceInterface; // Added: For injection into CartService
 use App\Services\Contracts\CartCleanupServiceInterface; // Added: For injection
 use App\Services\Contracts\CartItemManagementServiceInterface; // Added: For injection
 use App\Services\Contracts\CartBulkUpdateServiceInterface; // Added: For injection
@@ -27,9 +27,9 @@ class CartServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // Bind CartServiceInterface to ImprovedCartService
+        // Bind CartServiceInterface to CartService
         $this->app->bind(CartServiceInterface::class, function ($app) {
-            return new ImprovedCartService(
+            return new CartService(
                 $app->make(CartRepositoryInterface::class),
                 $app->make(ProductRepositoryInterface::class),
                 $app->make(ProductServiceInterface::class), // Added: Inject ProductServiceInterface

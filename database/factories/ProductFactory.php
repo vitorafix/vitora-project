@@ -12,7 +12,8 @@ class ProductFactory extends Factory
     public function definition()
     {
         return [
-            'name' => $this->faker->word(),
+            // 'name' به 'title' تغییر یافت تا با ساختار جدول products هماهنگ باشد.
+            'title' => $this->faker->word(),
             'price' => $this->faker->numberBetween(1000, 10000),
             'stock' => $this->faker->numberBetween(0, 100),
             // سایر فیلدهای لازم مدل Product

@@ -54,8 +54,8 @@ class OrderController extends Controller
      */
     private function getOrCreateCart(): Cart
     {
-        // استفاده از ImprovedCartService برای دریافت یا ایجاد سبد خرید
-        // این متد در ImprovedCartService به درستی user_id یا session_id را مدیریت می‌کند.
+        // استفاده از CartService برای دریافت یا ایجاد سبد خرید
+        // این متد در CartService به درستی user_id یا session_id را مدیریت می‌کند.
         return $this->cartService->getOrCreateCart(Auth::user(), Session::getId());
     }
 
@@ -75,7 +75,7 @@ class OrderController extends Controller
             // منطق برای نمایش صفحه تسویه حساب (checkout)
             $cart = $this->getOrCreateCart();
             
-            // استفاده از getCartContents در ImprovedCartService برای دریافت داده‌های کامل سبد خرید
+            // استفاده از getCartContents در CartService برای دریافت داده‌های کامل سبد خرید
             $cartContents = $this->cartService->getCartContents($cart);
 
             if ($cartContents->items->isEmpty()) { // بررسی isEmpty روی کالکشن itemsData
