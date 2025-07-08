@@ -185,6 +185,8 @@ class CartRepository implements CartRepositoryInterface
      */
     public function findCartWithItems(int $cartId): ?Cart
     {
-        return Cart::with('items.product')->find($cartId);
+        // Eager load 'items' and their 'product' and 'productVariant' relations
+        // بارگذاری eagerly 'items' و روابط 'product' و 'productVariant' آنها
+        return Cart::with(['items.product', 'items.productVariant'])->find($cartId);
     }
 }

@@ -3,8 +3,11 @@
 // هماهنگی بین ماژول‌های API، Renderer و Events، و نگهداری وضعیت کلی است.
 
 // ایمپورت کردن توابع مورد نیاز از ماژول‌های دیگر
-import { fetchCartContents, addItemToCart, updateCartItem, removeCartItem } from './api.js'; // فرض بر وجود این توابع API
+// این توابع مسئول برقراری ارتباط با API بک‌اند هستند.
+import { fetchCartContents, addItemToCart, updateCartItem, removeCartItem } from './api.js'; 
+// این توابع مسئول به‌روزرسانی رابط کاربری (DOM) بر اساس داده‌های سبد خرید هستند.
 import { renderMiniCartDetails, renderMainCart, setCartLoadingState } from './renderer.js';
+// این توابع مسئول کش کردن عناصر DOM و تنظیم Event Listenerها هستند.
 import {
     initializeDOMCache,
     setupAddToCartButtons,
@@ -32,7 +35,8 @@ class CartManager {
         };
         // Observer pattern: لیست آبزرورها برای اطلاع‌رسانی تغییرات سبد خرید
         this.observers = [];
-        this.hasMainCartElements = false; // پرچم جدید برای ردیابی وجود عناصر اصلی سبد خرید
+        // پرچم جدید برای ردیابی وجود عناصر اصلی سبد خرید (مانند صفحه cart.blade.php)
+        this.hasMainCartElements = false; 
         console.log('CartManager initialized.');
     }
 
@@ -45,9 +49,11 @@ class CartManager {
         console.log('Initializing CartManager...');
 
         // مرحله 1: کش DOM را راه‌اندازی کنید و عناصر حیاتی سبد خرید اصلی را بررسی کنید
+        // این تابع از events.js است و تعیین می‌کند که آیا عناصر اصلی سبد خرید (مانند #cart-items-container) در صفحه وجود دارند یا خیر.
         this.hasMainCartElements = initializeDOMCache();
 
         // مرحله 2: شنونده‌های رویداد را تنظیم کنید، فقط در صورتی که عناصر مربوطه یافت شوند
+        // این توابع از events.js هستند و دکمه‌ها و تعاملات کاربری را به منطق CartManager متصل می‌کنند.
         this.safeExecute(setupAddToCartButtons, 'خطا در راه‌اندازی دکمه‌های افزودن به سبد.');
         this.safeExecute(setupMiniCartToggle, 'خطا در راه‌اندازی دکمه مینی‌کارت.');
         this.safeExecute(setupMiniCartActionButtons, 'خطا در راه‌اندازی دکمه‌های عملیات مینی‌کارت.');
@@ -59,8 +65,8 @@ class CartManager {
             console.warn('Main cart elements not found, skipping setup for main cart quantity buttons.');
         }
 
-
         // مرحله 3: محتویات سبد خرید را بارگذاری و رندر کنید
+        // این مهم‌ترین بخش برای نمایش اولیه سبد خرید است.
         await this.loadAndRenderCart();
 
         console.log('CartManager initialization complete.');
@@ -71,11 +77,16 @@ class CartManager {
      * این متد می‌تواند پس از هر عملیات تغییر سبد (افزودن، حذف، به‌روزرسانی) فراخوانی شود.
      */
     async loadAndRenderCart() {
-        setCartLoadingState(true); // نمایش وضعیت بارگذاری کلی
+        // نمایش وضعیت بارگذاری (مثلاً یک اسپینر یا پیام "در حال بارگذاری...")
+        // این تابع از renderer.js است.
+        setCartLoadingState(true); 
         try {
+            // فراخوانی API برای دریافت محتویات سبد خرید.
+            // این تابع از api.js است و باید درخواست HTTP را به بک‌اند ارسال کند.
             const data = await fetchCartContents();
 
             // بررسی معتبر بودن داده‌های دریافتی با استفاده از نام‌گذاری کلیدهای snake_case
+            // اطمینان حاصل کنید که ساختار داده‌های دریافتی از بک‌اند مطابق انتظار است.
             if (!data || !Array.isArray(data.items) || typeof data.total_quantity !== 'number' || typeof data.total_price !== 'number') {
                 throw new Error('Invalid cart data received from API.');
             }
@@ -83,11 +94,12 @@ class CartManager {
             // به‌روزرسانی وضعیت داخلی سبد خرید با نگاشت کلیدهای snake_case به camelCase
             this.cartData = {
                 items: data.items,
-                totalQuantity: data.total_quantity,
-                totalPrice: data.total_price
+                totalQuantity: data.total_quantity, // این مقدار از total_quantity در پاسخ API می‌آید
+                totalPrice: data.total_price // این مقدار از total_price در پاسخ API می‌آید
             };
 
             // رندر کردن مینی‌کارت و سبد اصلی با داده‌های جدید
+            // این توابع از renderer.js هستند و مسئول ساخت و به‌روزرسانی HTML مربوط به سبد خرید هستند.
             renderMiniCartDetails(this.cartData.items, this.cartData.totalQuantity, this.cartData.totalPrice);
 
             // فقط در صورتی که عناصر اصلی سبد خرید در صفحه وجود داشته باشند، سبد خرید اصلی را رندر کنید
@@ -105,7 +117,9 @@ class CartManager {
                 window.showMessage('خطا در بارگذاری سبد خرید. لطفاً دوباره تلاش کنید.', 'error');
             }
         } finally {
-            setCartLoadingState(false); // پنهان کردن وضعیت بارگذاری
+            // پنهان کردن وضعیت بارگذاری
+            // این تابع از renderer.js است.
+            setCartLoadingState(false); 
         }
     }
 
@@ -117,8 +131,10 @@ class CartManager {
     async addItem(productId, quantity = 1) {
         setCartLoadingState(true);
         try {
+            // فراخوانی تابع API برای افزودن آیتم. این تابع از api.js است.
             const response = await addItemToCart(productId, quantity);
             if (response.success) {
+                // پس از موفقیت، سبد خرید را دوباره بارگذاری و رندر می‌کند.
                 await this.loadAndRenderCart();
                 if (typeof window.showMessage === 'function') {
                     window.showMessage('محصول به سبد خرید اضافه شد.', 'success');
@@ -144,8 +160,10 @@ class CartManager {
     async updateItemQuantity(productId, newQuantity) {
         setCartLoadingState(true);
         try {
+            // فراخوانی تابع API برای به‌روزرسانی آیتم. این تابع از api.js است.
             const response = await updateCartItem(productId, newQuantity);
             if (response.success) {
+                // پس از موفقیت، سبد خرید را دوباره بارگذاری و رندر می‌کند.
                 await this.loadAndRenderCart();
                 if (typeof window.showMessage === 'function') {
                     window.showMessage('تعداد محصول به‌روزرسانی شد.', 'success');
@@ -170,8 +188,10 @@ class CartManager {
     async removeItem(productId) {
         setCartLoadingState(true);
         try {
+            // فراخوانی تابع API برای حذف آیتم. این تابع از api.js است.
             const response = await removeCartItem(productId);
             if (response.success) {
+                // پس از موفقیت، سبد خرید را دوباره بارگذاری و رندر می‌کند.
                 await this.loadAndRenderCart();
                 if (typeof window.showMessage === 'function') {
                     window.showMessage('محصول از سبد خرید حذف شد.', 'success');

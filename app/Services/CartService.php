@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Contracts\Events\Dispatcher;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache; // Import Cache facade
 
 // Contracts
 use App\Services\Contracts\CartServiceInterface;
@@ -118,8 +119,26 @@ class CartService implements CartServiceInterface
 
         $cacheKey = $this->cacheManager->getCacheKey($user, $sessionId);
 
-        $cart = $this->cacheManager->remember($cacheKey, function () use ($user, $sessionId) {
-            $cart = null;
+        // Retrieve cart ID from cache
+        // دریافت شناسه سبد خرید از کش
+        $cartId = Cache::get($cacheKey);
+        $cart = null;
+
+        if ($cartId) {
+            // If cart ID found in cache, retrieve the cart with items eager-loaded from DB
+            // اگر شناسه سبد خرید در کش یافت شد، سبد خرید را با آیتم‌های آن از دیتابیس بارگذاری کن
+            $cart = $this->cartRepository->findCartWithItems($cartId); // Assuming findCartWithItems loads relations
+            if (!$cart) {
+                // If cart not found in DB despite having an ID in cache (e.g., deleted), clear cache
+                // اگر سبد خرید در دیتابیس یافت نشد (مثلاً حذف شده)، کش را پاک کن
+                Cache::forget($cacheKey);
+                Log::warning('Cart ID found in cache but cart not found in DB, clearing cache.', ['cart_id' => $cartId, 'cache_key' => $cacheKey]);
+            }
+        }
+
+        if (!$cart) {
+            // If cart not found in cache or DB, try to find/create from DB
+            // اگر سبد خرید در کش یا دیتابیس یافت نشد، تلاش کن از دیتابیس پیدا یا ایجاد کنی
             if ($user) {
                 Log::info('Fetching or creating cart for user', ['user_id' => $user->id]);
                 $cart = $this->cartRepository->findByUserId($user->id);
@@ -133,8 +152,20 @@ class CartService implements CartServiceInterface
                     $cart = $this->cartRepository->create(['session_id' => $sessionId]);
                 }
             }
-            return $cart;
-        });
+
+            // If a new cart is created or found, store its ID in cache
+            // اگر سبد خرید جدیدی ایجاد یا یافت شد، شناسه آن را در کش ذخیره کن
+            if ($cart) {
+                Cache::put($cacheKey, $cart->id, now()->addMinutes($this->getConfig('cache_ttl', 60))); // Cache TTL from config
+            }
+        }
+
+        // Ensure items are loaded for the returned cart object
+        // اطمینان از بارگذاری آیتم‌ها برای آبجکت سبد خرید بازگردانده شده
+        if ($cart) {
+            $cart->loadMissing(['items.product', 'items.productVariant']);
+        }
+
 
         $this->metricsManager->recordMetric('getOrCreateCart_duration', microtime(true) - $startTime, ['user_id' => $user?->id, 'session_id' => $sessionId]);
         return $cart;
@@ -167,7 +198,11 @@ class CartService implements CartServiceInterface
     {
         // Delegate to the new CartItemManagementService
         // واگذاری به سرویس جدید CartItemManagementService
-        return $this->cartItemManagementService->addOrUpdateItem($cart, $productId, $quantity, $productVariantId);
+        $response = $this->cartItemManagementService->addOrUpdateItem($cart, $productId, $quantity, $productVariantId);
+        // Clear cache after any cart modification
+        // پاک کردن کش پس از هرگونه تغییر در سبد خرید
+        $this->cacheManager->clearCache($cart->user, $cart->session_id);
+        return $response;
     }
 
     public function updateCartItemQuantity(
@@ -178,7 +213,11 @@ class CartService implements CartServiceInterface
     ): CartOperationResponse {
         // Delegate to the new CartItemManagementService
         // واگذاری به سرویس جدید CartItemManagementService
-        return $this->cartItemManagementService->updateItemQuantity($cartItem, $newQuantity, $user, $sessionId);
+        $response = $this->cartItemManagementService->updateItemQuantity($cartItem, $newQuantity, $user, $sessionId);
+        // Clear cache after any cart modification
+        // پاک کردن کش پس از هرگونه تغییر در سبد خرید
+        $this->cacheManager->clearCache($user, $sessionId);
+        return $response;
     }
 
     public function removeCartItem(
@@ -188,20 +227,29 @@ class CartService implements CartServiceInterface
     ): CartOperationResponse {
         // Delegate to the new CartItemManagementService
         // واگذاری به سرویس جدید CartItemManagementService
-        return $this->cartItemManagementService->removeItem($cartItem, $user, $sessionId);
+        $response = $this->cartItemManagementService->removeItem($cartItem, $user, $sessionId);
+        // Clear cache after any cart modification
+        // پاک کردن کش پس از هرگونه تغییر در سبد خرید
+        $this->cacheManager->clearCache($user, $sessionId);
+        return $response;
     }
 
     public function clearCart(Cart $cart): CartOperationResponse
     {
         // Delegate to the new CartClearService
         // واگذاری به سرویس جدید CartClearService
-        return $this->cartClearService->clearCart($cart);
+        $response = $this->cartClearService->clearCart($cart);
+        // Clear cache after any cart modification
+        // پاک کردن کش پس از هرگونه تغییر در سبد خرید
+        $this->cacheManager->clearCache($cart->user, $cart->session_id);
+        return $response;
     }
 
     public function getCartContents(Cart $cart): CartContentsResponse
     {
         $startTime = microtime(true);
         // Load product and productVariant if exists
+        // بارگذاری محصول و واریانت محصول در صورت وجود
         $cart->loadMissing(['items.product', 'items.productVariant']);
 
         $itemsData = [];
@@ -256,7 +304,11 @@ class CartService implements CartServiceInterface
     {
         // Delegate to the new CartBulkUpdateService
         // واگذاری به سرویس جدید CartBulkUpdateService
-        return $this->cartBulkUpdateService->updateMultipleItems($cart, $updates);
+        $response = $this->cartBulkUpdateService->updateMultipleItems($cart, $updates);
+        // Clear cache after any cart modification
+        // پاک کردن کش پس از هرگونه تغییر در سبد خرید
+        $this->cacheManager->clearCache($cart->user, $cart->session_id);
+        return $response;
     }
 
     public function cleanupExpiredCarts(?int $daysCutoff = null): int
@@ -275,7 +327,9 @@ class CartService implements CartServiceInterface
 
     public function getCartById(int $cartId, ?User $user = null, ?string $sessionId = null): ?Cart
     {
-        $cart = $this->cartRepository->find($cartId);
+        // This method should also load relations if needed directly
+        // این متد نیز در صورت نیاز باید روابط را مستقیماً بارگذاری کند
+        $cart = $this->cartRepository->findCartWithItems($cartId); // Use the method that loads relations
         if (!$cart) {
             return null;
         }

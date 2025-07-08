@@ -41,6 +41,8 @@ class CartController extends Controller
             $user = Auth::user();
             $sessionId = Session::getId();
 
+            // getOrCreateCart now handles eager loading of items
+            // getOrCreateCart اکنون بارگذاری eager آیتم‌ها را مدیریت می‌کند
             $cart = $this->cartService->getOrCreateCart($user, $sessionId);
             $cartContents = $this->cartService->getCartContents($cart);
             $cartTotals = $this->cartService->calculateCartTotals($cart);
@@ -70,6 +72,8 @@ class CartController extends Controller
             $user = Auth::user();
             $sessionId = Session::getId();
 
+            // getOrCreateCart now handles eager loading of items
+            // getOrCreateCart اکنون بارگذاری eager آیتم‌ها را مدیریت می‌کند
             $cart = $this->cartService->getOrCreateCart($user, $sessionId);
             $cartContents = $this->cartService->getCartContents($cart);
 
@@ -97,10 +101,14 @@ class CartController extends Controller
         $variantId = $request->input('product_variant_id');
 
         try {
+            // getOrCreateCart now handles eager loading of items
+            // getOrCreateCart اکنون بارگذاری eager آیتم‌ها را مدیریت می‌کند
             $cart = $this->cartService->getOrCreateCart(Auth::user(), Session::getId());
             $response = $this->cartService->addOrUpdateCartItem($cart, $productId, $quantity, $variantId);
 
             if ($response->isSuccess()) {
+                // Fetch the updated cart again to ensure latest contents are loaded after modification
+                // سبد خرید به‌روز شده را دوباره دریافت کنید تا از بارگذاری آخرین محتویات پس از تغییر اطمینان حاصل شود
                 $updatedCart = $this->cartService->getOrCreateCart(Auth::user(), Session::getId());
                 $updatedCartContents = $this->cartService->getCartContents($updatedCart);
 
@@ -203,6 +211,8 @@ class CartController extends Controller
             $user = Auth::user();
             $sessionId = Session::getId();
 
+            // getOrCreateCart now handles eager loading of items
+            // getOrCreateCart اکنون بارگذاری eager آیتم‌ها را مدیریت می‌کند
             $cart = $this->cartService->getOrCreateCart($user, $sessionId);
             $response = $this->cartService->clearCart($cart);
 
@@ -233,12 +243,16 @@ class CartController extends Controller
         try {
             $user = Auth::user();
             $sessionId = Session::getId();
+            // getOrCreateCart now handles eager loading of items
+            // getOrCreateCart اکنون بارگذاری eager آیتم‌ها را مدیریت می‌کند
             $cart = $this->cartService->getOrCreateCart($user, $sessionId);
 
             // فرض بر این است که applyCoupon یک boolean برمی‌گرداند
             $success = $this->couponService->applyCoupon($cart, $couponCode);
 
             if ($success) {
+                // Refresh cart to ensure latest totals are calculated after coupon application
+                // سبد خرید را رفرش کنید تا از محاسبه آخرین مجموع‌ها پس از اعمال کوپن اطمینان حاصل شود
                 $cartTotals = $this->cartService->calculateCartTotals($cart->fresh());
                 return response()->json([
                     'success' => true, // اضافه شدن فیلد success
@@ -262,12 +276,16 @@ class CartController extends Controller
         try {
             $user = Auth::user();
             $sessionId = Session::getId();
+            // getOrCreateCart now handles eager loading of items
+            // getOrCreateCart اکنون بارگذاری eager آیتم‌ها را مدیریت می‌کند
             $cart = $this->cartService->getOrCreateCart($user, $sessionId);
 
             // فرض بر این است که removeCoupon یک boolean برمی‌گرداند
             $success = $this->couponService->removeCoupon($cart);
 
             if ($success) {
+                // Refresh cart to ensure latest totals are calculated after coupon removal
+                // سبد خرید را رفرش کنید تا از محاسبه آخرین مجموع‌ها پس از حذف کوپن اطمینان حاصل شود
                 $cartTotals = $this->cartService->calculateCartTotals($cart->fresh());
                 return response()->json([
                     'success' => true, // اضافه شدن فیلد success
@@ -276,7 +294,7 @@ class CartController extends Controller
                 ], 200);
             } else {
                 return response()->json([
-                    'success' => false, // اضافه شدن فیلد success
+                    'success' => false, // اضافه شدن فیلd success
                     'message' => 'کد تخفیفی برای حذف وجود ندارد.'
                 ], 400);
             }

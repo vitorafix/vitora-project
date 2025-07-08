@@ -125,12 +125,13 @@ export function setupMainCartQuantityButtons() {
 export function setupMiniCartToggle() {
     if (DOM.miniCartToggle && DOM.miniCartDropdown) {
         DOM.miniCartToggle.addEventListener('click', (event) => {
-            event.preventDefault();
+            // event.preventDefault(); // این خط حذف شد تا لینک سبد خرید عمل ناوبری خود را انجام دهد
             DOM.miniCartDropdown.classList.toggle('active');
         });
 
         // بستن مینی‌کارت با کلیک در بیرون
         document.addEventListener('click', (event) => {
+            // اطمینان حاصل کنید که کلیک روی خود دکمه toggle یا داخل dropdown نیست
             if (!DOM.miniCartToggle.contains(event.target) && !DOM.miniCartDropdown.contains(event.target)) {
                 DOM.miniCartDropdown.classList.remove('active');
             }

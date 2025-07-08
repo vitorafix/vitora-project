@@ -102,13 +102,13 @@
                 <div class="relative mini-cart-wrapper">
                     <a href="<?php echo e(route('cart.index')); ?>"
                        class="nav-link <?php echo e(request()->routeIs('cart.*') ? 'active' : ''); ?> relative"
-                       id="mini-cart-btn"> <!-- Changed ID from mini-cart-trigger to mini-cart-btn for JS consistency -->
+                       id="mini-cart-toggle"> <!-- Changed ID from mini-cart-btn to mini-cart-toggle for JS consistency -->
                         <i class="fas fa-shopping-cart ml-2"></i>
                         <span>سبد خرید</span>
                         <!-- Cart Counter Badge -->
                         <span id="mini-cart-total-quantity"
                               class="absolute -top-0 -left-0 bg-red-500 text-white text-xs rounded-full min-w-[40px] h-5 flex items-center justify-center font-bold hidden z-10 px-1 leading-none"
-                              aria-label="تعداد محصولات در سبد خرید"> <!-- Changed ID from cart-item-count to mini-cart-total-quantity -->
+                              aria-label="تعداد محصولات در سبد خرید">
                             0
                         </span>
                     </a>
@@ -126,14 +126,14 @@
                         </div>
 
                         <!-- Mini-Cart Summary (Total Price and Buttons) -->
-                        <div class="mt-4 pt-4 border-t border-gray-200 hidden">
+                        <div id="mini-cart-summary" class="mt-4 pt-4 border-t border-gray-200 hidden"> <!-- Added id="mini-cart-summary" -->
                             <div class="flex justify-between items-center mb-3">
                                 <span class="text-gray-700 font-semibold">جمع کل:</span>
                                 <span id="mini-cart-total-price" class="text-green-700 font-bold text-lg">0 تومان</span>
                             </div>
                             <div class="flex flex-col space-y-2">
-                                <a href="<?php echo e(route('cart.index')); ?>" id="mini-cart-view-cart-btn" class="btn-secondary w-full text-center hidden">مشاهده سبد خرید</a>
-                                <a href="<?php echo e(route('checkout.index')); ?>" id="mini-cart-checkout-btn" class="btn-primary w-full text-center hidden">تسویه حساب</a>
+                                <a href="<?php echo e(route('cart.index')); ?>" id="mini-cart-view-cart-btn" class="btn-secondary w-full text-center">مشاهده سبد خرید</a> <!-- Removed hidden class -->
+                                <a href="<?php echo e(route('checkout.index')); ?>" id="mini-cart-checkout-btn" class="btn-primary w-full text-center">تسویه حساب</a> <!-- Removed hidden class -->
                             </div>
                         </div>
                     </div>
