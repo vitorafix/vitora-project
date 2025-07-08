@@ -38,8 +38,8 @@ Route::prefix('auth')->name('auth.')->group(function () {
 Route::prefix('cart')->name('cart.')->group(function () {
     Route::get('/', [CartController::class, 'index'])->name('index');
     Route::get('/contents', [CartController::class, 'getContents'])->name('contents');
-    // **تغییر اعمال شده در این خط:** productId به عنوان پارامتر URL اضافه شد
-    Route::post('/add/{productId}', [CartController::class, 'add'])->name('add');
+    // تغییر اعمال شده: استفاده از {product} برای Route Model Binding
+    Route::post('/add/{product}', [CartController::class, 'add'])->name('add');
     Route::put('/update/{cartItem}', [CartController::class, 'updateQuantity'])->name('update');
     Route::delete('/remove/{cartItem}', [CartController::class, 'removeCartItem'])->name('remove');
     Route::post('/clear', [CartController::class, 'clearCart'])->name('clear');

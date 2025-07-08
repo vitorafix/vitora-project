@@ -12,6 +12,34 @@ class Product extends Model
     use HasFactory;
 
     /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'products'; // اطمینان از نام جدول
+
+    /**
+     * The primary key for the model.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id'; // تعریف صریح کلید اصلی
+
+    /**
+     * Indicates if the IDs are auto-incrementing.
+     *
+     * @var bool
+     */
+    public $incrementing = true; // تعریف صریح افزایشی بودن ID
+
+    /**
+     * The "type" of the auto-incrementing ID.
+     *
+     * @var string
+     */
+    protected $keyType = 'int'; // تعریف صریح نوع کلید اصلی
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
