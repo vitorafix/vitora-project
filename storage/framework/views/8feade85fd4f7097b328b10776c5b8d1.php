@@ -1,1 +1,0 @@
-<?php /**PATH C:\xampp\htdocs\myshop\resources\views\partials\_category-filter.blade.php ENDPATH**/ ?>

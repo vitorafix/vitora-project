@@ -1,1 +1,0 @@
-<?php /**PATH C:\xampp\htdocs\myshop\resources\views\partials\_product-card.blade.php ENDPATH**/ ?>

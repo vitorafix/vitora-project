@@ -1,25 +1,19 @@
 // api.js
-// این فایل مسئول ارتباط با API بک‌اند برای عملیات سبد خرید است.
-// این یک ساختار فرضی است و شما باید آن را با منطق واقعی API خود جایگزین کنید.
 
-// آدرس پایه برای نقاط پایانی API سبد خرید.
-// تغییر به '/api/cart' برای یکپارچگی با تعریف مسیرها در routes/api.php
-const API_BASE_URL = '/api/cart'; 
+const API_BASE_URL = '/cart';
 
-/**
- * دریافت محتویات فعلی سبد خرید از API.
- * @returns {Promise<Object>} داده‌های سبد خرید شامل آیتم‌ها، تعداد کل و قیمت کل.
- */
 export async function fetchCartContents() {
-    console.log('🚀 API Request: GET ' + API_BASE_URL + '/contents');
     try {
-        // استفاده از API_BASE_URL برای یکپارچگی
         const response = await fetch(`${API_BASE_URL}/contents`, {
-            credentials: 'same-origin' // اضافه شده: برای ارسال کوکی‌های سشن
+            credentials: 'same-origin',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         });
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to fetch cart contents.');
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
         }
         return await response.json();
     } catch (error) {
@@ -28,29 +22,22 @@ export async function fetchCartContents() {
     }
 }
 
-/**
- * افزودن یک محصول به سبد خرید.
- * @param {string} productId - شناسه محصول.
- * @param {number} quantity - تعداد محصول.
- * @returns {Promise<Object>} پاسخ API.
- */
 export async function addItemToCart(productId, quantity) {
-    // استفاده از API_BASE_URL برای یکپارچگی
-    console.log(`🚀 API Request: POST ${API_BASE_URL}/add/${productId}`, { quantity });
     try {
         const response = await fetch(`${API_BASE_URL}/add/${productId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest'
             },
-            // product_id اکنون در URL است، فقط quantity در body ارسال می‌شود.
-            body: JSON.stringify({ quantity: quantity }), 
-            credentials: 'same-origin' // اضافه شده: برای ارسال کوکی‌های سشن
+            body: JSON.stringify({ quantity: quantity }),
+            credentials: 'same-origin'
         });
+
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to add item to cart.');
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
         }
         return await response.json();
     } catch (error) {
@@ -59,29 +46,22 @@ export async function addItemToCart(productId, quantity) {
     }
 }
 
-/**
- * به‌روزرسانی تعداد یک آیتم در سبد خرید.
- * @param {string} productId - شناسه محصول.
- * @param {number} quantity - تعداد جدید محصول.
- * @returns {Promise<Object>} پاسخ API.
- */
-export async function updateCartItem(productId, quantity) {
-    // استفاده از API_BASE_URL برای یکپارچگی
-    console.log(`🚀 API Request: PUT ${API_BASE_URL}/update/${productId}`, { quantity });
+export async function updateCartItem(cartItemId, quantity) {
     try {
-        const response = await fetch(`${API_BASE_URL}/update/${productId}`, {
-            method: 'PUT', // یا PATCH
+        const response = await fetch(`${API_BASE_URL}/update/${cartItemId}`, {
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest'
             },
-            // product_id اکنون در URL است، فقط quantity در body ارسال می‌شود.
-            body: JSON.stringify({ quantity: quantity }), 
-            credentials: 'same-origin' // اضافه شده: برای ارسال کوکی‌های سشن
+            body: JSON.stringify({ quantity: quantity }),
+            credentials: 'same-origin'
         });
+
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to update cart item.');
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
         }
         return await response.json();
     } catch (error) {
@@ -90,28 +70,21 @@ export async function updateCartItem(productId, quantity) {
     }
 }
 
-/**
- * حذف یک آیتم از سبد خرید.
- * @param {string} productId - شناسه محصول.
- * @returns {Promise<Object>} پاسخ API.
- */
-export async function removeCartItem(productId) {
-    // استفاده از API_BASE_URL برای یکپارچگی
-    console.log(`🚀 API Request: DELETE ${API_BASE_URL}/remove/${productId}`, { productId });
+export async function removeCartItem(cartItemId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/remove/${productId}`, {
+        const response = await fetch(`${API_BASE_URL}/remove/${cartItemId}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest'
             },
-            // product_id اکنون در URL است، body می‌تواند خالی باشد یا فقط یک پیام.
-            body: JSON.stringify({ product_id: productId }), // می توانید این را حذف کنید اگر بک‌اند نیازی به آن ندارد
-            credentials: 'same-origin' // اضافه شده: برای ارسال کوکی‌های سشن
+            credentials: 'same-origin'
         });
+
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to remove item from cart.');
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
         }
         return await response.json();
     } catch (error) {
@@ -120,5 +93,49 @@ export async function removeCartItem(productId) {
     }
 }
 
-// اگر متدهای دیگری برای API سبد خرید دارید (مانند clearCart, applyCoupon, removeCoupon)،
-// باید credentials: 'same-origin' را به آن‌ها نیز اضافه کنید.
+export async function clearCart() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/clear`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('API Error (clearCart):', error);
+        throw error;
+    }
+}
+
+export async function applyCoupon(couponCode) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/apply-coupon`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ coupon_code: couponCode }),
+            credentials: 'same-origin'
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('API Error (applyCoupon):', error);
+        throw error;
+    }
+}

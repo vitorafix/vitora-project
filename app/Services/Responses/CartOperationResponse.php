@@ -2,7 +2,7 @@
 
 namespace App\Services\Responses;
 
-use JsonSerializable; // برای اطمینان از اینکه کلاس به درستی به JSON تبدیل شود
+use JsonSerializable;
 
 class CartOperationResponse implements JsonSerializable
 {
@@ -11,14 +11,6 @@ class CartOperationResponse implements JsonSerializable
     public mixed $data;
     public int $code;
 
-    /**
-     * سازنده کلاس CartOperationResponse.
-     *
-     * @param bool $success آیا عملیات موفقیت‌آمیز بوده است؟
-     * @param string $message پیام مربوط به نتیجه عملیات.
-     * @param mixed $data داده‌های اضافی که باید برگردانده شوند (اختیاری).
-     * @param int $code کد وضعیت HTTP (اختیاری، پیش‌فرض 200).
-     */
     public function __construct(bool $success, string $message, mixed $data = null, int $code = 200)
     {
         $this->success = $success;
@@ -27,97 +19,67 @@ class CartOperationResponse implements JsonSerializable
         $this->code = $code;
     }
 
-    /**
-     * ایجاد یک پاسخ موفقیت‌آمیز.
-     *
-     * @param string $message پیام موفقیت.
-     * @param mixed $data داده‌های اضافی.
-     * @param int $code کد وضعیت HTTP.
-     * @return self
-     */
     public static function success(string $message, mixed $data = null, int $code = 200): self
     {
         return new self(true, $message, $data, $code);
     }
 
-    /**
-     * ایجاد یک پاسخ ناموفق.
-     *
-     * @param string $message پیام خطا.
-     * @param int $code کد وضعیت HTTP.
-     * @param mixed $data داده‌های اضافی.
-     * @return self
-     */
     public static function fail(string $message, int $code = 400, mixed $data = null): self
     {
         return new self(false, $message, $data, $code);
     }
 
-    /**
-     * بررسی می‌کند که آیا عملیات موفقیت‌آمیز بوده است.
-     *
-     * @return bool
-     */
     public function isSuccess(): bool
     {
         return $this->success;
     }
 
-    /**
-     * دریافت پیام عملیات.
-     *
-     * @return string
-     */
     public function getMessage(): string
     {
         return $this->message;
     }
 
-    /**
-     * دریافت داده‌های عملیات.
-     *
-     * @return mixed
-     */
     public function getData(): mixed
     {
         return $this->data;
     }
 
-    /**
-     * دریافت کد وضعیت HTTP.
-     *
-     * @return int
-     */
     public function getCode(): int
     {
         return $this->code;
     }
 
-    /**
-     * متد toArray() برای تبدیل شیء به آرایه.
-     * این متد برای زمانی که می‌خواهیم داده‌ها را به صورت آرایه به کنترلر برگردانیم مفید است.
-     *
-     * @return array
-     */
     public function toArray(): array
     {
         return [
             'success' => $this->success,
             'message' => $this->message,
             'data' => $this->data,
-            'code' => $this->code, // این 'code' مربوط به HTTP status نیست، بلکه کد داخلی پاسخ است.
-                                   // در فرانت‌اند از HTTP status اصلی پاسخ استفاده می‌شود.
+            'code' => $this->code,
         ];
     }
 
-    /**
-     * متد jsonSerialize() برای سریالایز کردن شیء به JSON.
-     * این متد به طور خودکار توسط تابع json_encode() یا متد response()->json() لاراول فراخوانی می‌شود.
-     *
-     * @return array
-     */
     public function jsonSerialize(): array
     {
         return $this->toArray();
+    }
+
+    /**
+     * متد کمکی برای گرفتن سبد خرید از داده‌ها.
+     * فرض می‌کند اگر داده‌ها آرایه یا شیء هستند و کلید 'cart' دارند، آن را برمی‌گرداند.
+     * در غیر اینصورت خود داده را برمی‌گرداند یا null.
+     */
+    public function getCart(): mixed
+    {
+        if (is_array($this->data) && array_key_exists('cart', $this->data)) {
+            return $this->data['cart'];
+        }
+
+        if (is_object($this->data) && property_exists($this->data, 'cart')) {
+            return $this->data->cart;
+        }
+
+        // اگر داده‌ها به صورت مستقیم خود سبد خرید هستند، برگردانده شود
+        return $this->data ?? null;
     }
 }

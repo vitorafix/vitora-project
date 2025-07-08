@@ -1,1 +1,0 @@
-<?php /**PATH C:\xampp\htdocs\myshop\resources\views\profile\partials\delete-user-form.blade.php ENDPATH**/ ?>

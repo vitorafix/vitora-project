@@ -12,38 +12,20 @@ use App\Http\Controllers\Auth\MobileAuthController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\ProfileCompletionController;
-use App\Http\Middleware\EnsureProfileIsCompleted;
 use App\Http\Controllers\Editor\EditorDashboardController;
 use App\Http\Controllers\Editor\PostController as EditorPostController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CheckoutController;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| اینجا روت‌های وب‌سایت ثبت می‌شوند.
-| همه روت‌ها در گروه میدل‌ور "web" قرار دارند.
-|
-*/
-
-// صفحه اصلی
 Route::get('/', [PageController::class, 'home'])->name('home');
-
-// صفحه درباره ما
 Route::get('/about', [PageController::class, 'about'])->name('about');
-
-// صفحه تماس
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 
-// محصولات (قابل مشاهده برای همه)
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 Route::get('/products/{product:slug}', [ProductController::class, 'show'])->name('products.show');
 
-// جستجو
 Route::get('/search', [SearchController::class, 'search'])->name('search');
 
-// مسیرهای احراز هویت با OTP
 Route::prefix('auth')->name('auth.')->group(function () {
     Route::get('/login', [MobileAuthController::class, 'showMobileLoginForm'])->name('mobile-login-form');
     Route::post('/send-otp', [MobileAuthController::class, 'send-otp'])->name('send-otp');
@@ -53,60 +35,49 @@ Route::prefix('auth')->name('auth.')->group(function () {
     Route::post('/register', [RegisterController::class, 'register'])->name('register');
 });
 
-// ** روت‌های سبد خرید **
-// این روت‌ها در web.php قرار می‌گیرند تا از Session و CSRF Token بهره‌مند شوند.
 Route::prefix('cart')->name('cart.')->group(function () {
-    Route::get('/', [CartController::class, 'index'])->name('index'); // نمایش صفحه سبد خرید
-    Route::get('/contents', [CartController::class, 'getContents'])->name('contents'); // دریافت محتویات سبد خرید (JSON)
-    Route::post('/add/{product}', [CartController::class, 'add'])->name('add'); // افزودن محصول
-    Route::put('/update/{cartItem}', [CartController::class, 'updateQuantity'])->name('update'); // به‌روزرسانی تعداد
-    Route::delete('/remove/{cartItem}', [CartController::class, 'removeCartItem'])->name('remove'); // حذف آیتم
-    Route::post('/clear', [CartController::class, 'clearCart'])->name('clear'); // پاک کردن سبد خرید
-    Route::post('/apply-coupon', [CartController::class, 'applyCoupon'])->name('apply-coupon'); // اعمال کوپن
-    Route::post('/remove-coupon', [CartController::class, 'removeCoupon'])->name('remove-coupon'); // حذف کوپن
+    Route::get('/', [CartController::class, 'index'])->name('index');
+    Route::get('/contents', [CartController::class, 'getContents'])->name('contents');
+    // **تغییر اعمال شده در این خط:** productId به عنوان پارامتر URL اضافه شد
+    Route::post('/add/{productId}', [CartController::class, 'add'])->name('add');
+    Route::put('/update/{cartItem}', [CartController::class, 'updateQuantity'])->name('update');
+    Route::delete('/remove/{cartItem}', [CartController::class, 'removeCartItem'])->name('remove');
+    Route::post('/clear', [CartController::class, 'clearCart'])->name('clear');
+    Route::post('/apply-coupon', [CartController::class, 'applyCoupon'])->name('apply-coupon');
+    Route::post('/remove-coupon', [CartController::class, 'removeCoupon'])->name('remove-coupon');
 });
 
-// مسیرهای نیازمند احراز هویت و تکمیل پروفایل
 Route::middleware(['auth', 'profile.completed'])->group(function () {
-
-    // داشبورد کاربر
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
 
-    // پروفایل کاربر
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // تکمیل پروفایل
     Route::get('/complete-profile', [ProfileCompletionController::class, 'showCompletionForm'])->name('profile.completion.form');
     Route::post('/complete-profile', [ProfileCompletionController::class, 'completeProfile'])->name('profile.completion.store');
 
-    // مسیرهای تسویه حساب
     Route::prefix('checkout')->name('checkout.')->group(function () {
         Route::get('/', [CheckoutController::class, 'index'])->name('index');
         Route::post('/place-order', [CheckoutController::class, 'placeOrder'])->name('placeOrder');
     });
 
-    // مدیریت سفارش‌ها
     Route::prefix('orders')->name('orders.')->group(function () {
         Route::get('/', [OrderController::class, 'index'])->name('index');
         Route::get('/{order}', [OrderController::class, 'show'])->name('show');
         Route::post('/', [OrderController::class, 'store'])->name('store');
     });
 
-    // آدرس‌ها
     Route::resource('addresses', AddressController::class);
 
-    // بلاگ
     Route::prefix('blog')->name('blog.')->group(function () {
         Route::get('/', [BlogController::class, 'index'])->name('index');
         Route::get('/{post:slug}', [BlogController::class, 'show'])->name('show');
     });
 });
 
-// پنل مدیریت - نیاز به نقش admin
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
@@ -120,7 +91,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     });
 });
 
-// پنل ویرایشگر - نیاز به نقش editor
 Route::middleware(['auth', 'role:editor'])->prefix('editor')->name('editor.')->group(function () {
     Route::get('/dashboard', [EditorDashboardController::class, 'index'])->name('dashboard');
     Route::resource('/posts', EditorPostController::class);
