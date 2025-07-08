@@ -13,7 +13,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 
 // Contracts
 use App\Contracts\Repositories\CartRepositoryInterface;
-use App\Contracts\Repositories\ProductRepositoryInterface;
+use App\Contracts\Repositories\ProductRepositoryInterface; 
 use App\Contracts\Repositories\ProductVariantRepositoryInterface;
 use App\Services\Contracts\CartItemManagementServiceInterface; // Corrected: Use the interface from Contracts namespace
 use App\Services\Managers\StockManager;
@@ -84,6 +84,7 @@ class CartItemManagementService implements CartItemManagementServiceInterface
 
         DB::beginTransaction();
         try {
+            // اصلاح: فراخوانی ensureProductExists از CartValidator
             $product = $this->cartValidator->ensureProductExists($productId);
             $productVariant = null;
             $effectivePrice = $product->price;
@@ -98,7 +99,8 @@ class CartItemManagementService implements CartItemManagementServiceInterface
                 $entityForStock = $productVariant; // Manage stock on the variant
             }
 
-            $validatedQuantity = $this->cartValidator->validateItemQuantity($quantity);
+            // اصلاح: فراخوانی validateQuantity به جای validateItemQuantity
+            $validatedQuantity = $this->cartValidator->validateQuantity($quantity);
 
             // Find cart item by product_id AND product_variant_id
             $cartItem = $this->cartRepository->findCartItem($cart->id, $productId, $productVariantId);
@@ -134,7 +136,8 @@ class CartItemManagementService implements CartItemManagementServiceInterface
 
             } else {
                 $isNewItem = true;
-                $this->cartValidator->ensureCartItemLimitNotExceeded($cart, 1);
+                // اصلاح: فراخوانی validateCartLimits به جای ensureCartItemLimitNotExceeded
+                $this->cartValidator->validateCartLimits($cart, 1);
                 $this->stockManager->validateStock($entityForStock, $validatedQuantity); // Validate stock from correct entity
                 $this->stockManager->reserveStock($entityForStock, $validatedQuantity); // Reserve stock from correct entity
 
@@ -145,7 +148,9 @@ class CartItemManagementService implements CartItemManagementServiceInterface
                     'quantity' => $validatedQuantity,
                     'price' => $effectivePrice, // Use effective price
                 ]);
-                $this->eventDispatcher->dispatch(new \App\Events\CartItemAdded($cart, $product, $validatedQuantity, $productVariant)); // Pass variant to event
+                // اصلاح: ارسال $cartItem به جای $cart به سازنده CartItemAdded
+                // تغییر در این خط برای مطابقت با سازنده CartItemAdded
+                $this->eventDispatcher->dispatch(new \App\Events\CartItemAdded($cartItem, $cart, $product, $cart->user)); 
                 Log::info('New cart item added', ['cart_id' => $cart->id, 'product_id' => $productId, 'product_variant_id' => $productVariantId, 'quantity' => $validatedQuantity]);
             }
 
@@ -211,7 +216,8 @@ class CartItemManagementService implements CartItemManagementServiceInterface
             $entityForStock = $productVariant ?? $product; // Use variant for stock if it exists, else product
             $stockToCheck = $entityForStock->stock;
 
-            $validatedNewQuantity = $this->cartValidator->validateItemQuantity($newQuantity);
+            // اصلاح: فراخوانی validateQuantity به جای validateItemQuantity
+            $validatedNewQuantity = $this->cartValidator->validateQuantity($newQuantity);
             $oldQuantity = $cartItem->quantity;
             $quantityChange = $validatedNewQuantity - $oldQuantity;
 
@@ -318,4 +324,3 @@ class CartItemManagementService implements CartItemManagementServiceInterface
         }
     }
 }
-

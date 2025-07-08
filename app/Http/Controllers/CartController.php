@@ -14,7 +14,7 @@ use App\Contracts\Services\CouponService; // New: Import CouponService
 
 // Form Requests (you should ensure these exist and are correctly defined)
 use App\Http\Requests\Cart\AddToCartRequest;
-use App\Http\Requests\Cart\UpdateCartItemRequest;
+use App\Http\Requests\Cart\UpdateCartItemRequest; // اصلاح شده: خطای تایپی -> به \
 use App\Http\Requests\Cart\ApplyCouponRequest; // New: For applying coupons
 // use App\Http\Requests\Cart\UpdateMultipleCartItemsRequest; // If you use updateMultipleCartItems method
 
@@ -63,7 +63,7 @@ class CartController extends Controller
         }
     }
 
-    // اینجا نام متد به getContents تغییر داده شد
+    // متد getContents برای بازگرداندن محتویات سبد خرید به فرانت‌اند
     public function getContents(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
@@ -73,13 +73,20 @@ class CartController extends Controller
             $cart = $this->cartService->getOrCreateCart($user, $sessionId);
             $cartContents = $this->cartService->getCartContents($cart);
 
-            return response()->json($cartContents->toArray());
+            // اطمینان از اینکه پاسخ شامل فیلد 'success' و داده‌های مورد انتظار cart.js باشد
+            return response()->json([
+                'success' => true,
+                'message' => 'محتویات سبد خرید با موفقیت دریافت شد.',
+                'items' => $cartContents->items,            // آرایه آیتم‌ها
+                'total_quantity' => $cartContents->totalQuantity,  // تعداد کل آیتم‌ها
+                'total_price' => $cartContents->totalPrice           // مجموع قیمت کل
+            ]);
         } catch (BaseCartException $e) {
-            Log::error('Cart operation error in getContents method: ' . $e->getMessage(), ['user_id' => Auth::id(), 'session_id' => Session::getId(), 'exception' => $e->getTraceAsString()]);
-            return response()->json(['message' => $e->getMessage()], $e->getCode());
+            Log::error('Error fetching cart contents: ' . $e->getMessage(), ['user_id' => Auth::id(), 'session_id' => Session::getId(), 'exception' => $e->getTraceAsString()]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode());
         } catch (\Throwable $e) {
-            Log::error('Unexpected error in getContents method: ' . $e->getMessage(), ['user_id' => Auth::id(), 'session_id' => Session::getId(), 'exception' => $e->getTraceAsString()]);
-            return response()->json(['message' => 'خطا در دریافت محتویات سبد خرید.'], 500);
+            Log::error('Unexpected error fetching cart contents: ' . $e->getMessage(), ['user_id' => Auth::id(), 'session_id' => Session::getId(), 'exception' => $e->getTraceAsString()]);
+            return response()->json(['success' => false, 'message' => 'خطا در دریافت محتویات سبد خرید.'], 500);
         }
     }
 
@@ -98,25 +105,29 @@ class CartController extends Controller
                 $updatedCartContents = $this->cartService->getCartContents($updatedCart);
 
                 return response()->json([
+                    'success' => true, // اضافه شدن فیلد success
                     'message' => $response->getMessage(),
                     'data' => $response->getData(),
                     'totalQuantity' => $updatedCartContents->totalQuantity
                 ], $response->getCode() ?: 200);
             } else {
-                return response()->json(['message' => $response->getMessage()], $response->getCode() ?: 400);
+                return response()->json([
+                    'success' => false, // اضافه شدن فیلد success
+                    'message' => $response->getMessage()
+                ], $response->getCode() ?: 400);
             }
         } catch (InsufficientStockException $e) {
             Log::error('Insufficient stock error in add method: ' . $e->getMessage(), ['product_id' => $productId, 'quantity' => $quantity, 'exception' => $e->getTraceAsString()]);
-            return response()->json(['message' => $e->getMessage()], 400);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
         } catch (CartLimitExceededException $e) {
             Log::error('Cart limit exceeded error in add method: ' . $e->getMessage(), ['product_id' => $productId, 'quantity' => $quantity, 'exception' => $e->getTraceAsString()]);
-            return response()->json(['message' => $e->getMessage()], 400);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
         } catch (BaseCartException $e) {
             Log::error('Cart operation error in add method: ' . $e->getMessage(), ['product_id' => $productId, 'quantity' => $quantity, 'exception' => $e->getTraceAsString()]);
-            return response()->json(['message' => $e->getMessage()], $e->getCode());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode());
         } catch (\Throwable $e) {
             Log::error('Unexpected error in add method: ' . $e->getMessage(), ['product_id' => $productId, 'quantity' => $quantity, 'exception' => $e->getTraceAsString()]);
-            return response()->json(['message' => 'خطا در افزودن محصول به سبد خرید.'], 500);
+            return response()->json(['success' => false, 'message' => 'خطا در افزودن محصول به سبد خرید.'], 500);
         }
     }
 
@@ -131,22 +142,29 @@ class CartController extends Controller
             $response = $this->cartService->updateCartItemQuantity($cartItem, $newQuantity, $user, $sessionId);
 
             if ($response->isSuccess()) {
-                return response()->json(['message' => $response->getMessage(), 'data' => $response->getData()], $response->getCode() ?: 200);
+                return response()->json([
+                    'success' => true, // اضافه شدن فیلد success
+                    'message' => $response->getMessage(), 
+                    'data' => $response->getData()
+                ], $response->getCode() ?: 200);
             } else {
-                return response()->json(['message' => $response->getMessage()], $response->getCode() ?: 400);
+                return response()->json([
+                    'success' => false, // اضافه شدن فیلد success
+                    'message' => $response->getMessage()
+                ], $response->getCode() ?: 400);
             }
         } catch (InsufficientStockException $e) {
             Log::error('Insufficient stock error in updateQuantity method: ' . $e->getMessage(), ['cart_item_id' => $cartItem->id, 'new_quantity' => $newQuantity, 'exception' => $e->getTraceAsString()]);
-            return response()->json(['message' => $e->getMessage()], 400);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
         } catch (CartLimitExceededException $e) {
             Log::error('Cart limit exceeded error in updateQuantity method: ' . $e->getMessage(), ['cart_item_id' => $cartItem->id, 'new_quantity' => $newQuantity, 'exception' => $e->getTraceAsString()]);
-            return response()->json(['message' => $e->getMessage()], 400);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
         } catch (BaseCartException $e) {
             Log::error('Cart operation error in updateQuantity method: ' . $e->getMessage(), ['cart_item_id' => $cartItem->id, 'new_quantity' => $newQuantity, 'exception' => $e->getTraceAsString()]);
-            return response()->json(['message' => $e->getMessage()], $e->getCode());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode());
         } catch (\Throwable $e) {
             Log::error('Unexpected error in updateQuantity method: ' . $e->getMessage(), ['cart_item_id' => $cartItem->id, 'new_quantity' => $newQuantity, 'exception' => $e->getTraceAsString()]);
-            return response()->json(['message' => 'خطا در به‌روزرسانی تعداد محصول.'], 500);
+            return response()->json(['success' => false, 'message' => 'خطا در به‌روزرسانی تعداد محصول.'], 500);
         }
     }
 
@@ -159,16 +177,23 @@ class CartController extends Controller
             $response = $this->cartService->removeCartItem($cartItem, $user, $sessionId);
 
             if ($response->isSuccess()) {
-                return response()->json(['message' => $response->getMessage(), 'data' => $response->getData()], $response->getCode() ?: 200);
+                return response()->json([
+                    'success' => true, // اضافه شدن فیلد success
+                    'message' => $response->getMessage(), 
+                    'data' => $response->getData()
+                ], $response->getCode() ?: 200);
             } else {
-                return response()->json(['message' => $response->getMessage()], $response->getCode() ?: 400);
+                return response()->json([
+                    'success' => false, // اضافه شدن فیلد success
+                    'message' => $response->getMessage()
+                ], $response->getCode() ?: 400);
             }
         } catch (BaseCartException $e) {
             Log::error('Cart operation error in removeCartItem method: ' . $e->getMessage(), ['cart_item_id' => $cartItem->id, 'exception' => $e->getTraceAsString()]);
-            return response()->json(['message' => $e->getMessage()], $e->getCode());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode());
         } catch (\Throwable $e) {
             Log::error('Unexpected error in removeCartItem method: ' . $e->getMessage(), ['cart_item_id' => $cartItem->id, 'exception' => $e->getTraceAsString()]);
-            return response()->json(['message' => 'خطا در حذف محصول از سبد خرید.'], 500);
+            return response()->json(['success' => false, 'message' => 'خطا در حذف محصول از سبد خرید.'], 500);
         }
     }
 
@@ -182,16 +207,22 @@ class CartController extends Controller
             $response = $this->cartService->clearCart($cart);
 
             if ($response->isSuccess()) {
-                return response()->json(['message' => $response->getMessage()], $response->getCode() ?: 200);
+                return response()->json([
+                    'success' => true, // اضافه شدن فیلد success
+                    'message' => $response->getMessage()
+                ], $response->getCode() ?: 200);
             } else {
-                return response()->json(['message' => $response->getMessage()], $response->getCode() ?: 400);
+                return response()->json([
+                    'success' => false, // اضافه شدن فیلد success
+                    'message' => $response->getMessage()
+                ], $response->getCode() ?: 400);
             }
         } catch (BaseCartException $e) {
             Log::error('Cart operation error in clear method: ' . $e->getMessage(), ['user_id' => Auth::id(), 'session_id' => Session::getId(), 'exception' => $e->getTraceAsString()]);
-            return response()->json(['message' => $e->getMessage()], $e->getCode());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], $e->getCode());
         } catch (\Throwable $e) {
             Log::error('Unexpected error in clear method: ' . $e->getMessage(), ['user_id' => Auth::id(), 'session_id' => Session::getId(), 'exception' => $e->getTraceAsString()]);
-            return response()->json(['message' => 'خطا در خالی کردن سبد خرید.'], 500);
+            return response()->json(['success' => false, 'message' => 'خطا در خالی کردن سبد خرید.'], 500);
         }
     }
 
@@ -204,20 +235,25 @@ class CartController extends Controller
             $sessionId = Session::getId();
             $cart = $this->cartService->getOrCreateCart($user, $sessionId);
 
+            // فرض بر این است که applyCoupon یک boolean برمی‌گرداند
             $success = $this->couponService->applyCoupon($cart, $couponCode);
 
             if ($success) {
                 $cartTotals = $this->cartService->calculateCartTotals($cart->fresh());
                 return response()->json([
+                    'success' => true, // اضافه شدن فیلد success
                     'message' => 'کد تخفیف با موفقیت اعمال شد.',
                     'cartTotals' => $cartTotals,
                 ], 200);
             } else {
-                return response()->json(['message' => 'کد تخفیف نامعتبر یا منقضی شده است.'], 400);
+                return response()->json([
+                    'success' => false, // اضافه شدن فیلد success
+                    'message' => 'کد تخفیف نامعتبر یا منقضی شده است.'
+                ], 400);
             }
         } catch (\Throwable $e) {
             Log::error('Error applying coupon: ' . $e->getMessage(), ['coupon_code' => $couponCode, 'exception' => $e->getTraceAsString()]);
-            return response()->json(['message' => 'خطا در اعمال کد تخفیف.'], 500);
+            return response()->json(['success' => false, 'message' => 'خطا در اعمال کد تخفیف.'], 500);
         }
     }
 
@@ -228,20 +264,25 @@ class CartController extends Controller
             $sessionId = Session::getId();
             $cart = $this->cartService->getOrCreateCart($user, $sessionId);
 
+            // فرض بر این است که removeCoupon یک boolean برمی‌گرداند
             $success = $this->couponService->removeCoupon($cart);
 
             if ($success) {
                 $cartTotals = $this->cartService->calculateCartTotals($cart->fresh());
                 return response()->json([
+                    'success' => true, // اضافه شدن فیلد success
                     'message' => 'کد تخفیف با موفقیت حذف شد.',
                     'cartTotals' => $cartTotals,
                 ], 200);
             } else {
-                return response()->json(['message' => 'کد تخفیفی برای حذف وجود ندارد.'], 400);
+                return response()->json([
+                    'success' => false, // اضافه شدن فیلد success
+                    'message' => 'کد تخفیفی برای حذف وجود ندارد.'
+                ], 400);
             }
         } catch (\Throwable $e) {
             Log::error('Error removing coupon: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
-            return response()->json(['message' => 'خطا در حذف کد تخفیف.'], 500);
+            return response()->json(['success' => false, 'message' => 'خطا در حذف کد تخفیف.'], 500);
         }
     }
 }

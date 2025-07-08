@@ -4,10 +4,12 @@ namespace App\Services\Managers;
 
 use App\Models\Cart;
 use App\Models\User;
+use App\Models\Product; // اضافه شده: برای استفاده از مدل Product
 use Illuminate\Support\Facades\Log;
 use App\Exceptions\CartInvalidArgumentException; // Custom exception
 use App\Exceptions\CartLimitExceededException; // Custom exception
 use App\Exceptions\UnauthorizedCartAccessException; // Added: For ensureCartOwnership
+use App\Exceptions\ProductNotFoundException; // اضافه شده: برای ProductNotFoundException
 
 class CartValidator
 {
@@ -133,6 +135,24 @@ class CartValidator
         if ($requestedQuantity > $availableStock) {
             throw new \App\Exceptions\Cart\InsufficientStockException("موجودی کافی برای {$entityName} وجود ندارد. موجودی فعلی: {$availableStock}");
         }
+    }
+
+    /**
+     * Ensures a product exists by its ID.
+     * این متد اطمینان حاصل می‌کند که یک محصول با شناسه داده شده وجود دارد.
+     *
+     * @param int $productId
+     * @return \App\Models\Product
+     * @throws \App\Exceptions\ProductNotFoundException
+     */
+    public function ensureProductExists(int $productId): Product
+    {
+        $product = Product::find($productId);
+        if (!$product) {
+            Log::error("Product not found during cart operation.", ['product_id' => $productId]);
+            throw new ProductNotFoundException("محصول با شناسه {$productId} یافت نشد.");
+        }
+        return $product;
     }
 
 
