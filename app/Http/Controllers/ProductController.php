@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage; // Import Storage facade
 use Illuminate\View\View; // Use for type hinting view return type
 use App\Models\Category; // Import Category model to pass to create/edit views
+use Illuminate\Support\Str; // این خط برای استفاده از Str::slug اضافه شده است
 
 class ProductController extends Controller
 {
@@ -137,8 +138,8 @@ class ProductController extends Controller
                 $validatedData,
                 $request->file('image'), // New main image
                 $request->boolean('remove_image'), // Flag to remove existing main image
-                $request->file('gallery_images') ?? [], // Array of new gallery images
-                $request->input('remove_gallery_images') ?? [] // Array of IDs of gallery images to remove
+                $request->file('gallery_images') ?? [] // Array of new gallery images
+                // $request->input('remove_gallery_images') ?? [] // Array of IDs of gallery images to remove - این خط در ProductController اصلی شما نبود
             );
 
             return redirect()->route('products.index')->with('success', 'محصول با موفقیت به‌روزرسانی شد.');

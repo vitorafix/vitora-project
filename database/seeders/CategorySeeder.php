@@ -9,16 +9,28 @@ class CategorySeeder extends Seeder
 {
     public function run()
     {
+        // حذف داده‌های قبلی به صورت اصولی (بدون truncate)
+        DB::table('categories')->delete();
+
+        // درج داده‌های جدید
         DB::table('categories')->insert([
             [
-                'id' => 3,
+                'id' => 1,
                 'name' => 'چای سیاه',
                 'slug' => 'chai-siah',
-                'description' => 'چای سیاه با طعم قوی و رنگ تیره، شامل چای لاهیجان و کله مورچه‌ای.',
+                'description' => 'چای سیاه با طعم قوی و رنگ تیره.',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-            // سایر دسته‌ها...
+            [
+                'id' => 2,
+                'name' => 'چای سبز',
+                'slug' => 'chai-sabz',
+                'description' => 'چای سبز تازه و خوش طعم.',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            // دسته‌های بیشتر در صورت نیاز...
         ]);
     }
 }

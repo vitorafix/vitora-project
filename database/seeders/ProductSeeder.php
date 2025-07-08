@@ -9,54 +9,19 @@ class ProductSeeder extends Seeder
 {
     public function run()
     {
+        // حذف داده‌های قبلی محصولات
+        DB::table('products')->delete();
+
+        // درج محصولات جدید
         DB::table('products')->insert([
             [
                 'title' => 'چای سیاه ممتاز لاهیجان',
                 'description' => 'چای دستچین لاهیجان با عطر طبیعی و طعم ملایم.',
                 'price' => 180000,
                 'stock' => 50,
-                'category_id' => 1, // چای سیاه
+                'category_id' => 1, // دسته چای سیاه
                 'image' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'title' => 'چای سبز ارگانیک شمال',
-                'description' => 'چای سبز با برگ‌های تازه و بدون سموم شیمیایی.',
-                'price' => 200000,
-                'stock' => 30,
-                'category_id' => 2, // چای سبز
-                'image' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'title' => 'چای ماسالا هندی',
-                'description' => 'ترکیب ادویه‌های گرم هندی با چای سیاه.',
-                'price' => 250000,
-                'stock' => 20,
-                'category_id' => 5, // چای ماسالا
-                'image' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'title' => 'چای سفید نپالی',
-                'description' => 'چای سفید کمیاب با طعم ملایم و عطر خاص.',
-                'price' => 300000,
-                'stock' => 10,
-                'category_id' => 3, // چای سفید
-                'image' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'title' => 'چای اولانگ تایوانی',
-                'description' => 'چای نیمه‌تخمیر شده با طعم میوه‌ای و گلی.',
-                'price' => 280000,
-                'stock' => 15,
-                'category_id' => 4, // چای اولانگ
-                'image' => null,
+                'status' => 'active',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -65,28 +30,53 @@ class ProductSeeder extends Seeder
                 'description' => 'چای سیاه پررنگ و پرعطر مناسب مصرف روزانه.',
                 'price' => 150000,
                 'stock' => 60,
-                'category_id' => 1, // چای سیاه
+                'category_id' => 1,
                 'image' => null,
+                'status' => 'active',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'title' => 'دمنوش به لیمو',
-                'description' => 'دمنوش گیاهی با طعم خوش به و لیمو، بدون کافئین.',
-                'price' => 90000,
+                'title' => 'چای شکسته مرغوب',
+                'description' => 'چای سیاه با کیفیت بالا و طعم اصیل ایرانی.',
+                'price' => 140000,
                 'stock' => 40,
-                'category_id' => 6, // چای گیاهی
+                'category_id' => 1,
                 'image' => null,
+                'status' => 'active',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'title' => 'چای سبز ژاپنی',
-                'description' => 'چای سبز با کیفیت بالا از ژاپن، با طعم تازه و گیاهی.',
-                'price' => 220000,
-                'stock' => 25,
-                'category_id' => 2, // چای سبز
+                'title' => 'چای باروتی لاهیجان',
+                'description' => 'چای سیاه قوی با طعمی خاص و ماندگار.',
+                'price' => 160000,
+                'stock' => 35,
+                'category_id' => 1,
                 'image' => null,
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'title' => 'چای بهاره',
+                'description' => 'چای سیاه تازه برداشت شده در فصل بهار.',
+                'price' => 170000,
+                'stock' => 45,
+                'category_id' => 1,
+                'image' => null,
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'title' => 'چای کوهستانی',
+                'description' => 'چای سیاه مرغوب برداشت شده از ارتفاعات شمال.',
+                'price' => 190000,
+                'stock' => 25,
+                'category_id' => 1,
+                'image' => null,
+                'status' => 'active',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

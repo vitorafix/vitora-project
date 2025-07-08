@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use App\Models\User; // ایمپورت کردن مدل User
+use App\Models\User;
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,28 +12,25 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // ایجاد یک کاربر ادمین با پروفایل کامل و شماره موبایل به جای رمز عبور
-        // این بخش دیگر شامل فیلد 'password' نیست.
+        // ایجاد یک کاربر ادمین با پروفایل کامل و شماره موبایل
         User::factory()->create([
             'name' => 'Admin User',
             'email' => 'admin@example.com',
-            'mobile_number' => '09123456789', // شماره موبایل دلخواه برای ادمین
-            'national_id' => '1234567890', // کد ملی دلخواه
+            'mobile_number' => '09123456789',
+            'national_id' => '1234567890',
             'birth_date' => '1990-01-01',
             'phone' => '02112345678',
-            'profile_completed' => true, // تنظیم پروفایل به عنوان تکمیل شده
+            'profile_completed' => true,
         ]);
 
-        // ایجاد 10 کاربر معمولی با پروفایل تصادفی (ممکن است کامل یا ناقص باشد)
-        // این فراخوانی از UserFactory استفاده می‌کند که قبلاً برای حذف 'password' به‌روزرسانی شده است.
+        // ایجاد 10 کاربر معمولی
         User::factory(10)->create();
 
-        // فراخوانی Seederهای دیگر
+        // اجرای سایر Seederها به ترتیب
         $this->call([
-            // ProductSeeder::class, // مطمئن شوید این Seeder وجود دارد و به درستی کار می‌کند.
-            // اگر Seederهای دیگری دارید که کاربران را ایجاد می‌کنند، باید آن‌ها را نیز بررسی کنید.
-            // CategorySeeder::class, // مثال: اگر این Seeder را دارید، آن را فعال کنید.
-            // OrderSeeder::class, // مثال: اگر این Seeder را دارید، آن را فعال کنید.
+            CategorySeeder::class, // ابتدا دسته‌بندی‌ها باید بارگذاری شوند
+            ProductSeeder::class,  // سپس محصولات (که به دسته‌ها نیاز دارند)
+            // در صورت وجود Seederهای دیگر، اینجا اضافه کنید
         ]);
     }
 }

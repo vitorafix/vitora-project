@@ -60,20 +60,31 @@ class Product extends Model
 
     /**
      * The "booted" method of the model.
+     * این متد هنگام بوت شدن مدل فراخوانی می‌شود.
      *
      * @return void
      */
     protected static function booted(): void
     {
-        // Delete main image when product is deleted
+        // حذف تصویر اصلی هنگام حذف محصول
         static::deleting(function ($product) {
-            if ($product->image && Storage::disk('public')->exists($product->image)) {
-                Storage::disk('public')->delete($product->image);
+            if ($product->image) {
+                // مسیر را نرمال‌سازی کنید تا از خطاهای مسیر خراب جلوگیری شود
+                $normalizedPath = trim(str_replace(['\\', '//'], '/', $product->image));
+                // بررسی وجود فایل قبل از حذف (اختیاری، اما توصیه می‌شود)
+                if (Storage::disk('public')->exists($normalizedPath)) {
+                    Storage::disk('public')->delete($normalizedPath);
+                }
             }
-            // Also delete all associated product images when the product is deleted
+            // همچنین تمام تصاویر گالری مرتبط با محصول را هنگام حذف محصول پاک کنید
             $product->images()->each(function ($image) {
-                if (Storage::disk('public')->exists($image->image_path)) {
-                    Storage::disk('public')->delete($image->image_path);
+                if ($image->image_path) {
+                    // مسیر را نرمال‌سازی کنید تا از خطاهای مسیر خراب جلوگیری شود
+                    $normalizedImagePath = trim(str_replace(['\\', '//'], '/', $image->image_path));
+                    // بررسی وجود فایل قبل از حذف (اختیاری، اما توصیه می‌شود)
+                    if (Storage::disk('public')->exists($normalizedImagePath)) {
+                        Storage::disk('public')->delete($normalizedImagePath);
+                    }
                 }
                 $image->delete();
             });
@@ -90,20 +101,24 @@ class Product extends Model
     {
         // 1. اگر رابطه 'images' لود شده باشد و حداقل یک تصویر در گالری وجود داشته باشد،
         // آدرس اولین تصویر گالری را برمی‌گرداند.
-        // همچنین بررسی می‌کند که آیا فایل تصویر در دیسک وجود دارد یا خیر.
+        // این بخش دیگر وجود فایل را در بک‌اند بررسی نمی‌کند و به مرورگر اجازه می‌دهد تا با onerror آن را مدیریت کند.
         if ($this->relationLoaded('images') && $this->images->count() > 0) {
-            // اطمینان از وجود فیلد image_url در مدل ProductImage
-            // و اینکه آیا آدرس تصویر معتبر است
-            if (!empty($this->images->first()->image_url) && Storage::disk('public')->exists($this->images->first()->image_url)) {
-                return asset('storage/' . $this->images->first()->image_url);
+            $firstImage = $this->images->first();
+            // فرض بر این است که ProductImage دارای فیلد image_path است
+            if (!empty($firstImage->image_path)) {
+                // مسیر را نرمال‌سازی کنید تا از خطاهای مسیر خراب جلوگیری شود
+                $normalizedImagePath = trim(str_replace(['\\', '//'], '/', $firstImage->image_path));
+                return asset('storage/' . $normalizedImagePath);
             }
         }
 
-        // 2. اگر فیلد 'image' در خود محصول (جدول products) خالی نباشد و فایل آن در storage/app/public موجود باشد،
+        // 2. اگر فیلد 'image' در خود محصول (جدول products) خالی نباشد،
         // آدرس آن را با استفاده از asset('storage/') برمی‌گرداند.
-        // فرض بر این است که 'image' حاوی مسیر نسبی مانند 'images/products/1.jpg' است.
-        if (!empty($this->image) && Storage::disk('public')->exists($this->image)) {
-            return asset('storage/' . $this->image);
+        // این بخش نیز وجود فایل را در بک‌اند بررسی نمی‌کند.
+        if (!empty($this->image)) {
+            // مسیر را نرمال‌سازی کنید تا از خطاهای مسیر خراب جلوگیری شود
+            $normalizedProductImage = trim(str_replace(['\\', '//'], '/', $this->image));
+            return asset('storage/' . $normalizedProductImage);
         }
 
         // 3. در صورت عدم وجود هیچ تصویری، آدرس تصویر پیش‌فرض را برمی‌گرداند.

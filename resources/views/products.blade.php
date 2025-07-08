@@ -28,7 +28,8 @@
             @forelse ($products as $product)
                 <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 card-hover-effect">
                     {{-- Link to product single page, now using slug for SEO-friendly URLs --}}
-                    <a href="{{ route('products.show', $product->slug) }}">
+                    {{-- اطمینان حاصل کنید که $product->slug خالی نیست --}}
+                    <a href="{{ route('products.show', $product->slug ?? $product->id) }}">
                         {{-- Display the product image using the image_url accessor --}}
                         <img src="{{ $product->image_url }}"
                              alt="{{ $product->title }}"
@@ -39,7 +40,8 @@
                     <div class="p-5 text-center rtl:text-right">
                         <h3 class="text-xl font-semibold text-brown-900 mb-2 truncate">
                             {{-- Link to product single page, now using slug --}}
-                            <a href="{{ route('products.show', $product->slug) }}" class="hover:text-green-700 transition-colors duration-200">
+                            {{-- اطمینان حاصل کنید که $product->slug خالی نیست --}}
+                            <a href="{{ route('products.show', $product->slug ?? $product->id) }}" class="hover:text-green-700 transition-colors duration-200">
                                 {{ $product->title }}
                             </a>
                         </h3>
@@ -54,7 +56,7 @@
                                     data-product-id="{{ $product->id }}"
                                     data-product-title="{{ $product->title }}"
                                     data-product-price="{{ $product->price }}"
-                                    data-product-image="{{ $product->image_url }}"> {{-- اضافه شدن data-product-image --}}
+                                    data-product-image="{{ $product->image_url }}">
                                 <i class="fas fa-cart-plus ml-2"></i>
                                 افزودن به سبد
                             </button>
