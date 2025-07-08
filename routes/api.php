@@ -4,8 +4,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\MobileAuthController;
 use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\CartController; // اضافه شده: برای استفاده از CartController
-use App\Http\Controllers\OrderController; // اضافه شده: برای استفاده از OrderController (اگر مسیر placeOrder اینجا باشد)
+// use App\Http\Controllers\CartController; // نیازی به ایمپورت CartController در اینجا نیست اگر هیچ مسیر کارتی وجود ندارد
+use App\Http\Controllers\OrderController;
 
 
 /*
@@ -26,22 +26,8 @@ Route::prefix('auth')->name('api.auth.')->group(function () {
     // Route::post('/register', [RegisterController::class, 'register'])->name('register');
 });
 
-// API routes for Cart operations
-// از middleware 'api' استفاده کنید. 'throttle:cart_add' فقط برای add مناسب است،
-// برای سایر عملیات سبد خرید شاید نیاز به throttle متفاوتی باشد یا اصلا نباشد.
-Route::middleware('api')->group(function () {
-    // نام مسیر 'cart.add' به 'api.cart.add' تغییر یافت تا از تداخل جلوگیری شود.
-    Route::post('/cart/add', [CartController::class, 'add'])->name('api.cart.add')->middleware('throttle:cart_add');
-    // نام مسیر 'cart.update' به 'api.cart.update' تغییر یافت.
-    Route::put('/cart/update/{cartItem}', [CartController::class, 'updateQuantity'])->name('api.cart.update');
-    // نام مسیر 'cart.remove' به 'api.cart.remove' تغییر یافت.
-    Route::delete('/cart/remove/{cartItem}', [CartController::class, 'removeCartItem'])->name('api.cart.remove');
-    // نام مسیر 'cart.clear' به 'api.cart.clear' تغییر یافت.
-    Route::post('/cart/clear', [CartController::class, 'clearCart'])->name('api.cart.clear');
-    
-    // اضافه شدن مسیر جدید برای دریافت محتویات سبد خرید
-    Route::get('/cart/contents', [CartController::class, 'getContents'])->name('api.cart.contents');
-});
+// مسیرهای مربوط به عملیات سبد خرید به routes/web.php منتقل شده‌اند.
+// اگر نیاز به APIهای دیگری دارید که به Session نیاز ندارند، می‌توانید آن‌ها را اینجا اضافه کنید.
 
 // اضافه کردن مسیر placeOrder اگر در api.php باشد
 // اگر placeOrder در web.php است، نیازی به این بخش نیست.

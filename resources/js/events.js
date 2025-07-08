@@ -24,8 +24,8 @@ export function initializeDOMCache() {
     DOM.cartSummary = document.getElementById('cart-summary');
     DOM.cartTotalPrice = document.getElementById('cart-total-price'); // این عنصر در cart.blade.php اضافه شده است
 
-    // Add to Cart Buttons (می‌توانند در هر صفحه‌ای باشند)
-    DOM.addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
+    // Add to Cart Buttons (این خط دیگر نیازی به querySelectorAll ندارد زیرا از delegation استفاده می‌کنیم)
+    // DOM.addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
 
     // بررسی وجود عناصر حیاتی سبد خرید اصلی
     const hasMainCartElements = DOM.cartItemsContainer && DOM.cartEmptyMessage && DOM.cartSummary && DOM.cartTotalPrice;
@@ -36,33 +36,32 @@ export function initializeDOMCache() {
 }
 
 /**
- * تنظیم event listenerها برای دکمه‌های "افزودن به سبد خرید".
+ * تنظیم event listenerها برای دکمه‌های "افزودن به سبد خرید" با استفاده از Event Delegation.
+ * این تابع رویداد کلیک را به document.body واگذار می‌کند تا دکمه‌های دینامیک نیز مدیریت شوند.
  */
 export function setupAddToCartButtons() {
-    if (DOM.addToCartButtons && DOM.addToCartButtons.length > 0) {
-        DOM.addToCartButtons.forEach(button => {
-            button.addEventListener('click', async (event) => {
-                event.preventDefault();
-                const productId = button.dataset.productId;
-                if (productId) {
-                    // فرض بر این است که یک نمونه سراسری از cartManager یا راهی برای دسترسی به آن وجود دارد
-                    // این بخش باید با CartManager تعامل داشته باشد
-                    console.log(`Add to cart clicked for product ID: ${productId}`);
-                    if (typeof window.cartManager !== 'undefined' && window.cartManager.addItem) {
-                        await window.cartManager.addItem(productId, 1);
-                    } else {
-                        console.error('CartManager instance not available or addItem method missing.');
-                        if (typeof window.showMessage === 'function') {
-                            window.showMessage('خطا: سیستم سبد خرید آماده نیست.', 'error');
-                        }
+    // به جای DOM.addToCartButtons، مستقیماً به document.body گوش می‌دهیم
+    document.body.addEventListener('click', async (event) => {
+        const target = event.target;
+        // بررسی می‌کنیم که آیا عنصر کلیک شده یا یکی از والد‌های آن، کلاس 'add-to-cart-btn' را دارد
+        if (target.classList.contains('add-to-cart-btn')) {
+            event.preventDefault(); // جلوگیری از عملکرد پیش‌فرض لینک/دکمه اگر وجود داشته باشد
+            const productId = target.dataset.productId;
+            if (productId) {
+                console.log(`Add to cart clicked for product ID: ${productId}`);
+                if (typeof window.cartManager !== 'undefined' && window.cartManager.addItem) {
+                    await window.cartManager.addItem(productId, 1);
+                } else {
+                    console.error('CartManager instance not available or addItem method missing.');
+                    if (typeof window.showMessage === 'function') {
+                        window.showMessage('خطا: سیستم سبد خرید آماده نیست.', 'error');
                     }
                 }
-            });
-        });
-        console.log(`Setup event listeners for ${DOM.addToCartButtons.length} "Add to Cart" buttons.`);
-    } else {
-        console.warn('No "Add to Cart" buttons found. Skipping event listener setup for them.');
-    }
+            }
+        }
+    });
+    console.log('Setup event listener for "Add to Cart" buttons (via delegation on document.body).');
+    // هشدار 'No "Add to Cart" buttons found' دیگر نیازی نیست زیرا همیشه به body گوش می‌دهیم.
 }
 
 /**

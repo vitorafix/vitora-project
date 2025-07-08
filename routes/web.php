@@ -4,7 +4,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\SearchController;
-use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
@@ -47,20 +46,24 @@ Route::get('/search', [SearchController::class, 'search'])->name('search');
 // مسیرهای احراز هویت با OTP
 Route::prefix('auth')->name('auth.')->group(function () {
     Route::get('/login', [MobileAuthController::class, 'showMobileLoginForm'])->name('mobile-login-form');
-    Route::post('/send-otp', [MobileAuthController::class, 'sendOtp'])->name('send-otp');
+    Route::post('/send-otp', [MobileAuthController::class, 'send-otp'])->name('send-otp');
     Route::get('/verify-otp-form', [MobileAuthController::class, 'showOtpVerifyForm'])->name('verify-otp-form');
-    Route::post('/verify-otp', [MobileAuthController::class, 'verifyOtp'])->name('verify-otp');
+    Route::post('/verify-otp', [MobileAuthController::class, 'verify-otp'])->name('verify-otp');
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register-form');
     Route::post('/register', [RegisterController::class, 'register'])->name('register');
 });
 
-// ** روت‌های سبد خرید خارج از middleware auth برای دسترسی مهمان‌ها **
+// ** روت‌های سبد خرید **
+// این روت‌ها در web.php قرار می‌گیرند تا از Session و CSRF Token بهره‌مند شوند.
 Route::prefix('cart')->name('cart.')->group(function () {
-    Route::get('/', [CartController::class, 'index'])->name('index');
-    Route::post('/add/{product}', [CartController::class, 'add'])->name('add');
-    Route::post('/update/{product}', [CartController::class, 'update'])->name('update');
-    Route::delete('/remove/{product}', [CartController::class, 'remove'])->name('remove');
-    Route::post('/clear', [CartController::class, 'clear'])->name('clear');
+    Route::get('/', [CartController::class, 'index'])->name('index'); // نمایش صفحه سبد خرید
+    Route::get('/contents', [CartController::class, 'getContents'])->name('contents'); // دریافت محتویات سبد خرید (JSON)
+    Route::post('/add/{product}', [CartController::class, 'add'])->name('add'); // افزودن محصول
+    Route::put('/update/{cartItem}', [CartController::class, 'updateQuantity'])->name('update'); // به‌روزرسانی تعداد
+    Route::delete('/remove/{cartItem}', [CartController::class, 'removeCartItem'])->name('remove'); // حذف آیتم
+    Route::post('/clear', [CartController::class, 'clearCart'])->name('clear'); // پاک کردن سبد خرید
+    Route::post('/apply-coupon', [CartController::class, 'applyCoupon'])->name('apply-coupon'); // اعمال کوپن
+    Route::post('/remove-coupon', [CartController::class, 'removeCoupon'])->name('remove-coupon'); // حذف کوپن
 });
 
 // مسیرهای نیازمند احراز هویت و تکمیل پروفایل

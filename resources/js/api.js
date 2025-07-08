@@ -2,15 +2,18 @@
 // این فایل مسئول ارتباط با API بک‌اند برای عملیات سبد خرید است.
 // این یک ساختار فرضی است و شما باید آن را با منطق واقعی API خود جایگزین کنید.
 
-const API_BASE_URL = '/api/cart'; // آدرس پایه برای نقاط پایانی API سبد خرید
+// آدرس پایه برای نقاط پایانی API سبد خرید.
+// تغییر به '/api/cart' برای یکپارچگی با تعریف مسیرها در routes/api.php
+const API_BASE_URL = '/api/cart'; 
 
 /**
  * دریافت محتویات فعلی سبد خرید از API.
  * @returns {Promise<Object>} داده‌های سبد خرید شامل آیتم‌ها، تعداد کل و قیمت کل.
  */
 export async function fetchCartContents() {
-    console.log('🚀 API Request: GET /api/cart/contents');
+    console.log('🚀 API Request: GET ' + API_BASE_URL + '/contents');
     try {
+        // استفاده از API_BASE_URL برای یکپارچگی
         const response = await fetch(`${API_BASE_URL}/contents`, {
             credentials: 'same-origin' // اضافه شده: برای ارسال کوکی‌های سشن
         });
@@ -32,15 +35,17 @@ export async function fetchCartContents() {
  * @returns {Promise<Object>} پاسخ API.
  */
 export async function addItemToCart(productId, quantity) {
-    console.log(`🚀 API Request: POST ${API_BASE_URL}/add`, { productId, quantity });
+    // استفاده از API_BASE_URL برای یکپارچگی
+    console.log(`🚀 API Request: POST ${API_BASE_URL}/add/${productId}`, { quantity });
     try {
-        const response = await fetch(`${API_BASE_URL}/add`, {
+        const response = await fetch(`${API_BASE_URL}/add/${productId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             },
-            body: JSON.stringify({ product_id: productId, quantity: quantity }),
+            // product_id اکنون در URL است، فقط quantity در body ارسال می‌شود.
+            body: JSON.stringify({ quantity: quantity }), 
             credentials: 'same-origin' // اضافه شده: برای ارسال کوکی‌های سشن
         });
         if (!response.ok) {
@@ -61,15 +66,17 @@ export async function addItemToCart(productId, quantity) {
  * @returns {Promise<Object>} پاسخ API.
  */
 export async function updateCartItem(productId, quantity) {
-    console.log(`🚀 API Request: PUT ${API_BASE_URL}/update`, { productId, quantity });
+    // استفاده از API_BASE_URL برای یکپارچگی
+    console.log(`🚀 API Request: PUT ${API_BASE_URL}/update/${productId}`, { quantity });
     try {
-        const response = await fetch(`${API_BASE_URL}/update`, {
+        const response = await fetch(`${API_BASE_URL}/update/${productId}`, {
             method: 'PUT', // یا PATCH
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             },
-            body: JSON.stringify({ product_id: productId, quantity: quantity }),
+            // product_id اکنون در URL است، فقط quantity در body ارسال می‌شود.
+            body: JSON.stringify({ quantity: quantity }), 
             credentials: 'same-origin' // اضافه شده: برای ارسال کوکی‌های سشن
         });
         if (!response.ok) {
@@ -89,15 +96,17 @@ export async function updateCartItem(productId, quantity) {
  * @returns {Promise<Object>} پاسخ API.
  */
 export async function removeCartItem(productId) {
-    console.log(`🚀 API Request: DELETE ${API_BASE_URL}/remove`, { productId });
+    // استفاده از API_BASE_URL برای یکپارچگی
+    console.log(`🚀 API Request: DELETE ${API_BASE_URL}/remove/${productId}`, { productId });
     try {
-        const response = await fetch(`${API_BASE_URL}/remove`, {
+        const response = await fetch(`${API_BASE_URL}/remove/${productId}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             },
-            body: JSON.stringify({ product_id: productId }),
+            // product_id اکنون در URL است، body می‌تواند خالی باشد یا فقط یک پیام.
+            body: JSON.stringify({ product_id: productId }), // می توانید این را حذف کنید اگر بک‌اند نیازی به آن ندارد
             credentials: 'same-origin' // اضافه شده: برای ارسال کوکی‌های سشن
         });
         if (!response.ok) {

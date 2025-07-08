@@ -17,38 +17,38 @@ use Illuminate\Support\Facades\Cache; // Import Cache facade
 // Contracts
 use App\Services\Contracts\CartServiceInterface;
 use App\Contracts\Repositories\CartRepositoryInterface;
-use App\Contracts\Repositories\ProductRepositoryInterface; // Corrected: App->Contracts to App\Contracts
+use App\Contracts\Repositories\ProductRepositoryInterface;
 use App\Contracts\ProductServiceInterface;
-use App\Services\Contracts\CartCleanupServiceInterface; // Corrected: App->Services to App\Services
-use App\Services\Contracts\CartItemManagementServiceInterface; // Corrected: App->Services to App\Services
-use App\Services\Contracts\CartBulkUpdateServiceInterface; // Corrected: App->Services to App\Services
-use App\Services\Contracts\CartClearServiceInterface; // Corrected: App->Services to App\Services
+use App\Services\Contracts\CartCleanupServiceInterface;
+use App\Services\Contracts\CartItemManagementServiceInterface;
+use App\Services\Contracts\CartBulkUpdateServiceInterface;
+use App\Services\Contracts\CartClearServiceInterface;
 use App\Contracts\Services\CouponService; // New: Import CouponService contract
 
 // Managers
-use App\Services\Managers\CartCacheManager; // Corrected: App->Services to App\Services
-use App\Services\Managers\CartRateLimiter; // Corrected: App->Services to App\Services
-use App\Services\Managers\CartMetricsManager; // Corrected: App->Services to App\Services
-use App\Services\Managers\StockManager; // Ensure StockManager is imported if used directly for stock checks // Corrected: App->Services to App\Services
-use App\Services\Managers\CartValidator; // Ensure CartValidator is imported if used directly for validation // Corrected: App->Services to App\Services
+use App\Services\Managers\CartCacheManager;
+use App\Services\Managers\CartRateLimiter;
+use App\Services\Managers\CartMetricsManager;
+use App\Services\Managers\StockManager; // Ensure StockManager is imported if used directly for stock checks
+use App\Services\Managers\CartValidator; // Ensure CartValidator is imported if used directly for validation
 
 // Responses
-use App\Services\Responses\CartOperationResponse; // Corrected: App->Services to App\Services
-use App\Services\Responses\CartContentsResponse; // Corrected: App->Services to App\Services
+use App\Services\Responses\CartOperationResponse;
+use App\Services\Responses\CartContentsResponse;
 
 // Custom Exceptions
-use App\Exceptions\ProductNotFoundException; // Corrected: App->Exceptions to App\Exceptions
-use App\Exceptions\Cart\InsufficientStockException; // Ensure correct namespace // Corrected: App->Exceptions to App\Exceptions
-use App\Exceptions\UnauthorizedCartAccessException; // Corrected: App->Exceptions to App\Exceptions
-use App\Exceptions\CartOperationException; // Corrected: App->Exceptions to App\Exceptions
-use App\Exceptions\CartInvalidArgumentException; // Corrected: App->Exceptions to App\Exceptions
-use App\Exceptions\Cart\CartLimitExceededException; // Ensure correct namespace // Corrected: App->Exceptions to App\Exceptions
-use App\Exceptions\BaseCartException; // Corrected: App->Exceptions to App\Exceptions
+use App\Exceptions\ProductNotFoundException;
+use App\Exceptions\Cart\InsufficientStockException;
+use App\Exceptions\UnauthorizedCartAccessException;
+use App\Exceptions\CartOperationException;
+use App\Exceptions\CartInvalidArgumentException;
+use App\Exceptions\Cart\CartLimitExceededException;
+use App\Exceptions\BaseCartException;
 
 // Events (You should create these classes in App\Events/)
 // class CartItemAdded { use \Illuminate\Foundation\Events\Dispatchable; public Cart $cart; public Product $product; public int $quantity; public ?ProductVariant $variant; public function __construct(Cart $cart, Product $product, int $quantity, ?ProductVariant $variant = null) { $this->cart = $cart; $this->product = $product; $this->quantity = $quantity; $this->variant = $variant; } }
 // class CartItemUpdated { use \Illuminate\Foundation\Events\Dispatchable; public Cart $cart; public CartItem $cartItem; public int $oldQuantity; public int $newQuantity; public function __construct(Cart $cart, CartItem $cartItem, int $oldQuantity, int $newQuantity) { $this->cart = $cart; $this->cartItem = $cartItem; $this->oldQuantity = $oldQuantity; $this->newQuantity = $newQuantity; } }
-// class CartItemRemoved { use \Illuminate\Foundation\Events\Dispatchable; public Cart $cart; public CartItem $cartItem; public function __construct(Cart $cart, CartItem $cartItem) { $this->cart = $cart; $this->cartItem = $cartItem; } }
+// class CartItemRemoved { use \Illuminate\Foundation\Events\Dispatchable; public Cart $cart; public CartItem $cartItem; public int $removedQuantity; public ?User $user; public function __construct(Cart $cart, CartItem $cartItem, int $removedQuantity, ?User $user = null) { $this->cart = $cart; $this->cartItem = $cartItem; $this->removedQuantity = $removedQuantity; $this->user = $user; } }
 // class CartCleared { use \Illuminate\Foundation\Events\Dispatchable; public Cart $cart; public function __construct(Cart $cart) { $this->cart = $cart; } }
 // class CartMerged { use \Illuminate\Foundation\Events\Dispatchable; public Cart $fromCart; public Cart $toCart; public User $user; public function __construct(Cart $fromCart, Cart $toCart, User $user) { $this->fromCart = $fromCart; $this->toCart = $toCart; $this->user = $user; } }
 
@@ -69,8 +69,7 @@ class CartService implements CartServiceInterface
     protected CartItemManagementServiceInterface $cartItemManagementService;
     protected CartBulkUpdateServiceInterface $cartBulkUpdateService;
     protected CartClearServiceInterface $cartClearService;
-    protected CouponService $couponService; // New: Declare CouponService
-
+    protected CouponService $couponService; // New: Inject CouponService
     public function __construct(
         CartRepositoryInterface $cartRepository,
         ProductRepositoryInterface $productRepository,
@@ -251,6 +250,8 @@ class CartService implements CartServiceInterface
         // Load product and productVariant if exists
         // بارگذاری محصول و واریانت محصول در صورت وجود
         $cart->loadMissing(['items.product', 'items.productVariant']);
+
+        // dd($cart->toArray()); // این خط برای عیب‌یابی بود و اکنون حذف شده است.
 
         $itemsData = [];
         $totalQuantity = 0;

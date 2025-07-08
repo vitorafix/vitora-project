@@ -19,29 +19,21 @@
             <i class="fas fa-truck ml-2"></i> انتخاب شیوه ارسال
         </div>
         <div class="flex-1 text-center p-2 text-gray-600 font-semibold flex items-center justify-center transition-all duration-300">
-            <i class="fas fa-clipboard-check ml-2"></i> تایید سفارش
+            <i class="fas fa-shopping-cart ml-2"></i> سبد خرید
         </div>
     </div>
 
-    
-    <div id="cart-content" class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 p-6 md:p-8">
+    <div class="bg-white rounded-2xl shadow-xl p-6 md:p-10 border border-gray-200">
+        
+        <div id="cart-items-container" class="space-y-6">
+            
+        </div>
 
         
         <div id="cart-empty-message" class="text-center py-10 hidden">
             <i class="fas fa-shopping-cart text-gray-400 text-6xl mb-4"></i>
-            <p class="text-gray-600 text-xl font-semibold mb-2">سبد خرید شما خالی است.</p>
-            <p class="text-gray-500">برای شروع خرید، محصولات مورد علاقه خود را اضافه کنید.</p>
-            <a href="<?php echo e(route('products.index')); ?>" class="btn-primary mt-6 inline-flex items-center">
-                شروع خرید
-                <i class="fas fa-arrow-left mr-2"></i>
-            </a>
-        </div>
-
-        
-        <div id="cart-items-container" class="hidden">
-            
-            
-            
+            <p class="text-gray-600 text-xl font-semibold">سبد خرید شما در حال حاضر خالی است.</p>
+            <a href="<?php echo e(route('products.index')); ?>" class="mt-6 inline-block btn-primary">شروع خرید</a>
         </div>
 
         

@@ -1,0 +1,1 @@
+<h1><?php /**PATH C:\xampp\htdocs\myshop\resources\views\blog-single.blade.php ENDPATH**/ ?>

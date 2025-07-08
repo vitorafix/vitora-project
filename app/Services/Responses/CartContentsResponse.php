@@ -18,6 +18,36 @@ class CartContentsResponse implements JsonSerializable
     ) {}
 
     /**
+     * متد getItems() برای دریافت آیتم‌ها.
+     *
+     * @return array
+     */
+    public function getItems(): array
+    {
+        return $this->items;
+    }
+
+    /**
+     * متد getTotalQuantity() برای دریافت تعداد کل.
+     *
+     * @return int
+     */
+    public function getTotalQuantity(): int
+    {
+        return $this->totalQuantity;
+    }
+
+    /**
+     * متد getTotalPrice() برای دریافت قیمت کل.
+     *
+     * @return float
+     */
+    public function getTotalPrice(): float
+    {
+        return $this->totalPrice;
+    }
+
+    /**
      * متد toArray() برای تبدیل شیء به آرایه.
      * این متد برای زمانی که می‌خواهیم داده‌ها را به صورت آرایه به کنترلر برگردانیم مفید است.
      *
@@ -27,8 +57,8 @@ class CartContentsResponse implements JsonSerializable
     {
         return [
             'items' => $this->items,
-            'total_quantity' => $this->totalQuantity, // تغییر نام به snake_case
-            'total_price' => $this->totalPrice,     // تغییر نام به snake_case
+            'total_quantity' => $this->totalQuantity,
+            'total_price' => $this->totalPrice,
         ];
     }
 

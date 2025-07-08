@@ -1,0 +1,196 @@
+
+
+<?php $__env->startSection('title', 'جزئیات محصول - چای ابراهیم'); ?> 
+
+<?php $__env->startSection('content'); ?>
+    
+    <div class="bg-gradient-to-r from-green-700 to-green-900 text-white p-4 text-center text-sm font-semibold rounded-lg shadow-md mb-8">
+        <p>🎁 ارسال رایگان برای خرید بالای <span class="font-bold">۱ میلیون تومان</span>! بعد از ثبت نام <span class="font-bold">۵ درصد تخفیف</span> بگیر!</p>
+    </div>
+
+    <section class="my-8 p-8">
+        <div class="container mx-auto">
+            
+            <nav class="text-gray-600 text-sm mb-6 flex items-center justify-start" aria-label="Breadcrumb">
+                <ol class="list-none p-0 inline-flex items-center">
+                    <li class="flex items-center">
+                        <a href="<?php echo e(url('/')); ?>" class="text-green-800 hover:text-green-900">خانه</a>
+                        <i class="fas fa-chevron-left text-xs mx-2"></i>
+                    </li>
+                    <li class="flex items-center">
+                        <a href="<?php echo e(url('products')); ?>" class="text-green-800 hover:text-green-900">انواع چای</a>
+                        <i class="fas fa-chevron-left text-xs mx-2"></i>
+                    </li>
+                    <li class="flex items-center">
+                        <span id="breadcrumb-category" class="text-gray-600"><?php echo e($product->category->name ?? 'دسته بندی محصول'); ?></span> 
+                        <i class="fas fa-chevron-left text-xs mx-2"></i>
+                    </li>
+                    <li class="flex items-center">
+                        <span id="breadcrumb-product-name" class="text-brown-900 font-semibold"><?php echo e($product->title); ?></span> 
+                    </li>
+                </ol>
+            </nav>
+
+            <div id="product-detail-content" class="bg-white rounded-xl shadow-lg border border-gray-100 p-8 grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-8 lg:gap-12 items-start">
+
+                
+                <div class="lg:col-span-2 xl:col-span-2 order-2 lg:order-1 text-right">
+                    <h1 id="product-detail-name" class="text-4xl font-bold text-brown-900 mb-4 leading-tight"><?php echo e($product->title); ?></h1>
+
+                    <p id="product-detail-description" class="text-gray-700 text-lg leading-relaxed mb-6 border-b border-gray-200 pb-6">
+                        <?php echo e($product->description); ?>
+
+                    </p>
+
+                    <div class="text-gray-700 text-base mb-6 grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-4">
+                        <p><span class="font-semibold text-brown-900">وزن:</span> <span id="product-detail-weight">N/A</span> گرم</p> 
+                        <p><span class="font-semibold text-brown-900">نوع چای:</span> <span id="product-detail-tea-type">N/A</span></p>
+                        <p><span class="font-semibold text-brown-900">فصل برداشت:</span> <span id="product-detail-harvest-season">N/A</span></p>
+                        <p><span class="font-semibold text-brown-900">خاستگاه:</span> <span id="product-detail-origin">N/A</span></p>
+                        <p><span class="font-semibold text-brown-900">برداشت:</span> <span id="product-detail-harvesting-method">N/A</span></p>
+                        <p><span class="font-semibold text-brown-900">ترکیب:</span> <span id="product-detail-blend-info">N/A</span></p>
+                        <p><span class="font-semibold text-brown-900">چای خالص (فاقد هر گونه افزودنی):</span> <span id="product-detail-pure-tea">N/A</span></p>
+                        <p><span class="font-semibold text-brown-900">کد کالا:</span> <span id="product-detail-code">N/A</span></p>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row items-center sm:justify-start justify-center gap-6 mt-8">
+                        <div class="flex items-center border border-gray-300 rounded-lg p-1 w-full sm:w-auto justify-between">
+                            <button id="decrease-quantity" class="p-2 text-gray-700 hover:bg-gray-200 rounded-md transition-colors duration-200"><i class="fas fa-minus"></i></button>
+                            <input type="number" id="product-quantity" value="1" min="1" class="w-16 text-center border-none focus:ring-0 text-2xl font-semibold text-brown-900 bg-transparent" readonly>
+                            <button id="increase-quantity" class="p-2 text-gray-700 hover:bg-gray-200 rounded-md transition-colors duration-200"><i class="fas fa-plus"></i></button>
+                        </div>
+                        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                            <span id="product-detail-price" class="text-green-800 text-4xl font-bold"><?php echo e($product->formatted_price); ?></span>
+                        </div>
+                    </div>
+                    <?php if($product->stock > 0): ?>
+                        <button id="add-to-cart-detail-page"
+                                class="bg-green-800 text-white px-8 py-3 rounded-xl text-xl font-semibold hover:bg-green-700 transition-all duration-300 shadow-lg w-full mt-6 flex items-center justify-center"
+                                data-product-id="<?php echo e($product->id); ?>"
+                                data-product-title="<?php echo e($product->title); ?>"
+                                data-product-price="<?php echo e($product->price); ?>">
+                            <i class="fas fa-shopping-basket ml-3"></i> افزودن به سبد
+                        </button>
+                    <?php else: ?>
+                        <button class="bg-gray-400 text-white px-8 py-3 rounded-xl text-xl font-semibold cursor-not-allowed w-full mt-6 flex items-center justify-center" disabled>
+                            <i class="fas fa-ban ml-3"></i> ناموجود
+                        </button>
+                    <?php endif; ?>
+                </div>
+
+                
+                <div class="lg:col-span-1 xl:col-span-2 order-1 lg:order-2 flex flex-col items-center">
+                    <div class="w-full relative rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                        
+                        <img id="product-detail-main-image"
+                             src="<?php echo e($product->images->first()->image_url ?? $product->image_url); ?>"
+                             alt="<?php echo e($product->title); ?>"
+                             class="w-full h-auto object-cover rounded-xl">
+                        
+                        
+                    </div>
+                    <div id="product-thumbnails" class="flex flex-row justify-center lg:flex-col gap-3 mt-6 w-full lg:w-24">
+                        
+                        <?php $__empty_1 = true; $__currentLoopData = $product->images; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $image): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                            <img src="<?php echo e($image->image_url); ?>"
+                                 class="w-20 h-auto rounded-lg border border-gray-300 cursor-pointer hover:border-green-800 transition-all duration-200 thumbnail-image <?php echo e($loop->first ? 'active-thumbnail border-green-800' : ''); ?>"
+                                 alt="Thumbnail <?php echo e($loop->index + 1); ?>"
+                                 data-main-image-src="<?php echo e($image->image_url); ?>">
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                            
+                            <img src="<?php echo e($product->image_url); ?>"
+                                 class="w-20 h-auto rounded-lg border border-gray-300 cursor-pointer hover:border-green-800 transition-all duration-200 thumbnail-image active-thumbnail border-green-800"
+                                 alt="Thumbnail 1"
+                                 data-main-image-src="<?php echo e($product->image_url); ?>">
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                
+                <div class="lg:col-span-3 xl:col-span-4 mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-gray-100 p-6 rounded-xl shadow-md border border-gray-200 text-center">
+                        <h4 class="text-xl font-bold text-brown-900 mb-3">طعم: <span id="product-detail-taste">N/A</span></h4>
+                        <p class="text-gray-700 text-base"><span id="product-detail-taste-description">N/A</span></p>
+                    </div>
+                    <div class="bg-gray-100 p-6 rounded-xl shadow-md border border-gray-200 text-center">
+                        <h4 class="text-xl font-bold text-brown-900 mb-3">طعم باد: <span id="product-detail-aroma">N/A</span></h4>
+                        <p class="text-gray-700 text-base"><span id="product-detail-aroma-description">N/A</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="product-not-found" class="hidden text-center bg-white p-8 rounded-xl shadow-lg border border-gray-100 mt-8">
+                <i class="fas fa-exclamation-circle text-6xl text-red-500 mb-4"></i>
+                <h2 class="text-3xl font-bold text-brown-900 mb-4">محصول مورد نظر یافت نشد.</h2>
+                <p class="text-gray-700 text-lg mb-6">متاسفانه، محصولی با این مشخصات پیدا نشد. لطفاً از <a href="<?php echo e(url('products')); ?>" class="text-green-800 hover:underline">صفحه محصولات</a> دیدن فرمایید.</p>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mainImage = document.getElementById('product-detail-main-image');
+            const thumbnailsContainer = document.getElementById('product-thumbnails');
+
+            if (mainImage && thumbnailsContainer) {
+                // Set initial active thumbnail
+                const initialActiveThumbnail = thumbnailsContainer.querySelector('.thumbnail-image.active-thumbnail');
+                if (initialActiveThumbnail) {
+                    mainImage.src = initialActiveThumbnail.dataset.mainImageSrc;
+                }
+
+                thumbnailsContainer.addEventListener('click', function(event) {
+                    if (event.target.classList.contains('thumbnail-image')) {
+                        // Remove active class from all thumbnails
+                        document.querySelectorAll('.thumbnail-image').forEach(thumb => {
+                            thumb.classList.remove('active-thumbnail', 'border-green-800');
+                        });
+
+                        // Add active class to clicked thumbnail
+                        event.target.classList.add('active-thumbnail', 'border-green-800');
+
+                        // Change main image source
+                        mainImage.src = event.target.dataset.mainImageSrc;
+                    }
+                });
+            }
+
+            // Quantity controls (existing logic, ensure IDs match)
+            const decreaseQuantityBtn = document.getElementById('decrease-quantity');
+            const increaseQuantityBtn = document.getElementById('increase-quantity');
+            const productQuantityInput = document.getElementById('product-quantity');
+            const addToCartBtn = document.getElementById('add-to-cart-detail-page');
+
+            if (decreaseQuantityBtn && increaseQuantityBtn && productQuantityInput) {
+                decreaseQuantityBtn.addEventListener('click', function() {
+                    let currentQuantity = parseInt(productQuantityInput.value);
+                    if (currentQuantity > 1) {
+                        productQuantityInput.value = currentQuantity - 1;
+                    }
+                });
+
+                increaseQuantityBtn.addEventListener('click', function() {
+                    let currentQuantity = parseInt(productQuantityInput.value);
+                    productQuantityInput.value = currentQuantity + 1;
+                });
+            }
+
+            // Add to cart button (example, integrate with your actual cart logic)
+            if (addToCartBtn) {
+                addToCartBtn.addEventListener('click', function() {
+                    const productId = this.dataset.productId;
+                    const productTitle = this.dataset.productTitle;
+                    const productPrice = this.dataset.productPrice;
+                    const quantity = productQuantityInput.value;
+
+                    // Example: Send data to a cart endpoint
+                    console.log(`Product Added to Cart: ID - ${productId}, Title - ${productTitle}, Price - ${productPrice}, Quantity - ${quantity}`);
+                    // You would typically make an AJAX request here to add to cart
+                    alert(`محصول "${productTitle}" به تعداد ${quantity} به سبد خرید اضافه شد.`);
+                });
+            }
+        });
+    </script>
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\xampp\htdocs\myshop\resources\views\product-single.blade.php ENDPATH**/ ?>
