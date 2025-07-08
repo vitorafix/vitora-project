@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Illuminate\Support\Str; // مطمئن شوید که این خط وجود دارد
 
 class Product extends Model
 {
@@ -35,7 +35,7 @@ class Product extends Model
     protected $casts = [
         'price' => 'decimal:2',
         'stock' => 'integer',
-        'status' => 'boolean',
+        // 'status' => 'boolean', // این خط کامنت شد زیرا status در دیتابیس enum است
     ];
 
     /**
@@ -126,6 +126,16 @@ class Product extends Model
     }
 
     /**
+     * Accessor برای بررسی فعال بودن محصول.
+     *
+     * @return bool
+     */
+    public function getIsActiveAttribute(): bool
+    {
+        return $this->status === 'active';
+    }
+
+    /**
      * Accessor for formatted price.
      * Returns the price formatted with commas and 'تومان'.
      *
@@ -146,7 +156,8 @@ class Product extends Model
      */
     public function setTitleAttribute(string $value): void
     {
-        $this->attributes['title'] = Str::ucwords(Str::lower($value));
+        // استفاده از Str::title به جای Str::ucwords
+        $this->attributes['title'] = Str::title($value);
         $this->attributes['slug'] = Str::slug($value);
     }
 
@@ -158,7 +169,7 @@ class Product extends Model
      */
     public function scopeActive($query)
     {
-        return $query->where('status', true);
+        return $query->where('status', 'active'); // تغییر از true به 'active'
     }
 
     /**

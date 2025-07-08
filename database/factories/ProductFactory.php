@@ -4,19 +4,22 @@ namespace Database\Factories;
 
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 class ProductFactory extends Factory
 {
     protected $model = Product::class;
 
-    public function definition()
+    public function definition(): array
     {
         return [
-            // 'name' به 'title' تغییر یافت تا با ساختار جدول products هماهنگ باشد.
-            'title' => $this->faker->word(),
-            'price' => $this->faker->numberBetween(1000, 10000),
+            'title' => $this->faker->words(3, true),
+            'slug' => $this->faker->unique()->slug,
+            'price' => $this->faker->numberBetween(1000, 50000),
             'stock' => $this->faker->numberBetween(0, 100),
-            // سایر فیلدهای لازم مدل Product
+            'status' => 'active', // ✅ حالا هماهنگ با migration
+            'category_id' => 1, // فرض کن دسته‌بندی موجوده
+            'image' => 'test-image.jpg',
         ];
     }
 }

@@ -27,9 +27,8 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             @forelse ($products as $product)
                 <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 card-hover-effect">
-                    {{-- Link to product single page, now using slug for SEO-friendly URLs --}}
-                    {{-- اطمینان حاصل کنید که $product->slug خالی نیست --}}
-                    <a href="{{ route('products.show', $product->slug ?? $product->id) }}">
+                    {{-- Link to product single page, now using product ID as per route definition --}}
+                    <a href="{{ route('products.show', $product->id) }}">
                         {{-- Display the product image using the image_url accessor --}}
                         <img src="{{ $product->image_url }}"
                              alt="{{ $product->title }}"
@@ -39,9 +38,8 @@
 
                     <div class="p-5 text-center rtl:text-right">
                         <h3 class="text-xl font-semibold text-brown-900 mb-2 truncate">
-                            {{-- Link to product single page, now using slug --}}
-                            {{-- اطمینان حاصل کنید که $product->slug خالی نیست --}}
-                            <a href="{{ route('products.show', $product->slug ?? $product->id) }}" class="hover:text-green-700 transition-colors duration-200">
+                            {{-- Link to product single page, now using product ID --}}
+                            <a href="{{ route('products.show', $product->id) }}" class="hover:text-green-700 transition-colors duration-200">
                                 {{ $product->title }}
                             </a>
                         </h3>
@@ -51,7 +49,7 @@
                         <p class="text-green-700 font-bold text-2xl mb-4">
                             {{ number_format($product->price) }} تومان
                         </p>
-                        @if ($product->stock > 0)
+                        @if ($product->stock > 0 && $product->is_active) {{-- اضافه شدن شرط is_active --}}
                             <button class="add-to-cart-btn btn-primary w-full py-2 flex items-center justify-center text-lg"
                                     data-product-id="{{ $product->id }}"
                                     data-product-title="{{ $product->title }}"

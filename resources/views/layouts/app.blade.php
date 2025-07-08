@@ -188,7 +188,8 @@
     @include('layouts.navigation') {{-- فرض بر این است که فایل ناوبری شما در resources/views/layouts/navigation.blade.php قرار دارد --}}
 
     {{-- This yield is for the main body content, including the admin panel layout --}}
-    @yield('body_content')
+    {{-- تغییر از @yield('body_content') به @yield('content') برای هماهنگی با products.blade.php --}}
+    @yield('content')
 
     {{-- Stack for custom scripts pushed from child views (like checkout.blade.php) --}}
     @stack('scripts')

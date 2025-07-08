@@ -33,9 +33,16 @@ class ProductController extends Controller
     {
         // Eager load the 'category' and 'images' relationships to avoid N+1 query problem.
         // The 'images' relationship is defined in the Product model.
-        // We are chaining 'with' to your existing query.
-        $products = Product::with(['category', 'images'])->latest()->paginate(12);
-        // Pass the productService instance to the view
+        // ما از اسکوپ 'active' استفاده می‌کنیم تا فقط محصولات فعال نمایش داده شوند.
+        // همچنین ProductService را به view پاس می‌دهیم اگر در آنجا استفاده می‌شود.
+        $products = Product::with(['category', 'images'])
+                            ->active() // اضافه شده: برای فیلتر کردن محصولات فعال
+                            ->latest()
+                            ->paginate(12);
+
+        // !!! خط dd($products); را از اینجا حذف کنید !!!
+        // dd($products);
+
         return view('products', compact('products'))->with('productService', $this->productService);
     }
 

@@ -28,8 +28,7 @@
             <?php $__empty_1 = true; $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                 <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 card-hover-effect">
                     
-                    
-                    <a href="<?php echo e(route('products.show', $product->slug ?? $product->id)); ?>">
+                    <a href="<?php echo e(route('products.show', $product->id)); ?>">
                         
                         <img src="<?php echo e($product->image_url); ?>"
                              alt="<?php echo e($product->title); ?>"
@@ -40,8 +39,7 @@
                     <div class="p-5 text-center rtl:text-right">
                         <h3 class="text-xl font-semibold text-brown-900 mb-2 truncate">
                             
-                            
-                            <a href="<?php echo e(route('products.show', $product->slug ?? $product->id)); ?>" class="hover:text-green-700 transition-colors duration-200">
+                            <a href="<?php echo e(route('products.show', $product->id)); ?>" class="hover:text-green-700 transition-colors duration-200">
                                 <?php echo e($product->title); ?>
 
                             </a>
@@ -52,7 +50,7 @@
                         <p class="text-green-700 font-bold text-2xl mb-4">
                             <?php echo e(number_format($product->price)); ?> تومان
                         </p>
-                        <?php if($product->stock > 0): ?>
+                        <?php if($product->stock > 0 && $product->is_active): ?> 
                             <button class="add-to-cart-btn btn-primary w-full py-2 flex items-center justify-center text-lg"
                                     data-product-id="<?php echo e($product->id); ?>"
                                     data-product-title="<?php echo e($product->title); ?>"

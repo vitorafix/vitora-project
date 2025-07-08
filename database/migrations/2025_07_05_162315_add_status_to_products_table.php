@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            // اضافه کردن فیلد status به جدول products
-            // مقادیر 'active', 'inactive' را می‌پذیرد و پیش‌فرض آن 'active' است.
-            $table->enum('status', ['active', 'inactive'])->default('active')->after('stock');
+            $table->enum('status', ['active', 'inactive'])
+                  ->default('active')
+                  ->after('stock');
         });
     }
 
@@ -24,7 +24,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            // حذف فیلد status در صورت rollback
             $table->dropColumn('status');
         });
     }
