@@ -13,6 +13,9 @@ use App\Repositories\OrderRepository; // اضافه شده: برای Mock کرد
 use App\Services\Contracts\CartServiceInterface; // اضافه شده: برای Mock کردن CartService
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
+use Illuminate\Support\Facades\Event; // اضافه شده: برای Mock کردن Event Facade
+use Illuminate\Support\Facades\Config; // اضافه شده: برای Mock کردن Config Facade
+use App\Exceptions\Cart\InsufficientStockException; // اضافه شده: برای تست موجودی ناکافی
 
 class OrderServiceTest extends TestCase
 {
@@ -30,6 +33,16 @@ class OrderServiceTest extends TestCase
         $this->orderRepositoryMock = Mockery::mock(OrderRepository::class);
         // Mock کردن CartServiceInterface
         $this->cartServiceMock = Mockery::mock(CartServiceInterface::class);
+
+        // Mock کردن Event و Config Facades
+        Event::fake(); // برای جلوگیری از ارسال رویدادهای واقعی در تست
+        Config::shouldReceive('get')->andReturnUsing(function ($key, $default = null) {
+            // شبیه سازی رفتار config() helper در تست
+            if ($key === 'cart.guest_cart_expiry_days') return 7;
+            // می توانید سایر مقادیر config مورد نیاز را اینجا اضافه کنید
+            return $default;
+        });
+
 
         // نمونه‌سازی OrderService با وابستگی‌های Mock شده
         $this->orderService = new OrderService($this->orderRepositoryMock);
@@ -176,10 +189,10 @@ class OrderServiceTest extends TestCase
         // Mock کردن متد decrement در Product برای شبیه‌سازی خطای موجودی
         $this->partialMock(Product::class, function (Mockery\MockInterface $mock) {
             $mock->shouldReceive('decrement')
-                ->andThrow(new \Exception('موجودی کافی نیست.')); // یا InsufficientStockException واقعی
+                ->andThrow(new InsufficientStockException('موجودی کافی نیست.')); // استفاده از InsufficientStockException واقعی
         });
 
-        $this->expectException(\Exception::class); // یا InsufficientStockException واقعی
+        $this->expectException(InsufficientStockException::class); // انتظار InsufficientStockException
         $this->orderService->createOrder([ // تغییر placeOrder به createOrder
             'shipping_method' => 'standard',
             'payment_method' => 'credit_card',

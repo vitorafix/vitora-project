@@ -32,10 +32,15 @@ Route::prefix('auth')->name('api.auth.')->group(function () {
 Route::middleware('api')->group(function () {
     // نام مسیر 'cart.add' به 'api.cart.add' تغییر یافت تا از تداخل جلوگیری شود.
     Route::post('/cart/add', [CartController::class, 'add'])->name('api.cart.add')->middleware('throttle:cart_add');
-    Route::get('/cart/contents', [CartController::class, 'contents'])->name('cart.contents'); // این خط باید فعال باشد
-    Route::put('/cart/update/{cartItem}', [CartController::class, 'updateQuantity'])->name('cart.update');
-    Route::delete('/cart/remove/{cartItem}', [CartController::class, 'removeCartItem'])->name('cart.remove');
-    Route::post('/cart/clear', [CartController::class, 'clearCart'])->name('cart.clear');
+    // نام مسیر 'cart.update' به 'api.cart.update' تغییر یافت.
+    Route::put('/cart/update/{cartItem}', [CartController::class, 'updateQuantity'])->name('api.cart.update');
+    // نام مسیر 'cart.remove' به 'api.cart.remove' تغییر یافت.
+    Route::delete('/cart/remove/{cartItem}', [CartController::class, 'removeCartItem'])->name('api.cart.remove');
+    // نام مسیر 'cart.clear' به 'api.cart.clear' تغییر یافت.
+    Route::post('/cart/clear', [CartController::class, 'clearCart'])->name('api.cart.clear');
+    
+    // اضافه شدن مسیر جدید برای دریافت محتویات سبد خرید
+    Route::get('/cart/contents', [CartController::class, 'getContents'])->name('api.cart.contents');
 });
 
 // اضافه کردن مسیر placeOrder اگر در api.php باشد

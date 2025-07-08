@@ -3,14 +3,15 @@
 // هماهنگی بین ماژول‌های API، Renderer و Events، و نگهداری وضعیت کلی است.
 
 // ایمپورت کردن توابع مورد نیاز از ماژول‌های دیگر
-import { fetchCartContents } from './api.js';
+import { fetchCartContents, addItemToCart, updateCartItem, removeCartItem } from './api.js'; // فرض بر وجود این توابع API
 import { renderMiniCartDetails, renderMainCart, setCartLoadingState } from './renderer.js';
 import {
     initializeDOMCache,
     setupAddToCartButtons,
     setupMainCartQuantityButtons,
     setupMiniCartToggle,
-    setupMiniCartActionButtons
+    setupMiniCartActionButtons,
+    getDOM // ایمپورت getDOM برای بررسی عناصر در صورت نیاز
 } from './events.js';
 
 /**
@@ -31,6 +32,7 @@ class CartManager {
         };
         // Observer pattern: لیست آبزرورها برای اطلاع‌رسانی تغییرات سبد خرید
         this.observers = [];
+        this.hasMainCartElements = false; // پرچم جدید برای ردیابی وجود عناصر اصلی سبد خرید
         console.log('CartManager initialized.');
     }
 
@@ -42,21 +44,23 @@ class CartManager {
     async init() {
         console.log('Initializing CartManager...');
 
-        // تعریف وظایف راه‌اندازی برای اجرای ایمن
-        const setupTasks = [
-            { fn: initializeDOMCache, message: 'خطا در کش کردن عناصر DOM.' },
-            { fn: setupAddToCartButtons, message: 'خطا در راه‌اندازی دکمه‌های افزودن به سبد.' },
-            { fn: setupMainCartQuantityButtons, message: 'خطا در راه‌اندازی دکمه‌های تعداد سبد اصلی.' },
-            { fn: setupMiniCartToggle, message: 'خطا در راه‌اندازی دکمه مینی‌کارت.' },
-            { fn: setupMiniCartActionButtons, message: 'خطا در راه‌اندازی دکمه‌های عملیات مینی‌کارت.' }
-        ];
+        // مرحله 1: کش DOM را راه‌اندازی کنید و عناصر حیاتی سبد خرید اصلی را بررسی کنید
+        this.hasMainCartElements = initializeDOMCache();
 
-        // اجرای ایمن هر وظیفه راه‌اندازی
-        for (const task of setupTasks) {
-            this.safeExecute(task.fn, task.message);
+        // مرحله 2: شنونده‌های رویداد را تنظیم کنید، فقط در صورتی که عناصر مربوطه یافت شوند
+        this.safeExecute(setupAddToCartButtons, 'خطا در راه‌اندازی دکمه‌های افزودن به سبد.');
+        this.safeExecute(setupMiniCartToggle, 'خطا در راه‌اندازی دکمه مینی‌کارت.');
+        this.safeExecute(setupMiniCartActionButtons, 'خطا در راه‌اندازی دکمه‌های عملیات مینی‌کارت.');
+
+        // فقط در صورتی که عناصر اصلی سبد خرید وجود داشته باشند، دکمه‌های تعداد سبد اصلی را راه‌اندازی کنید
+        if (this.hasMainCartElements) {
+            this.safeExecute(setupMainCartQuantityButtons, 'خطا در راه‌اندازی دکمه‌های تعداد سبد اصلی.');
+        } else {
+            console.warn('Main cart elements not found, skipping setup for main cart quantity buttons.');
         }
 
-        // بارگذاری اولیه محتویات سبد خرید و رندر کردن آن‌ها
+
+        // مرحله 3: محتویات سبد خرید را بارگذاری و رندر کنید
         await this.loadAndRenderCart();
 
         console.log('CartManager initialization complete.');
@@ -79,13 +83,19 @@ class CartManager {
             // به‌روزرسانی وضعیت داخلی سبد خرید با نگاشت کلیدهای snake_case به camelCase
             this.cartData = {
                 items: data.items,
-                totalQuantity: data.total_quantity, // اصلاح شد
-                totalPrice: data.total_price       // اصلاح شد
+                totalQuantity: data.total_quantity,
+                totalPrice: data.total_price
             };
 
             // رندر کردن مینی‌کارت و سبد اصلی با داده‌های جدید
             renderMiniCartDetails(this.cartData.items, this.cartData.totalQuantity, this.cartData.totalPrice);
-            renderMainCart(this.cartData.items, this.cartData.totalQuantity, this.cartData.totalPrice);
+
+            // فقط در صورتی که عناصر اصلی سبد خرید در صفحه وجود داشته باشند، سبد خرید اصلی را رندر کنید
+            if (this.hasMainCartElements) {
+                renderMainCart(this.cartData.items, this.cartData.totalQuantity, this.cartData.totalPrice);
+            } else {
+                console.warn('Main cart elements not present, skipping main cart rendering.');
+            }
 
             this.notify('cartChanged', this.cartData); // اطلاع‌رسانی به آبزرورها
         } catch (error) {
@@ -96,6 +106,86 @@ class CartManager {
             }
         } finally {
             setCartLoadingState(false); // پنهان کردن وضعیت بارگذاری
+        }
+    }
+
+    /**
+     * اضافه کردن یک محصول به سبد خرید.
+     * @param {string} productId - شناسه محصول.
+     * @param {number} quantity - تعداد محصول برای اضافه کردن.
+     */
+    async addItem(productId, quantity = 1) {
+        setCartLoadingState(true);
+        try {
+            const response = await addItemToCart(productId, quantity);
+            if (response.success) {
+                await this.loadAndRenderCart();
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage('محصول به سبد خرید اضافه شد.', 'success');
+                }
+            } else {
+                throw new Error(response.message || 'خطا در افزودن محصول به سبد خرید.');
+            }
+        } catch (error) {
+            console.error('Error adding item to cart:', error);
+            if (typeof window.showMessage === 'function') {
+                window.showMessage(error.message || 'خطا در افزودن محصول به سبد خرید. لطفاً دوباره تلاش کنید.', 'error');
+            }
+        } finally {
+            setCartLoadingState(false);
+        }
+    }
+
+    /**
+     * به‌روزرسانی تعداد یک آیتم در سبد خرید.
+     * @param {string} productId - شناسه محصول.
+     * @param {number} newQuantity - تعداد جدید محصول.
+     */
+    async updateItemQuantity(productId, newQuantity) {
+        setCartLoadingState(true);
+        try {
+            const response = await updateCartItem(productId, newQuantity);
+            if (response.success) {
+                await this.loadAndRenderCart();
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage('تعداد محصول به‌روزرسانی شد.', 'success');
+                }
+            } else {
+                throw new Error(response.message || 'خطا در به‌روزرسانی تعداد محصول.');
+            }
+        } catch (error) {
+            console.error('Error updating item quantity:', error);
+            if (typeof window.showMessage === 'function') {
+                window.showMessage(error.message || 'خطا در به‌روزرسانی تعداد محصول. لطفاً دوباره تلاش کنید.', 'error');
+            }
+        } finally {
+            setCartLoadingState(false);
+        }
+    }
+
+    /**
+     * حذف یک آیتم از سبد خرید.
+     * @param {string} productId - شناسه محصول برای حذف.
+     */
+    async removeItem(productId) {
+        setCartLoadingState(true);
+        try {
+            const response = await removeCartItem(productId);
+            if (response.success) {
+                await this.loadAndRenderCart();
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage('محصول از سبد خرید حذف شد.', 'success');
+                }
+            } else {
+                throw new Error(response.message || 'خطا در حذف محصول از سبد خرید.');
+            }
+        } catch (error) {
+            console.error('Error removing item from cart:', error);
+            if (typeof window.showMessage === 'function') {
+                window.showMessage(error.message || 'خطا در حذف محصول از سبد خرید. لطفاً دوباره تلاش کنید.', 'error');
+            }
+        } finally {
+            setCartLoadingState(false);
         }
     }
 
@@ -197,5 +287,7 @@ class CartManager {
 // ایجاد یک نمونه از CartManager و راه‌اندازی آن پس از بارگذاری کامل DOM
 document.addEventListener('DOMContentLoaded', () => {
     const cartManager = new CartManager();
+    // cartManager را به صورت سراسری در دسترس قرار دهید تا ماژول‌های دیگر (مانند events.js) بتوانند به آن دسترسی داشته باشند
+    window.cartManager = cartManager;
     cartManager.init();
 });

@@ -29,26 +29,12 @@ class CartController extends Controller
     protected CartServiceInterface $cartService;
     protected CouponService $couponService; // New: Declare CouponService
 
-    /**
-     * Constructor for CartController.
-     * سازنده کنترلر CartController.
-     *
-     * @param CartServiceInterface $cartService
-     * @param CouponService $couponService // New: Inject CouponService
-     */
     public function __construct(CartServiceInterface $cartService, CouponService $couponService)
     {
         $this->cartService = $cartService;
-        $this->couponService = $couponService; // New: Assign CouponService
+        $this->couponService = $couponService;
     }
 
-    /**
-     * Display the cart page.
-     * صفحه سبد خرید را نمایش می‌دهد.
-     * این متد برای رندر کردن ویو Blade استفاده می‌شود.
-     *
-     * @return \Illuminate\View\View|\Illuminate\Http\JsonResponse
-     */
     public function index()
     {
         try {
@@ -70,7 +56,6 @@ class CartController extends Controller
             ]);
         } catch (BaseCartException $e) {
             Log::error('Error displaying cart page: ' . $e->getMessage(), ['user_id' => Auth::id(), 'session_id' => Session::getId(), 'exception' => $e->getTraceAsString()]);
-            // If this method is also used for API, return JSON. Otherwise, return to view or redirect.
             return response()->json(['message' => $e->getMessage()], $e->getCode());
         } catch (\Throwable $e) {
             Log::error('Unexpected error displaying cart page: ' . $e->getMessage(), ['user_id' => Auth::id(), 'session_id' => Session::getId(), 'exception' => $e->getTraceAsString()]);
@@ -78,76 +63,54 @@ class CartController extends Controller
         }
     }
 
-    /**
-     * Get cart contents for display in frontend (API endpoint).
-     * محتویات سبد خرید را برای نمایش در فرانت‌اند (API) دریافت می‌کند.
-     * این متد توسط درخواست‌های AJAX از cart.js فراخوانی می‌شود.
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function contents(Request $request): \Illuminate\Http\JsonResponse
+    // اینجا نام متد به getContents تغییر داده شد
+    public function getContents(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
             $user = Auth::user();
             $sessionId = Session::getId();
 
             $cart = $this->cartService->getOrCreateCart($user, $sessionId);
-            $cartContents = $this->cartService->getCartContents($cart); // This method returns CartContentsResponse
+            $cartContents = $this->cartService->getCartContents($cart);
 
-            // CartContentsResponse has a toArray() method.
-            // This method includes 'items', 'totalQuantity', 'totalPrice' which cart.js expects.
             return response()->json($cartContents->toArray());
         } catch (BaseCartException $e) {
-            Log::error('Cart operation error in contents method: ' . $e->getMessage(), ['user_id' => Auth::id(), 'session_id' => Session::getId(), 'exception' => $e->getTraceAsString()]);
+            Log::error('Cart operation error in getContents method: ' . $e->getMessage(), ['user_id' => Auth::id(), 'session_id' => Session::getId(), 'exception' => $e->getTraceAsString()]);
             return response()->json(['message' => $e->getMessage()], $e->getCode());
         } catch (\Throwable $e) {
-            Log::error('Unexpected error in contents method: ' . $e->getMessage(), ['user_id' => Auth::id(), 'session_id' => Session::getId(), 'exception' => $e->getTraceAsString()]);
+            Log::error('Unexpected error in getContents method: ' . $e->getMessage(), ['user_id' => Auth::id(), 'session_id' => Session::getId(), 'exception' => $e->getTraceAsString()]);
             return response()->json(['message' => 'خطا در دریافت محتویات سبد خرید.'], 500);
         }
     }
 
-    /**
-     * Add product to cart or update quantity (API endpoint).
-     * محصول را به سبد خرید اضافه یا تعداد آن را به‌روزرسانی می‌کند.
-     * از AddToCartRequest برای اعتبارسنجی استفاده می‌کند.
-     *
-     * @param AddToCartRequest $request
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function add(AddToCartRequest $request): \Illuminate\Http\JsonResponse
     {
         $productId = $request->input('product_id');
         $quantity = $request->input('quantity');
-        $variantId = $request->input('product_variant_id'); // New: Get product variant ID
+        $variantId = $request->input('product_variant_id');
 
         try {
             $cart = $this->cartService->getOrCreateCart(Auth::user(), Session::getId());
-            // Pass variantId to the service method if your service supports it
             $response = $this->cartService->addOrUpdateCartItem($cart, $productId, $quantity, $variantId);
 
-            // CartOperationResponse has isSuccess(), getMessage(), getData(), getCode() methods.
-            // There is no jsonSerialize() method in CartOperationResponse, we use getCode() and getMessage()/getData().
             if ($response->isSuccess()) {
-                // After success, retrieve the total number of items in the cart again
-                // This is necessary to update the mini-cart in the frontend.
                 $updatedCart = $this->cartService->getOrCreateCart(Auth::user(), Session::getId());
                 $updatedCartContents = $this->cartService->getCartContents($updatedCart);
 
                 return response()->json([
                     'message' => $response->getMessage(),
                     'data' => $response->getData(),
-                    'totalQuantity' => $updatedCartContents->totalQuantity // Send total number of items
-                ], $response->getCode() ?: 200); // Use getCode() for HTTP status
+                    'totalQuantity' => $updatedCartContents->totalQuantity
+                ], $response->getCode() ?: 200);
             } else {
                 return response()->json(['message' => $response->getMessage()], $response->getCode() ?: 400);
             }
-        } catch (InsufficientStockException $e) { // Catch specific exceptions
+        } catch (InsufficientStockException $e) {
             Log::error('Insufficient stock error in add method: ' . $e->getMessage(), ['product_id' => $productId, 'quantity' => $quantity, 'exception' => $e->getTraceAsString()]);
-            return response()->json(['message' => $e->getMessage()], 400); // Custom status for stock
-        } catch (CartLimitExceededException $e) { // Catch specific exceptions
+            return response()->json(['message' => $e->getMessage()], 400);
+        } catch (CartLimitExceededException $e) {
             Log::error('Cart limit exceeded error in add method: ' . $e->getMessage(), ['product_id' => $productId, 'quantity' => $quantity, 'exception' => $e->getTraceAsString()]);
-            return response()->json(['message' => $e->getMessage()], 400); // Custom status for limit
+            return response()->json(['message' => $e->getMessage()], 400);
         } catch (BaseCartException $e) {
             Log::error('Cart operation error in add method: ' . $e->getMessage(), ['product_id' => $productId, 'quantity' => $quantity, 'exception' => $e->getTraceAsString()]);
             return response()->json(['message' => $e->getMessage()], $e->getCode());
@@ -157,16 +120,6 @@ class CartController extends Controller
         }
     }
 
-    /**
-     * Update quantity of a specific cart item (API endpoint).
-     * تعداد یک آیتم خاص در سبد خرید را به‌روزرسانی می‌کند.
-     * از UpdateCartItemRequest برای اعتبارسنجی استفاده می‌کند.
-     * از Route Model Binding برای CartItem استفاده می‌کند.
-     *
-     * @param UpdateCartItemRequest $request
-     * @param CartItem $cartItem
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function updateQuantity(UpdateCartItemRequest $request, CartItem $cartItem): \Illuminate\Http\JsonResponse
     {
         $newQuantity = $request->input('quantity');
@@ -175,7 +128,6 @@ class CartController extends Controller
             $user = Auth::user();
             $sessionId = Session::getId();
 
-            // Use updateCartItemQuantity method in the service
             $response = $this->cartService->updateCartItemQuantity($cartItem, $newQuantity, $user, $sessionId);
 
             if ($response->isSuccess()) {
@@ -183,10 +135,10 @@ class CartController extends Controller
             } else {
                 return response()->json(['message' => $response->getMessage()], $response->getCode() ?: 400);
             }
-        } catch (InsufficientStockException $e) { // Catch specific exceptions
+        } catch (InsufficientStockException $e) {
             Log::error('Insufficient stock error in updateQuantity method: ' . $e->getMessage(), ['cart_item_id' => $cartItem->id, 'new_quantity' => $newQuantity, 'exception' => $e->getTraceAsString()]);
             return response()->json(['message' => $e->getMessage()], 400);
-        } catch (CartLimitExceededException $e) { // Catch specific exceptions
+        } catch (CartLimitExceededException $e) {
             Log::error('Cart limit exceeded error in updateQuantity method: ' . $e->getMessage(), ['cart_item_id' => $cartItem->id, 'new_quantity' => $newQuantity, 'exception' => $e->getTraceAsString()]);
             return response()->json(['message' => $e->getMessage()], 400);
         } catch (BaseCartException $e) {
@@ -198,21 +150,12 @@ class CartController extends Controller
         }
     }
 
-    /**
-     * Remove a specific cart item (API endpoint).
-     * یک آیتم خاص را از سبد خرید حذف می‌کند.
-     * از Route Model Binding برای CartItem استفاده می‌کند.
-     *
-     * @param CartItem $cartItem
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function removeCartItem(CartItem $cartItem): \Illuminate\Http\JsonResponse
     {
         try {
             $user = Auth::user();
             $sessionId = Session::getId();
 
-            // Use removeCartItem method in the service
             $response = $this->cartService->removeCartItem($cartItem, $user, $sessionId);
 
             if ($response->isSuccess()) {
@@ -229,13 +172,6 @@ class CartController extends Controller
         }
     }
 
-    /**
-     * Clear all items from the cart (API endpoint).
-     * همه آیتم‌ها را از سبد خرید پاک می‌کند.
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function clearCart(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
@@ -259,13 +195,6 @@ class CartController extends Controller
         }
     }
 
-    /**
-     * Apply a coupon to the cart (API endpoint).
-     * یک کد تخفیف را به سبد خرید اعمال می‌کند.
-     *
-     * @param ApplyCouponRequest $request
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function applyCoupon(ApplyCouponRequest $request): \Illuminate\Http\JsonResponse
     {
         $couponCode = $request->input('coupon_code');
@@ -278,8 +207,7 @@ class CartController extends Controller
             $success = $this->couponService->applyCoupon($cart, $couponCode);
 
             if ($success) {
-                // Recalculate cart totals after applying coupon
-                $cartTotals = $this->cartService->calculateCartTotals($cart->fresh()); // Use fresh() to get updated cart
+                $cartTotals = $this->cartService->calculateCartTotals($cart->fresh());
                 return response()->json([
                     'message' => 'کد تخفیف با موفقیت اعمال شد.',
                     'cartTotals' => $cartTotals,
@@ -293,13 +221,6 @@ class CartController extends Controller
         }
     }
 
-    /**
-     * Remove a coupon from the cart (API endpoint).
-     * یک کد تخفیف را از سبد خرید حذف می‌کند.
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function removeCoupon(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
@@ -310,8 +231,7 @@ class CartController extends Controller
             $success = $this->couponService->removeCoupon($cart);
 
             if ($success) {
-                // Recalculate cart totals after removing coupon
-                $cartTotals = $this->cartService->calculateCartTotals($cart->fresh()); // Use fresh() to get updated cart
+                $cartTotals = $this->cartService->calculateCartTotals($cart->fresh());
                 return response()->json([
                     'message' => 'کد تخفیف با موفقیت حذف شد.',
                     'cartTotals' => $cartTotals,

@@ -12,7 +12,9 @@ class EnsureProfileIsCompleted
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @return \Symfony\Component\HttpFoundation\Response
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -25,12 +27,18 @@ class EnsureProfileIsCompleted
             // بررسی می‌کنیم که آیا فیلد profile_completed کاربر false است.
             // و همچنین مطمئن می‌شویم که کاربر در حال حاضر در مسیر تکمیل پروفایل نباشد،
             // تا از حلقه بی‌نهایت ریدایرکت جلوگیری شود.
-            if (!$user->isProfileCompleted() && $request->route()->getName() !== 'profile.complete') {
+            // نام روت صفحه تکمیل پروفایل: 'profile.completion.form' (مطابق کنترلر)
+            if (!$user->isProfileCompleted() && $request->route()->getName() !== 'profile.completion.form') {
                 // ذخیره مقصد فعلی کاربر در سشن، تا پس از تکمیل پروفایل به آنجا بازگردد.
                 session()->put('url.intended', $request->url());
 
+                // اگر درخواست AJAX یا درخواست با انتظار JSON باشد، پاسخ JSON می‌دهیم.
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json(['message' => 'لطفاً ابتدا پروفایل خود را تکمیل کنید.'], 403);
+                }
+
                 // کاربر را به صفحه تکمیل پروفایل هدایت می‌کنیم.
-                return redirect()->route('profile.complete');
+                return redirect()->route('profile.completion.form');
             }
         }
 
@@ -38,4 +46,3 @@ class EnsureProfileIsCompleted
         return $next($request);
     }
 }
-

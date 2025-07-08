@@ -16,7 +16,7 @@ use App\Http\Controllers\ProfileCompletionController;
 use App\Http\Middleware\EnsureProfileIsCompleted;
 use App\Http\Controllers\Editor\EditorDashboardController;
 use App\Http\Controllers\Editor\PostController as EditorPostController;
-use App\Http\Controllers\CheckoutController; // اضافه شده: برای استفاده از CheckoutController
+use App\Http\Controllers\CheckoutController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,15 +31,17 @@ use App\Http\Controllers\CheckoutController; // اضافه شده: برای اس
 // صفحه اصلی
 Route::get('/', [PageController::class, 'home'])->name('home');
 
-// صفحه درباره ما ✅
+// صفحه درباره ما
 Route::get('/about', [PageController::class, 'about'])->name('about');
 
-// صفحه تماس ✅ - اضافه شده برای رفع خطا
+// صفحه تماس
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 
 // محصولات (قابل مشاهده برای همه)
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 Route::get('/products/{product:slug}', [ProductController::class, 'show'])->name('products.show');
+
+// جستجو
 Route::get('/search', [SearchController::class, 'search'])->name('search');
 
 // مسیرهای احراز هویت با OTP
@@ -52,65 +54,71 @@ Route::prefix('auth')->name('auth.')->group(function () {
     Route::post('/register', [RegisterController::class, 'register'])->name('register');
 });
 
-// مسیرهای عمومی که نیاز به احراز هویت دارند
+// ** روت‌های سبد خرید خارج از middleware auth برای دسترسی مهمان‌ها **
+Route::prefix('cart')->name('cart.')->group(function () {
+    Route::get('/', [CartController::class, 'index'])->name('index');
+    Route::post('/add/{product}', [CartController::class, 'add'])->name('add');
+    Route::post('/update/{product}', [CartController::class, 'update'])->name('update');
+    Route::delete('/remove/{product}', [CartController::class, 'remove'])->name('remove');
+    Route::post('/clear', [CartController::class, 'clear'])->name('clear');
+});
+
+// مسیرهای نیازمند احراز هویت و تکمیل پروفایل
 Route::middleware(['auth', 'profile.completed'])->group(function () {
+
+    // داشبورد کاربر
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
 
+    // پروفایل کاربر
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // تکمیل پروفایل
     Route::get('/complete-profile', [ProfileCompletionController::class, 'showCompletionForm'])->name('profile.completion.form');
     Route::post('/complete-profile', [ProfileCompletionController::class, 'completeProfile'])->name('profile.completion.store');
 
-    Route::prefix('cart')->name('cart.')->group(function () {
-        Route::get('/', [CartController::class, 'index'])->name('index');
-        Route::post('/add/{product}', [CartController::class, 'add'])->name('add');
-        Route::post('/update/{product}', [CartController::class, 'update'])->name('update');
-        Route::delete('/remove/{product}', [CartController::class, 'remove'])->name('remove');
-        Route::post('/clear', [CartController::class, 'clear'])->name('clear');
-    });
-
-    // اضافه شده: مسیرهای تسویه حساب
+    // مسیرهای تسویه حساب
     Route::prefix('checkout')->name('checkout.')->group(function () {
         Route::get('/', [CheckoutController::class, 'index'])->name('index');
-        // می‌توانید مسیرهای دیگری مانند store (برای ثبت سفارش) را نیز در اینجا اضافه کنید
-        // Route::post('/place-order', [CheckoutController::class, 'placeOrder'])->name('placeOrder');
+        Route::post('/place-order', [CheckoutController::class, 'placeOrder'])->name('placeOrder');
     });
 
+    // مدیریت سفارش‌ها
     Route::prefix('orders')->name('orders.')->group(function () {
         Route::get('/', [OrderController::class, 'index'])->name('index');
         Route::get('/{order}', [OrderController::class, 'show'])->name('show');
         Route::post('/', [OrderController::class, 'store'])->name('store');
     });
 
+    // آدرس‌ها
     Route::resource('addresses', AddressController::class);
 
+    // بلاگ
     Route::prefix('blog')->name('blog.')->group(function () {
         Route::get('/', [BlogController::class, 'index'])->name('index');
         Route::get('/{post:slug}', [BlogController::class, 'show'])->name('show');
     });
 });
 
-// مسیرهای پنل‌های مدیریتی
-Route::middleware(['auth'])->group(function () {
-    Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+// پنل مدیریت - نیاز به نقش admin
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
-        Route::prefix('products')->name('products.')->group(function () {
-            Route::get('/', [ProductController::class, 'adminIndex'])->name('index')->middleware('permission:view posts');
-            Route::get('/create', [ProductController::class, 'create'])->name('create')->middleware('permission:create post');
-            Route::post('/', [ProductController::class, 'store'])->name('store')->middleware('permission:create post');
-            Route::get('/{product:slug}/edit', [ProductController::class, 'edit'])->name('edit')->middleware('permission:edit post');
-            Route::put('/{product:slug}', [ProductController::class, 'update'])->name('update')->middleware('permission:edit post');
-            Route::delete('/{product:slug}', [ProductController::class, 'destroy'])->name('destroy')->middleware('permission:delete post');
-        });
+    Route::prefix('products')->name('products.')->group(function () {
+        Route::get('/', [ProductController::class, 'adminIndex'])->name('index')->middleware('permission:view posts');
+        Route::get('/create', [ProductController::class, 'create'])->name('create')->middleware('permission:create post');
+        Route::post('/', [ProductController::class, 'store'])->name('store')->middleware('permission:create post');
+        Route::get('/{product:slug}/edit', [ProductController::class, 'edit'])->name('edit')->middleware('permission:edit post');
+        Route::put('/{product:slug}', [ProductController::class, 'update'])->name('update')->middleware('permission:edit post');
+        Route::delete('/{product:slug}', [ProductController::class, 'destroy'])->name('destroy')->middleware('permission:delete post');
     });
+});
 
-    Route::middleware(['role:editor'])->prefix('editor')->name('editor.')->group(function () {
-        Route::get('/dashboard', [EditorDashboardController::class, 'index'])->name('dashboard');
-        Route::resource('/posts', EditorPostController::class);
-    });
+// پنل ویرایشگر - نیاز به نقش editor
+Route::middleware(['auth', 'role:editor'])->prefix('editor')->name('editor.')->group(function () {
+    Route::get('/dashboard', [EditorDashboardController::class, 'index'])->name('dashboard');
+    Route::resource('/posts', EditorPostController::class);
 });
