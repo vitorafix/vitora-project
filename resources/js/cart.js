@@ -14,7 +14,8 @@ import {
     // setupMainCartQuantityButtons, // حذف شد: مدیریت توسط event listener سراسری در پایین
     setupMiniCartToggle,
     // setupMiniCartActionButtons, // حذف شد: مدیریت توسط event listener سراسری در پایین
-    getDOM 
+    getDOM,
+    debounce // اضافه کردن تابع debounce از events.js
 } from './events.js';
 
 // جلوگیری از اجرای مکرر initialization
@@ -466,6 +467,24 @@ class CartManager {
     }
 }
 
+// تعریف debouncedAddCartItem و debouncedUpdateCartItem در خارج از event listener
+// تا بتوانند وضعیت داخلی debounce را حفظ کنند.
+const debouncedAddCartItem = debounce(async (productId, quantity) => {
+    if (window.cartManager) {
+        await window.cartManager.addItem(productId, quantity);
+    } else {
+        console.error('CartManager not available to add item.');
+    }
+}, 400); // 400 میلی‌ثانیه debounce delay، کمتر از 0.5 ثانیه محدودیت سرور
+
+const debouncedUpdateCartItemQuantity = debounce(async (itemId, newQuantity) => {
+    if (window.cartManager) {
+        await window.cartManager.updateItemQuantity(itemId, newQuantity);
+    } else {
+        console.error('CartManager not available to update item quantity.');
+    }
+}, 400); // 400 میلی‌ثانیه debounce delay
+
 // Event listener سراسری برای مدیریت کلیک‌ها
 document.addEventListener('click', function(event) {
     // بررسی برای دکمه‌های "افزودن به سبد خرید"
@@ -475,11 +494,11 @@ document.addEventListener('click', function(event) {
         const productId = addBtn.getAttribute('data-product-id');
         const quantity = parseInt(addBtn.getAttribute('data-quantity')) || 1;
         
-        if (productId && window.cartManager) {
+        if (productId) { // CartManager از طریق debouncedAddCartItem بررسی می‌شود
             console.log(`Add to cart clicked for product ID: ${productId}, quantity: ${quantity}`);
-            window.cartManager.addItem(productId, quantity);
+            debouncedAddCartItem(productId, quantity); // استفاده از نسخه debounce شده
         } else {
-            console.error('Product ID or CartManager not available for add to cart.');
+            console.error('Product ID not available for add to cart.');
         }
         return;
     }
@@ -512,19 +531,21 @@ document.addEventListener('click', function(event) {
         // اگر تعداد جدید 0 است، درخواست حذف آیتم را ارسال کنید
         if (newQuantity === 0) {
             if (window.cartManager) {
-                window.cartManager.removeItem(itemId);
+                // برای حذف، debounce اعمال نمی‌کنیم تا عملیات فوری باشد
+                window.cartManager.removeItem(itemId); 
             } else {
                 console.error('CartManager not available to remove item.');
             }
             return; 
         }
         
-        // آپدیت server از طریق CartManager
-        if (window.cartManager) {
-            window.cartManager.updateItemQuantity(itemId, newQuantity);
-        } else {
-            console.error('CartManager not available to update item quantity.');
-        }
+        // آپدیت UI بلافاصله برای پاسخگویی بهتر
+        quantitySpan.textContent = newQuantity;
+        quantitySpan.setAttribute('data-quantity', newQuantity);
+        
+        // آپدیت server از طریق CartManager با debounce
+        debouncedUpdateCartItemQuantity(itemId, newQuantity); // استفاده از نسخه debounce شده
+        
         return;
     }
 
@@ -537,6 +558,7 @@ document.addEventListener('click', function(event) {
         if (cartItemId) {
             console.log('Remove button clicked for item:', cartItemId);
             if (window.cartManager) {
+                // برای حذف، debounce اعمال نمی‌کنیم تا عملیات فوری باشد
                 window.cartManager.removeItem(cartItemId);
             } else {
                 console.error('CartManager not available to remove item.');

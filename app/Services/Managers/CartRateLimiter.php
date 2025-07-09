@@ -1,5 +1,5 @@
 <?php
-// File: app/Services/Managers/CartRateLimiter.php (این کامنت به اینجا منتقل شد)
+
 namespace App\Services\Managers;
 
 use App\Models\User;
@@ -13,7 +13,9 @@ class CartRateLimiter
 
     public function __construct()
     {
-        $this->cooldownSeconds = config('cart.rate_limit_cooldown', 2);
+        // مقدار cooldownSeconds را به 0.5 ثانیه تغییر دهید
+        // Change the cooldownSeconds value to 0.5 seconds
+        $this->cooldownSeconds = config('cart.rate_limit_cooldown', 0.5); // مقدار پیش‌فرض را به 0.5 تغییر دادیم
     }
 
     /**
@@ -37,6 +39,12 @@ class CartRateLimiter
             Log::warning('Rate limit exceeded for cart operation', ['key' => $key, 'available_in' => $availableIn]);
             throw new CartOperationException('لطفاً کمی صبر کنید و دوباره تلاش کنید. درخواست‌های شما بیش از حد مجاز است. (' . $availableIn . ' ثانیه)', 429); // Too Many Requests
         }
+        // نکته: برای بهبود تجربه کاربری و جلوگیری از رسیدن به محدودیت نرخ در سمت سرور،
+        // توصیه می‌شود در سمت فرانت‌اند (جاوا اسکریپت) از مکانیزم‌های debounce یا throttle
+        // برای فراخوانی‌های API مربوط به سبد خرید استفاده کنید.
+        // Note: To improve user experience and prevent hitting server-side rate limits,
+        // it is recommended to use debounce or throttle mechanisms in the frontend (JavaScript)
+        // for cart-related API calls.
     }
 
     /**

@@ -9,7 +9,7 @@ let DOM = {}; // Object to store cached DOM elements
  * @param {number} delay - تأخیر بر حسب میلی‌ثانیه.
  * @returns {Function} - نسخه debounce شده تابع.
  */
-function debounce(func, delay) {
+export function debounce(func, delay) { // اضافه کردن 'export' در اینجا
     let timeout;
     return function(...args) {
         const context = this;
@@ -259,4 +259,3 @@ export function setupMiniCartActionButtons() {
         }
     });
 }
-
