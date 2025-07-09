@@ -7,10 +7,19 @@ use App\Models\Cart;
 use App\Models\Coupon;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use App\Services\Responses\CartOperationResponse; // اضافه شده: برای استفاده از CartOperationResponse
 
 class CouponService implements CouponServiceContract
 {
-    public function applyCoupon(Cart $cart, string $couponCode): bool
+    /**
+     * Apply a coupon to the cart.
+     * اعمال یک کد تخفیف به سبد خرید.
+     *
+     * @param Cart $cart The cart to apply the coupon to.
+     * @param string $couponCode The code of the coupon to apply.
+     * @return CartOperationResponse A response object indicating success or failure, and any relevant data.
+     */
+    public function applyCoupon(Cart $cart, string $couponCode): CartOperationResponse
     {
         $coupon = Coupon::where('code', $couponCode)
             ->where('is_active', true)
@@ -25,7 +34,7 @@ class CouponService implements CouponServiceContract
                 'coupon_code' => $couponCode,
                 'cart_id' => $cart->id,
             ]);
-            return false;
+            return CartOperationResponse::fail('کد تخفیف نامعتبر یا منقضی شده است.', 400);
         }
 
         if ($cart->coupon_id === $coupon->id) {
@@ -33,7 +42,7 @@ class CouponService implements CouponServiceContract
                 'coupon_code' => $couponCode,
                 'cart_id' => $cart->id,
             ]);
-            return true;
+            return CartOperationResponse::success('کد تخفیف قبلاً اعمال شده است.', ['coupon_id' => $coupon->id]);
         }
 
         $discountAmount = $this->calculateDiscount($cart, $coupon);
@@ -46,16 +55,23 @@ class CouponService implements CouponServiceContract
             'cart_id' => $cart->id,
             'discount_amount' => $discountAmount,
         ]);
-        return true;
+        return CartOperationResponse::success('کد تخفیف با موفقیت اعمال شد.', ['coupon_id' => $coupon->id, 'discount_amount' => $discountAmount]);
     }
 
-    public function removeCoupon(Cart $cart): bool
+    /**
+     * Remove a coupon from the cart.
+     * حذف یک کد تخفیف از سبد خرید.
+     *
+     * @param Cart $cart The cart to remove the coupon from.
+     * @return CartOperationResponse A response object indicating success or failure, and any relevant data.
+     */
+    public function removeCoupon(Cart $cart): CartOperationResponse
     {
         if (!$cart->coupon_id) {
             Log::info('No coupon applied to cart to remove.', [
                 'cart_id' => $cart->id,
             ]);
-            return false;
+            return CartOperationResponse::fail('هیچ کد تخفیفی برای حذف از سبد خرید اعمال نشده است.', 400);
         }
 
         $cart->coupon_id = null;
@@ -65,9 +81,17 @@ class CouponService implements CouponServiceContract
         Log::info('Coupon removed successfully.', [
             'cart_id' => $cart->id,
         ]);
-        return true;
+        return CartOperationResponse::success('کد تخفیف با موفقیت حذف شد.');
     }
 
+    /**
+     * Calculate the discount amount for a given cart and coupon.
+     * مقدار تخفیف را برای سبد خرید و کوپن مشخص شده محاسبه می‌کند.
+     *
+     * @param Cart $cart The cart for which to calculate the discount.
+     * @param Coupon $coupon The coupon to use for calculation.
+     * @return float The calculated discount amount.
+     */
     public function calculateDiscount(Cart $cart, Coupon $coupon): float
     {
         $cart->loadMissing(['items.product', 'items.productVariant']);
@@ -94,6 +118,8 @@ class CouponService implements CouponServiceContract
             $discount = $coupon->value;
         }
 
-        return min($discount, $subtotal);
+        // Ensure discount does not exceed subtotal
+        return max(0, min($discount, $subtotal));
     }
 }
+

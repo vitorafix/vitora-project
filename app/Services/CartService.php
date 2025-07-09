@@ -23,7 +23,7 @@ use App\Services\Contracts\CartCleanupServiceInterface;
 use App\Services\Contracts\CartItemManagementServiceInterface;
 use App\Services\Contracts\CartBulkUpdateServiceInterface;
 use App\Services\Contracts\CartClearServiceInterface;
-use App\Contracts\Services\CouponService;
+use App\Contracts\Services\CouponService; // اطمینان حاصل کنید که اینترفیس صحیح ایمپورت شده است
 use App\Services\CartCalculationService;
 
 // Managers
@@ -626,15 +626,20 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
     {
         try {
             DB::beginTransaction();
+            // واگذاری اعمال کوپن به CouponService
             $response = $this->couponService->applyCoupon($cart, $couponCode);
-            if ($response->isSuccessful()) {
-                $cart->save();
-                DB::commit();
+
+            if ($response->isSuccess()) {
+                // اگر اعمال کوپن موفقیت‌آمیز بود، کش را پاک کرده
+                // و CartOperationResponse را با مجموع‌های جدید سبد خرید برمی‌گردانیم.
                 $this->cacheManager->clearCache($cart->user, $cart->session_id);
-                // Use CartCalculationService for totals
-                // از CartCalculationService برای مجموع‌ها استفاده کنید.
-                return CartOperationResponse::success('کد تخفیف با موفقیت اعمال شد.', ['cartTotals' => $this->cartCalculationService->calculateCartTotals($cart)]);
+                return CartOperationResponse::success(
+                    $response->getMessage(),
+                    ['cartTotals' => $this->cartCalculationService->calculateCartTotals($cart->fresh())]
+                );
             }
+
+            // اگر اعمال کوپن ناموفق بود، تراکنش را Rollback کرده و پاسخ CouponService را برمی‌گردانیم.
             DB::rollBack();
             return $response;
         } catch (\Throwable $e) {
@@ -655,14 +660,22 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
     {
         try {
             DB::beginTransaction();
-            $cart->coupon_id = null;
-            $cart->discount_amount = 0;
-            $cart->save();
-            DB::commit();
-            $this->cacheManager->clearCache($cart->user, $cart->session_id);
-            // Use CartCalculationService for totals
-            // از CartCalculationService برای مجموع‌ها استفاده کنید.
-            return CartOperationResponse::success('کد تخفیف با موفقیت حذف شد.', ['cartTotals' => $this->cartCalculationService->calculateCartTotals($cart)]);
+            // واگذاری حذف کوپن به CouponService
+            $response = $this->couponService->removeCoupon($cart);
+
+            if ($response->isSuccess()) {
+                // اگر حذف کوپن موفقیت‌آمیز بود، کش را پاک کرده
+                // و CartOperationResponse را با مجموع‌های جدید سبد خرید برمی‌گردانیم.
+                $this->cacheManager->clearCache($cart->user, $cart->session_id);
+                return CartOperationResponse::success(
+                    $response->getMessage(),
+                    ['cartTotals' => $this->cartCalculationService->calculateCartTotals($cart->fresh())]
+                );
+            }
+
+            // اگر حذف کوپن ناموفق بود، تراکنش را Rollback کرده و پاسخ CouponService را برمی‌گردانیم.
+            DB::rollBack();
+            return $response;
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('Error removing coupon in CartService: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
@@ -832,3 +845,4 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         }
     }
 }
+
