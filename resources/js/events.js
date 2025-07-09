@@ -4,6 +4,21 @@
 let DOM = {}; // Object to store cached DOM elements
 
 /**
+ * تابع debounce برای محدود کردن تعداد فراخوانی یک تابع.
+ * @param {Function} func - تابعی که باید debounce شود.
+ * @param {number} delay - تأخیر بر حسب میلی‌ثانیه.
+ * @returns {Function} - نسخه debounce شده تابع.
+ */
+function debounce(func, delay) {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), delay);
+    };
+}
+
+/**
  * کش کردن عناصر DOM مورد نیاز برای عملیات سبد خرید.
  * این تابع باید یک بار پس از بارگذاری کامل DOM فراخوانی شود.
  * @returns {boolean} true اگر عناصر اصلی سبد خرید (مانند کانتینر آیتم‌ها، پیام خالی بودن، خلاصه و قیمت کل) یافت شوند، در غیر این صورت false.
@@ -24,162 +39,224 @@ export function initializeDOMCache() {
     DOM.cartSummary = document.getElementById('cart-summary');
     DOM.cartTotalPrice = document.getElementById('cart-total-price'); // این عنصر در cart.blade.php اضافه شده است
 
-    // Add to Cart Buttons (این خط دیگر نیازی به querySelectorAll ندارد زیرا از delegation استفاده می‌کنیم)
-    // DOM.addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
-
-    // بررسی وجود عناصر حیاتی سبد خرید اصلی
-    const hasMainCartElements = DOM.cartItemsContainer && DOM.cartEmptyMessage && DOM.cartSummary && DOM.cartTotalPrice;
-    if (!hasMainCartElements) {
-        console.warn('One or more main cart DOM elements not found. Main cart functionality may be limited on this page.');
-    }
-    return hasMainCartElements;
+    // بررسی وجود عناصر اصلی سبد خرید
+    return !!(DOM.cartItemsContainer && DOM.cartEmptyMessage && DOM.cartSummary && DOM.cartTotalPrice);
 }
 
 /**
- * تنظیم event listenerها برای دکمه‌های "افزودن به سبد خرید" با استفاده از Event Delegation.
- * این تابع رویداد کلیک را به document.body واگذار می‌کند تا دکمه‌های دینامیک نیز مدیریت شوند.
+ * بازگرداندن آبجکت کش شده DOM.
+ * @returns {object} آبجکت DOM.
+ */
+export function getDOM() {
+    return DOM;
+}
+
+/**
+ * تنظیم Event Listener برای دکمه‌های "افزودن به سبد خرید" در صفحات محصولات.
+ * این تابع باید پس از بارگذاری محصولات فراخوانی شود.
  */
 export function setupAddToCartButtons() {
-    // به جای DOM.addToCartButtons، مستقیماً به document.body گوش می‌دهیم
+    // از event delegation استفاده می‌کنیم تا به دکمه‌های پویا هم اعمال شود
     document.body.addEventListener('click', async (event) => {
-        const target = event.target;
-        // بررسی می‌کنیم که آیا عنصر کلیک شده یا یکی از والد‌های آن، کلاس 'add-to-cart-btn' را دارد
-        if (target.classList.contains('add-to-cart-btn')) {
-            event.preventDefault(); // جلوگیری از عملکرد پیش‌فرض لینک/دکمه اگر وجود داشته باشد
-            const productId = target.dataset.productId;
-            if (productId) {
-                console.log(`Add to cart clicked for product ID: ${productId}`);
-                if (typeof window.cartManager !== 'undefined' && window.cartManager.addItem) {
-                    await window.cartManager.addItem(productId, 1);
-                } else {
-                    console.error('CartManager instance not available or addItem method missing.');
-                    if (typeof window.showMessage === 'function') {
-                        window.showMessage('خطا: سیستم سبد خرید آماده نیست.', 'error');
-                    }
-                }
-            }
-        }
-    });
-    console.log('Setup event listener for "Add to Cart" buttons (via delegation on document.body).');
-    // هشدار 'No "Add to Cart" buttons found' دیگر نیازی نیست زیرا همیشه به body گوش می‌دهیم.
-}
+        const addToCartBtn = event.target.closest('.add-to-cart-btn');
+        if (addToCartBtn) {
+            event.preventDefault();
+            const productId = addToCartBtn.getAttribute('data-product-id');
+            const productTitle = addToCartBtn.getAttribute('data-product-title');
+            const productPrice = addToCartBtn.getAttribute('data-product-price'); // اگر نیاز بود
+            const quantity = 1; // مقدار پیش‌فرض
 
-/**
- * تنظیم event listenerها برای دکمه‌های افزایش/کاهش تعداد در سبد خرید اصلی.
- */
-export function setupMainCartQuantityButtons() {
-    // فقط در صورتی که کانتینر اصلی سبد خرید وجود داشته باشد، راه‌اندازی شود
-    if (!DOM.cartItemsContainer) {
-        console.warn('Main cart items container not found. Skipping quantity button setup.');
-        return;
-    }
-
-    // واگذاری رویداد برای دکمه‌های تعداد در سبد خرید اصلی
-    DOM.cartItemsContainer.addEventListener('click', async (event) => {
-        const target = event.target;
-        if (target.classList.contains('quantity-btn')) {
-            const itemElement = target.closest('[data-product-id]');
-            if (!itemElement) {
-                console.error('Could not find parent item element for quantity button.');
-                return;
-            }
-
-            const productId = itemElement.dataset.productId;
-            if (!productId) {
-                console.error('Product ID not found for cart item.');
-                return;
-            }
-
-            // فرض بر این است که یک نمونه سراسری از cartManager یا راهی برای دسترسی به آن وجود دارد
-            if (typeof window.cartManager === 'undefined' || !window.cartManager.updateItemQuantity) {
-                console.error('CartManager instance not available or updateItemQuantity method missing.');
+            if (typeof window.cartManager === 'undefined') {
+                console.error('CartManager is not defined. Cannot add item to cart.');
                 if (typeof window.showMessage === 'function') {
                     window.showMessage('خطا: سیستم سبد خرید آماده نیست.', 'error');
                 }
                 return;
             }
 
-            let currentQuantity = parseInt(itemElement.querySelector('.item-quantity').dataset.quantity, 10);
-            let newQuantity;
-
-            if (target.classList.contains('plus-btn')) {
-                newQuantity = currentQuantity + 1;
-            } else if (target.classList.contains('minus-btn')) {
-                newQuantity = currentQuantity - 1;
-            } else {
-                return; // دکمه تعداد نیست
+            // نمایش وضعیت بارگذاری
+            if (typeof window.showMessage === 'function') {
+                window.showMessage(`در حال افزودن ${productTitle} به سبد خرید...`, 'info', 1500); // نمایش موقت
             }
 
-            if (newQuantity < 0) newQuantity = 0; // جلوگیری از تعداد منفی
-
-            await window.cartManager.updateItemQuantity(productId, newQuantity);
+            try {
+                await window.cartManager.addItem(productId, quantity);
+                // پیام موفقیت و به‌روزرسانی UI توسط CartManager انجام می‌شود
+            } catch (error) {
+                console.error('Error adding item to cart:', error);
+                // پیام خطا توسط CartManager یا تابع showMessage مدیریت می‌شود
+            }
         }
     });
-    console.log('Setup event listeners for main cart quantity buttons (via delegation).');
 }
 
 /**
- * تنظیم event listener برای دکمه باز و بسته کردن مینی‌کارت.
+ * تنظیم Event Listener برای دکمه‌های افزایش/کاهش تعداد در سبد خرید اصلی.
+ * این تابع باید پس از رندر شدن آیتم‌های سبد خرید اصلی فراخوانی شود.
  */
-export function setupMiniCartToggle() {
-    if (DOM.miniCartToggle && DOM.miniCartDropdown) {
-        DOM.miniCartToggle.addEventListener('click', (event) => {
-            // event.preventDefault(); // این خط حذف شد تا لینک سبد خرید عمل ناوبری خود را انجام دهد
-            DOM.miniCartDropdown.classList.toggle('active');
-        });
-
-        // بستن مینی‌کارت با کلیک در بیرون
-        document.addEventListener('click', (event) => {
-            // اطمینان حاصل کنید که کلیک روی خود دکمه toggle یا داخل dropdown نیست
-            if (!DOM.miniCartToggle.contains(event.target) && !DOM.miniCartDropdown.contains(event.target)) {
-                DOM.miniCartDropdown.classList.remove('active');
-            }
-        });
-        console.log('Setup event listener for mini cart toggle.');
-    } else {
-        console.warn('Mini cart toggle or dropdown not found. Skipping mini cart toggle setup.');
-    }
-}
-
-/**
- * تنظیم event listenerها برای دکمه‌های عملیاتی مینی‌کارت (مثلاً حذف آیتم).
- */
-export function setupMiniCartActionButtons() {
-    if (!DOM.miniCartItemsContainer) {
-        console.warn('Mini cart items container not found. Skipping mini cart action button setup.');
+export function setupMainCartQuantityButtons() {
+    const cartItemsContainer = DOM.cartItemsContainer;
+    if (!cartItemsContainer) {
+        console.warn('Main cart items container not found for quantity buttons setup.');
         return;
     }
 
-    // واگذاری رویداد برای دکمه‌های عملیاتی در مینی‌کارت
-    DOM.miniCartItemsContainer.addEventListener('click', async (event) => {
+    // استفاده از event delegation برای مدیریت کلیک‌ها روی دکمه‌های افزایش/کاهش و حذف
+    cartItemsContainer.addEventListener('click', async (event) => {
         const target = event.target;
-        if (target.classList.contains('remove-item-btn')) { // فرض بر وجود کلاسی برای دکمه‌های حذف
-            const itemElement = target.closest('[data-product-id]');
-            if (!itemElement) {
-                console.error('Could not find parent item element for remove button.');
-                return;
+        let cartItemId;
+        let currentQuantityElement;
+        let newQuantity;
+
+        // Debounced handler for quantity changes
+        const debouncedUpdateQuantity = debounce(async (itemId, quantity) => {
+            if (window.cartManager) {
+                await window.cartManager.updateItemQuantity(itemId, quantity);
+            } else {
+                console.error('CartManager not available to update item quantity.');
             }
-            const productId = itemElement.dataset.productId;
-            if (productId) {
-                // فرض بر این است که یک نمونه سراسری از cartManager یا راهی برای دسترسی به آن وجود دارد
-                if (typeof window.cartManager !== 'undefined' && window.cartManager.removeItem) {
-                    await window.cartManager.removeItem(productId);
+        }, 300); // 300ms debounce delay
+
+        // Handle increase quantity
+        if (target.matches('.increase-quantity-btn') || target.closest('.increase-quantity-btn')) {
+            event.preventDefault();
+            const btn = target.matches('.increase-quantity-btn') ? target : target.closest('.increase-quantity-btn');
+            cartItemId = btn.getAttribute('data-cart-item-id');
+            currentQuantityElement = btn.closest('.quantity-controls').querySelector('.item-quantity');
+            newQuantity = parseInt(currentQuantityElement.textContent) + 1;
+
+            if (newQuantity <= 0) return; // Prevent negative quantity
+
+            // Update UI immediately for responsiveness
+            currentQuantityElement.textContent = newQuantity;
+            updateSubtotalInUI(cartItemId, newQuantity);
+
+            debouncedUpdateQuantity(cartItemId, newQuantity);
+
+        }
+        // Handle decrease quantity
+        else if (target.matches('.decrease-quantity-btn') || target.closest('.decrease-quantity-btn')) {
+            event.preventDefault();
+            const btn = target.matches('.decrease-quantity-btn') ? target : target.closest('.decrease-quantity-btn');
+            cartItemId = btn.getAttribute('data-cart-item-id');
+            currentQuantityElement = btn.closest('.quantity-controls').querySelector('.item-quantity');
+            newQuantity = parseInt(currentQuantityElement.textContent) - 1;
+
+            if (newQuantity <= 0) {
+                // If quantity becomes 0, prompt for removal
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage('آیا از حذف این محصول اطمینان دارید؟', 'confirm', async () => {
+                        // User confirmed, proceed with removal
+                        if (window.cartManager) {
+                            await window.cartManager.removeItem(cartItemId);
+                        } else {
+                            console.error('CartManager not available to remove item.');
+                        }
+                    });
                 } else {
-                    console.error('CartManager instance not available or removeItem method missing.');
-                    if (typeof window.showMessage === 'function') {
-                        window.showMessage('خطا: سیستم سبد خرید آماده نیست.', 'error');
+                    // Fallback to native confirm if custom message box is not available
+                    if (confirm('آیا از حذف این محصول اطمینان دارید؟')) {
+                        if (window.cartManager) {
+                            await window.cartManager.removeItem(cartItemId);
+                        } else {
+                            console.error('CartManager not available to remove item.');
+                        }
+                    }
+                }
+                return; // Prevent further action for this click
+            }
+
+            // Update UI immediately for responsiveness
+            currentQuantityElement.textContent = newQuantity;
+            updateSubtotalInUI(cartItemId, newQuantity);
+
+            debouncedUpdateQuantity(cartItemId, newQuantity);
+        }
+        // Handle remove item button
+        else if (target.matches('.remove-item-btn') || target.closest('.remove-item-btn')) {
+            event.preventDefault();
+            const removeBtn = target.matches('.remove-item-btn') ? target : target.closest('.remove-item-btn');
+            cartItemId = removeBtn.getAttribute('data-cart-item-id');
+
+            if (cartItemId) {
+                console.log('Remove button clicked for item:', cartItemId);
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage('آیا از حذف این محصول اطمینان دارید؟', 'confirm', async () => {
+                        if (window.cartManager) {
+                            await window.cartManager.removeItem(cartItemId);
+                        } else {
+                            console.error('CartManager not available to remove item.');
+                        }
+                    });
+                } else {
+                    if (confirm('آیا از حذف این محصول اطمینان دارید؟')) {
+                        if (window.cartManager) {
+                            await window.cartManager.removeItem(cartItemId);
+                        } else {
+                            console.error('CartManager not available to remove item.');
+                        }
                     }
                 }
             }
         }
     });
-    console.log('Setup event listeners for mini cart action buttons (via delegation).');
 }
 
 /**
- * دسترسی به عناصر DOM کش شده.
- * @returns {Object} یک شی حاوی عناصر DOM کش شده.
+ * به‌روزرسانی فوری زیرمجموع یک آیتم در UI.
+ * @param {string} cartItemId - شناسه آیتم سبد خرید.
+ * @param {number} newQuantity - تعداد جدید آیتم.
  */
-export function getDOM() {
-    return DOM;
+function updateSubtotalInUI(cartItemId, newQuantity) {
+    const cartItemElement = document.querySelector(`[data-cart-item-id="${cartItemId}"]`).closest('.cart-item-card');
+    if (cartItemElement) {
+        const itemPriceElement = cartItemElement.querySelector('.item-price');
+        const subtotalElement = cartItemElement.querySelector('.item-subtotal');
+        if (itemPriceElement && subtotalElement) {
+            const itemPrice = parseFloat(itemPriceElement.getAttribute('data-price'));
+            const newSubtotal = newQuantity * itemPrice;
+            subtotalElement.textContent = newSubtotal.toLocaleString('fa-IR') + ' تومان';
+            subtotalElement.setAttribute('data-subtotal', newSubtotal);
+            console.log(`Subtotal updated to: ${newSubtotal} for item ${cartItemId}`);
+        }
+    }
 }
+
+/**
+ * تنظیم Event Listener برای دکمه باز و بسته کردن مینی سبد خرید.
+ */
+export function setupMiniCartToggle() {
+    if (DOM.miniCartToggle && DOM.miniCartDropdown) {
+        DOM.miniCartToggle.addEventListener('click', (event) => {
+            event.stopPropagation(); // جلوگیری از بسته شدن فوری در صورت کلیک روی دکمه
+            DOM.miniCartDropdown.classList.toggle('hidden');
+        });
+
+        // بستن مینی سبد خرید با کلیک در هر جای دیگر صفحه
+        document.addEventListener('click', (event) => {
+            if (!DOM.miniCartDropdown.contains(event.target) && !DOM.miniCartToggle.contains(event.target)) {
+                DOM.miniCartDropdown.classList.add('hidden');
+            }
+        });
+    }
+}
+
+/**
+ * تنظیم Event Listener برای دکمه‌های اقدام در مینی سبد خرید (مانند "مشاهده سبد" و "تکمیل سفارش").
+ */
+export function setupMiniCartActionButtons() {
+    const miniCartDropdown = DOM.miniCartDropdown;
+    if (!miniCartDropdown) {
+        console.warn('Mini cart dropdown not found for action buttons setup.');
+        return;
+    }
+
+    miniCartDropdown.addEventListener('click', (event) => {
+        if (event.target.matches('#view-cart-btn')) {
+            window.location.href = '/cart'; // مسیر صفحه سبد خرید
+        } else if (event.target.matches('#checkout-btn')) {
+            window.location.href = '/checkout'; // مسیر صفحه تکمیل سفارش
+        }
+    });
+}
+

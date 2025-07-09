@@ -125,8 +125,9 @@ class CartController extends Controller
                 'quantity' => 'nullable|integer|min:1',
             ]);
 
-            // دریافت quantity از بدنه درخواست، با مقدار پیش‌فرض 1
             $quantity = $request->input('quantity', 1);
+
+            // dd($product, $quantity);  // <-- دستور dd() برای دیباگ اضافه شد
 
             // دریافت یا ایجاد سبد خرید
             $currentCart = $this->cartService->getOrCreateCart(Auth::user(), Session::getId());
@@ -217,10 +218,14 @@ class CartController extends Controller
             $response = $this->cartService->updateCartItemQuantity($cartItem, $newQuantity, $user, $sessionId);
 
             if ($response->isSuccess()) {
-                // `cartItem->cart->fresh()` فرض می‌کند که مدل `CartItem` یک رابطه `belongsTo` به مدل `Cart` دارد.
-                // و مدل `Cart` نیز یک رابطه `hasMany` به `CartItem` دارد.
-                // اگر این روابط به درستی تعریف نشده باشند، این خط ممکن است خطا دهد.
-                $cartTotals = $this->cartService->calculateCartTotals($cartItem->cart->fresh());
+                // دریافت سبد خرید مرتبط با آیتم به صورت صریح برای محاسبه مجموع کل‌ها
+                // این کار از خطاهای احتمالی در دسترسی به رابطه 'cart' جلوگیری می‌کند.
+                $cart = $this->cartService->getCartById($cartItem->cart_id, $user, $sessionId);
+                if (!$cart) {
+                    throw new CartOperationException('سبد خرید مرتبط با آیتم یافت نشد.', 404);
+                }
+                $cartTotals = $this->cartService->calculateCartTotals($cart);
+
                 return response()->json([
                     'success' => true,
                     'message' => 'تعداد آیتم سبد خرید با موفقیت به‌روزرسانی شد.',

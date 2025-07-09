@@ -4,9 +4,9 @@ namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Cache\RateLimiting\Limit; // اضافه شده
-use Illuminate\Support\Facades\RateLimiter; // اضافه شده
-use Illuminate\Http\Request; // اضافه شده
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Http\Request;
 
 class RouteServiceProvider extends ServiceProvider
 {
@@ -24,7 +24,7 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->configureRateLimiting(); // اضافه شده: فراخوانی متد تعریف Rate Limiting
+        $this->configureRateLimiting();
 
         $this->routes(function () {
             Route::middleware('web')
@@ -43,12 +43,16 @@ class RouteServiceProvider extends ServiceProvider
      */
     protected function configureRateLimiting(): void
     {
-        // تعریف Rate Limiter برای عملیات سبد خرید (افزودن)
-        // 10 درخواست در هر دقیقه به ازای هر کاربر یا IP
-        RateLimiter::for('cart_add', function (Request $request) {
-            return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
+        // تعریف Rate Limiter برای عملیات افزودن به سبد خرید
+        // تعداد درخواست‌ها در هر دقیقه به 500 افزایش یافت تا کاربر بتواند تند تند کالا اضافه کند.
+        RateLimiter::for('add_to_cart', function (Request $request) {
+            return Limit::perMinute(500)->by($request->user()?->id ?: $request->ip());
         });
 
-        // می‌توانید Rate Limiterهای دیگری را در اینجا تعریف کنید
+        // تعریف Rate Limiter برای عملیات به‌روزرسانی مقدار سبد خرید
+        // تعداد درخواست‌ها در هر دقیقه به 600 افزایش یافت.
+        RateLimiter::for('update_cart', function (Request $request) {
+            return Limit::perMinute(600)->by($request->user()?->id ?: $request->ip());
+        });
     }
 }

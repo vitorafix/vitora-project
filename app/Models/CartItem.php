@@ -10,6 +10,34 @@ class CartItem extends Model
     use HasFactory;
 
     /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'cart_items'; // اطمینان از نام جدول
+
+    /**
+     * The primary key for the model.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id'; // تعریف صریح کلید اصلی
+
+    /**
+     * Indicates if the IDs are auto-incrementing.
+     *
+     * @var bool
+     */
+    public $incrementing = true; // تعریف صریح افزایشی بودن ID
+
+    /**
+     * The "type" of the auto-incrementing ID.
+     *
+     * @var string
+     */
+    protected $keyType = 'int'; // تعریف صریح نوع کلید اصلی
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
@@ -20,6 +48,7 @@ class CartItem extends Model
         'quantity',
         'price',
         'product_variant_id', // Added: To store the associated product variant
+        'user_id', // اضافه شد: برای ارتباط با کاربر (اگر در جدول cart_items وجود دارد)
     ];
 
     /**
@@ -51,5 +80,14 @@ class CartItem extends Model
     {
         return $this->belongsTo(ProductVariant::class);
     }
-}
 
+    /**
+     * Get the user that owns the cart item.
+     *
+     * یک آیتم سبد خرید می‌تواند به یک کاربر مرتبط باشد (Many-to-One relationship).
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+}
