@@ -10,10 +10,7 @@ import { setCartLoadingState, renderMainCart, renderMiniCartDetails } from './re
 // این توابع مسئول کش کردن عناصر DOM و تنظیم Event Listenerها هستند.
 import {
     initializeDOMCache,
-    // setupAddToCartButtons, // حذف شد: مدیریت توسط event listener سراسری در پایین
-    // setupMainCartQuantityButtons, // حذف شد: مدیریت توسط event listener سراسری در پایین
     setupMiniCartToggle,
-    // setupMiniCartActionButtons, // حذف شد: مدیریت توسط event listener سراسری در پایین
     getDOM,
     debounce // اضافه کردن تابع debounce از events.js
 } from './events.js';
@@ -64,10 +61,8 @@ function updateQuantityInUI(itemId, newQuantity, itemPrice) {
         }
     }
     
-    // پس از به‌روزرسانی آیتم‌های تکی، یک رندر کامل سبد خرید را برای اطمینان از به‌روزرسانی مجموع کل‌ها فعال کنید.
-    if (window.cartManager) {
-        window.cartManager.loadAndRenderCart(); 
-    }
+    // این خط قبلاً حذف شده بود و نیازی به بازگرداندن آن نیست.
+    // هدف این تابع فقط آپدیت فوری UI است.
 }
 
 /**
@@ -163,6 +158,9 @@ class CartManager {
         // پرچم جدید برای ردیابی وجود عناصر اصلی سبد خرید (مانند صفحه cart.blade.php)
         this.hasMainCartElements = false; 
         this.observer = null; // برای MutationObserver
+        
+        // Broadcast Channel برای همگام‌سازی بین تب‌ها
+        this.broadcastChannel = new BroadcastChannel('e-commerce-cart-sync');
         console.log('CartManager initialized.');
 
         // کش کردن عناصر DOM اصلی سبد خرید در سازنده
@@ -195,8 +193,7 @@ class CartManager {
             console.log('CartManager already initialized, skipping init...');
             return;
         }
-        console.log('Initializing CartManager...');
-
+        console.log('Initializing CartManager...'); // Added log
         this.validateDOM(); // اعتبارسنجی اولیه DOM
 
         this.hasMainCartElements = initializeDOMCache(); // کش DOM را راه‌اندازی کنید و عناصر حیاتی سبد خرید اصلی را بررسی کنید
@@ -210,11 +207,24 @@ class CartManager {
         // محتویات سبد خرید را بارگذاری و رندر کنید
         await this.loadAndRenderCart();
 
+        // اضافه کردن شنونده برای Broadcast Channel
+        this.broadcastChannel.onmessage = (event) => {
+            // اگر پیام از این تب ارسال نشده باشد و نوع آن 'cart_updated' باشد، سبد خرید را دوباره بارگذاری کنید.
+            if (event.data && event.data.type === 'cart_updated' && event.data.senderId !== this.instanceId) {
+                console.log('Received cart_updated message from another tab. Reloading cart...');
+                this.loadAndRenderCart();
+            }
+        };
+
+        // یک شناسه منحصر به فرد برای این تب/اینستنس ایجاد کنید تا پیام‌های خود را نادیده بگیرید
+        this.instanceId = Date.now() + Math.random().toString(36).substring(2, 9);
+
+
         // اضافه کردن لاگ‌های دیباگینگ در اینجا، پس از تلاش برای مقداردهی اولیه همه چیز
         debugCartState(); // استفاده از تابع سراسری debugCartState
 
         isInitialized = true; // تنظیم فلگ initialized
-        console.log('CartManager initialization complete.');
+        console.log('CartManager initialization complete.'); // Added log
     }
 
     /**
@@ -243,6 +253,7 @@ class CartManager {
      * این متد می‌تواند پس از هر عملیات تغییر سبد (افزودن، حذف، به‌روزرسانی) فراخوانی شود.
      */
     async loadAndRenderCart() {
+        console.log('loadAndRenderCart called. Stack trace:', new Error().stack); // Added stack trace log
         setCartLoadingState(true); 
         try {
             const data = await fetchCartContents();
@@ -271,6 +282,10 @@ class CartManager {
             }
 
             this.notify('cartChanged', this.cartData); 
+
+            // این خط حذف شد تا از حلقه‌های بازخورد جلوگیری شود.
+            // this.broadcastChannel.postMessage({ type: 'cart_updated', senderId: this.instanceId });
+
         } catch (error) {
             console.error('Failed to load and render cart:', error);
             if (typeof window.showMessage === 'function') {
@@ -322,6 +337,8 @@ class CartManager {
                     if (typeof window.showMessage === 'function') {
                         window.showMessage('محصول به سبد خرید اضافه شد.', 'success');
                     }
+                    // ارسال پیام به Broadcast Channel پس از افزودن موفقیت‌آمیز و رندر کامل
+                    this.broadcastChannel.postMessage({ type: 'cart_updated', senderId: this.instanceId });
                 } else {
                     throw new Error(response.message || 'خطا در افزودن محصول به سبد خرید.');
                 }
@@ -346,11 +363,44 @@ class CartManager {
         try {
             const response = await updateCartItem(cartItemId, newQuantity); 
             if (response.success) {
-                // یافتن قیمت محصول برای به‌روزرسانی صحیح UI
+                // یافتن آیتم در cartData محلی و به‌روزرسانی تعداد آن
+                const itemIndex = this.cartData.items.findIndex(item => item.cart_item_id == cartItemId);
+                if (itemIndex > -1) {
+                    this.cartData.items[itemIndex].quantity = newQuantity;
+                    // همچنین subtotal و سایر ویژگی‌های مشتق شده را برای سازگاری محلی به‌روزرسانی کنید
+                    // فرض بر این است که product_price روی آیتم موجود است
+                    this.cartData.items[itemIndex].subtotal = this.cartData.items[itemIndex].product_price * newQuantity;
+                }
+
+                // آپدیت UI بلافاصله برای پاسخگویی بهتر
                 const itemData = this.cartData.items.find(item => item.cart_item_id == cartItemId);
                 const itemPrice = itemData ? itemData.product_price : 0;
+                updateQuantityInUI(cartItemId, newQuantity, itemPrice); 
                 
-                updateQuantityInUI(cartItemId, newQuantity, itemPrice); // آپدیت فوری UI
+                // مجموع کل‌ها را به صورت محلی دوباره محاسبه کنید تا تجربه روان‌تری داشته باشید
+                this.cartData.totalQuantity = this.cartData.items.reduce((sum, item) => sum + item.quantity, 0);
+                this.cartData.totalPrice = this.cartData.items.reduce((sum, item) => sum + item.subtotal, 0);
+
+                // رندر مجدد فقط جزئیات مینی‌کارت و مجموع کل‌های سبد خرید اصلی
+                // این کار از فراخوانی کامل loadAndRenderCart() جلوگیری می‌کند
+                renderMiniCartDetails(this.cartData.items, this.cartData.totalQuantity, this.cartData.totalPrice);
+                if (this.DOM.cartTotalPrice) {
+                    this.DOM.cartTotalPrice.textContent = (this.cartData.totalPrice ?? 0).toLocaleString('fa-IR') + ' تومان';
+                }
+                const cartSubtotalElement = document.getElementById('cart-subtotal-price'); 
+                if (cartSubtotalElement) {
+                    cartSubtotalElement.textContent = (this.cartData.cartTotals.subtotal ?? 0).toLocaleString('fa-IR') + ' تومان';
+                }
+                const cartDiscountElement = document.getElementById('cart-discount-price'); 
+                if (cartDiscountElement) {
+                    cartDiscountElement.textContent = (this.cartData.cartTotals.discount ?? 0).toLocaleString('fa-IR') + ' تومان';
+                }
+                // اگر عناصر دیگری برای نمایش shipping و tax دارید، اینجا به‌روزرسانی کنید.
+
+                // به آبزرورها اطلاع دهید و تغییر را Broadcast کنید
+                this.notify('cartChanged', this.cartData); 
+                this.broadcastChannel.postMessage({ type: 'cart_updated', senderId: this.instanceId }); // Broadcast the change
+
                 if (typeof window.showMessage === 'function') {
                     window.showMessage('تعداد محصول به‌روزرسانی شد.', 'success');
                 }
@@ -380,6 +430,8 @@ class CartManager {
                 if (typeof window.showMessage === 'function') {
                     window.showMessage('محصول از سبد خرید حذف شد.', 'success');
                 }
+                // ارسال پیام به Broadcast Channel پس از حذف موفقیت‌آمیز و رندر کامل
+                this.broadcastChannel.postMessage({ type: 'cart_updated', senderId: this.instanceId });
             } else {
                 throw new Error(response.message || 'خطا در حذف محصول از سبد خرید.');
             }
@@ -470,6 +522,7 @@ class CartManager {
 // تعریف debouncedAddCartItem و debouncedUpdateCartItem در خارج از event listener
 // تا بتوانند وضعیت داخلی debounce را حفظ کنند.
 const debouncedAddCartItem = debounce(async (productId, quantity) => {
+    console.log(`Debounced add triggered for productId: ${productId}, quantity: ${quantity}`); // Added log
     if (window.cartManager) {
         await window.cartManager.addItem(productId, quantity);
     } else {
@@ -478,6 +531,7 @@ const debouncedAddCartItem = debounce(async (productId, quantity) => {
 }, 400); // 400 میلی‌ثانیه debounce delay، کمتر از 0.5 ثانیه محدودیت سرور
 
 const debouncedUpdateCartItemQuantity = debounce(async (itemId, newQuantity) => {
+    console.log(`Debounced update triggered for itemId: ${itemId}, newQuantity: ${newQuantity}`); // Added log
     if (window.cartManager) {
         await window.cartManager.updateItemQuantity(itemId, newQuantity);
     } else {
