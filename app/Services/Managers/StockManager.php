@@ -1,21 +1,20 @@
 <?php
-// File: app/Services/Managers/StockManager.php (این کامنت به اینجا منتقل شد)
+// File: app/Services/Managers/StockManager.php
 namespace App\Services\Managers;
 
 use App\Models\Product;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache; // For stock reservation
+use Illuminate\Support\Facades\DB; // اضافه شده برای استفاده از تراکنش و قفل
 use App\Exceptions\InsufficientStockException; // Custom exception
 
 class StockManager
 {
     private bool $stockCheckEnabled;
-    private int $stockReservationMinutes;
 
     public function __construct()
     {
         $this->stockCheckEnabled = config('cart.stock_check_enabled', true);
-        $this->stockReservationMinutes = config('cart.stock_reservation_minutes', 15);
+        // stockReservationMinutes دیگر برای مدیریت موجودی رزرو شده در دیتابیس لازم نیست
     }
 
     /**
@@ -36,25 +35,31 @@ class StockManager
             throw new InsufficientStockException('تعداد محصول باید مثبت باشد.'); // Quantity must be positive.
         }
 
-        // Check actual stock
-        // Ensure that reserved stock is also considered when validating
-        $reservedStock = $this->getReservedStock($product->id);
-        if (($product->stock - $reservedStock) < $quantity) {
-            Log::warning('Insufficient stock for product', ['product_id' => $product->id, 'requested_quantity' => $quantity, 'available_stock' => $product->stock - $reservedStock]);
-            throw new InsufficientStockException('موجودی کافی برای محصول ' . $product->name . ' وجود ندارد. موجودی فعلی: ' . ($product->stock - $reservedStock));
+        // موجودی قابل دسترس را از دیتابیس با آخرین وضعیت دریافت کنید
+        // نیازی به قفل در اینجا نیست، زیرا این فقط یک عملیات خواندن است
+        // قفل در reserveStock و releaseStock اعمال می شود
+        $currentProduct = Product::find($product->id); // برای اطمینان از دریافت آخرین وضعیت
+        if (!$currentProduct) {
+            throw new InsufficientStockException('محصول یافت نشد.');
+        }
+
+        $availableStock = $currentProduct->stock - ($currentProduct->reserved_stock ?? 0); // فرض بر وجود ستون reserved_stock
+
+        if ($availableStock < $quantity) {
+            Log::warning('Insufficient stock for product', ['product_id' => $product->id, 'requested_quantity' => $quantity, 'available_stock' => $availableStock]);
+            throw new InsufficientStockException('موجودی کافی برای محصول ' . $product->name . ' وجود ندارد. موجودی فعلی: ' . $availableStock);
         }
     }
 
     /**
-     * Reserves stock for a product.
-     * موجودی محصول را رزرو می‌کند.
+     * Reserves stock for a product, using pessimistic locking.
+     * موجودی محصول را رزرو می‌کند، با استفاده از قفل بدبینانه.
      *
      * @param Product $product
      * @param int $quantity
-     * @param int|null $minutes The duration in minutes for which the stock should be reserved.
      * @return bool
      */
-    public function reserveStock(Product $product, int $quantity, ?int $minutes = null): bool
+    public function reserveStock(Product $product, int $quantity): bool
     {
         if (!$this->stockCheckEnabled) {
             return true;
@@ -64,17 +69,52 @@ class StockManager
             return false; // Cannot reserve non-positive quantity
         }
 
-        $cacheKey = 'reserved_stock_' . $product->id;
-        $reserved = Cache::increment($cacheKey, $quantity);
-        Cache::put($cacheKey, $reserved, $minutes ?? $this->stockReservationMinutes * 60); // Store for defined minutes
+        try {
+            DB::beginTransaction();
 
-        Log::info('Stock reserved', ['product_id' => $product->id, 'quantity' => $quantity, 'new_reserved' => $reserved]);
-        return true;
+            // قفل کردن رکورد محصول برای جلوگیری از Race Condition
+            $currentProduct = Product::where('id', $product->id)->lockForUpdate()->first();
+
+            if (!$currentProduct) {
+                DB::rollBack();
+                Log::error('Product not found for stock reservation.', ['product_id' => $product->id]);
+                return false;
+            }
+
+            $currentReserved = $currentProduct->reserved_stock ?? 0;
+            $availableStock = $currentProduct->stock - $currentReserved;
+
+            if ($availableStock < $quantity) {
+                DB::rollBack();
+                Log::warning('Insufficient stock during reservation due to race condition or prior check failure.', [
+                    'product_id' => $product->id,
+                    'requested_quantity' => $quantity,
+                    'available_stock' => $availableStock,
+                    'current_stock' => $currentProduct->stock,
+                    'current_reserved' => $currentReserved
+                ]);
+                // در اینجا می توانید یک استثنا پرتاب کنید یا پیام خطای خاصی برگردانید
+                // برای سادگی، فقط false برمی گردانیم
+                return false;
+            }
+
+            $currentProduct->reserved_stock += $quantity;
+            $currentProduct->save();
+
+            DB::commit();
+
+            Log::info('Stock reserved', ['product_id' => $product->id, 'quantity' => $quantity, 'new_reserved' => $currentProduct->reserved_stock]);
+            return true;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Error reserving stock: ' . $e->getMessage(), ['product_id' => $product->id, 'quantity' => $quantity, 'exception' => $e->getTraceAsString()]);
+            return false;
+        }
     }
 
     /**
-     * Releases reserved stock for a product.
-     * موجودی رزرو شده محصول را آزاد می‌کند.
+     * Releases reserved stock for a product, using pessimistic locking.
+     * موجودی رزرو شده محصول را آزاد می‌کند، با استفاده از قفل بدبینانه.
      *
      * @param Product $product
      * @param int $quantity
@@ -90,31 +130,46 @@ class StockManager
             return false; // Cannot release non-positive quantity
         }
 
-        $cacheKey = 'reserved_stock_' . $product->id;
         try {
-            // Ensure reserved stock doesn't go below zero
-            $currentReserved = Cache::get($cacheKey, 0);
-            $newReserved = max(0, $currentReserved - $quantity);
-            Cache::put($cacheKey, $newReserved, $this->stockReservationMinutes * 60); // Update cache with new value
+            DB::beginTransaction();
 
-            Log::info('Stock released', ['product_id' => $product->id, 'quantity' => $quantity, 'new_reserved' => Cache::get($cacheKey)]);
+            // قفل کردن رکورد محصول برای جلوگیری از Race Condition
+            $currentProduct = Product::where('id', $product->id)->lockForUpdate()->first();
+
+            if (!$currentProduct) {
+                DB::rollBack();
+                Log::error('Product not found for stock release.', ['product_id' => $product->id]);
+                return false;
+            }
+
+            $currentReserved = $currentProduct->reserved_stock ?? 0;
+            $newReserved = max(0, $currentReserved - $quantity); // اطمینان از عدم منفی شدن موجودی رزرو شده
+
+            $currentProduct->reserved_stock = $newReserved;
+            $currentProduct->save();
+
+            DB::commit();
+
+            Log::info('Stock released', ['product_id' => $product->id, 'quantity' => $quantity, 'new_reserved' => $currentProduct->reserved_stock]);
             return true;
-        } catch (\Exception $e) {
-            Log::error('Error releasing stock: ' . $e->getMessage(), ['product_id' => $product->id, 'quantity' => $quantity]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Error releasing stock: ' . $e->getMessage(), ['product_id' => $product->id, 'quantity' => $quantity, 'exception' => $e->getTraceAsString()]);
             return false;
         }
     }
 
     /**
-     * Gets the currently reserved stock for a product.
-     * موجودی فعلی رزرو شده برای یک محصول را دریافت می‌کند.
+     * Gets the currently reserved stock for a product from the database.
+     * موجودی فعلی رزرو شده برای یک محصول را از پایگاه داده دریافت می‌کند.
      *
      * @param int $productId
      * @return int
      */
     public function getReservedStock(int $productId): int
     {
-        return Cache::get('reserved_stock_' . $productId, 0);
+        $product = Product::find($productId);
+        return $product ? ($product->reserved_stock ?? 0) : 0;
     }
 
     /**
@@ -125,8 +180,6 @@ class StockManager
      */
     public function healthCheck(): array
     {
-        // In a real scenario, you might check database connectivity for product stock.
-        // در یک سناریوی واقعی، ممکن است اتصال پایگاه داده را برای موجودی محصول بررسی کنید.
         try {
             Product::first(); // Simple check to see if Product model can access DB
             return ['status' => 'ok', 'message' => 'Stock manager is operational.'];

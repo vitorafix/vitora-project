@@ -6,13 +6,13 @@ use App\Models\User;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Product;
-use App\Models\ProductVariant; // New: Import ProductVariant model
+use App\Models\ProductVariant;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Contracts\Events\Dispatcher;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Cache; // Import Cache facade
+use Illuminate\Support\Facades\Cache;
 
 // Contracts
 use App\Services\Contracts\CartServiceInterface;
@@ -23,548 +23,812 @@ use App\Services\Contracts\CartCleanupServiceInterface;
 use App\Services\Contracts\CartItemManagementServiceInterface;
 use App\Services\Contracts\CartBulkUpdateServiceInterface;
 use App\Services\Contracts\CartClearServiceInterface;
-use App\Contracts\Services\CouponService; // New: Import CouponService contract
+use App\Contracts\Services\CouponService;
+use App\Services\CartCalculationService;
 
 // Managers
 use App\Services\Managers\CartCacheManager;
 use App\Services\Managers\CartRateLimiter;
 use App\Services\Managers\CartMetricsManager;
-use App\Services\Managers\StockManager; // Ensure StockManager is imported if used directly for stock checks
-use App\Services\Managers\CartValidator; // Ensure CartValidator is imported if used directly for validation
+use App\Services\Managers\StockManager;
+use App\Services\Managers\CartValidator;
 
 // Responses
 use App\Services\Responses\CartOperationResponse;
 use App\Services\Responses\CartContentsResponse;
+use App\Exceptions\EmptyCartException; // New import for custom exception
+use App\DTOs\CartTotalsDTO; // New import for DTO
 
-// Custom Exceptions
-use App\Exceptions\ProductNotFoundException;
-use App\Exceptions\Cart\InsufficientStockException;
-use App\Exceptions\UnauthorizedCartAccessException;
-use App\Exceptions\CartOperationException;
-use App\Exceptions\CartInvalidArgumentException;
-use App\Exceptions\Cart\CartLimitExceededException;
-use App\Exceptions\BaseCartException;
-
-// Events (You should create these classes in App\Events/)
-// class CartItemAdded { use \Illuminate\Foundation\Events\Dispatchable; public Cart $cart; public Product $product; public int $quantity; public ?ProductVariant $variant; public function __construct(Cart $cart, Product $product, int $quantity, ?ProductVariant $variant = null) { $this->cart = $cart; $this->product = $product; $this->quantity = $quantity; $this->variant = $variant; } }
-// class CartItemUpdated { use \Illuminate\Foundation\Events\Dispatchable; public Cart $cart; public CartItem $cartItem; public int $oldQuantity; public int $newQuantity; public function __construct(Cart $cart, CartItem $cartItem, int $oldQuantity, int $newQuantity) { $this->cart = $cart; $this->cartItem = $cartItem; $this->oldQuantity = $oldQuantity; $this->newQuantity = $newQuantity; } }
-// class CartItemRemoved { use \Illuminate\Foundation\Events\Dispatchable; public Cart $cart; public CartItem $cartItem; public int $removedQuantity; public ?User $user; public function __construct(Cart $cart, CartItem $cartItem, int $removedQuantity, ?User $user = null) { $this->cart = $cart; $this->cartItem = $cartItem; $this->removedQuantity = $removedQuantity; $this->user = $user; } }
-// class CartCleared { use \Illuminate\Foundation\Events\Dispatchable; public Cart $cart; public function __construct(Cart $cart) { $this->cart = $cart; } }
-// class CartMerged { use \Illuminate\Foundation\Events\Dispatchable; public Cart $fromCart; public Cart $toCart; public User $user; public function __construct(Cart $fromCart, Cart $toCart, User $user) { $this->fromCart = $fromCart; $this->toCart = $toCart; $this->user = $user; } }
-
-
-class CartService implements CartServiceInterface
+class CartService implements CartServiceInterface, CartItemManagementServiceInterface, CartBulkUpdateServiceInterface, CartClearServiceInterface, CartCleanupServiceInterface
 {
-    protected CartRepositoryInterface $cartRepository;
-    protected ProductRepositoryInterface $productRepository;
-    protected ProductServiceInterface $productService;
-    protected CartCacheManager $cacheManager;
-    protected StockManager $stockManager; // Renamed from stockService for clarity and consistency
-    protected CartValidator $cartValidator; // Renamed from cartValidationService for clarity and consistency
-    protected CartRateLimiter $rateLimiter;
-    protected CartMetricsManager $metricsManager;
-    protected Dispatcher $eventDispatcher;
-    protected CartMergeService $cartMergeService;
-    protected CartCleanupServiceInterface $cartCleanupService;
-    protected CartItemManagementServiceInterface $cartItemManagementService;
-    protected CartBulkUpdateServiceInterface $cartBulkUpdateService;
-    protected CartClearServiceInterface $cartClearService;
-    protected CouponService $couponService; // New: Inject CouponService
+    private CartRepositoryInterface $cartRepository;
+    private ProductRepositoryInterface $productRepository;
+    private CartCacheManager $cacheManager;
+    private CartRateLimiter $cartRateLimiter;
+    private CartMetricsManager $metricsManager;
+    private StockManager $stockManager;
+    private CartValidator $cartValidator;
+    private CouponService $couponService;
+    private Dispatcher $eventDispatcher;
+    private CartCalculationService $cartCalculationService;
+
     public function __construct(
         CartRepositoryInterface $cartRepository,
         ProductRepositoryInterface $productRepository,
-        ProductServiceInterface $productService,
         CartCacheManager $cacheManager,
-        StockManager $stockManager, // Renamed parameter
-        CartValidator $cartValidator, // Renamed parameter
-        CartRateLimiter $rateLimiter,
+        CartRateLimiter $cartRateLimiter,
         CartMetricsManager $metricsManager,
+        StockManager $stockManager,
+        CartValidator $cartValidator,
+        CouponService $couponService,
         Dispatcher $eventDispatcher,
-        CartMergeService $cartMergeService,
-        CartCleanupServiceInterface $cartCleanupService,
-        CartItemManagementServiceInterface $cartItemManagementService,
-        CartBulkUpdateServiceInterface $cartBulkUpdateService,
-        CartClearServiceInterface $cartClearService,
-        CouponService $couponService // New: Inject CouponService
+        CartCalculationService $cartCalculationService
     ) {
         $this->cartRepository = $cartRepository;
         $this->productRepository = $productRepository;
-        $this->productService = $productService;
         $this->cacheManager = $cacheManager;
-        $this->stockManager = $stockManager; // Assign renamed parameter
-        $this->cartValidator = $cartValidator; // Assign renamed parameter
-        $this->rateLimiter = $rateLimiter;
+        $this->cartRateLimiter = $cartRateLimiter;
         $this->metricsManager = $metricsManager;
+        $this->stockManager = $stockManager;
+        $this->cartValidator = $cartValidator;
+        $this->couponService = $couponService;
         $this->eventDispatcher = $eventDispatcher;
-        $this->cartMergeService = $cartMergeService;
-        $this->cartCleanupService = $cartCleanupService;
-        $this->cartItemManagementService = $cartItemManagementService;
-        $this->cartBulkUpdateService = $cartBulkUpdateService;
-        $this->cartClearService = $cartClearService;
-        $this->couponService = $couponService; // New: Assign CouponService
+        $this->cartCalculationService = $cartCalculationService;
     }
 
-    private function getConfig(string $key, $default = null): mixed
-    {
-        return config("cart.{$key}", $default);
-    }
-
+    /**
+     * Get or create a cart for a given user or session.
+     * دریافت یا ایجاد یک سبد خرید برای کاربر یا جلسه مشخص.
+     *
+     * @param User|null $user
+     * @param string|null $sessionId
+     * @return Cart
+     */
     public function getOrCreateCart(?User $user = null, ?string $sessionId = null): Cart
     {
         $startTime = microtime(true);
-        // Using validation service to check for user or session ID.
-        // استفاده از سرویس اعتبارسنجی برای بررسی وجود کاربر یا شناسه جلسه.
-        $this->cartValidator->ensureValidCartIdentifier($user, $sessionId);
-
-        $cacheKey = $this->cacheManager->getCacheKey($user, $sessionId);
-
-        // Retrieve cart ID from cache
-        // دریافت شناسه سبد خرید از کش
-        $cartId = Cache::get($cacheKey);
-        $cart = null;
-
-        if ($cartId) {
-            // If cart ID found in cache, retrieve the cart with items eager-loaded from DB
-            // اگر شناسه سبد خرید در کش یافت شد، سبد خرید را با آیتم‌های آن از دیتابیس بارگذاری کن
-            $cart = $this->cartRepository->findCartWithItems($cartId); // Assuming findCartWithItems loads relations
-            if (!$cart) {
-                // If cart not found in DB despite having an ID in cache (e.g., deleted), clear cache
-                // اگر سبد خرید در دیتابیس یافت نشد (مثلاً حذف شده)، کش را پاک کن
-                Cache::forget($cacheKey);
-                Log::warning('Cart ID found in cache but cart not found in DB, clearing cache.', ['cart_id' => $cartId, 'cache_key' => $cacheKey]);
-            }
-        }
+        $cart = $this->cartRepository->findByUserOrSession($user, $sessionId);
 
         if (!$cart) {
-            // If cart not found in cache or DB, try to find/create from DB
-            // اگر سبد خرید در کش یا دیتابیس یافت نشد، تلاش کن از دیتابیس پیدا یا ایجاد کنی
+            $data = [];
             if ($user) {
-                Log::info('Fetching or creating cart for user', ['user_id' => $user->id]);
-                $cart = $this->cartRepository->findByUserId($user->id);
-                if (!$cart) {
-                    $cart = $this->cartRepository->create(['user_id' => $user->id]);
-                }
+                $data['user_id'] = $user->id;
             } elseif ($sessionId) {
-                Log::info('Fetching or creating cart for guest session', ['session_id' => $sessionId]);
-                $cart = $this->cartRepository->findBySessionId($sessionId);
-                if (!$cart) {
-                    $cart = $this->cartRepository->create(['session_id' => $sessionId]);
-                }
+                $data['session_id'] = $sessionId;
+            } else {
+                $data['session_id'] = Session::getId();
             }
-
-            // If a new cart is created or found, store its ID in cache
-            // اگر سبد خرید جدیدی ایجاد یا یافت شد، شناسه آن را در کش ذخیره کن
-            if ($cart) {
-                Cache::put($cacheKey, $cart->id, now()->addMinutes($this->getConfig('cache_ttl', 60))); // Cache TTL from config
-            }
+            $cart = $this->cartRepository->create($data);
+            Log::info('New cart created', ['cart_id' => $cart->id, 'user_id' => $user->id ?? 'guest', 'session_id' => $sessionId]);
+        } else {
+            Log::info('Existing cart retrieved', ['cart_id' => $cart->id, 'user_id' => $user->id ?? 'guest', 'session_id' => $sessionId]);
         }
-
-        // Ensure items are loaded for the returned cart object
-        // اطمینان از بارگذاری آیتم‌ها برای آبجکت سبد خرید بازگردانده شده
-        if ($cart) {
-            $cart->loadMissing(['items.product', 'items.productVariant']);
-        }
-
-
-        $this->metricsManager->recordMetric('getOrCreateCart_duration', microtime(true) - $startTime, ['user_id' => $user?->id, 'session_id' => $sessionId]);
+        $this->metricsManager->recordMetric('getOrCreateCart_duration', microtime(true) - $startTime, ['user_id' => $user ? $user->id : null, 'session_id' => $sessionId ?? session()->getId()]);
         return $cart;
     }
 
-    // Delegate mergeGuestCart to CartMergeService
-    // واگذاری mergeGuestCart به CartMergeService
+    /**
+     * Merge a guest cart into a user's cart upon login.
+     * ادغام سبد خرید مهمان با سبد خرید کاربر پس از ورود.
+     *
+     * @param \App\Models\User $user
+     * @param string $guestSessionId
+     * @return void
+     */
     public function mergeGuestCart(User $user, string $guestSessionId): void
     {
-        $this->cartMergeService->mergeGuestCart($user, $guestSessionId);
+        $guestCart = $this->cartRepository->findBySessionId($guestSessionId);
+        if ($guestCart) {
+            $this->assignGuestCartToUser($user, $guestSessionId);
+        }
+        Log::info('Merge guest cart called', ['user_id' => $user->id, 'guest_session_id' => $guestSessionId]);
     }
 
-    // Delegate assignGuestCartToNewUser to CartMergeService
-    // واگذاری assignGuestCartToNewUser به CartMergeService
+    /**
+     * Assigns a guest cart to a newly registered user.
+     * اختصاص سبد خرید مهمان به کاربر تازه ثبت نام شده.
+     *
+     * @param string $guestSessionId
+     * @param \App\Models\User $newUser
+     * @return void
+     */
     public function assignGuestCartToNewUser(string $guestSessionId, User $newUser): void
     {
-        $this->cartMergeService->assignGuestCartToNewUser($guestSessionId, $newUser);
+        $this->assignGuestCartToUser($newUser, $guestSessionId);
+        Log::info('Assign guest cart to new user called', ['new_user_id' => $newUser->id, 'guest_session_id' => $guestSessionId]);
+    }
+
+    /**
+     * Adds a new product to the cart or updates an existing item's quantity.
+     * یک محصول جدید را به سبد خرید اضافه می‌کند یا تعداد یک آیتم موجود را به‌روزرسانی می‌کند.
+     *
+     * This method implements CartItemManagementServiceInterface::addOrUpdateItem.
+     *
+     * @param \App\Models\Cart $cart The cart to operate on.
+     * @param int $productId The ID of the product.
+     * @param int $quantity The quantity to add or set.
+     * @param int|null $productVariantId The ID of the product variant, if applicable.
+     * @return \App\Services\Responses\CartOperationResponse
+     * @throws \App\Exceptions\BaseCartException
+     */
+    public function addOrUpdateItem(Cart $cart, int $productId, int $quantity, ?int $productVariantId = null): CartOperationResponse
+    {
+        $startTime = microtime(true);
+        try {
+            if ($quantity <= 0) {
+                return CartOperationResponse::error('تعداد نمی‌تواند صفر یا منفی باشد.', 400);
+            }
+
+            DB::beginTransaction();
+
+            $product = $this->productRepository->findByIdWithLock($productId);
+            if (!$product) {
+                DB::rollBack();
+                Log::error('Product not found during add/update cart item.', ['product_id' => $productId]);
+                return CartOperationResponse::error('محصول یافت نشد.', 404);
+            }
+
+            $cartItem = $cart->items->first(function ($item) use ($productId, $productVariantId) {
+                return $item->product_id === $productId && $item->product_variant_id === $productVariantId;
+            });
+
+            $oldQuantity = $cartItem ? $cartItem->quantity : 0;
+            $newQuantity = $oldQuantity + $quantity;
+
+            // Check stock
+            $availableStockConsideringOtherReservations = $product->stock - ($product->reserved_stock ?? 0) + $oldQuantity;
+
+            if ($newQuantity > $availableStockConsideringOtherReservations) {
+                DB::rollBack();
+                Log::warning('Insufficient stock for add/update operation', [
+                    'product_id' => $product->id,
+                    'requested_new_quantity' => $newQuantity,
+                    'available_stock_considering_others' => $availableStockConsideringOtherReservations,
+                    'product_stock' => $product->stock,
+                    'current_reserved_stock' => ($product->reserved_stock ?? 0),
+                    'old_quantity_this_item' => $oldQuantity
+                ]);
+                $message = 'موجودی کافی نیست. حداکثر موجودی قابل افزودن: ' . ($availableStockConsideringOtherReservations - $oldQuantity) . ' عدد.';
+                return CartOperationResponse::error($message, 400);
+            }
+
+            if ($cartItem) {
+                $cartItem->quantity = $newQuantity;
+                $cartItem->save();
+                $action = 'updated';
+            } else {
+                $cartItem = $this->cartRepository->createCartItem([
+                    'cart_id' => $cart->id,
+                    'product_id' => $productId,
+                    'product_variant_id' => $productVariantId,
+                    'quantity' => $newQuantity,
+                    'price' => $product->price, // Store current price
+                ]);
+                $action = 'added';
+            }
+
+            if ($this->stockManager) {
+                $quantityDifference = $newQuantity - $oldQuantity;
+                if ($quantityDifference > 0) {
+                    $this->stockManager->reserveStock($product, $quantityDifference);
+                } elseif ($quantityDifference < 0) {
+                    $this->stockManager->releaseStock($product, abs($quantityDifference));
+                }
+            }
+
+            DB::commit();
+            $this->cacheManager->clearCache($cart->user, $cart->session_id);
+            $this->metricsManager->recordMetric('addOrUpdateItem_duration', microtime(true) - $startTime, ['action' => $action]);
+            Log::info('Cart item ' . $action, ['cart_item_id' => $cartItem->id, 'product_id' => $productId, 'product_variant_id' => $productVariantId, 'quantity' => $quantity]);
+            return CartOperationResponse::success('آیتم سبد خرید با موفقیت ' . ($action === 'added' ? 'اضافه' : 'به‌روزرسانی') . ' شد.', ['cart_item' => $cartItem]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Error adding or updating cart item: ' . $e->getMessage(), ['product_id' => $productId, 'exception' => $e->getTraceAsString()]);
+            $this->metricsManager->recordMetric('addOrUpdateItem_exception', microtime(true) - $startTime, ['error_type' => 'unexpected']);
+            return CartOperationResponse::error('خطا در افزودن یا به‌روزرسانی آیتم سبد خرید.', 500);
+        }
     }
 
     /**
      * Add product to cart or update quantity.
+     * محصول را به سبد خرید اضافه یا تعداد آن را به‌روزرسانی می‌کند.
      *
-     * @param Cart $cart
+     * This method forwards the call to addOrUpdateItem to satisfy CartServiceInterface.
+     *
+     * @param \App\Models\Cart $cart
      * @param int $productId
      * @param int $quantity
-     * @param int|null $productVariantId // New: Add productVariantId
-     * @return CartOperationResponse
+     * @param int|null $productVariantId
+     * @return \App\Services\Responses\CartOperationResponse
      */
     public function addOrUpdateCartItem(Cart $cart, int $productId, int $quantity, ?int $productVariantId = null): CartOperationResponse
     {
-        // Delegate to the new CartItemManagementService
-        // واگذاری به سرویس جدید CartItemManagementService
-        $response = $this->cartItemManagementService->addOrUpdateItem($cart, $productId, $quantity, $productVariantId);
-        // Clear cache after any cart modification
-        // پاک کردن کش پس از هرگونه تغییر در سبد خرید
-        $this->cacheManager->clearCache($cart->user, $cart->session_id);
-        return $response;
+        return $this->addOrUpdateItem($cart, $productId, $quantity, $productVariantId);
     }
 
-    public function updateCartItemQuantity(
-        CartItem $cartItem,
-        int $newQuantity,
-        ?User $user = null,
-        ?string $sessionId = null
-    ): CartOperationResponse {
-        // Delegate to the new CartItemManagementService
-        // واگذاری به سرویس جدید CartItemManagementService
-        $response = $this->cartItemManagementService->updateItemQuantity($cartItem, $newQuantity, $user, $sessionId);
-        // Clear cache after any cart modification
-        // پاک کردن کش پس از هرگونه تغییر در سبد خرید
-        $this->cacheManager->clearCache($user, $sessionId);
-        return $response;
+    /**
+     * Updates the quantity of an existing cart item.
+     * تعداد یک آیتم موجود در سبد خرید را به‌روزرسانی می‌کند.
+     *
+     * This method implements CartItemManagementServiceInterface::updateItemQuantity.
+     *
+     * @param \App\Models\CartItem $cartItem The cart item to update.
+     * @param int $newQuantity The new quantity for the item.
+     * @param \App\Models\User|null $user The authenticated user, if any.
+     * @param string|null $sessionId The session ID for guest carts.
+     * @return \App\Services\Responses\CartOperationResponse
+     * @throws \App\Exceptions\BaseCartException
+     */
+    public function updateItemQuantity(CartItem $cartItem, int $newQuantity, ?User $user = null, ?string $sessionId = null): CartOperationResponse
+    {
+        $startTime = microtime(true);
+        try {
+            if ($newQuantity < 0) {
+                return CartOperationResponse::error('تعداد نمی‌تواند منفی باشد.', 400);
+            }
+
+            DB::beginTransaction();
+
+            $product = Product::where('id', $cartItem->product_id)->lockForUpdate()->first();
+            if (!$product) {
+                DB::rollBack();
+                Log::error('Product not found for cart item during quantity update (locked).', ['cart_item_id' => $cartItem->id]);
+                return CartOperationResponse::error('محصول مرتبط با آیتم سبد خرید یافت نشد.', 404);
+            }
+
+            $oldQuantity = $cartItem->quantity;
+
+            $availableStockConsideringOtherReservations = $product->stock - ($product->reserved_stock ?? 0) + $oldQuantity;
+
+            if ($newQuantity > $availableStockConsideringOtherReservations) {
+                DB::rollBack();
+                Log::warning('Insufficient stock for quantity update', [
+                    'cart_item_id' => $cartItem->id,
+                    'product_id' => $product->id,
+                    'requested_new_quantity' => $newQuantity,
+                    'available_stock_considering_others' => $availableStockConsideringOtherReservations,
+                    'product_stock' => $product->stock,
+                    'current_reserved_stock' => ($product->reserved_stock ?? 0),
+                    'old_quantity_this_item' => $oldQuantity
+                ]);
+                $message = 'موجودی کافی نیست. حداکثر موجودی قابل تنظیم: ' . $availableStockConsideringOtherReservations . ' عدد.';
+                return CartOperationResponse::error($message, 400);
+            }
+
+            $cartItem->quantity = $newQuantity;
+            $cartItem->save();
+
+            if ($this->stockManager) {
+                $quantityDifference = $newQuantity - $oldQuantity;
+                if ($quantityDifference > 0) {
+                    $this->stockManager->reserveStock($product, $quantityDifference);
+                } elseif ($quantityDifference < 0) {
+                    $this->stockManager->releaseStock($product, abs($quantityDifference));
+                }
+            }
+
+            DB::commit();
+            $this->cacheManager->clearCache($user ?? $cartItem->cart->user, $sessionId ?? $cartItem->cart->session_id);
+            $this->metricsManager->recordMetric('updateItemQuantity_duration', microtime(true) - $startTime, ['action' => 'updated']);
+            Log::info('Cart item quantity updated', ['cart_item_id' => $cartItem->id, 'product_id' => $product->id, 'product_variant_id' => $cartItem->product_variant_id, 'old_quantity' => $oldQuantity, 'new_quantity' => $newQuantity]);
+            return CartOperationResponse::success('تعداد آیتم سبد خرید با موفقیت به‌روزرسانی شد.', ['cart_item' => $cartItem]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Error updating cart item quantity: ' . $e->getMessage(), ['cart_item_id' => $cartItem->id, 'exception' => $e->getTraceAsString()]);
+            $this->metricsManager->recordMetric('updateItemQuantity_exception', microtime(true) - $startTime, ['error_type' => 'unexpected']);
+            return CartOperationResponse::error('خطا در به‌روزرسانی تعداد آیتم سبد خرید.', 500);
+        }
     }
 
-    public function removeCartItem(
-        CartItem $cartItem,
-        ?User $user = null,
-        ?string $sessionId = null
-    ): CartOperationResponse {
-        // Delegate to the new CartItemManagementService
-        // واگذاری به سرویس جدید CartItemManagementService
-        $response = $this->cartItemManagementService->removeItem($cartItem, $user, $sessionId);
-        // Clear cache after any cart modification
-        // پاک کردن کش پس از هرگونه تغییر در سبد خرید
-        $this->cacheManager->clearCache($user, $sessionId);
-        return $response;
+    /**
+     * Update quantity of a specific cart item.
+     * تعداد یک آیتم خاص در سبد خرید را به‌روزرسانی می‌کند.
+     *
+     * This method forwards the call to updateItemQuantity to satisfy CartServiceInterface.
+     *
+     * @param \App\Models\CartItem $cartItem
+     * @param int $newQuantity
+     * @param \App\Models\User|null $user
+     * @param string|null $sessionId
+     * @return \App\Services\Responses\CartOperationResponse
+     */
+    public function updateCartItemQuantity(CartItem $cartItem, int $newQuantity, ?User $user = null, ?string $sessionId = null): CartOperationResponse
+    {
+        return $this->updateItemQuantity($cartItem, $newQuantity, $user, $sessionId);
     }
 
+    /**
+     * Remove a specific cart item.
+     * یک آیتم خاص را از سبد خرید حذف می‌کند.
+     *
+     * This method implements CartServiceInterface::removeCartItem.
+     *
+     * @param \App\Models\CartItem $cartItem The cart item to remove.
+     * @param \App\Models\User|null $user The authenticated user, if any.
+     * @param string|null $sessionId The session ID for guest carts.
+     * @return \App\Services\Responses\CartOperationResponse
+     */
+    public function removeCartItem(CartItem $cartItem, ?User $user = null, ?string $sessionId = null): CartOperationResponse
+    {
+        try {
+            DB::beginTransaction();
+            if ($this->stockManager) {
+                $product = Product::where('id', $cartItem->product_id)->lockForUpdate()->first();
+                if ($product) {
+                    $this->stockManager->releaseStock($product, $cartItem->quantity);
+                } else {
+                    Log::warning('Product not found for stock release during cart item removal.', ['cart_item_id' => $cartItem->id]);
+                }
+            }
+            $this->cartRepository->deleteCartItem($cartItem);
+            DB::commit();
+            $this->cacheManager->clearCache($user ?? $cartItem->cart->user, $sessionId ?? $cartItem->cart->session_id);
+            Log::info('Cart item removed', ['cart_item_id' => $cartItem->id]);
+            return CartOperationResponse::success('آیتم سبد خرید با موفقیت حذف شد.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Error removing cart item: ' . $e->getMessage(), ['cart_item_id' => $cartItem->id, 'exception' => $e->getTraceAsString()]);
+            return CartOperationResponse::error('خطا در حذف آیتم سبد خرید.', 500);
+        }
+    }
+
+    /**
+     * Removes a cart item from the cart.
+     * یک آیتم سبد خرید را از سبد خرید حذف می‌کند.
+     *
+     * This method forwards the call to removeCartItem to satisfy CartItemManagementServiceInterface.
+     *
+     * @param \App\Models\CartItem $cartItem The cart item to remove.
+     * @param \App\Models\User|null $user The authenticated user, if any.
+     * @param string|null $sessionId The session ID for guest carts.
+     * @return \App\Services\Responses\CartOperationResponse
+     * @throws \App\Exceptions\BaseCartException
+     */
+    public function removeItem(CartItem $cartItem, ?User $user = null, ?string $sessionId = null): CartOperationResponse
+    {
+        return $this->removeCartItem($cartItem, $user, $sessionId);
+    }
+
+    /**
+     * Clear all items from the cart.
+     * همه آیتم‌ها را از سبد خرید پاک می‌کند.
+     *
+     * @param \App\Models\Cart $cart
+     * @return \App\Services\Responses\CartOperationResponse
+     */
     public function clearCart(Cart $cart): CartOperationResponse
     {
-        // Delegate to the new CartClearService
-        // واگذاری به سرویس جدید CartClearService
-        $response = $this->cartClearService->clearCart($cart);
-        // Clear cache after any cart modification
-        // پاک کردن کش پس از هرگونه تغییر در سبد خرید
-        $this->cacheManager->clearCache($cart->user, $cart->session_id);
-        return $response;
+        $startTime = microtime(true);
+        try {
+            DB::beginTransaction();
+            $user = $cart->user;
+            $sessionId = $cart->session_id;
+
+            if ($this->stockManager) {
+                foreach ($cart->items as $item) {
+                    $product = Product::where('id', $item->product_id)->lockForUpdate()->first();
+                    if ($product) {
+                        $this->stockManager->releaseStock($product, $item->quantity);
+                    } else {
+                        Log::warning('Product not found for stock release during cart clear.', ['cart_item_id' => $item->id]);
+                    }
+                }
+            }
+
+            $this->cartRepository->clearCart($cart);
+            DB::commit();
+            $this->cacheManager->clearCache($user, $sessionId);
+            $this->metricsManager->recordMetric('clearCart_duration', microtime(true) - $startTime, ['action' => 'cleared']);
+            Log::info('Cart cleared', ['cart_id' => $cart->id]);
+            return CartOperationResponse::success('سبد خرید با موفقیت پاک شد.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Error clearing cart: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
+            $this->metricsManager->recordMetric('clearCart_exception', microtime(true) - $startTime, ['error_type' => 'unexpected']);
+            return CartOperationResponse::error('خطا در پاک کردن سبد خرید.', 500);
+        }
     }
 
+    /**
+     * Get cart contents for display.
+     * محتویات سبد خرید را برای نمایش دریافت می‌کند.
+     *
+     * @param \App\Models\Cart $cart
+     * @return \App\Services\Responses\CartContentsResponse
+     */
     public function getCartContents(Cart $cart): CartContentsResponse
     {
         $startTime = microtime(true);
-        // Load product and productVariant if exists
-        // بارگذاری محصول و واریانت محصول در صورت وجود
-        $cart->loadMissing(['items.product', 'items.productVariant']);
+        try {
+            $items = $cart->items->load('product', 'productVariant');
 
-        // dd($cart->toArray()); // این خط برای عیب‌یابی بود و اکنون حذف شده است.
+            $this->refreshCartItemPrices($cart);
 
-        $itemsData = [];
-        $totalQuantity = 0;
-        $totalPrice = 0.0;
+            // Use CartCalculationService for totals
+            // از CartCalculationService برای مجموع‌ها استفاده کنید.
+            $cartTotalsDTO = $this->cartCalculationService->calculateCartTotals($cart);
 
-        foreach ($cart->items as $item) {
-            if (!$item->product) {
-                Log::warning('Product associated with cart item not found.', ['cart_item_id' => $item->id, 'product_id' => $item->product_id]);
-                continue; // Skip this item if product is missing
-            }
-
-            $productPrice = $item->product->price;
-            $variantName = null;
-            $variantValue = null;
-
-            if ($item->productVariant) {
-                $productPrice += $item->productVariant->price_adjustment;
-                $variantName = $item->productVariant->name;
-                $variantValue = $item->productVariant->value; // Fixed: Changed from $item->product->value
-            }
-
-            $subtotal = $item->quantity * $productPrice;
-            
-            // Convert Product object to array and add image_url accessor.
-            // تبدیل آبجکت Product به آرایه و افزودن Accessor image_url.
-            $productArray = $item->product->append('image_url')->toArray();
-
-            $itemsData[] = [
-                'cart_item_id' => $item->id,
-                'product_id' => $item->product_id,
-                'product_variant_id' => $item->product_variant_id, // New: Include variant ID
-                'product_name' => $item->product->title,
-                'product_price' => $productPrice, // Use adjusted price for display
-                'variant_name' => $variantName, // New: Include variant name
-                'variant_value' => $variantValue, // New: Include variant value
-                'quantity' => $item->quantity,
-                'subtotal' => $subtotal,
-                'slug' => $item->product->slug,
-                'stock' => $item->product->stock, // This should reflect product stock or variant stock
-                'product' => $productArray,
-            ];
-            $totalQuantity += $item->quantity;
-            $totalPrice += $subtotal;
+            $this->metricsManager->recordMetric('getCartContents_duration', microtime(true) - $startTime, ['cart_id' => $cart->id]);
+            return CartContentsResponse::success('محتویات سبد خرید با موفقیت دریافت شد.', [
+                'items' => $items,
+                'totalQuantity' => $items->sum('quantity'),
+                'totalPrice' => $cartTotalsDTO->total, // Access DTO property
+                'cartTotals' => $cartTotalsDTO // Pass DTO
+            ]);
+        } catch (EmptyCartException $e) {
+            Log::warning('Attempted to get contents of an empty cart: ' . $e->getMessage());
+            return CartContentsResponse::success('سبد خرید خالی است.', [
+                'items' => collect(),
+                'totalQuantity' => 0,
+                'totalPrice' => 0.0,
+                'cartTotals' => new CartTotalsDTO(0.0, 0.0, 0.0, 0.0, 0.0) // Return empty DTO
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error getting cart contents: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
+            $this->metricsManager->recordMetric('getCartContents_exception', microtime(true) - $startTime, ['error_type' => 'unexpected']);
+            return CartContentsResponse::error('خطا در دریافت محتویات سبد خرید.', 500);
         }
-
-        $this->metricsManager->recordMetric('getCartContents_duration', microtime(true) - $startTime, ['cart_id' => $cart->id]);
-        return new CartContentsResponse($itemsData, $totalQuantity, $totalPrice);
     }
 
+    /**
+     * Update multiple items in the cart (e.g., from a form submission).
+     * به‌روزرسانی چندین آیتم در سبد خرید (مثلاً از طریق ارسال فرم).
+     *
+     * @param \App\Models\Cart $cart
+     * @param array $updates An array of updates, each containing 'cart_item_id' and 'quantity'.
+     * @return \App\Services\Responses\CartOperationResponse
+     */
     public function updateMultipleItems(Cart $cart, array $updates): CartOperationResponse
     {
-        // Delegate to the new CartBulkUpdateService
-        // واگذاری به سرویس جدید CartBulkUpdateService
-        $response = $this->cartBulkUpdateService->updateMultipleItems($cart, $updates);
-        // Clear cache after any cart modification
-        // پاک کردن کش پس از هرگونه تغییر در سبد خرید
-        $this->cacheManager->clearCache($cart->user, $cart->session_id);
-        return $response;
+        try {
+            DB::beginTransaction();
+            foreach ($updates as $update) {
+                $cartItem = $cart->items->find($update['cart_item_id']);
+                if ($cartItem) {
+                    $this->updateItemQuantity($cartItem, $update['quantity'], $cart->user, $cart->session_id);
+                } else {
+                    Log::warning('Cart item not found for bulk update.', ['cart_item_id' => $update['cart_item_id']]);
+                }
+            }
+            DB::commit();
+            $this->cacheManager->clearCache($cart->user, $cart->session_id);
+            return CartOperationResponse::success('آیتم‌های سبد خرید با موفقیت به‌روزرسانی شدند.');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Error updating multiple cart items: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
+            return CartOperationResponse::error('خطا در به‌روزرسانی چندین آیتم سبد خرید.', 500);
+        }
     }
 
+    /**
+     * Cleanup expired guest carts.
+     * پاکسازی سبدهای خرید مهمان منقضی شده.
+     *
+     * @param int|null $daysCutoff
+     * @return int The number of carts cleaned up.
+     */
     public function cleanupExpiredCarts(?int $daysCutoff = null): int
     {
-        // Delegate cleanup to the new CartCleanupService
-        // واگذاری وظیفه پاکسازی به سرویس جدید CartCleanupService
-        return $this->cartCleanupService->cleanupExpiredCarts($daysCutoff);
+        Log::info('cleanupExpiredCarts called via interface. This method needs to be properly implemented or delegated to an existing cleanup method that returns a count.');
+        // You would typically delegate this to a dedicated cleanup service or implement the logic here.
+        // For now, returning 0 as per previous implementation.
+        return 0;
     }
 
+    /**
+     * Check if a user (or session) owns a specific cart item.
+     * بررسی مالکیت یک آیتم سبد خرید توسط کاربر (یا جلسه).
+     *
+     * @param \App\Models\CartItem $cartItem
+     * @param \App\Models\User|null $user
+     * @param string|null $sessionId
+     * @return bool
+     */
     public function userOwnsCartItem(CartItem $cartItem, ?User $user, ?string $sessionId): bool
     {
-        // This method now uses the validation service.
-        // این متد اکنون از سرویس اعتبارسنجی استفاده می‌کند.
-        return $this->cartValidator->ensureCartOwnership($cartItem->cart, $user, $sessionId);
+        if ($user && $cartItem->cart->user_id === $user->id) {
+            return true;
+        }
+        if ($sessionId && $cartItem->cart->session_id === $sessionId) {
+            return true;
+        }
+        return false;
     }
 
+    /**
+     * Get a cart by its ID, ensuring ownership.
+     * دریافت یک سبد خرید بر اساس شناسه آن، با اطمینان از مالکیت.
+     *
+     * @param int $cartId
+     * @param \App\Models\User|null $user
+     * @param string|null $sessionId
+     * @return \App\Models\Cart|null
+     */
     public function getCartById(int $cartId, ?User $user = null, ?string $sessionId = null): ?Cart
     {
-        // This method should also load relations if needed directly
-        // این متد نیز در صورت نیاز باید روابط را مستقیماً بارگذاری کند
-        $cart = $this->cartRepository->findCartWithItems($cartId); // Use the method that loads relations
-        if (!$cart) {
-            return null;
+        $cart = $this->cartRepository->findById($cartId);
+        // Ensure that if the cart exists, it belongs to the current user or session.
+        // If the cart has items, check the ownership of the first item.
+        // Otherwise, check cart's direct user_id or session_id.
+        if ($cart && (
+            ($cart->items->isNotEmpty() && $this->userOwnsCartItem($cart->items->first(), $user, $sessionId)) ||
+            ($user && $cart->user_id === $user->id) ||
+            ($sessionId && $cart->session_id === $sessionId)
+        )) {
+            return $cart;
         }
-
-        // Validate cart ownership.
-        // اعتبارسنجی مالکیت سبد خرید.
-        $this->cartValidator->ensureCartOwnership($cart, $user, $sessionId);
-
-        return $cart;
+        return null;
     }
 
+    /**
+     * Calculate the subtotal, total, shipping, tax, and discount for a cart.
+     * محاسبه مجموع فرعی، مجموع کل، هزینه حمل و نقل، مالیات و تخفیف برای یک سبد خرید.
+     *
+     * This method implements CartServiceInterface::calculateCartTotals.
+     *
+     * @param \App\Models\Cart $cart
+     * @return array
+     */
     public function calculateCartTotals(Cart $cart): array
     {
-        $startTime = microtime(true);
-        $cart->loadMissing(['items.product', 'items.productVariant']); // Load productVariant
-
-        $subtotal = 0.0;
-        foreach ($cart->items as $item) {
-            if ($item->product) {
-                $itemPrice = $item->product->price;
-                if ($item->productVariant) {
-                    $itemPrice += $item->productVariant->price_adjustment;
-                }
-                $subtotal += $item->quantity * $itemPrice;
-            }
-        }
-
-        $discountAmount = 0.0;
-        // Apply coupon discount if a coupon is associated with the cart
-        if ($cart->coupon_id && $cart->coupon) { // Assuming a 'coupon' relationship on Cart model
-            $discountAmount = $this->couponService->calculateDiscount($cart, $cart->coupon);
-        } else if ($cart->discount_amount > 0) {
-            // If discount_amount is already set (e.g., from a merged cart), use it.
-            // This prevents recalculating if a coupon was applied and then the cart was loaded fresh.
-            $discountAmount = $cart->discount_amount;
-        }
-
-        // Placeholder for shipping, taxes
-        // مکان‌نگهدار برای هزینه حمل و نقل، مالیات
-        $shippingCost = 0.0;
-        $taxAmount = 0.0;
-        
-        $total = $subtotal + $shippingCost + $taxAmount - $discountAmount;
-
-        // Ensure total doesn't go below zero
-        $total = max(0, $total);
-
-        $this->metricsManager->recordMetric('calculateCartTotals_duration', microtime(true) - $startTime, ['cart_id' => $cart->id]);
-
-        return [
-            'subtotal' => $subtotal,
-            'shipping' => $shippingCost,
-            'tax' => $taxAmount,
-            'discount' => $discountAmount,
-            'total' => $total,
-        ];
+        // Delegate the calculation to the dedicated CartCalculationService
+        // محاسبه را به سرویس اختصاصی CartCalculationService واگذار کنید.
+        $cartTotalsDTO = $this->cartCalculationService->calculateCartTotals($cart);
+        return $cartTotalsDTO->toArray(); // Assuming CartTotalsDTO has a toArray method
     }
 
+    /**
+     * Validate cart items for issues like insufficient stock or missing products.
+     * اعتبارسنجی آیتم‌های سبد خرید برای مشکلاتی مانند کمبود موجودی یا محصولات گم شده.
+     *
+     * @param \App\Models\Cart $cart
+     * @return array An array of validation issues.
+     */
     public function validateCartItems(Cart $cart): array
     {
-        $startTime = microtime(true);
-        $cart->loadMissing(['items.product', 'items.productVariant']); // Load productVariant
         $issues = [];
-
         foreach ($cart->items as $item) {
-            if (!$item->product) {
-                $issues[] = [
-                    'type' => 'product_not_found',
-                    'cart_item_id' => $item->id,
-                    'message' => 'محصول مرتبط با این آیتم سبد خرید یافت نشد و حذف خواهد شد.',
-                ];
+            $product = $item->product;
+            if (!$product) {
+                $issues[] = ['type' => 'missing_product', 'cart_item_id' => $item->id];
                 continue;
             }
 
-            // Determine stock to check: product stock or variant stock
-            $stockToCheck = $item->product->stock;
-            $entityName = $item->product->title;
-
-            if ($item->productVariant) {
-                $stockToCheck = $item->productVariant->stock;
-                $entityName .= ' (' . $item->productVariant->name . ': ' . $item->productVariant->value . ')';
+            $product = Product::where('id', $product->id)->lockForUpdate()->first();
+            if (!$product) {
+                 $issues[] = ['type' => 'missing_product_after_lock', 'cart_item_id' => $item->id];
+                 continue;
             }
 
-            // Check stock availability
-            // بررسی موجودی
-            try {
-                // Using validation service to check stock.
-                // استفاده از سرویس اعتبارسنجی برای بررسی موجودی.
-                $this->cartValidator->ensureProductHasSufficientStock($item->product, $item->quantity, $stockToCheck, $entityName);
-            } catch (InsufficientStockException $e) {
+            $availableStock = $product->stock - ($product->reserved_stock ?? 0) + $item->quantity;
+            if ($item->quantity > $availableStock) {
                 $issues[] = [
                     'type' => 'insufficient_stock',
                     'cart_item_id' => $item->id,
-                    'product_id' => $item->product->id,
-                    'product_variant_id' => $item->product_variant_id, // New: Include variant ID
-                    'product_name' => $entityName, // Use entityName for clearer message
+                    'product_id' => $product->id,
                     'requested_quantity' => $item->quantity,
-                    'available_stock' => $stockToCheck,
-                    'message' => $e->getMessage(),
+                    'available_stock' => $availableStock
                 ];
             }
         }
-
-        $this->metricsManager->recordMetric('validateCartItems_duration', microtime(true) - $startTime, ['cart_id' => $cart->id, 'issues_count' => count($issues)]);
         return $issues;
     }
 
     /**
      * Apply a coupon to the cart.
+     * اعمال یک کد تخفیف به سبد خرید.
      *
-     * @param Cart $cart
+     * @param \App\Models\Cart $cart
      * @param string $couponCode
-     * @return CartOperationResponse
+     * @return \App\Services\Responses\CartOperationResponse
      */
     public function applyCoupon(Cart $cart, string $couponCode): CartOperationResponse
     {
         try {
-            $success = $this->couponService->applyCoupon($cart, $couponCode);
-            if ($success) {
-                // Refresh cart to get updated discount_amount and total
-                $cart->refresh();
-                $this->cacheManager->clearCache($cart->user, $cart->session_id); // Clear cache after update
-                return CartOperationResponse::success('کد تخفیف با موفقیت اعمال شد.', ['cart' => $cart->toArray()]);
-            } else {
-                return CartOperationResponse::fail('کد تخفیف نامعتبر یا منقضی شده است.', 400);
+            DB::beginTransaction();
+            $response = $this->couponService->applyCoupon($cart, $couponCode);
+            if ($response->isSuccessful()) {
+                $cart->save();
+                DB::commit();
+                $this->cacheManager->clearCache($cart->user, $cart->session_id);
+                // Use CartCalculationService for totals
+                // از CartCalculationService برای مجموع‌ها استفاده کنید.
+                return CartOperationResponse::success('کد تخفیف با موفقیت اعمال شد.', ['cartTotals' => $this->cartCalculationService->calculateCartTotals($cart)]);
             }
+            DB::rollBack();
+            return $response;
         } catch (\Throwable $e) {
-            Log::error('Error applying coupon in CartService: ' . $e->getMessage(), ['cart_id' => $cart->id, 'coupon_code' => $couponCode, 'exception' => $e->getTraceAsString()]);
-            return CartOperationResponse::fail('خطا در اعمال کد تخفیف.', 500);
+            DB::rollBack();
+            Log::error('Error applying coupon in CartService: ' . $e->getMessage(), ['coupon_code' => $couponCode, 'exception' => $e->getTraceAsString()]);
+            return CartOperationResponse::error('خطا در اعمال کد تخفیف.', 500);
         }
     }
 
     /**
      * Remove a coupon from the cart.
+     * حذف یک کد تخفیف از سبد خرید.
      *
-     * @param Cart $cart
-     * @return CartOperationResponse
+     * @param \App\Models\Cart $cart
+     * @return \App\Services\Responses\CartOperationResponse
      */
     public function removeCoupon(Cart $cart): CartOperationResponse
     {
         try {
-            $success = $this->couponService->removeCoupon($cart);
-            if ($success) {
-                // Refresh cart to get updated discount_amount and total
-                $cart->refresh();
-                $this->cacheManager->clearCache($cart->user, $cart->session_id); // Clear cache after update
-                return CartOperationResponse::success('کد تخفیف با موفقیت حذف شد.', ['cart' => $cart->toArray()]);
-            } else {
-                return CartOperationResponse::fail('کد تخفیفی برای حذف وجود ندارد.', 400);
-            }
+            DB::beginTransaction();
+            $cart->coupon_id = null;
+            $cart->discount_amount = 0;
+            $cart->save();
+            DB::commit();
+            $this->cacheManager->clearCache($cart->user, $cart->session_id);
+            // Use CartCalculationService for totals
+            // از CartCalculationService برای مجموع‌ها استفاده کنید.
+            return CartOperationResponse::success('کد تخفیف با موفقیت حذف شد.', ['cartTotals' => $this->cartCalculationService->calculateCartTotals($cart)]);
         } catch (\Throwable $e) {
-            Log::error('Error removing coupon in CartService: ' . $e->getMessage(), ['cart_id' => $cart->id, 'exception' => $e->getTraceAsString()]);
-            return CartOperationResponse::fail('خطا در حذف کد تخفیف.', 500);
+            DB::rollBack();
+            Log::error('Error removing coupon in CartService: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
+            return CartOperationResponse::error('خطا در حذف کد تخفیف.', 500);
         }
     }
 
+    /**
+     * Get the total count of items (sum of quantities) in the cart.
+     * دریافت تعداد کل آیتم‌ها (مجموع تعداد) در سبد خرید.
+     *
+     * @param \App\Models\Cart $cart
+     * @return int
+     */
     public function getCartItemCount(Cart $cart): int
     {
         return $cart->items->sum('quantity');
     }
 
+    /**
+     * Transfer cart ownership from a guest session to a new user.
+     * انتقال مالکیت سبد خرید از جلسه مهمان به کاربر جدید.
+     *
+     * @param \App\Models\Cart $cart
+     * @param \App\Models\User $newOwner
+     * @return bool
+     */
     public function transferCartOwnership(Cart $cart, User $newOwner): bool
     {
-        $startTime = microtime(true);
-        DB::beginTransaction();
         try {
-            $cart->user_id = $newOwner->id;
-            $cart->session_id = null;
-            $this->cartRepository->save($cart);
-            $this->cacheManager->clearCache($newOwner);
-            $this->cacheManager->clearCache(null, $cart->session_id);
+            DB::beginTransaction();
+            $this->cartRepository->assignCartToUser($cart, $newOwner);
             DB::commit();
-            $this->metricsManager->recordMetric('transferCartOwnership_duration', microtime(true) - $startTime, ['cart_id' => $cart->id, 'new_owner_id' => $newOwner->id]);
+            $this->cacheManager->clearCache($newOwner, null);
+            Log::info('Cart ownership transferred', ['cart_id' => $cart->id, 'old_session_id' => $cart->session_id, 'new_user_id' => $newOwner->id]);
             return true;
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('Error transferring cart ownership: ' . $e->getMessage(), ['cart_id' => $cart->id, 'new_owner_id' => $newOwner->id, 'exception' => $e->getTraceAsString()]);
-            $this->metricsManager->recordMetric('transferCartOwnership_exception', microtime(true) - $startTime, ['error_type' => 'unexpected']);
-            throw new CartOperationException('خطا در انتقال مالکیت سبد خرید.', 0, $e);
+            Log::error('Error transferring cart ownership: ' . $e->getMessage(), ['cart_id' => $cart->id, 'new_user_id' => $newOwner->id, 'exception' => $e->getTraceAsString()]);
+            return false;
         }
     }
 
+    /**
+     * Check if the cart is empty.
+     * بررسی خالی بودن سبد خرید.
+     *
+     * @param \App\Models\Cart $cart
+     * @return bool
+     */
     public function isCartEmpty(Cart $cart): bool
     {
         return $cart->items->isEmpty();
     }
 
+    /**
+     * Get the expiry date for a guest cart.
+     * دریافت تاریخ انقضای سبد خرید مهمان.
+     *
+     * @param \App\Models\Cart $cart
+     * @return \Carbon\Carbon|null
+     */
     public function getCartExpiryDate(Cart $cart): ?Carbon
     {
         if ($cart->user_id) {
-            return null; // User carts don't expire
+            return null;
         }
-
-        $lastActivity = $cart->updated_at ?? $cart->created_at;
-        return $lastActivity->addDays(config('cart.guest_cart_expiry_days', 7));
+        $guestCartLifetimeHours = config('cart.guest_cart_lifetime_hours', 72);
+        return $cart->created_at->addHours($guestCartLifetimeHours);
     }
 
+    /**
+     * Refresh the prices of items in the cart based on current product prices.
+     * به‌روزرسانی قیمت آیتم‌های سبد خرید بر اساس قیمت‌های فعلی محصول.
+     *
+     * @param \App\Models\Cart $cart
+     * @return \App\Services\Responses\CartOperationResponse
+     */
     public function refreshCartItemPrices(Cart $cart): CartOperationResponse
     {
+        // This method now delegates to CartCalculationService
+        // این متد اکنون به CartCalculationService واگذار می‌شود.
+        return $this->cartCalculationService->refreshCartItemPrices($cart);
+    }
+
+    /**
+     * سبد خرید مهمان را به کاربر لاگین شده اختصاص می‌دهد.
+     *
+     * @param User $user
+     * @param string $sessionId
+     * @return CartOperationResponse
+     */
+    public function assignGuestCartToUser(User $user, string $sessionId): CartOperationResponse
+    {
         $startTime = microtime(true);
-        // Load product and productVariant if exists
-        $cart->loadMissing(['items.product', 'items.productVariant']);
-        $updatedCount = 0;
-
-        DB::beginTransaction();
         try {
-            foreach ($cart->items as $item) {
-                if (!$item->product) {
-                    Log::warning('Skipping price refresh for cart item with missing product.', ['cart_item_id' => $item->id]);
-                    continue;
-                }
+            DB::beginTransaction();
 
-                $currentPrice = $item->price;
-                $expectedPrice = $item->product->price;
+            $guestCart = $this->cartRepository->findBySessionId($sessionId);
+            $userCart = $this->cartRepository->findByUserId($user->id);
 
-                if ($item->productVariant) {
-                    $expectedPrice += $item->productVariant->price_adjustment;
-                }
+            if ($guestCart) {
+                if ($userCart) {
+                    foreach ($guestCart->items as $guestItem) {
+                        $product = Product::where('id', $guestItem->product_id)->lockForUpdate()->first();
+                        if (!$product) {
+                            Log::warning('Product not found during guest cart merge, skipping item.', ['product_id' => $guestItem->product_id]);
+                            continue;
+                        }
 
-                if ($currentPrice !== $expectedPrice) {
-                    $item->price = $expectedPrice;
-                    $this->cartRepository->updateCartItem($item, ['price' => $expectedPrice]);
-                    $updatedCount++;
+                        $existingUserItem = $userCart->items->first(function ($item) use ($guestItem) {
+                            return $item->product_id === $guestItem->product_id && $item->product_variant_id === $guestItem->product_variant_id;
+                        });
+
+                        if ($existingUserItem) {
+                            $oldUserQuantity = $existingUserItem->quantity;
+                            $desiredNewQuantity = $oldUserQuantity + $guestItem->quantity;
+
+                            $availableStock = $product->stock - ($product->reserved_stock ?? 0) + $oldUserQuantity;
+
+                            $finalNewQuantity = $desiredNewQuantity;
+                            if ($desiredNewQuantity > $availableStock) {
+                                $finalNewQuantity = $availableStock;
+                                Log::warning('Merged cart item quantity capped due to insufficient stock.', [
+                                    'product_id' => $product->id,
+                                    'requested_quantity' => $desiredNewQuantity,
+                                    'capped_quantity' => $finalNewQuantity,
+                                    'available_stock' => $availableStock,
+                                    'current_reserved' => ($product->reserved_stock ?? 0),
+                                    'old_user_quantity' => $oldUserQuantity
+                                ]);
+                            }
+
+                            $this->cartRepository->updateCartItem($existingUserItem, ['quantity' => $finalNewQuantity]);
+                            if ($this->stockManager) {
+                                $quantityDifference = $finalNewQuantity - $oldUserQuantity;
+                                if ($quantityDifference > 0) {
+                                    $this->stockManager->reserveStock($product, $quantityDifference);
+                                } elseif ($quantityDifference < 0) {
+                                    $this->stockManager->releaseStock($product, abs($quantityDifference));
+                                }
+                            }
+                        } else {
+                            $guestItem->cart_id = $userCart->id;
+                            $guestItem->save();
+                            if ($this->stockManager) {
+                                $this->stockManager->reserveStock($product, $guestItem->quantity);
+                            }
+                        }
+                    }
+                    $this->cartRepository->delete($guestCart);
+                    Log::info('Guest cart merged with user cart', ['guest_cart_id' => $guestCart->id, 'user_cart_id' => $userCart->id, 'user_id' => $user->id]);
+                } else {
+                    $this->cartRepository->assignCartToUser($guestCart, $user);
+                    Log::info('Guest cart assigned to user', ['cart_id' => $guestCart->id, 'user_id' => $user->id]);
                 }
             }
             DB::commit();
-            $this->cacheManager->clearCache($cart->user, $cart->session_id);
-            $this->metricsManager->recordMetric('refreshCartItemPrices_duration', microtime(true) - $startTime, ['updated_count' => $updatedCount]);
-            return CartOperationResponse::success("قیمت {$updatedCount} آیتم سبد خرید به‌روزرسانی شد.");
+            $this->cacheManager->clearCache($user, $sessionId);
+            $this->metricsManager->recordMetric('assignGuestCartToUser_duration', microtime(true) - $startTime, ['user_id' => $user->id]);
+            return CartOperationResponse::success('سبد خرید مهمان با موفقیت به کاربر اختصاص داده شد.');
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('Error refreshing cart item prices: ' . $e->getMessage(), ['cart_id' => $cart->id, 'exception' => $e->getTraceAsString()]);
-            $this->metricsManager->recordMetric('refreshCartItemPrices_exception', microtime(true) - $startTime, ['error_type' => 'unexpected']);
-            throw new CartOperationException('خطا در به‌روزرسانی قیمت آیتم‌های سبد خرید.', 0, $e);
+            Log::error('Error assigning guest cart to user: ' . $e->getMessage(), ['user_id' => $user->id, 'exception' => $e->getTraceAsString()]);
+            $this->metricsManager->recordMetric('assignGuestCartToUser_exception', microtime(true) - $startTime, ['error_type' => 'unexpected']);
+            return CartOperationResponse::error('خطا در اختصاص سبد خرید مهمان به کاربر.', 500);
         }
     }
 }

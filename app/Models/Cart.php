@@ -54,37 +54,7 @@ class Cart extends Model
     }
 
     /**
-     * Calculate the total price of items in the cart.
-     * مجموع قیمت تمامی آیتم‌های موجود در سبد خرید را محاسبه و برمی‌گرداند.
-     *
-     * @return float
+     * Removed: getTotalPrice method has been moved to CartCalculationService.
+     * این متد از مدل حذف شده و مسئولیت محاسبه به CartCalculationService منتقل شده است.
      */
-    public function getTotalPrice()
-    {
-        // با استفاده از eager loading قبلی، آیتم‌ها از قبل لود شده‌اند.
-        // اگر آیتم‌ها لود نشده باشند، N+1 query ایجاد می‌کند. بهتر است قبل از فراخوانی، items() با with('product') لود شود.
-        // This method might become less relevant if `total` is stored and updated by the service.
-        // However, it can still be used for on-the-fly calculation if needed.
-        return $this->items->sum(function ($item) {
-            return $item->quantity * $item->price;
-        });
-    }
-
-    /**
-     * Find a cart by user ID or session ID, or create a new one.
-     * یک سبد خرید را بر اساس ID کاربر یا ID سشن پیدا می‌کند، یا یک سبد خرید جدید ایجاد می‌کند.
-     *
-     * @param int|null $userId
-     * @return static
-     */
-    public static function findOrCreateCart(?int $userId = null)
-    {
-        if ($userId) {
-            return static::firstOrCreate(['user_id' => $userId]);
-        }
-
-        $sessionId = Session::getId();
-        return static::firstOrCreate(['session_id' => $sessionId]);
-    }
 }
-

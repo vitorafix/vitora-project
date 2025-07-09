@@ -8,6 +8,7 @@ use App\Models\CartItem;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB; // New import for DB facade
 
 class CartRepository implements CartRepositoryInterface
 {
@@ -33,6 +34,27 @@ class CartRepository implements CartRepositoryInterface
     public function findBySessionId(string $sessionId): ?Cart
     {
         return Cart::where('session_id', $sessionId)->first();
+    }
+
+    /**
+     * Find a cart by user or session ID.
+     * سبد خرید را بر اساس شناسه کاربر یا شناسه سشن پیدا می‌کند.
+     *
+     * @param User|null $user
+     * @param string|null $sessionId
+     * @return Cart|null
+     */
+    public function findByUserOrSession(?User $user = null, ?string $sessionId = null): ?Cart
+    {
+        if ($user) {
+            return $this->findByUserId($user->id);
+        }
+
+        if ($sessionId) {
+            return $this->findBySessionId($sessionId);
+        }
+
+        return null;
     }
 
     /**
@@ -188,5 +210,67 @@ class CartRepository implements CartRepositoryInterface
         // Eager load 'items' and their 'product' and 'productVariant' relations
         // بارگذاری eagerly 'items' و روابط 'product' و 'productVariant' آنها
         return Cart::with(['items.product', 'items.productVariant'])->find($cartId);
+    }
+
+    /**
+     * Assigns a guest cart to a user.
+     * سبد خرید مهمان را به یک کاربر اختصاص می‌دهد.
+     *
+     * @param Cart $guestCart
+     * @param User $user
+     * @return void
+     */
+    public function assignCartToUser(Cart $guestCart, User $user): void
+    {
+        $guestCart->user_id = $user->id;
+        $guestCart->session_id = null; // Clear session ID as it's now owned by a user
+        $guestCart->save();
+    }
+
+    /**
+     * Clear all items from a cart.
+     * تمام آیتم‌ها را از یک سبد خرید پاک می‌کند.
+     *
+     * @param Cart $cart
+     * @return void
+     */
+    public function clearCart(Cart $cart): void
+    {
+        $cart->items()->delete();
+    }
+
+    /**
+     * Find a cart by ID.
+     * سبد خرید را بر اساس شناسه آن پیدا می‌کند.
+     *
+     * @param int $cartId
+     * @return Cart|null
+     */
+    public function findById(int $cartId): ?Cart
+    {
+        return Cart::find($cartId);
+    }
+
+    /**
+     * Bulk update multiple cart items by their IDs.
+     * چندین آیتم سبد خرید را به صورت انبوه بر اساس شناسه‌های آنها به‌روزرسانی می‌کند.
+     *
+     * @param array $updates An array of arrays, where each inner array contains 'id' and the fields to update (e.g., 'price').
+     * @return int The number of affected rows.
+     */
+    public function bulkUpdateCartItems(array $updates): int
+    {
+        $affectedRows = 0;
+        foreach ($updates as $update) {
+            if (isset($update['id']) && is_array($update)) {
+                $id = $update['id'];
+                unset($update['id']); // Remove ID from update data
+                $affectedRows += CartItem::where('id', $id)->update($update);
+            }
+        }
+        return $affectedRows;
+        // A more optimized bulk update might use a single query if all updates are for the same column,
+        // but for varying columns or complex conditions, iterating is simpler.
+        // برای به‌روزرسانی‌های پیچیده‌تر، ممکن است به یک کوئری واحد نیاز باشد، اما برای سادگی، از حلقه استفاده می‌شود.
     }
 }
