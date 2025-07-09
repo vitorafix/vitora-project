@@ -22,7 +22,9 @@ Route::get('/about', [PageController::class, 'about'])->name('about');
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
-Route::get('/products/{product:slug}', [ProductController::class, 'show'])->name('products.show');
+// مسیر را برای استفاده از ID محصول تغییر دهید
+// Change the route to use product ID
+Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show'); // حذف ":slug"
 
 Route::get('/search', [SearchController::class, 'search'])->name('search');
 
@@ -38,13 +40,12 @@ Route::prefix('auth')->name('auth.')->group(function () {
 Route::prefix('cart')->name('cart.')->group(function () {
     Route::get('/', [CartController::class, 'index'])->name('index');
     Route::get('/contents', [CartController::class, 'getContents'])->name('contents');
-    // تغییر اعمال شده: استفاده از {product} برای Route Model Binding
     Route::post('/add/{product}', [CartController::class, 'add'])->name('add');
     Route::put('/update/{cartItem}', [CartController::class, 'updateQuantity'])->name('update');
     Route::delete('/remove/{cartItem}', [CartController::class, 'removeCartItem'])->name('remove');
     Route::post('/clear', [CartController::class, 'clearCart'])->name('clear');
     Route::post('/apply-coupon', [CartController::class, 'applyCoupon'])->name('apply-coupon');
-    Route::post('/remove-coupon', [CartController::class, 'removeCoupon'])->name('remove-coupon');
+    Route::post('/remove-coupon', [CartController::class, 'remove-coupon'])->name('remove-coupon');
 });
 
 Route::middleware(['auth', 'profile.completed'])->group(function () {
