@@ -256,10 +256,18 @@ class CartManager {
         console.log('loadAndRenderCart called. Stack trace:', new Error().stack); // Added stack trace log
         setCartLoadingState(true); 
         try {
-            const data = await fetchCartContents();
+            const apiResponse = await fetchCartContents(); // دریافت کل پاسخ API
 
-            if (!data || !Array.isArray(data.items) || data.totalQuantity === undefined || data.totalPrice === undefined || typeof data.cartTotals !== 'object') {
-                throw new Error('Invalid cart data received from API.');
+            // بررسی کنید که آیا فراخوانی API موفق بوده و شامل کلید 'data' است
+            if (!apiResponse || !apiResponse.success || !apiResponse.data) {
+                throw new Error(apiResponse.message || 'ساختار پاسخ API نامعتبر است یا موفقیت‌آمیز نیست.');
+            }
+
+            const data = apiResponse.data; // استخراج داده‌های واقعی سبد خرید از کلید 'data'
+
+            // اکنون شیء 'data' استخراج شده را اعتبارسنجی کنید
+            if (!Array.isArray(data.items) || data.totalQuantity === undefined || data.totalPrice === undefined || typeof data.cartTotals !== 'object') {
+                throw new Error('داده‌های سبد خرید نامعتبر از API دریافت شد (فیلدهای مورد انتظار وجود ندارند).');
             }
 
             this.cartData = {
@@ -278,7 +286,7 @@ class CartManager {
                     renderMainCart(this.cartData.items, this.cartData.cartTotals); 
                 }
             } else {
-                console.warn('Main cart elements not present, skipping main cart rendering.');
+                console.warn('عناصر اصلی سبد خرید وجود ندارند، رندرینگ سبد خرید اصلی نادیده گرفته می‌شود.');
             }
 
             this.notify('cartChanged', this.cartData); 
@@ -287,7 +295,7 @@ class CartManager {
             // this.broadcastChannel.postMessage({ type: 'cart_updated', senderId: this.instanceId });
 
         } catch (error) {
-            console.error('Failed to load and render cart:', error);
+            console.error('بارگذاری و رندر سبد خرید با شکست مواجه شد:', error);
             if (typeof window.showMessage === 'function') {
                 window.showMessage('خطا در بارگذاری سبد خرید. لطفاً دوباره تلاش کنید.', 'error');
             }

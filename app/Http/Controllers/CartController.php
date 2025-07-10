@@ -96,9 +96,10 @@ class CartController extends Controller
                     'success' => true,
                     'message' => 'سبد خرید خالی است',
                     'data' => [
-                        'cart' => null,
                         'items' => [],
-                        'totals' => [
+                        'totalQuantity' => 0, // Explicitly set for empty cart
+                        'totalPrice' => 0,    // Explicitly set for empty cart
+                        'cartTotals' => [
                             'subtotal' => 0,
                             'tax' => 0,
                             'total' => 0,
@@ -111,15 +112,23 @@ class CartController extends Controller
             // بارگذاری روابط
             $cart->load(['items.product', 'items.productVariant']);
 
-            // محاسبه مجموع
-            $totals = $this->calculateTotals($cart);
+            // Get the data from CartResource
+            // CartResource انتظار یک نمونه از CartContentsResponse را دارد، نه مستقیماً Cart Model.
+            // بنابراین، باید CartContentsResponse را از سرویس دریافت کنیم.
+            $cartContentsResponse = $this->cartService->getCartContents($cart);
+            $cartResourceData = (new CartResource($cartContentsResponse))->toArray($request);
+
+            // Get the totals calculated by the controller's helper method
+            $calculatedTotals = $this->calculateTotals($cart);
 
             return response()->json([
                 'success' => true,
                 'message' => 'سبد خرید با موفقیت بارگذاری شد',
                 'data' => [
-                    'cart' => new CartResource($cart),
-                    'totals' => $totals
+                    'items' => $cartResourceData['items'],
+                    'totalQuantity' => $cartResourceData['summary']['totalQuantity'] ?? 0,
+                    'totalPrice' => $cartResourceData['summary']['totalPrice'] ?? 0,
+                    'cartTotals' => $calculatedTotals // Use the totals from calculateTotals
                 ]
             ]);
 

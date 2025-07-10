@@ -103,7 +103,7 @@ class CartResource extends JsonResource
      * @param Request $request
      * @return array
      */
-    private function formatMetadata(Request $request): array
+    private function function formatMetadata(Request $request): array
     {
         $metadata = [
             'itemCount' => count($this->items),
@@ -245,7 +245,7 @@ class CartResource extends JsonResource
     public function with(Request $request): array
     {
         // برای موبایل، پاسخ ساده‌تر
-        if ($this->isMobileRequest()) {
+        if (self::isMobileRequest()) { // Changed to static call
             return [
                 'success' => true,
                 'timestamp' => now()->toISOString(),
