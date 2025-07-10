@@ -21,11 +21,11 @@
             <i class="fas fa-truck ml-2"></i> انتخاب شیوه ارسال
         </div>
         <div class="flex-1 text-center p-2 text-gray-600 font-semibold flex items-center justify-center transition-all duration-300">
-            <i class="fas fa-shopping-cart ml-2"></i> سبد خرید
+            <i class="fas fa-box-open ml-2"></i> تایید نهایی
         </div>
     </div>
 
-    <div class="bg-white rounded-2xl shadow-xl p-6 md:p-10 border border-gray-200">
+    <div class="bg-white rounded-xl shadow-lg p-6 md:p-8 border border-gray-200">
         {{-- Cart Items Container (this is where JS will render items) --}}
         <div id="cart-items-container" class="space-y-6">
             {{-- Cart items will be dynamically inserted here by JavaScript --}}
@@ -51,6 +51,4 @@
 </section>
 @endsection
 
-{{-- No @push('scripts') here, as app.js (which imports cart.js) is already loaded in layouts/app.blade.php --}}
-
-{{-- REMOVED THE INLINE SCRIPT FROM HERE... --}}
+{{-- No @push('scripts') here... scripts are loaded via Vite or similar in layouts/app.blade.php --}}

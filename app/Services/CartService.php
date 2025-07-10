@@ -454,7 +454,8 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                     total: 0
                 );
                 $this->metricsManager->recordMetric('getCartContents_duration', microtime(true) - $startTime, ['cart_id' => $cart->id, 'status' => 'empty_cart']);
-                return new CartContentsResponse([], 0, 0.0, $emptyTotals);
+                // Convert the empty collection to an array before passing it
+                return new CartContentsResponse($cart->items->toArray(), 0, 0.0, $emptyTotals);
             }
 
             // Calculate totals using the dedicated service
@@ -465,7 +466,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             // Since CartContentsResponse now expects $cartTotals in its constructor,
             // we pass it directly as the fourth positional argument.
             $response = new CartContentsResponse(
-                $cart->items->toArray(), // Changed: Convert Collection to array
+                $cart->items->toArray(), // تبدیل کالکشن به آرایه
                 $cart->items->sum('quantity'),
                 $cartTotalsDTO->total,
                 $cartTotalsDTO // Pass CartTotalsDTO directly as the fourth argument
@@ -489,7 +490,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
 
             // Pass all arguments as positional, including the emptyTotals DTO
             $errorResponse = new CartContentsResponse(
-                [], // items (empty array)
+                collect([])->toArray(), // items (empty Collection converted to array)
                 0,           // totalQuantity
                 0.0,         // totalPrice
                 $emptyTotals // cartTotals

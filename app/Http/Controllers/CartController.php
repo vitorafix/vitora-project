@@ -63,7 +63,7 @@ class CartController extends Controller
             return view('cart', [ // اصلاح شده: 'cart.index' به 'cart' تغییر یافت
                 'cartItems' => $cartContents->items, // فرض بر این است که $cartContents->items آیتم‌های سبد خرید را برمی‌گرداند
                 'cartTotals' => $cartContents->cartTotals, // از cartTotals موجود در پاسخ سرویس استفاده کنید
-                'isEmpty' => $cartContents->items->isEmpty(), // از متد isEmpty() روی کالکشن items استفاده کنید
+                'isEmpty' => empty($cartContents->items), // اصلاح شده: از empty() برای آرایه استفاده کنید
                 'totalQuantity' => $cartContents->totalQuantity,
                 'totalPrice' => $cartContents->totalPrice,
             ]);
