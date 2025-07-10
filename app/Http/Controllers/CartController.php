@@ -92,8 +92,15 @@ class CartController extends Controller
 
             // CartService::getCartContents اکنون همیشه یک CartContentsResponse معتبر را برمی‌گرداند
             $cartContentsResponse = $this->cartService->getCartContents($cart);
+            // استفاده از CartContentsResponse به طور مستقیم برای ساخت پاسخ JSON
+            // CartContentsResponse اینترفیس JsonSerializable را پیاده‌سازی می‌کند،
+            // بنابراین به طور خودکار به JSON تبدیل می‌شود.
+            // نیازی به CartResource برای این تبدیل نیست اگر ساختار CartContentsResponse مناسب باشد.
+            // اگر CartResource برای تغییر شکل داده‌ها یا افزودن ابرداده خاصی نیاز است، آن را حفظ کنید.
+            // در غیر این صورت، می‌توان آن را ساده‌تر کرد:
+            
+            // اگر CartResource برای تبدیل داده‌ها ضروری است:
             $cartResourceData = (new CartResource($cartContentsResponse))->toArray($request);
-
             return response()->json([
                 'success' => true,
                 'message' => 'سبد خرید با موفقیت بارگذاری شد',
@@ -104,6 +111,15 @@ class CartController extends Controller
                     'cartTotals' => $cartContentsResponse->cartTotals // از cartTotals موجود در پاسخ سرویس استفاده کنید
                 ]
             ]);
+
+            // جایگزین ساده‌تر اگر CartResource فقط برای تبدیل به آرایه استفاده می‌شد:
+            /*
+            return response()->json([
+                'success' => true,
+                'message' => 'سبد خرید با موفقیت بارگذاری شد',
+                'data' => $cartContentsResponse->toArray()
+            ]);
+            */
 
         } catch (\Exception $e) {
             Log::error('Error fetching cart contents', [

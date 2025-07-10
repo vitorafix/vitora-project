@@ -87,4 +87,18 @@ class CartContentsResponse implements JsonSerializable
     {
         return $this->toArray();
     }
+
+    /**
+     * متد isSuccess() برای نشان دادن اینکه شیء پاسخ با موفقیت ایجاد شده است.
+     * این متد برای سازگاری با الگوی CartOperationResponse اضافه شده است.
+     *
+     * @return bool
+     */
+    public function isSuccess(): bool
+    {
+        // CartContentsResponse همیشه با موفقیت ایجاد می‌شود،
+        // حتی اگر سبد خرید خالی باشد یا خطایی در سرویس رخ داده باشد که منجر به بازگرداندن یک شیء خالی شده باشد.
+        // وضعیت موفقیت‌آمیز بودن خود درخواست API در لایه کنترلر مدیریت می‌شود.
+        return true;
+    }
 }
