@@ -54,15 +54,13 @@ function updateQuantityInUI(itemId, newQuantity, itemPrice) {
             quantitySpan.setAttribute('data-quantity', newQuantity);
         }
         // آپدیت متن نمایش تعداد و قیمت در mini cart
-        const quantityPriceTextElement = miniCartItem.querySelector('p.text-xs'); 
+        const quantityPriceTextElement = miniCartItem.querySelector('.mr-1.text-gray-600.text-xs'); 
         if (quantityPriceTextElement && itemPrice > 0) {
-            quantityPriceTextElement.textContent = `${newQuantity} x ${itemPrice.toLocaleString('fa-IR')} تومان`;
+            const newSubtotal = itemPrice * newQuantity;
+            quantityPriceTextElement.textContent = `x ${newQuantity} (${newSubtotal.toLocaleString('fa-IR')} تومان)`;
             console.log(`Mini cart quantity text updated for item ${itemId}`);
         }
     }
-    
-    // این خط قبلاً حذف شده بود و نیازی به بازگرداندن آن نیست.
-    // هدف این تابع فقط آپدیت فوری UI است.
 }
 
 /**
@@ -97,16 +95,15 @@ function removeDuplicateMiniCartItems() {
  */
 function debugCartState() {
     console.log('=== Cart Debug Info ===');
-    console.log('Main cart items:', document.querySelectorAll('#cart-items-container [data-cart-item-id]').length);
-    console.log('Mini cart items:', document.querySelectorAll('#mini-cart-items-container [data-cart-item-id]').length);
-    console.log('Quantity spans in main cart:', document.querySelectorAll('#cart-items-container .item-quantity').length);
-    console.log('Quantity spans in mini cart:', document.querySelectorAll('#mini-cart-items-container .item-quantity').length);
-    console.log('Quantity buttons in main cart:', document.querySelectorAll('#cart-items-container .quantity-btn').length);
-    console.log('Quantity buttons in mini cart:', document.querySelectorAll('#mini-cart-items-container .quantity-btn').length);
+    
+    const DOM = getDOM(); // Get cached DOM elements
 
-    const mainContainer = document.getElementById('cart-items-container');
-    if (mainContainer) {
-        Array.from(mainContainer.children).forEach((item, index) => {
+    // Main Cart Debugging
+    const mainCartItems = DOM.cartItemsContainer ? DOM.cartItemsContainer.querySelectorAll('[data-cart-item-id]') : [];
+    console.log('Main cart items found:', mainCartItems.length);
+
+    if (mainCartItems.length > 0) {
+        mainCartItems.forEach((item, index) => {
             const cartItemId = item.getAttribute('data-cart-item-id') || 'unknown';
             console.log(`\n=== Debugging: Main Cart Item ${index} (ID: ${cartItemId}) ===`);
             console.log('Debugging: Full HTML:', item.outerHTML);
@@ -114,14 +111,29 @@ function debugCartState() {
             if (quantitySpan) {
                 console.log(`Debugging:   Quantity span found: data-quantity=${quantitySpan.dataset.quantity}, text=${quantitySpan.textContent}`);
             } else {
-                console.error(`Debugging:   Quantity span NOT found for item ${cartItemId}.`);
+                console.warn(`Debugging:   Quantity span NOT found for main cart item ${cartItemId}.`);
+            }
+            const subtotalElement = item.querySelector('.item-subtotal');
+            if (subtotalElement) {
+                console.log(`Debugging:   Subtotal element found: data-subtotal=${subtotalElement.dataset.subtotal}, text=${subtotalElement.textContent}`);
+            } else {
+                console.warn(`Debugging:   Subtotal element NOT found for main cart item ${cartItemId}.`);
             }
         });
+    } else {
+        console.log('No main cart items to debug (cart is empty or not yet rendered with items).');
+        // Check if empty message is visible
+        if (DOM.cartEmptyMessage && !DOM.cartEmptyMessage.classList.contains('hidden')) {
+            console.log('Main cart empty message is visible.');
+        }
     }
 
-    const miniContainer = document.getElementById('mini-cart-items-container');
-    if (miniContainer) {
-        Array.from(miniContainer.children).forEach((item, index) => {
+    // Mini Cart Debugging
+    const miniCartItems = DOM.miniCartItemsContainer ? DOM.miniCartItemsContainer.querySelectorAll('[data-cart-item-id]') : [];
+    console.log('Mini cart items found:', miniCartItems.length);
+
+    if (miniCartItems.length > 0) {
+        miniCartItems.forEach((item, index) => {
             const cartItemId = item.getAttribute('data-cart-item-id') || 'unknown';
             console.log(`\n=== Debugging: Mini Cart Item ${index} (ID: ${cartItemId}) ===`);
             console.log('Debugging: Full HTML:', item.outerHTML);
@@ -129,10 +141,18 @@ function debugCartState() {
             if (quantitySpan) {
                 console.log(`Debugging:   Quantity span found: data-quantity=${quantitySpan.dataset.quantity}, text=${quantitySpan.textContent}`);
             } else {
-                console.warn(`Debugging:   Quantity span NOT found for mini cart item ${cartItemId}. (Expected for mini cart if not explicitly rendered)`);
+                console.warn(`Debugging:   Quantity span NOT found for mini cart item ${cartItemId}.`);
             }
         });
+    } else {
+        console.log('No mini cart items to debug (mini cart is empty or not yet rendered with items).');
+        // Check if empty message is visible
+        if (DOM.miniCartEmptyMessage && !DOM.miniCartEmptyMessage.classList.contains('hidden')) {
+            console.log('Mini cart empty message is visible.');
+        }
     }
+
+    console.log('--- End Cart Debug Info ---');
 }
 
 
@@ -285,7 +305,12 @@ class CartManager {
             this.DOM.cartSummary.classList.add('hidden'); 
         }
         if (this.DOM.cartItemsContainer) {
-            this.DOM.cartItemsContainer.innerHTML = '<p class="text-center text-gray-500 py-10 text-lg">سبد خرید شما خالی است.</p>'; 
+            // اطمینان حاصل کنید که این خط فقط محتوای کانتینر آیتم‌ها را پاک می‌کند
+            // و پیام "سبد خرید خالی است" را به جای آن قرار می‌دهد.
+            // این پیام توسط renderer.js مدیریت می‌شود، بنابراین اینجا فقط باید کانتینر آیتم‌ها را پاک کنیم.
+            this.DOM.cartItemsContainer.innerHTML = ''; 
+            // همچنین، کانتینر آیتم‌ها را پنهان کنید تا فقط پیام خالی بودن نمایش داده شود.
+            this.DOM.cartItemsContainer.classList.add('hidden');
         }
     }
 
@@ -573,8 +598,9 @@ document.addEventListener('click', function(event) {
         }
         
         // آپدیت UI بلافاصله برای پاسخگویی بهتر
-        quantitySpan.textContent = newQuantity;
-        quantitySpan.setAttribute('data-quantity', newQuantity);
+        // نیازی به این خطوط نیست، زیرا updateItemQuantity خودش updateQuantityInUI را فراخوانی می‌کند
+        // quantitySpan.textContent = newQuantity;
+        // quantitySpan.setAttribute('data-quantity', newQuantity);
         
         // آپدیت server از طریق CartManager با debounce
         debouncedUpdateCartItemQuantity(itemId, newQuantity); // استفاده از نسخه debounce شده
