@@ -92,34 +92,11 @@ class CartController extends Controller
 
             // CartService::getCartContents اکنون همیشه یک CartContentsResponse معتبر را برمی‌گرداند
             $cartContentsResponse = $this->cartService->getCartContents($cart);
-            // استفاده از CartContentsResponse به طور مستقیم برای ساخت پاسخ JSON
-            // CartContentsResponse اینترفیس JsonSerializable را پیاده‌سازی می‌کند،
-            // بنابراین به طور خودکار به JSON تبدیل می‌شود.
-            // نیازی به CartResource برای این تبدیل نیست اگر ساختار CartContentsResponse مناسب باشد.
-            // اگر CartResource برای تغییر شکل داده‌ها یا افزودن ابرداده خاصی نیاز است، آن را حفظ کنید.
-            // در غیر این صورت، می‌توان آن را ساده‌تر کرد:
             
-            // اگر CartResource برای تبدیل داده‌ها ضروری است:
-            $cartResourceData = (new CartResource($cartContentsResponse))->toArray($request);
-            return response()->json([
-                'success' => true,
-                'message' => 'سبد خرید با موفقیت بارگذاری شد',
-                'data' => [
-                    'items' => $cartResourceData['items'],
-                    'totalQuantity' => $cartResourceData['summary']['totalQuantity'] ?? 0,
-                    'totalPrice' => $cartResourceData['summary']['totalPrice'] ?? 0,
-                    'cartTotals' => $cartContentsResponse->cartTotals // از cartTotals موجود در پاسخ سرویس استفاده کنید
-                ]
-            ]);
-
-            // جایگزین ساده‌تر اگر CartResource فقط برای تبدیل به آرایه استفاده می‌شد:
-            /*
-            return response()->json([
-                'success' => true,
-                'message' => 'سبد خرید با موفقیت بارگذاری شد',
-                'data' => $cartContentsResponse->toArray()
-            ]);
-            */
+            // استفاده از CartResource برای تبدیل CartContentsResponse به یک ساختار JSON بهینه‌سازی شده برای API
+            // CartResource شامل منطق فرمت‌بندی، اضافه کردن ابرداده و بهینه‌سازی برای موبایل است.
+            // متد with() در CartResource برای افزودن فیلدهای 'success' و 'message' استفاده می‌شود.
+            return (new CartResource($cartContentsResponse))->response()->setStatusCode(200);
 
         } catch (\Exception $e) {
             Log::error('Error fetching cart contents', [
@@ -167,16 +144,18 @@ class CartController extends Controller
             );
 
             if ($response->isSuccess()) {
-                // محاسبه مجموع کل‌های سبد خرید پس از عملیات موفق
-                // به جای $response->getCart() از $currentCart->fresh() استفاده می‌شود
-                $cartTotals = $this->cartCalculationService->calculateCartTotals($currentCart->fresh());
-                return response()->json([
-                    'success' => true,
-                    'message' => 'محصول با موفقیت به سبد خرید اضافه شد.',
-                    'cartTotals' => $cartTotals,
-                    // بازگرداندن داده‌های به‌روز شده سبد خرید با استفاده از $currentCart->fresh()
-                    'cart' => $currentCart->fresh()->toArray(),
-                ], 200);
+                // پس از عملیات موفق، محتویات به‌روز شده سبد خرید را دریافت کنید
+                $updatedCart = $currentCart->fresh(); // دریافت آخرین وضعیت سبد خرید از دیتابیس
+                $cartContentsResponse = $this->cartService->getCartContents($updatedCart); // دریافت CartContentsResponse از سرویس
+
+                // استفاده از CartResource برای فرمت‌بندی پاسخ
+                return (new CartResource($cartContentsResponse))
+                    ->additional([
+                        'success' => true,
+                        'message' => 'محصول با موفقیت به سبد خرید اضافه شد.',
+                    ])
+                    ->response()
+                    ->setStatusCode(200);
             } else {
                 return response()->json([
                     'success' => false,
@@ -249,14 +228,15 @@ class CartController extends Controller
                 if (!$cart) {
                     throw new CartOperationException('سبد خرید مرتبط با آیتم یافت نشد.', 404);
                 }
-                $cartTotals = $this->cartCalculationService->calculateCartTotals($cart);
+                $cartContentsResponse = $this->cartService->getCartContents($cart->fresh()); // دریافت CartContentsResponse از سرویس
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'تعداد آیتم سبد خرید با موفقیت به‌روزرسانی شد.',
-                    'cartTotals' => $cartTotals,
-                    'cartItem' => $cartItem->fresh()->toArray(), // بازگرداندن داده‌های به‌روز شده آیتم سبد خرید
-                ], 200);
+                return (new CartResource($cartContentsResponse))
+                    ->additional([
+                        'success' => true,
+                        'message' => 'تعداد آیتم سبد خرید با موفقیت به‌روزرسانی شد.',
+                    ])
+                    ->response()
+                    ->setStatusCode(200);
             } else {
                 return response()->json([
                     'success' => false,
@@ -310,14 +290,17 @@ class CartController extends Controller
             $response = $this->cartService->removeCartItem($cartItem, $user, $sessionId);
 
             if ($response->isSuccess()) {
-                // محاسبه مجموع کل‌های سبد خرید پس از حذف موفق
-                // `cartItem->cart->fresh()` نیاز به تعریف صحیح روابط مدل دارد.
-                $cartTotals = $this->cartCalculationService->calculateCartTotals($cartItem->cart->fresh());
-                return response()->json([
-                    'success' => true,
-                    'message' => 'آیتم با موفقیت از سبد خرید حذف شد.',
-                    'cartTotals' => $cartTotals,
-                ], 200);
+                // پس از عملیات موفق، محتویات به‌روز شده سبد خرید را دریافت کنید
+                $updatedCart = $cartItem->cart->fresh(); // دریافت آخرین وضعیت سبد خرید از دیتابیس
+                $cartContentsResponse = $this->cartService->getCartContents($updatedCart); // دریافت CartContentsResponse از سرویس
+
+                return (new CartResource($cartContentsResponse))
+                    ->additional([
+                        'success' => true,
+                        'message' => 'آیتم با موفقیت از سبد خرید حذف شد.',
+                    ])
+                    ->response()
+                    ->setStatusCode(200);
             } else {
                 return response()->json([
                     'success' => false,
@@ -359,11 +342,22 @@ class CartController extends Controller
             $response = $this->cartService->clearCart($cart); // فراخوانی متد clearCart با نمونه Cart
 
             if ($response->isSuccess()) {
-                // پس از پاکسازی، سبد خرید ممکن است خالی باشد، پس calculateCartTotals را با یک سبد تازه فراخوانی می‌کنیم.
-                $cartTotals = $this->cartCalculationService->calculateCartTotals($cart->fresh());
-                return response()->json(['success' => true, 'message' => 'سبد خرید با موفقیت پاک شد.', 'cartTotals' => $cartTotals], 200);
+                // پس از عملیات موفق، محتویات به‌روز شده سبد خرید را دریافت کنید (که اکنون خالی است)
+                $updatedCart = $cart->fresh(); // دریافت آخرین وضعیت سبد خرید از دیتابیس
+                $cartContentsResponse = $this->cartService->getCartContents($updatedCart); // دریافت CartContentsResponse از سرویس
+
+                return (new CartResource($cartContentsResponse))
+                    ->additional([
+                        'success' => true,
+                        'message' => 'سبد خرید با موفقیت پاک شد.',
+                    ])
+                    ->response()
+                    ->setStatusCode(200);
             } else {
-                return response()->json(['success' => false, 'message' => $response->getMessage()], $response->getStatusCode());
+                return response()->json([
+                    'success' => false,
+                    'message' => $response->getMessage(),
+                ], $response->getStatusCode());
             }
         } catch (\Throwable $e) {
             Log::error('Error clearing cart: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
@@ -393,13 +387,17 @@ class CartController extends Controller
             $response = $this->cartService->applyCoupon($cart, $couponCode);
 
             if ($response->isSuccess()) {
-                // محاسبه مجدد مجموع کل‌های سبد خرید پس از اعمال کوپن
-                $cartTotals = $this->cartCalculationService->calculateCartTotals($cart->fresh());
-                return response()->json([
-                    'success' => true,
-                    'message' => 'کد تخفیف با موفقیت اعمال شد.',
-                    'cartTotals' => $cartTotals,
-                ], 200);
+                // پس از عملیات موفق، محتویات به‌روز شده سبد خرید را دریافت کنید
+                $updatedCart = $cart->fresh(); // دریافت آخرین وضعیت سبد خرید از دیتابیس
+                $cartContentsResponse = $this->cartService->getCartContents($updatedCart); // دریافت CartContentsResponse از سرویس
+
+                return (new CartResource($cartContentsResponse))
+                    ->additional([
+                        'success' => true,
+                        'message' => 'کد تخفیف با موفقیت اعمال شد.',
+                    ])
+                    ->response()
+                    ->setStatusCode(200);
             } else {
                 return response()->json([
                     'success' => false,
@@ -436,13 +434,17 @@ class CartController extends Controller
             $response = $this->cartService->removeCoupon($cart);
 
             if ($response->isSuccess()) {
-                // محاسبه مجدد مجموع کل‌های سبد خرید پس از حذف کوپن
-                $cartTotals = $this->cartCalculationService->calculateCartTotals($cart->fresh());
-                return response()->json([
-                    'success' => true,
-                    'message' => 'کد تخفیف با موفقیت حذف شد.',
-                    'cartTotals' => $cartTotals,
-                ], 200);
+                // پس از عملیات موفق، محتویات به‌روز شده سبد خرید را دریافت کنید
+                $updatedCart = $cart->fresh(); // دریافت آخرین وضعیت سبد خرید از دیتابیس
+                $cartContentsResponse = $this->cartService->getCartContents($updatedCart); // دریافت CartContentsResponse از سرویس
+
+                return (new CartResource($cartContentsResponse))
+                    ->additional([
+                        'success' => true,
+                        'message' => 'کد تخفیف با موفقیت حذف شد.',
+                    ])
+                    ->response()
+                    ->setStatusCode(200);
             } else {
                 return response()->json([
                     'success' => false,
