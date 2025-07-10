@@ -49,191 +49,129 @@ class CartResource extends JsonResource
             throw new \InvalidArgumentException('Resource must be an instance of CartContentsResponse');
         }
 
-        /** @var CartContentsResponse $this */
-        $response = [
-            'items' => $this->formatItems($this->items),
-            'summary' => $this->formatSummary(),
+        // اگر درخواست از نوع موبایل باشد، پاسخ ساده‌تر خواهد بود
+        $isMobile = self::isMobileRequest();
+
+        return [
+            'items' => $this->formatItems($isMobile),
+            'summary' => $this->formatSummary($isMobile),
+            // 'cartTotals' => $this->resource->cartTotals->toArray(), // cartTotals در summary گنجانده شده است
+            // metadata فقط در صورتی اضافه می‌شود که includeMetadata true باشد
+            'metadata' => $this->when($this->includeMetadata && !$isMobile, $this->formatMetadata()),
         ];
-
-        // اضافه کردن metadata به صورت شرطی
-        if ($this->includeMetadata) {
-            $response['metadata'] = $this->formatMetadata($request);
-        }
-
-        return $response;
     }
 
     /**
-     * Determine if the current request is for a mobile client.
-     * بررسی می‌کند که آیا درخواست فعلی برای کلاینت موبایل است یا خیر.
+     * Check if the current request is from a mobile device.
+     * بررسی می‌کند که آیا درخواست فعلی از دستگاه موبایل است.
      *
      * @return bool
      */
-    private function isMobileRequest(): bool
+    protected static function isMobileRequest(): bool
     {
-        // این فلگ توسط یک Middleware یا Service Provider تنظیم می‌شود.
-        // مثال: app()->instance('isMobileRequest', true);
-        return app()->bound('isMobileRequest') && app('isMobileRequest') === true;
+        // این یک پیاده‌سازی ساده است. در محیط واقعی، ممکن است نیاز به بررسی User-Agent دقیق‌تر باشد.
+        return request()->hasHeader('X-Mobile-Optimized') && request()->header('X-Mobile-Optimized') === 'true';
     }
 
     /**
-     * Format summary based on optimization level.
+     * Format cart items for the response.
      *
+     * @param bool $isMobile
      * @return array
      */
-    private function formatSummary(): array
+    protected function formatItems(bool $isMobile): array
     {
-        $summary = [
-            'totalQuantity' => $this->totalQuantity,
-            'totalPrice' => $this->totalPrice,
-            'isEmpty' => $this->totalQuantity === 0,
-        ];
-
-        // برای موبایل، فقط قیمت فرمت شده اضافه می‌کنیم
-        if (!$this->isMobileRequest()) {
-            $summary['formattedTotalPrice'] = $this->formatPrice($this->totalPrice);
-            $summary['currency'] = config('cart.currency.code', 'IRR');
-        }
-        return $summary;
-    }
-
-    /**
-     * Format metadata for response.
-     *
-     * @param Request $request
-     * @return array
-     */
-    private function formatMetadata(Request $request): array // Changed: Removed duplicate 'function' keyword
-    {
-        $metadata = [
-            'itemCount' => count($this->items),
-            'lastUpdated' => now()->toISOString(),
-        ];
-
-        // اضافه کردن اطلاعات تکمیلی برای غیرموبایل
-        if (!$this->isMobileRequest()) {
-            $metadata['version'] = config('cart.api.version', '1.0');
-            $metadata['requestId'] = $request->header('X-Request-ID');
-        }
-        return $metadata;
-    }
-
-    /**
-     * Format cart items for JSON response.
-     *
-     * @param array $items
-     * @return array
-     */
-    private function formatItems(array $items): array
-    {
-        return collect($items)->map(function ($item) {
-            if (!$this->isValidCartItem($item)) {
-                Log::warning('Invalid cart item structure detected, skipping item.', ['item' => $item]);
-                return null;
-            }
-            $product = (object) $item['product'];
-            $formattedItem = [
+        return collect($this->resource->getItems())->map(function ($item) use ($isMobile) {
+            $product = $item['product']; // فرض می‌کنیم که جزئیات محصول در 'product' وجود دارد
+            return [
                 'id' => $item['id'],
-                'product' => $this->formatProduct($product),
-                'quantity' => $item['quantity'],
-                'unitPrice' => $item['price'],
-                'totalPrice' => $item['quantity'] * $item['price'],
+                'product' => $this->formatProduct($product, $isMobile),
+                'quantity' => (int) $item['quantity'],
+                'unitPrice' => (float) $item['price'],
+                'totalPrice' => (float) $item['subtotal'], // فرض می‌کنیم subtotal آیتم همان totalPrice است
+                $this->mergeWhen(!$isMobile, [
+                    'formattedUnitPrice' => $this->formatPrice($item['price']),
+                    'formattedTotalPrice' => $this->formatPrice($item['subtotal']),
+                    'addedAt' => Carbon::parse($item['created_at'])->toDateTimeString(),
+                    'updatedAt' => Carbon::parse($item['updated_at'])->toDateTimeString(),
+                ]),
             ];
-
-            // اضافه کردن اطلاعات تکمیلی برای غیرموبایل
-            if (!$this->isMobileRequest()) {
-                $formattedItem['formattedUnitPrice'] = $this->formatPrice($item['price']);
-                $formattedItem['formattedTotalPrice'] = $this->formatPrice($item['quantity'] * $item['price']);
-                $formattedItem['addedAt'] = isset($item['created_at']) ? Carbon::parse($item['created_at'])->toISOString() : null;
-                $formattedItem['updatedAt'] = isset($item['updated_at']) ? Carbon::parse($item['updated_at'])->toISOString() : null;
-            }
-            return $formattedItem;
-        })->filter()->values()->toArray();
+        })->toArray();
     }
 
     /**
-     * Format product data based on optimization level.
+     * Format product details for the response.
      *
-     * @param object $product
+     * @param array $product
+     * @param bool $isMobile
      * @return array
      */
-    private function formatProduct(object $product): array
+    protected function formatProduct(array $product, bool $isMobile): array
     {
-        $formattedProduct = [
-            'id' => $product->id,
-            'name' => $product->title ?? 'نامشخص',
-            'inStock' => ($product->stock ?? 0) > 0,
+        return [
+            'id' => $product['id'],
+            'name' => $product['title'], // فرض می‌کنیم 'title' نام محصول است
+            'inStock' => $product['stock'] > 0, // فرض می‌کنیم 'stock' موجودی کالا است
+            $this->mergeWhen(!$isMobile, [
+                'slug' => $product['slug'],
+                'image' => $product['image'] ? asset('storage/' . $product['image']) : null, // مسیر کامل تصویر
+                'stockQuantity' => (int) $product['stock'],
+            ]),
         ];
-
-        // اضافه کردن اطلاعات تکمیلی برای غیرموبایل
-        if (!$this->isMobileRequest()) {
-            $formattedProduct['slug'] = $product->slug ?? null;
-            $formattedProduct['image'] = $product->image ?? null;
-            $formattedProduct['stockQuantity'] = $product->stock ?? 0;
-        }
-        return $formattedProduct;
     }
 
     /**
-     * Helper method to validate cart item structure.
+     * Format summary details for the response.
      *
-     * @param array $item
-     * @return bool
+     * @param bool $isMobile
+     * @return array
      */
-    private function isValidCartItem(array $item): bool
+    protected function formatSummary(bool $isMobile): array
     {
-        return isset($item['product'], $item['quantity'], $item['price']);
+        $cartTotals = $this->resource->getCartTotals(); // دریافت DTO از CartContentsResponse
+        return [
+            'totalQuantity' => $this->resource->getTotalQuantity(),
+            'totalPrice' => $cartTotals->total, // استفاده از total نهایی از CartTotalsDTO
+            'isEmpty' => empty($this->resource->getItems()),
+            $this->mergeWhen(!$isMobile, [
+                'formattedTotalPrice' => $this->formatPrice($cartTotals->total),
+                'currency' => 'IRR', // یا هر واحد پول دیگر
+                'subtotal' => $cartTotals->subtotal,
+                'formattedSubtotal' => $this->formatPrice($cartTotals->subtotal),
+                'discount' => $cartTotals->discount,
+                'formattedDiscount' => $this->formatPrice($cartTotals->discount),
+                'shipping' => $cartTotals->shipping,
+                'formattedShipping' => $this->formatPrice($cartTotals->shipping),
+                'tax' => $cartTotals->tax,
+                'formattedTax' => $this->formatPrice($cartTotals->tax),
+            ]),
+        ];
     }
 
     /**
-     * Format price with currency.
+     * Format metadata for the response.
+     *
+     * @return array
+     */
+    protected function formatMetadata(): array
+    {
+        return [
+            'itemCount' => count($this->resource->getItems()),
+            'lastUpdated' => now()->toISOString(), // زمان فعلی سرور
+            'version' => '1.0', // نسخه API
+            'requestId' => request()->header('X-Request-ID'), // اگر از X-Request-ID استفاده می‌کنید
+        ];
+    }
+
+    /**
+     * Format price to a localized string.
      *
      * @param float $price
      * @return string
      */
-    private function formatPrice(float $price): string
+    protected function formatPrice(float $price): string
     {
-        $currencySymbol = config('cart.currency.symbol', 'تومان');
-        return number_format($price, 0, '.', ',') . ' ' . $currencySymbol;
-    }
-
-    /**
-     * Set whether metadata should be included.
-     *
-     * @param bool $includeMetadata
-     * @return self
-     */
-    public function withMetadata(bool $includeMetadata = true): self
-    {
-        $this->includeMetadata = $includeMetadata;
-        return $this;
-    }
-
-    /**
-     * Create a new resource instance optimized for mobile.
-     * یک نمونه Resource جدید ایجاد می‌کند که برای موبایل بهینه‌سازی شده است.
-     *
-     * @param mixed $resource
-     * @return self
-     */
-    public static function forMobile($resource): self
-    {
-        // در این رویکرد جدید، mobileOptimized از طریق constructor تنظیم نمی‌شود،
-        // بلکه از isMobileRequest() در متدها استفاده می‌شود.
-        // این متد صرفاً با includeMetadata=false برای سادگی پاسخ موبایل استفاده می‌شود.
-        return new static($resource, false);
-    }
-
-    /**
-     * Create a new lightweight resource instance without metadata.
-     * یک نمونه Resource سبک جدید بدون متادیتا ایجاد می‌کند.
-     *
-     * @param mixed $resource
-     * @return self
-     */
-    public static function withoutMetadata($resource): self
-    {
-        return new static($resource, false);
+        return number_format($price, 0, '.', ',') . ' تومان';
     }
 
     /**
@@ -244,17 +182,9 @@ class CartResource extends JsonResource
      */
     public function with(Request $request): array
     {
-        // برای موبایل، پاسخ ساده‌تر
-        if (self::isMobileRequest()) { // Changed to static call
-            return [
-                'success' => true,
-                'timestamp' => now()->toISOString(),
-            ];
-        }
-        return [
-            'success' => true,
-            'message' => 'سبد خرید با موفقیت دریافت شد',
-            'timestamp' => now()->toISOString(),
-        ];
+        // این متد اکنون فقط برای افزودن داده‌های اضافی که در toArray() نیستند استفاده می‌شود.
+        // فیلدهای 'success', 'message', 'timestamp' از اینجا حذف شدند
+        // و باید از طریق ->additional() در کنترلر اضافه شوند.
+        return [];
     }
 }
