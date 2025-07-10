@@ -11,7 +11,7 @@ import { setCartLoadingState, renderMainCart, renderMiniCartDetails } from './re
 import {
     initializeDOMCache,
     setupMiniCartToggle,
-    getDOM,
+    getDOM, // اضافه کردن تابع getDOM
     debounce // اضافه کردن تابع debounce از events.js
 } from './events.js';
 
@@ -163,24 +163,10 @@ class CartManager {
         this.broadcastChannel = new BroadcastChannel('e-commerce-cart-sync');
         console.log('CartManager initialized.');
 
-        // کش کردن عناصر DOM اصلی سبد خرید در سازنده
-        this.DOM = {
-            cartEmptyMessage: document.getElementById('cart-empty-message'),
-            cartSummary: document.getElementById('cart-summary'),
-            cartItemsContainer: document.getElementById('cart-items-container'), 
-            cartTotalPrice: document.getElementById('cart-total-price')
-        };
-
-        // کش کردن عناصر DOM مینی‌کارت در سازنده (برای renderMiniCartDetails)
-        this.miniCartDOM = {
-            miniCartToggle: document.getElementById('mini-cart-toggle'),
-            miniCartDropdown: document.getElementById('mini-cart-dropdown'),
-            miniCartItemsContainer: document.getElementById('mini-cart-items-container'),
-            miniCartTotalQuantity: document.getElementById('mini-cart-total-quantity'),
-            miniCartTotalPrice: document.getElementById('mini-cart-total-price'),
-            miniCartEmptyMessage: document.getElementById('mini-cart-empty-message'),
-            miniCartSummary: document.getElementById('mini-cart-summary'),
-        };
+        // حذف کش کردن مستقیم عناصر DOM در سازنده
+        // این کار اکنون توسط initializeDOMCache در متد init انجام می‌شود.
+        this.DOM = {}; // یک شیء خالی برای نگهداری عناصر DOM کش شده
+        this.miniCartDOM = {}; // یک شیء خالی برای نگهداری عناصر mini cart DOM کش شده
     }
 
     /**
@@ -194,9 +180,13 @@ class CartManager {
             return;
         }
         console.log('Initializing CartManager...'); // Added log
-        this.validateDOM(); // اعتبارسنجی اولیه DOM
 
-        this.hasMainCartElements = initializeDOMCache(); // کش DOM را راه‌اندازی کنید و عناصر حیاتی سبد خرید اصلی را بررسی کنید
+        // کش DOM را راه‌اندازی کنید و عناصر حیاتی سبد خرید اصلی را بررسی کنید
+        this.hasMainCartElements = initializeDOMCache(); 
+        // پس از initializeDOMCache، عناصر کش شده را از getDOM دریافت کنید
+        this.DOM = getDOM(); 
+        // عناصر mini cart DOM نیز از getDOM قابل دسترسی هستند
+        this.miniCartDOM = getDOM();
 
         // تنظیم شنونده مینی‌کارت (بقیه شنونده‌ها توسط event listener سراسری در پایین مدیریت می‌شوند)
         setupMiniCartToggle();
@@ -225,27 +215,6 @@ class CartManager {
 
         isInitialized = true; // تنظیم فلگ initialized
         console.log('CartManager initialization complete.'); // Added log
-    }
-
-    /**
-     * اعتبارسنجی وجود عناصر DOM کلیدی در زمان راه‌اندازی.
-     * این متد به شناسایی سریع‌تر مشکلات مربوط به عدم وجود المنت‌ها کمک می‌کند.
-     */
-    validateDOM() {
-        const requiredElements = [
-            'mini-cart-toggle',
-            'mini-cart-dropdown',
-            'cart-items-container',
-            'cart-empty-message',
-            'cart-summary',
-            'cart-total-price'
-        ];
-        
-        requiredElements.forEach(id => {
-            if (!document.getElementById(id)) {
-                console.warn(`Required DOM element with ID "${id}" not found. Some functionalities might be affected.`);
-            }
-        });
     }
 
     /**
@@ -308,6 +277,7 @@ class CartManager {
      * رندر کردن وضعیت سبد خرید خالی در صفحه اصلی سبد خرید.
      */
     renderEmptyCart() {
+        // استفاده از this.DOM که اکنون از getDOM() پر شده است
         if (this.DOM.cartEmptyMessage) {
             this.DOM.cartEmptyMessage.classList.remove('hidden'); 
         }
@@ -392,6 +362,7 @@ class CartManager {
                 // رندر مجدد فقط جزئیات مینی‌کارت و مجموع کل‌های سبد خرید اصلی
                 // این کار از فراخوانی کامل loadAndRenderCart() جلوگیری می‌کند
                 renderMiniCartDetails(this.cartData.items, this.cartData.totalQuantity, this.cartData.totalPrice);
+                // استفاده از this.DOM که اکنون از getDOM() پر شده است
                 if (this.DOM.cartTotalPrice) {
                     this.DOM.cartTotalPrice.textContent = (this.cartData.totalPrice ?? 0).toLocaleString('fa-IR') + ' تومان';
                 }

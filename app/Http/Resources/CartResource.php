@@ -103,7 +103,7 @@ class CartResource extends JsonResource
      * @param Request $request
      * @return array
      */
-    private function function formatMetadata(Request $request): array
+    private function formatMetadata(Request $request): array // Changed: Removed duplicate 'function' keyword
     {
         $metadata = [
             'itemCount' => count($this->items),

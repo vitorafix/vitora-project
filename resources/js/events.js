@@ -39,8 +39,47 @@ export function initializeDOMCache() {
     DOM.cartSummary = document.getElementById('cart-summary');
     DOM.cartTotalPrice = document.getElementById('cart-total-price'); // این عنصر در cart.blade.php اضافه شده است
 
+    // Add detailed logging for debugging
+    console.log('--- initializeDOMCache Debug ---');
+    console.log('DOM.miniCartToggle:', DOM.miniCartToggle);
+    console.log('DOM.miniCartDropdown:', DOM.miniCartDropdown);
+    console.log('DOM.miniCartItemsContainer (mini):', DOM.miniCartItemsContainer);
+    console.log('DOM.miniCartTotalQuantity:', DOM.miniCartTotalQuantity);
+    console.log('DOM.miniCartTotalPrice (mini):', DOM.miniCartTotalPrice);
+    console.log('DOM.miniCartEmptyMessage:', DOM.miniCartEmptyMessage);
+    console.log('DOM.miniCartSummary (mini):', DOM.miniCartSummary);
+
+    console.log('DOM.cartItemsContainer (main):', DOM.cartItemsContainer);
+    console.log('DOM.cartEmptyMessage (main):', DOM.cartEmptyMessage);
+    console.log('DOM.cartSummary (main):', DOM.cartSummary);
+    console.log('DOM.cartTotalPrice (main):', DOM.cartTotalPrice);
+    console.log('--- End initializeDOMCache Debug ---');
+
     // بررسی وجود عناصر اصلی سبد خرید
-    return !!(DOM.cartItemsContainer && DOM.cartEmptyMessage && DOM.cartSummary && DOM.cartTotalPrice);
+    const mainCartElementsFound = !!(DOM.cartItemsContainer && DOM.cartEmptyMessage && DOM.cartSummary && DOM.cartTotalPrice);
+    if (!mainCartElementsFound) {
+        console.error('CRITICAL: One or more main cart DOM elements were NOT found during initial cache. This indicates a potential HTML loading or script timing issue.');
+        // Optional: Try a delayed check to see if they appear later
+        setTimeout(() => {
+            const delayedCartItemsContainer = document.getElementById('cart-items-container');
+            const delayedCartEmptyMessage = document.getElementById('cart-empty-message');
+            const delayedCartSummary = document.getElementById('cart-summary');
+            const delayedCartTotalPrice = document.getElementById('cart-total-price');
+            console.log('--- Delayed initializeDOMCache Check (500ms) ---');
+            console.log('Delayed DOM.cartItemsContainer:', delayedCartItemsContainer);
+            console.log('Delayed DOM.cartEmptyMessage:', delayedCartEmptyMessage);
+            console.log('Delayed DOM.cartSummary:', delayedCartSummary);
+            console.log('Delayed DOM.cartTotalPrice:', delayedCartTotalPrice);
+            console.log('--- End Delayed Check ---');
+            if (delayedCartItemsContainer && delayedCartEmptyMessage && delayedCartSummary && delayedCartTotalPrice) {
+                console.warn('Main cart elements found after a delay. Consider adjusting script loading order or using a more robust DOM ready event.');
+            } else {
+                console.error('Main cart elements still NOT found after a 500ms delay. The HTML might not be rendering correctly or is being removed.');
+            }
+        }, 500); // Check again after 500ms
+    }
+
+    return mainCartElementsFound;
 }
 
 /**
@@ -89,120 +128,6 @@ export function setupAddToCartButtons() {
         }
     });
 }
-
-/**
- * تنظیم Event Listener برای دکمه‌های افزایش/کاهش تعداد در سبد خرید اصلی.
- * این تابع باید پس از رندر شدن آیتم‌های سبد خرید اصلی فراخوانی شود.
- *
- * این تابع حذف شده است زیرا منطق آن به صورت سراسری در cart.js مدیریت می‌شود.
- */
-// export function setupMainCartQuantityButtons() {
-//     const cartItemsContainer = DOM.cartItemsContainer;
-//     if (!cartItemsContainer) {
-//         console.warn('Main cart items container not found for quantity buttons setup.');
-//         return;
-//     }
-
-//     // استفاده از event delegation برای مدیریت کلیک‌ها روی دکمه‌های افزایش/کاهش و حذف
-//     cartItemsContainer.addEventListener('click', async (event) => {
-//         const target = event.target;
-//         let cartItemId;
-//         let currentQuantityElement;
-//         let newQuantity;
-
-//         // Debounced handler for quantity changes
-//         const debouncedUpdateQuantity = debounce(async (itemId, quantity) => {
-//             if (window.cartManager) {
-//                 await window.cartManager.updateItemQuantity(itemId, quantity);
-//             } else {
-//                 console.error('CartManager not available to update item quantity.');
-//             }
-//         }, 300); // 300ms debounce delay
-
-//         // Handle increase quantity
-//         if (target.matches('.increase-quantity-btn') || target.closest('.increase-quantity-btn')) {
-//             event.preventDefault();
-//             const btn = target.matches('.increase-quantity-btn') ? target : target.closest('.increase-quantity-btn');
-//             cartItemId = btn.getAttribute('data-cart-item-id');
-//             currentQuantityElement = btn.closest('.quantity-controls').querySelector('.item-quantity');
-//             newQuantity = parseInt(currentQuantityElement.textContent) + 1;
-
-//             if (newQuantity <= 0) return; // Prevent negative quantity
-
-//             // Update UI immediately for responsiveness
-//             currentQuantityElement.textContent = newQuantity;
-//             updateSubtotalInUI(cartItemId, newQuantity);
-
-//             debouncedUpdateQuantity(cartItemId, newQuantity);
-
-//         }
-//         // Handle decrease quantity
-//         else if (target.matches('.decrease-quantity-btn') || target.closest('.decrease-quantity-btn')) {
-//             event.preventDefault();
-//             const btn = target.matches('.decrease-quantity-btn') ? target : target.closest('.decrease-quantity-btn');
-//             cartItemId = btn.getAttribute('data-cart-item-id');
-//             currentQuantityElement = btn.closest('.quantity-controls').querySelector('.item-quantity');
-//             newQuantity = parseInt(currentQuantityElement.textContent) - 1;
-
-//             if (newQuantity <= 0) {
-//                 // If quantity becomes 0, prompt for removal
-//                 if (typeof window.showMessage === 'function') {
-//                     window.showMessage('آیا از حذف این محصول اطمینان دارید؟', 'confirm', async () => {
-//                         // User confirmed, proceed with removal
-//                         if (window.cartManager) {
-//                             await window.cartManager.removeItem(cartItemId);
-//                         } else {
-//                             console.error('CartManager not available to remove item.');
-//                         }
-//                     });
-//                 } else {
-//                     // Fallback to native confirm if custom message box is not available
-//                     if (confirm('آیا از حذف این محصول اطمینان دارید؟')) {
-//                         if (window.cartManager) {
-//                             await window.cartManager.removeItem(cartItemId);
-//                         } else {
-//                             console.error('CartManager not available to remove item.');
-//                         }
-//                     }
-//                 }
-//                 return; // Prevent further action for this click
-//             }
-
-//             // Update UI immediately for responsiveness
-//             currentQuantityElement.textContent = newQuantity;
-//             updateSubtotalInUI(cartItemId, newQuantity);
-
-//             debouncedUpdateQuantity(cartItemId, newQuantity);
-//         }
-//         // Handle remove item button
-//         else if (target.matches('.remove-item-btn') || target.closest('.remove-item-btn')) {
-//             event.preventDefault();
-//             const removeBtn = target.matches('.remove-item-btn') ? target : target.closest('.remove-item-btn');
-//             cartItemId = removeBtn.getAttribute('data-cart-item-id');
-
-//             if (cartItemId) {
-//                 console.log('Remove button clicked for item:', cartItemId);
-//                 if (typeof window.showMessage === 'function') {
-//                     window.showMessage('آیا از حذف این محصول اطمینان دارید؟', 'confirm', async () => {
-//                         if (window.cartManager) {
-//                             await window.cartManager.removeItem(cartItemId);
-//                         } else {
-//                             console.error('CartManager not available to remove item.');
-//                         }
-//                     });
-//                 } else {
-//                     if (confirm('آیا از حذف این محصول اطمینان دارید؟')) {
-//                         if (window.cartManager) {
-//                             await window.cartManager.removeItem(cartItemId);
-//                         } else {
-//                             console.error('CartManager not available to remove item.');
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     });
-// }
 
 /**
  * به‌روزرسانی فوری زیرمجموع یک آیتم در UI.

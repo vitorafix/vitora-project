@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Contracts\Events\Dispatcher;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Collection; // اضافه شده: برای استفاده از متد toArray() روی Collection
 
 // Contracts
 use App\Services\Contracts\CartServiceInterface;
@@ -441,32 +442,60 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         $startTime = microtime(true);
         try {
             // Load items and their relations
-            $items = $cart->items->load('product', 'productVariant');
+            $cart->load(['items.product', 'items.productVariant']); // بارگذاری روابط مستقیماً روی آبجکت $cart
 
-            // Refresh item prices (as per existing logic)
-            $this->refreshCartItemPrices($cart);
+            // اگر سبد خرید خالی است، یک پاسخ خالی و با مجموع‌های صفر برگردانید.
+            if ($cart->items->isEmpty()) {
+                $emptyTotals = new CartTotalsDTO(
+                    subtotal: 0,
+                    discount: 0,
+                    shipping: 0,
+                    tax: 0,
+                    total: 0
+                );
+                $this->metricsManager->recordMetric('getCartContents_duration', microtime(true) - $startTime, ['cart_id' => $cart->id, 'status' => 'empty_cart']);
+                return new CartContentsResponse([], 0, 0.0, $emptyTotals);
+            }
 
             // Calculate totals using the dedicated service
             // Note: This DTO contains subtotal, tax, total, etc.
             $cartTotalsDTO = $this->cartCalculationService->calculateCartTotals($cart);
 
+            // Create the response object using positional arguments
+            // Since CartContentsResponse now expects $cartTotals in its constructor,
+            // we pass it directly as the fourth positional argument.
+            $response = new CartContentsResponse(
+                $cart->items->toArray(), // Changed: Convert Collection to array
+                $cart->items->sum('quantity'),
+                $cartTotalsDTO->total,
+                $cartTotalsDTO // Pass CartTotalsDTO directly as the fourth argument
+            );
+
             $this->metricsManager->recordMetric('getCartContents_duration', microtime(true) - $startTime, ['cart_id' => $cart->id]);
 
-            // Construct and return the CartContentsResponse DTO
-            return new CartContentsResponse(
-                items: $items->toArray(), // Convert collection to array
-                totalQuantity: $items->sum('quantity'),
-                totalPrice: $cartTotalsDTO->total // Use the total from the calculated DTO
-            );
+            return $response;
         } catch (\Throwable $e) {
             Log::error('Error getting cart contents: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
             $this->metricsManager->recordMetric('getCartContents_exception', microtime(true) - $startTime, ['error_type' => 'unexpected']);
-            // In case of any error, return an empty CartContentsResponse
-            return new CartContentsResponse(
-                items: [],
-                totalQuantity: 0,
-                totalPrice: 0.0
+
+            // In case of any error, return an empty CartContentsResponse with default totals
+            $emptyTotals = new CartTotalsDTO(
+                subtotal: 0,
+                discount: 0,
+                shipping: 0,
+                tax: 0,
+                total: 0
             );
+
+            // Pass all arguments as positional, including the emptyTotals DTO
+            $errorResponse = new CartContentsResponse(
+                [], // items (empty array)
+                0,           // totalQuantity
+                0.0,         // totalPrice
+                $emptyTotals // cartTotals
+            );
+
+            return $errorResponse;
         }
     }
 
@@ -804,7 +833,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                                     'requested_quantity' => $desiredNewQuantity,
                                     'capped_quantity' => $finalNewQuantity,
                                     'available_stock' => $availableStock,
-                                    'current_reserved' => ($product->reserved_stock ?? 0),
+                                    'current_reserved_stock' => ($product->reserved_stock ?? 0),
                                     'old_user_quantity' => $oldUserQuantity
                                 ]);
                             }
