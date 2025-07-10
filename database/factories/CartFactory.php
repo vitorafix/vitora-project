@@ -26,7 +26,7 @@ class CartFactory extends Factory
         return [
             'user_id' => null, // به طور پیش‌فرض سبد خرید مهمان است
             'coupon_id' => null, // به طور پیش‌فرض بدون کوپن
-            'discount_amount' => 0, // به طور پیش‌فرض بدون تخفیف
+            // 'discount_amount' => 0, // این خط حذف شد زیرا ستون در جدول carts وجود ندارد
             // 'total_amount' => $this->faker->randomFloat(2, 100, 10000), // می‌توانید این را بر اساس آیتم‌های سبد خرید محاسبه کنید
         ];
     }
@@ -60,9 +60,8 @@ class CartFactory extends Factory
         return $this->state(function (array $attributes) use ($coupon, $discountAmount) {
             return [
                 'coupon_id' => $coupon->id,
-                'discount_amount' => $discountAmount,
+                // 'discount_amount' => $discountAmount, // این خط حذف شد زیرا ستون در جدول carts وجود ندارد
             ];
         });
     }
 }
-
