@@ -440,33 +440,33 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
     {
         $startTime = microtime(true);
         try {
+            // Load items and their relations
             $items = $cart->items->load('product', 'productVariant');
 
+            // Refresh item prices (as per existing logic)
             $this->refreshCartItemPrices($cart);
 
-            // Use CartCalculationService for totals
-            // از CartCalculationService برای مجموع‌ها استفاده کنید.
+            // Calculate totals using the dedicated service
+            // Note: This DTO contains subtotal, tax, total, etc.
             $cartTotalsDTO = $this->cartCalculationService->calculateCartTotals($cart);
 
             $this->metricsManager->recordMetric('getCartContents_duration', microtime(true) - $startTime, ['cart_id' => $cart->id]);
-            return CartContentsResponse::success('محتویات سبد خرید با موفقیت دریافت شد.', [
-                'items' => $items,
-                'totalQuantity' => $items->sum('quantity'),
-                'totalPrice' => $cartTotalsDTO->total, // Access DTO property
-                'cartTotals' => $cartTotalsDTO // Pass DTO
-            ]);
-        } catch (EmptyCartException $e) {
-            Log::warning('Attempted to get contents of an empty cart: ' . $e->getMessage());
-            return CartContentsResponse::success('سبد خرید خالی است.', [
-                'items' => collect(),
-                'totalQuantity' => 0,
-                'totalPrice' => 0.0,
-                'cartTotals' => new CartTotalsDTO(0.0, 0.0, 0.0, 0.0, 0.0) // Return empty DTO
-            ]);
+
+            // Construct and return the CartContentsResponse DTO
+            return new CartContentsResponse(
+                items: $items->toArray(), // Convert collection to array
+                totalQuantity: $items->sum('quantity'),
+                totalPrice: $cartTotalsDTO->total // Use the total from the calculated DTO
+            );
         } catch (\Throwable $e) {
             Log::error('Error getting cart contents: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
             $this->metricsManager->recordMetric('getCartContents_exception', microtime(true) - $startTime, ['error_type' => 'unexpected']);
-            return CartContentsResponse::error('خطا در دریافت محتویات سبد خرید.', 500);
+            // In case of any error, return an empty CartContentsResponse
+            return new CartContentsResponse(
+                items: [],
+                totalQuantity: 0,
+                totalPrice: 0.0
+            );
         }
     }
 
@@ -845,4 +845,3 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         }
     }
 }
-
