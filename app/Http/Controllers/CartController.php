@@ -96,7 +96,13 @@ class CartController extends Controller
             // استفاده از CartResource برای تبدیل CartContentsResponse به یک ساختار JSON بهینه‌سازی شده برای API
             // CartResource شامل منطق فرمت‌بندی، اضافه کردن ابرداده و بهینه‌سازی برای موبایل است.
             // متد with() در CartResource برای افزودن فیلدهای 'success' و 'message' استفاده می‌شود.
-            return (new CartResource($cartContentsResponse))->response()->setStatusCode(200);
+            return (new CartResource($cartContentsResponse))
+                ->additional([
+                    'success' => true,
+                    'message' => 'سبد خرید با موفقیت بارگذاری شد', // پیام از CartController::getContents
+                ])
+                ->response()
+                ->setStatusCode(200);
 
         } catch (\Exception $e) {
             Log::error('Error fetching cart contents', [
@@ -176,6 +182,12 @@ class CartController extends Controller
                 'success' => false,
                 'message' => 'محصول مورد نظر یافت نشد.',
             ], 404); // 404 Not Found
+        } catch (InsufficientStockException $e) { // اضافه شدن InsufficientStockException
+            Log::error('Insufficient stock error: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400); // 400 Bad Request
         } catch (CartOperationException $e) {
             // خطاهای مربوط به عملیات سبد خرید (مثلاً موجودی ناکافی، محدودیت سبد)
             Log::error('Cart operation error: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
@@ -256,6 +268,12 @@ class CartController extends Controller
                 'success' => false,
                 'message' => $e->getMessage(),
             ], 403); // 403 Forbidden
+        } catch (InsufficientStockException $e) { // اضافه شدن InsufficientStockException
+            Log::error('Insufficient stock error: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400); // 400 Bad Request
         } catch (CartOperationException $e) {
             Log::error('Cart operation error: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
             return response()->json([
@@ -282,6 +300,7 @@ class CartController extends Controller
             $sessionId = Session::getId();
 
             // اطمینان از اینکه کاربر فعلی مالک آیتم سبد خرید است.
+            // این بررسی امنیتی بسیار مهم است.
             if (!$this->cartService->userOwnsCartItem($cartItem, $user, $sessionId)) {
                 throw new UnauthorizedCartAccessException('شما اجازه دسترسی به این آیتم سبد خرید را ندارید.');
             }
