@@ -110,11 +110,11 @@ class ProfileController extends Controller
 
         // اعتبار سنجی داده‌ها
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255', // تغییر first_name به name
+            'name' => 'required|string|max:255',
             'lastname' => 'required|string|max:255',
             'national_id' => 'nullable|string|digits:10|unique:users,national_id,' . $user->id,
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
-            'fixed_phone' => 'nullable|string|max:20', // تغییر phone به fixed_phone
+            'fixed_phone' => 'nullable|string|max:20', // اکنون از fixed_phone استفاده می‌شود
         ]);
 
         if ($validator->fails()) {
@@ -125,11 +125,11 @@ class ProfileController extends Controller
         }
 
         // به‌روزرسانی اطلاعات کاربر
-        $user->name = $request->input('name'); // تغییر first_name به name
+        $user->name = $request->input('name');
         $user->lastname = $request->input('lastname');
         $user->national_id = $request->input('national_id');
         $user->email = $request->input('email');
-        $user->fixed_phone = $request->input('fixed_phone'); // تغییر phone به fixed_phone
+        $user->fixed_phone = $request->input('fixed_phone'); // اکنون از fixed_phone استفاده می‌شود
         $user->save();
 
         return response()->json(['message' => 'اطلاعات شخصی شما با موفقیت به‌روز شد.']);
@@ -147,14 +147,14 @@ class ProfileController extends Controller
         $user = Auth::user();
 
         $validator = Validator::make($request->all(), [
-            'full_name' => 'required|string|max:255', // اضافه شده
-            'national_code' => 'required|string|digits:10', // اضافه شده
-            'sheba_number' => 'nullable|string|max:24', // اضافه شده
-            'card_number' => 'nullable|string|max:19', // اضافه شده
-            'province' => 'required|string|max:100', // تغییر province به legal_province
-            'city' => 'required|string|max:100', // تغییر legal_city به city
-            'address' => 'required|string|max:500', // تغییر legal_address به address
-            'postal_code' => 'required|string|digits:10', // تغییر legal_postal_code به postal_code
+            'full_name' => 'required|string|max:255',
+            'national_code' => 'required|string|digits:10',
+            'sheba_number' => 'nullable|string|max:24',
+            'card_number' => 'nullable|string|max:19',
+            'province' => 'required|string|max:100',
+            'city' => 'required|string|max:100',
+            'address' => 'required|string|max:500',
+            'postal_code' => 'required|string|digits:10',
         ]);
 
         if ($validator->fails()) {
@@ -263,7 +263,7 @@ class ProfileController extends Controller
         $user = Auth::user();
 
         $validator = Validator::make($request->all(), [
-            'mobile_number' => 'required|string|digits:11|unique:users,mobile_number,' . $user->id, // تغییر mobile به mobile_number
+            'mobile_number' => 'required|string|digits:11|unique:users,mobile_number,' . $user->id,
         ]);
 
         if ($validator->fails()) {
@@ -273,7 +273,7 @@ class ProfileController extends Controller
             ], 422);
         }
 
-        $user->mobile_number = $request->input('mobile_number'); // تغییر mobile به mobile_number
+        $user->mobile_number = $request->input('mobile_number');
         $user->save();
 
         // در اینجا می‌توانید منطق ارسال کد تایید را اضافه کنید

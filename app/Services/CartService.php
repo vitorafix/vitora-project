@@ -91,6 +91,13 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         $cart = $this->cartRepository->findByUserOrSession($user, $sessionId);
 
         if (!$cart) {
+            // لاگ‌گیری دقیق‌تر قبل از ایجاد سبد جدید
+            Log::info('Attempting to create new cart.', [
+                'user_id_passed' => $user ? $user->id : 'null',
+                'session_id_passed' => $sessionId ?? 'null',
+                'current_session_id_from_laravel' => Session::getId()
+            ]);
+
             $data = [];
             if ($user) {
                 $data['user_id'] = $user->id;
@@ -319,7 +326,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             return CartOperationResponse::success('تعداد آیتم سبد خرید با موفقیت به‌روزرسانی شد.', ['cart_item' => $cartItem]);
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('Error updating cart item quantity: ' . $e->getMessage(), ['cart_item_id' => $cartItem->id, 'exception' => $e->getTraceAsString()]);
+            Log::error('Error updating cart item quantity: ' . $e->getMessage(), ['cart_item_id' => $cartItem->id, 'new_quantity' => $newQuantity, 'exception' => $e->getTraceAsString()]);
             $this->metricsManager->recordMetric('updateItemQuantity_exception', microtime(true) - $startTime, ['error_type' => 'unexpected']);
             return CartOperationResponse::error('خطا در به‌روزرسانی تعداد آیتم سبد خرید.', 500);
         }

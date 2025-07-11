@@ -21,18 +21,18 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'name', // حفظ فیلد name اگر هنوز استفاده می‌شود
+        'name',
         'lastname',
         'mobile_number',
         'email',
-        'username', // اضافه شده: برای نام کاربری در پنل ادمین
-        'password', // اضافه شده: برای مدیریت رمز عبور در پنل ادمین
-        'role',     // اضافه شده: برای مدیریت نقش کاربر
-        'status',   // اضافه شده: برای مدیریت وضعیت کاربر (فعال/غیرفعال/معلق)
+        'username',
+        'password',
+        // 'role', // حذف شده: اکنون توسط Spatie مدیریت می‌شود
+        'status',
         'profile_completed',
         'national_id',
         'birth_date',
-        'phone',
+        'fixed_phone', // تغییر به fixed_phone
     ];
 
     /**
@@ -41,7 +41,7 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $hidden = [
-        'password', // اکنون که رمز عبور مدیریت می‌شود، باید پنهان باشد
+        'password',
         'remember_token',
     ];
 
@@ -52,10 +52,10 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password' => 'hashed', // اضافه شده: برای هش کردن رمز عبور
+        'password' => 'hashed',
         'profile_completed' => 'boolean',
-        'created_at' => 'datetime', // اضافه شده: برای اطمینان از cast شدن تاریخ ایجاد
-        'updated_at' => 'datetime', // اضافه شده: برای اطمینان از cast شدن تاریخ به‌روزرسانی
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     /**

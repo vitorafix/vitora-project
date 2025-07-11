@@ -31,11 +31,11 @@
                     <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         {{ __('عنوان آدرس (مثال: خانه، محل کار)') }}
                     </label>
-                    <input id="title" 
-                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400" 
-                           type="text" 
-                           name="title" 
-                           value="{{ old('title', $address->title ?? '') }}" 
+                    <input id="title"
+                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400"
+                           type="text"
+                           name="title"
+                           value="{{ old('title', $address->title ?? '') }}"
                            placeholder="نامی برای آدرس خود انتخاب کنید">
                     <x-input-error :messages="$errors->get('title')" class="mt-2 text-sm" />
                 </div>
@@ -46,9 +46,9 @@
                         <label for="province" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             {{ __('استان') }}
                         </label>
-                        <select id="province" 
-                                name="province" 
-                                class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base appearance-none" 
+                        <select id="province"
+                                name="province"
+                                class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base appearance-none"
                                 required>
                             {{-- Changed selected logic for initial load --}}
                             <option value="" disabled {{ old('province', $address->province ?? '') ? '' : 'selected' }}>
@@ -62,9 +62,9 @@
                         <label for="city" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             {{ __('شهر') }}
                         </label>
-                        <select id="city" 
-                                name="city" 
-                                class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base appearance-none" 
+                        <select id="city"
+                                name="city"
+                                class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base appearance-none"
                                 required>
                             {{-- Changed selected logic for initial load --}}
                             <option value="" disabled {{ old('city', $address->city ?? '') ? '' : 'selected' }}>
@@ -81,10 +81,10 @@
                     <label for="address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         {{ __('نشانی دقیق') }}
                     </label>
-                    <textarea id="address" 
-                              class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400 resize-y" 
-                              name="address" 
-                              rows="3" 
+                    <textarea id="address"
+                              class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400 resize-y"
+                              name="address"
+                              rows="3"
                               placeholder="خیابان، کوچه، پلاک، واحد...">{{ old('address', $address->address ?? '') }}</textarea>
                     <x-input-error :messages="$errors->get('address')" class="mt-2 text-sm" />
                 </div>
@@ -95,11 +95,11 @@
                         {{ __('کد پستی ۱۰ رقمی') }}
                         <span class="text-red-500 text-lg leading-none align-middle">*</span> {{-- Red asterisk for required field --}}
                     </label>
-                    <input id="postal_code" 
-                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400" 
-                           type="text" 
-                           name="postal_code" 
-                           value="{{ old('postal_code', $address->postal_code ?? '') }}" 
+                    <input id="postal_code"
+                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400"
+                           type="text"
+                           name="postal_code"
+                           value="{{ old('postal_code', $address->postal_code ?? '') }}"
                            placeholder="1234567890"
                            required {{-- Make the field required --}}
                            minlength="10" {{-- Minimum length of 10 characters --}}
@@ -115,11 +115,11 @@
                         {{ __('نام تحویل گیرنده') }}
                         <span class="text-red-500 text-lg leading-none align-middle">*</span> {{-- Red asterisk for required field --}}
                     </label>
-                    <input id="recipient_first_name" 
-                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400" 
-                           type="text" 
-                           name="recipient_first_name" 
-                           value="{{ old('recipient_first_name', $address->recipient_first_name ?? '') }}" 
+                    <input id="recipient_first_name"
+                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400"
+                           type="text"
+                           name="recipient_first_name"
+                           value="{{ old('recipient_first_name', $address->recipient_first_name ?? '') }}"
                            placeholder="نام تحویل گیرنده را وارد کنید"
                            required>
                     <x-input-error :messages="$errors->get('recipient_first_name')" class="mt-2 text-sm" />
@@ -131,55 +131,55 @@
                         {{ __('نام خانوادگی تحویل گیرنده') }}
                         <span class="text-red-500 text-lg leading-none align-middle">*</span> {{-- Red asterisk for required field --}}
                     </label>
-                    <input id="recipient_last_name" 
-                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400" 
-                           type="text" 
-                           name="recipient_last_name" 
-                           value="{{ old('recipient_last_name', $address->recipient_last_name ?? '') }}" 
+                    <input id="recipient_last_name"
+                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400"
+                           type="text"
+                           name="recipient_last_name"
+                           value="{{ old('recipient_last_name', $address->recipient_last_name ?? '') }}"
                            placeholder="نام خانوادگی تحویل گیرنده را وارد کنید"
                            required>
                     <x-input-error :messages="$errors->get('recipient_last_name')" class="mt-2 text-sm" />
                 </div>
 
-                <!-- Phone Number Field -->
+                <!-- Fixed Phone Number Field -->
                 <div>
-                    <label for="phone_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        {{ __('شماره تماس موبایل تحویل گیرنده') }}
+                    <label for="fixed_phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {{ __('شماره تلفن ثابت تحویل گیرنده') }}
                         <span class="text-red-500 text-lg leading-none align-middle">*</span> {{-- Red asterisk for required field --}}
                     </label>
-                    <input id="phone_number" 
-                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400" 
+                    <input id="fixed_phone"
+                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400"
                            type="tel" {{-- Use type="tel" for telephone numbers --}}
-                           name="phone_number" {{-- Changed name from 'recipient_mobile' to 'phone_number' --}}
-                           value="{{ old('phone_number', $address->phone_number ?? '') }}" {{-- Changed old and value from 'recipient_mobile' to 'phone_number' --}}
-                           placeholder="مثال: 09123456789"
+                           name="fixed_phone"
+                           value="{{ old('fixed_phone', $address->fixed_phone ?? '') }}"
+                           placeholder="مثال: 02112345678"
                            required {{-- Make the field required --}}
-                           pattern="^09[0-9]{9}$|^[0-9]{10,11}$" {{-- Pattern for Iranian mobile numbers (09xxxxxxxxx) or 10-11 digits for general numbers --}}
+                           pattern="^0[0-9]{10}$" {{-- Pattern for Iranian fixed phone numbers (0xxxxxxxxx or 0xxxxxxxxxx) --}}
                            oninput="this.value = convertToEnglishDigits(this.value);" {{-- Convert Persian digits to English --}}
                            >
-                    <span class='help-block text-xs text-gray-500 dark:text-gray-400 mt-1 block'>{{ __('لطفاً شماره موبایل ۱۱ رقمی را وارد کنید (مثال: 09123456789). می‌توانید از اعداد فارسی یا انگلیسی استفاده کنید.') }}</span>
-                    <x-input-error :messages="$errors->get('phone_number')" class="mt-2 text-sm" /> {{-- Changed messages from 'recipient_mobile' to 'phone_number' --}}
+                    <span class='help-block text-xs text-gray-500 dark:text-gray-400 mt-1 block'>{{ __('لطفاً شماره تلفن ثابت ۱۱ رقمی را با کد شهر وارد کنید (مثال: 02112345678). می‌توانید از اعداد فارسی یا انگلیسی استفاده کنید.') }}</span>
+                    <x-input-error :messages="$errors->get('fixed_phone')" class="mt-2 text-sm" />
                 </div>
 
                 <!-- Is Default Checkbox -->
                 <div>
                     <label for="is_default" class="inline-flex items-center">
-                        <input id="is_default" 
-                               type="checkbox" 
-                               name="is_default" 
-                               value="1" 
-                               class="rounded border-gray-300 text-green-600 shadow-sm focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600" 
+                        <input id="is_default"
+                               type="checkbox"
+                               name="is_default"
+                               value="1"
+                               class="rounded border-gray-300 text-green-600 shadow-sm focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600"
                                {{ old('is_default', $address->is_default ?? false) ? 'checked' : '' }}>
                         <span class="ms-2 text-sm text-gray-700 dark:text-gray-300">{{ __('این آدرس پیش‌فرض من است') }}</span>
                     </label>
                 </div>
 
                 <div class="flex items-center justify-end mt-6">
-                    <a href="{{ route('profile.addresses.index') }}" 
+                    <a href="{{ route('profile.addresses.index') }}"
                        class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg shadow-sm transition-all duration-200 ease-in-out ml-3">
                         {{ __('انصراف') }}
                     </a>
-                    <button type="submit" 
+                    <button type="submit"
                             class="inline-flex items-center justify-center px-6 py-3 text-lg font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 ease-in-out min-w-[150px]">
                         {{ isset($address) ? __('به‌روزرسانی آدرس') : __('ذخیره آدرس') }}
                         <i class="fas fa-check-circle mr-2"></i>
@@ -194,8 +194,8 @@
         document.addEventListener('DOMContentLoaded', () => {
             const provinceSelect = document.getElementById('province');
             const citySelect = document.getElementById('city');
-            // Changed variable name from recipientMobileInput to phoneNumberInput
-            const phoneNumberInput = document.getElementById('phone_number'); 
+            // Changed variable name from recipientMobileInput to fixedPhoneInput
+            const fixedPhoneInput = document.getElementById('fixed_phone');
 
             // Load the provinces and cities data from the JSON provided in the Canvas
             const provincesAndCitiesData = [
@@ -481,7 +481,7 @@
             function convertToEnglishDigits(input) {
                 const persianNumbers = [/۰/g, /۱/g, /۲/g, /۳/g, /۴/g, /۵/g, /۶/g, /۷/g, /۸/g, /۹/g];
                 const arabicNumbers = [/٠/g, /١/g, /٢/g, /٣/g, /٤/g, /٥/g, /٦/g, /٧/g, /٨/g, /٩/g];
-                
+
                 for (let i = 0; i < 10; i++) {
                     input = input.replace(persianNumbers[i], i).replace(arabicNumbers[i], i);
                 }

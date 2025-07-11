@@ -4,14 +4,14 @@
         <div class="w-full lg:w-1/4 xl:w-1/5 bg-white dark:bg-gray-800 shadow-xl border-r border-gray-200 dark:border-gray-700 min-h-screen lg:min-h-0 relative" x-data="{ open: window.innerWidth >= 1024 ? true : false }">
             <!-- Toggle button for mobile -->
             <div class="lg:hidden p-4">
-                <button @click="open = !open" 
+                <button @click="open = !open"
                         class="p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-300">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
             </div>
 
             <!-- Sidebar content -->
-            <div x-show="open" 
+            <div x-show="open"
                  x-transition:enter="transition ease-out duration-300 transform"
                  x-transition:enter-start="-translate-x-full"
                  x-transition:enter-end="translate-x-0"
@@ -33,64 +33,64 @@
 
                 <nav class="mt-4 px-4 space-y-1">
                     <!-- Dashboard Link -->
-                    <a href="{{ route('dashboard') }}" 
-                       class="flex items-center px-4 py-2 text-md font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150 ease-in-out {{ request()->routeIs('dashboard') ? 'text-green-700 bg-green-50 dark:bg-green-900/30 dark:text-green-300' : '' }}" 
+                    <a href="{{ route('dashboard') }}"
+                       class="flex items-center px-4 py-2 text-md font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150 ease-in-out {{ request()->routeIs('dashboard') ? 'text-green-700 bg-green-50 dark:bg-green-900/30 dark:text-green-300' : '' }}"
                        aria-current="{{ request()->routeIs('dashboard') ? 'page' : 'false' }}">
                         <i class="fas fa-home ml-3 text-green-600 dark:text-green-400"></i>
                         <span>{{ __('داشبورد اصلی') }}</span>
                     </a>
 
                     <!-- Orders Link -->
-                    <a href="{{ route('profile.orders.index') }}" 
+                    <a href="{{ route('profile.orders.index') }}"
                        class="flex items-center px-4 py-2 text-md font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150 ease-in-out {{ request()->routeIs('profile.orders.index') ? 'text-green-700 bg-green-50 dark:bg-green-900/30 dark:text-green-300' : '' }}">
                         <i class="fas fa-box-open ml-3 text-amber-500"></i>
                         <span>{{ __('سفارش‌ها') }}</span>
                     </a>
 
                     <!-- Addresses Link -->
-                    <a href="{{ route('profile.addresses.index') }}" 
+                    <a href="{{ route('profile.addresses.index') }}"
                        class="flex items-center px-4 py-2 text-md font-medium rounded-lg text-green-700 bg-green-50 dark:bg-green-900/30 dark:text-green-300 hover:bg-green-100 dark:hover:bg-gray-700 transition duration-150 ease-in-out {{ request()->routeIs('profile.addresses.index') || request()->routeIs('profile.addresses.create') || request()->routeIs('profile.addresses.edit') ? 'text-green-700 bg-green-50 dark:bg-green-900/30 dark:text-green-300' : '' }}">
                         <i class="fas fa-map-marker-alt ml-3 text-blue-500"></i>
                         <span>{{ __('آدرس‌ها') }}</span>
                     </a>
-                    
+
                     <!-- Profile Information Link - Changed from profile.edit to profile.show -->
-                    <a href="{{ route('profile.show') }}" 
+                    <a href="{{ route('profile.show') }}"
                        class="flex items-center px-4 py-2 text-md font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150 ease-in-out {{ request()->routeIs('profile.show') ? 'text-green-700 bg-green-50 dark:bg-green-900/30 dark:text-green-300' : '' }}">
                         <i class="fas fa-user-circle ml-3 text-purple-500"></i>
                         <span>{{ __('اطلاعات حساب') }}</span>
                     </a>
 
                     <!-- Notifications Link -->
-                    <a href="#" 
+                    <a href="#"
                        class="flex items-center px-4 py-2 text-md font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150 ease-in-out">
                         <i class="fas fa-bell ml-3 text-red-500"></i>
                         <span>{{ __('اعلان‌ها') }}</span>
                     </a>
 
                     <!-- Wishlist Link (if applicable, currently not in PRD) -->
-                    {{-- <a href="#" 
+                    {{-- <a href="#"
                        class="flex items-center px-4 py-2 text-md font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150 ease-in-out">
                         <i class="fas fa-heart ml-3 text-pink-500"></i>
                         <span>{{ __('علاقه‌مندی‌ها') }}</span>
                     </a> --}}
 
                     <!-- Transactions Link -->
-                    <a href="#" 
+                    <a href="#"
                        class="flex items-center px-4 py-2 text-md font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150 ease-in-out">
                         <i class="fas fa-credit-card ml-3 text-indigo-500"></i>
                         <span>{{ __('تراکنش‌ها') }}</span>
                     </a>
 
                     <!-- Support Link -->
-                    <a href="#" 
+                    <a href="#"
                        class="flex items-center px-4 py-2 text-md font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150 ease-in-out">
                         <i class="fas fa-life-ring ml-3 text-green-500"></i>
                         <span>{{ __('پشتیبانی') }}</span>
                     </a>
 
                     <!-- My Reviews Link -->
-                    <a href="#" 
+                    <a href="#"
                        class="flex items-center px-4 py-2 text-md font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-150 ease-in-out">
                         <i class="fas fa-star ml-3 text-yellow-500"></i>
                         <span>{{ __('نظرات من') }}</span>
@@ -99,7 +99,7 @@
                     <!-- Logout Link -->
                     <form method="POST" action="{{ route('auth.logout') }}">
                         @csrf
-                        <button type="submit" 
+                        <button type="submit"
                                 class="flex items-center w-full text-right px-4 py-2 text-md font-medium rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition duration-150 ease-in-out">
                             <i class="fas fa-sign-out-alt ml-3 text-red-500"></i>
                             <span>{{ __('خروج') }}</span>
@@ -133,7 +133,7 @@
                 @endif
 
                 <div class="mb-6 flex justify-end">
-                    <a href="{{ route('profile.addresses.create') }}" 
+                    <a href="{{ route('profile.addresses.create') }}"
                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300">
                         <i class="fas fa-plus ml-2"></i>
                         {{ __('افزودن آدرس جدید') }}
@@ -144,7 +144,7 @@
                     <div class="text-center py-10">
                         <i class="fas fa-map-marker-alt text-gray-400 text-6xl mb-4"></i>
                         <p class="text-lg text-gray-600 dark:text-gray-400">{{ __('شما هنوز آدرسی ثبت نکرده‌اید.') }}</p>
-                        <a href="{{ route('profile.addresses.create') }}" 
+                        <a href="{{ route('profile.addresses.create') }}"
                            class="mt-6 inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300">
                             {{ __('افزودن اولین آدرس') }}
                             <i class="fas fa-chevron-left mr-2"></i>
@@ -174,21 +174,23 @@
                                         {{ __('کد پستی:') }} {{ $address->postal_code }}
                                     </p>
                                 @endif
-                                {{-- Added phone number display --}}
-                                <p class="text-gray-600 dark:text-gray-400 text-sm mb-3">
-                                    {{ __('شماره تماس:') }} {{ $address->phone_number }}
-                                </p>
+                                {{-- Added fixed_phone display --}}
+                                @if ($address->fixed_phone)
+                                    <p class="text-gray-600 dark:text-gray-400 text-sm mb-3">
+                                        {{ __('شماره تماس ثابت:') }} {{ $address->fixed_phone }}
+                                    </p>
+                                @endif
                                 <div class="flex justify-end space-x-reverse space-x-2 border-t border-gray-200 dark:border-gray-600 pt-3 mt-3">
-                                    <a href="{{ route('profile.addresses.edit', $address->id) }}" 
+                                    <a href="{{ route('profile.addresses.edit', $address->id) }}"
                                        class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300">
                                         {{ __('ویرایش') }}
                                     </a>
                                     {{-- Changed onsubmit to data-confirm --}}
-                                    <form action="{{ route('profile.addresses.destroy', $address->id) }}" method="POST" 
-                                          data-confirm="آیا از حذف این آدرس مطمئن هستید؟"> 
+                                    <form action="{{ route('profile.addresses.destroy', $address->id) }}" method="POST"
+                                          data-confirm="آیا از حذف این آدرس مطمئن هستید؟">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" 
+                                        <button type="submit"
                                                 class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-300 ml-2">
                                             {{ __('حذف') }}
                                         </button>
@@ -200,7 +202,7 @@
                                         {{-- Changed onsubmit to data-confirm --}}
                                         <form action="{{ route('profile.addresses.set-default', $address->id) }}" method="POST" data-confirm="آیا می‌خواهید این آدرس را به عنوان آدرس پیش‌فرض خود تنظیم کنید؟">
                                             @csrf
-                                            <button type="submit" 
+                                            <button type="submit"
                                                     class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 w-full justify-center">
                                                 <i class="fas fa-star ml-2"></i>
                                                 {{ __('تغییر به پیش‌فرض') }}
@@ -282,7 +284,7 @@
                     if (confirmBtn._handler) confirmBtn.removeEventListener('click', confirmBtn._handler);
                     if (cancelBtn._handler) cancelBtn.removeEventListener('click', cancelBtn._handler);
                     if (closeBtn._handler) closeBtn.removeEventListener('click', closeBtn._handler);
-                    
+
                     // Reset button styles to default for confirmation (visible confirm/cancel, hidden close)
                     confirmBtn.style.display = ''; // Revert to default display (block or inline-block)
                     cancelBtn.style.display = ''; // Revert to default display
@@ -324,11 +326,11 @@
                     event.preventDefault(); // Prevent default form submission immediately
 
                     // Removed client-side check for last address, as this is now handled by the controller.
-                    // const isDeleteForm = this.action.includes('addresses/destroy'); 
-                    // const addressCount = parseInt(this.dataset.addressCount); 
+                    // const isDeleteForm = this.action.includes('addresses/destroy');
+                    // const addressCount = parseInt(this.dataset.addressCount);
                     // if (isDeleteForm && addressCount === 1) {
-                    //     await showCustomConfirmation('شما نمی‌توانید آخرین آدرس را حذف کنید. حداقل یک آدرس باید وجود داشته باشد.', true); 
-                    //     return; 
+                    //     await showCustomConfirmation('شما نمی‌توانید آخرین آدرس را حذف کنید. حداقل یک آدرس باید وجود داشته باشد.', true);
+                    //     return;
                     // }
 
                     const message = this.dataset.confirm; // Get message from data attribute

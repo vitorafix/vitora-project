@@ -1,0 +1,5 @@
+includes:
+    - vendor/phpstan/phpstan-laravel/extension.neon
+parameters:
+    paths:
+        - app

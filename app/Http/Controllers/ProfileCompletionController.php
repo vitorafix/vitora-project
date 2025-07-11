@@ -73,7 +73,7 @@ class ProfileCompletionController extends Controller
             'city' => ['required', 'string', 'max:255'],
             'address' => ['required', 'string', 'max:1000'],
             'postal_code' => ['nullable', 'string', 'digits:10'], // کد پستی 10 رقمی و اختیاری
-            'phone_number' => ['nullable', 'string', 'regex:/^0[0-9]{10}$/', 'digits:11'], // تلفن ثابت 11 رقمی (با 0 شروع شود) و اختیاری
+            'fixed_phone' => ['nullable', 'string', 'regex:/^0[0-9]{10}$/', 'digits:11'], // تغییر phone_number به fixed_phone
             'title' => ['nullable', 'string', 'max:255'], // عنوان آدرس (مثلاً: خانه، محل کار) و اختیاری
         ]);
 
@@ -94,7 +94,7 @@ class ProfileCompletionController extends Controller
         $address->city = $request->city;
         $address->address = $request->address;
         $address->postal_code = $request->postal_code;
-        $address->phone_number = $request->phone_number;
+        $address->fixed_phone = $request->fixed_phone; // تغییر phone_number به fixed_phone
         $address->is_default = true; // اولین آدرس وارد شده به عنوان آدرس پیش‌فرض تنظیم می‌شود.
         $address->save();
 
@@ -113,4 +113,3 @@ class ProfileCompletionController extends Controller
         return redirect()->intended('/')->with('status', 'پروفایل شما با موفقیت تکمیل شد.');
     }
 }
-

@@ -52,30 +52,30 @@ class AddressController extends Controller
             'city' => ['required', 'string', 'max:255'],
             'address' => ['required', 'string', 'max:500'],
             'postal_code' => [
-                'required', // Made required as per previous request
+                'required',
                 'string',
                 'regex:/^[0-9]{10}$/',
                 Rule::unique('addresses', 'postal_code')->where(function ($query) {
                     return $query->where('user_id', Auth::id());
-                }), // Check uniqueness only for the current user's addresses
+                }),
             ],
-            'phone_number' => [
+            'fixed_phone' => [ // تغییر phone_number به fixed_phone
                 'nullable',
                 'string',
-                'regex:/^09[0-9]{9}$/',
-                'max:11',
-                Rule::unique('addresses', 'phone_number')->where(function ($query) {
+                'regex:/^0[0-9]{10}$/', // اعتبارسنجی برای تلفن ثابت (با 0 شروع شود و 10 رقم دیگر)
+                'digits:11', // مجموعاً 11 رقم
+                Rule::unique('addresses', 'fixed_phone')->where(function ($query) { // تغییر phone_number به fixed_phone
                     return $query->where('user_id', Auth::id());
-                }), // Check uniqueness only for the current user's addresses
+                }),
             ],
             'is_default' => ['boolean'],
         ], [
             'postal_code.unique' => 'این کد پستی قبلاً برای یکی از آدرس‌های شما ثبت شده است.',
             'postal_code.required' => 'وارد کردن کد پستی الزامی است.',
             'postal_code.regex' => 'کد پستی باید ۱۰ رقم و فقط شامل اعداد باشد.',
-            'phone_number.unique' => 'این شماره تلفن قبلاً برای یکی از آدرس‌های شما ثبت شده است.',
-            'phone_number.regex' => 'فرمت شماره تلفن صحیح نیست. (مثال: 09123456789)',
-            'phone_number.max' => 'شماره تلفن نمی‌تواند بیشتر از ۱۱ رقم باشد.',
+            'fixed_phone.unique' => 'این شماره تلفن ثابت قبلاً برای یکی از آدرس‌های شما ثبت شده است.', // تغییر پیام
+            'fixed_phone.regex' => 'فرمت شماره تلفن ثابت صحیح نیست. (مثال: 021xxxxxxx)', // تغییر پیام
+            'fixed_phone.digits' => 'شماره تلفن ثابت باید ۱۱ رقم باشد.', // تغییر پیام
         ]);
 
         $user = Auth::user();
@@ -84,7 +84,7 @@ class AddressController extends Controller
         if (isset($validated['is_default']) && $validated['is_default']) {
             $user->addresses()->update(['is_default' => false]);
         }
-        
+
         // اگر این اولین آدرس کاربر است، آن را به عنوان پیش فرض تنظیم کنید
         if ($user->addresses->isEmpty()) {
             $validated['is_default'] = true;
@@ -133,30 +133,30 @@ class AddressController extends Controller
             'city' => ['required', 'string', 'max:255'],
             'address' => ['required', 'string', 'max:500'],
             'postal_code' => [
-                'required', // Made required as per previous request
+                'required',
                 'string',
                 'regex:/^[0-9]{10}$/',
                 Rule::unique('addresses', 'postal_code')->ignore($address->id)->where(function ($query) {
                     return $query->where('user_id', Auth::id());
-                }), // Check uniqueness for the current user's addresses, ignoring the current address
+                }),
             ],
-            'phone_number' => [
+            'fixed_phone' => [ // تغییر phone_number به fixed_phone
                 'nullable',
                 'string',
-                'regex:/^09[0-9]{9}$/',
-                'max:11',
-                Rule::unique('addresses', 'phone_number')->ignore($address->id)->where(function ($query) {
+                'regex:/^0[0-9]{10}$/', // اعتبارسنجی برای تلفن ثابت
+                'digits:11', // مجموعاً 11 رقم
+                Rule::unique('addresses', 'fixed_phone')->ignore($address->id)->where(function ($query) { // تغییر phone_number به fixed_phone
                     return $query->where('user_id', Auth::id());
-                }), // Check uniqueness for the current user's addresses, ignoring the current address
+                }),
             ],
             'is_default' => ['boolean'],
         ], [
             'postal_code.unique' => 'این کد پستی قبلاً برای یکی از آدرس‌های شما ثبت شده است.',
             'postal_code.required' => 'وارد کردن کد پستی الزامی است.',
             'postal_code.regex' => 'کد پستی باید ۱۰ رقم و فقط شامل اعداد باشد.',
-            'phone_number.unique' => 'این شماره تلفن قبلاً برای یکی از آدرس‌های شما ثبت شده است.',
-            'phone_number.regex' => 'فرمت شماره تلفن صحیح نیست. (مثال: 09123456789)',
-            'phone_number.max' => 'شماره تلفن نمی‌تواند بیشتر از ۱۱ رقم باشد.',
+            'fixed_phone.unique' => 'این شماره تلفن ثابت قبلاً برای یکی از آدرس‌های شما ثبت شده است.', // تغییر پیام
+            'fixed_phone.regex' => 'فرمت شماره تلفن ثابت صحیح نیست. (مثال: 021xxxxxxx)', // تغییر پیام
+            'fixed_phone.digits' => 'شماره تلفن ثابت باید ۱۱ رقم باشد.', // تغییر پیام
         ]);
 
         $user = Auth::user();
@@ -165,13 +165,12 @@ class AddressController extends Controller
         if (isset($validated['is_default']) && $validated['is_default']) {
             $user->addresses()->update(['is_default' => false]);
         }
-        
+
         // اگر این تنها آدرس کاربر است، باید پیش‌فرض بماند
         if ($user->addresses->count() === 1 && !$validated['is_default']) {
             // Only force default if it's the only address AND it's not already set as default
             $validated['is_default'] = true;
         }
-
 
         $address->update($validated);
 
@@ -196,7 +195,7 @@ class AddressController extends Controller
         if (Auth::user()->addresses()->count() === 1) {
             return redirect()->route('profile.addresses.index')->with('error', 'شما نمی‌توانید آخرین آدرس خود را حذف کنید. حداقل یک آدرس باید وجود داشته باشد.');
         }
-        
+
         // اگر آدرس پیش‌فرض است و آدرس‌های دیگری وجود دارد، باید آدرس پیش‌فرض جدیدی تعیین شود (اختیاری)
         if ($address->is_default && Auth::user()->addresses()->count() > 1) {
             // یک آدرس دیگر را به عنوان پیش‌فرض تنظیم کنید.

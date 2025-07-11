@@ -135,23 +135,23 @@
                     <x-input-error :messages="$errors->get('email')" class="mt-2 text-sm" />
                 </div>
 
-                <!-- Phone Number Field (Fixed Line) -->
+                <!-- Fixed Phone Number Field (Fixed Line) -->
                 <div>
-                    <label for="phone_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label for="fixed_phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         {{ __('شماره تلفن ثابت ') }}
                     </label>
-                    <input id="phone_number"
+                    <input id="fixed_phone"
                            class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400"
                            type="text"
-                           name="phone_number"
-                           value="{{ old('phone_number') }}"
+                           name="fixed_phone"
+                           value="{{ old('fixed_phone') }}"
                            placeholder="مثال: 021XXXXXXXX"
                            maxlength="11" {{-- حداکثر طول 11 رقم برای شماره تلفن ثابت --}}
-                           pattern="^0[0-8]\d{8,9}$" {{-- الگوی regex برای شماره تلفن ثابت: شروع با 0، رقم دوم 9 نباشد، و مجموعاً 10 یا 11 رقم --}}
-                           title=" . مثال: 02112345678" {{-- توضیح برای کاربر در صورت عدم تطابق الگو --}}
+                           pattern="^0[0-9]{10}$" {{-- الگوی regex برای شماره تلفن ثابت: شروع با 0 و 10 رقم دیگر --}}
+                           title="مثال: 02112345678" {{-- توضیح برای کاربر در صورت عدم تطابق الگو --}}
                            >
                     <span class='block text-xs text-gray-500 dark:text-gray-400 mt-1'>{{ __('شماره تلفن ثابت با کد شهر (مثال: 021) و ۱۰ رقم بعد از آن') }}</span>
-                    <x-input-error :messages="$errors->get('phone_number')" class="mt-2 text-sm" />
+                    <x-input-error :messages="$errors->get('fixed_phone')" class="mt-2 text-sm" />
                 </div>
 
                 <!-- Submit Button -->
