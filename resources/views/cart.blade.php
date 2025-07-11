@@ -41,9 +41,25 @@
         {{-- Cart Summary (Total Price and Checkout Button) --}}
         <div id="cart-summary" class="mt-8 pt-8 border-t-2 border-green-700 hidden">
             {{-- Summary content will be dynamically inserted here by JavaScript --}}
+            <div class="flex justify-between items-center text-lg text-gray-700 mb-2">
+                <span>جمع فرعی:</span>
+                <span id="cart-subtotal-price" class="font-semibold">0 تومان</span>
+            </div>
+            <div class="flex justify-between items-center text-lg text-red-600 mb-2">
+                <span>تخفیف:</span>
+                <span id="cart-discount-price" class="font-semibold">0 تومان</span>
+            </div>
+            <div class="flex justify-between items-center text-lg text-gray-700 mb-2">
+                <span>هزینه ارسال:</span>
+                <span id="cart-shipping-price" class="font-semibold">0 تومان</span>
+            </div>
+            <div class="flex justify-between items-center text-lg text-gray-700 mb-4">
+                <span>مالیات:</span>
+                <span id="cart-tax-price" class="font-semibold">0 تومان</span>
+            </div>
             <div class="flex justify-between items-center text-xl font-bold text-brown-900 mb-4">
                 <span>جمع کل سبد خرید:</span>
-                <span id="cart-total-price">0 تومان</span> {{-- این عنصر اضافه شد --}}
+                <span id="cart-total-price">0 تومان</span>
             </div>
             <a href="{{ route('checkout.index') }}" class="btn-primary w-full text-center">تکمیل سفارش</a>
         </div>

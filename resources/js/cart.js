@@ -4,9 +4,9 @@
 
 // ایمپورت کردن توابع مورد نیاز از ماژول‌های دیگر
 // این توابع مسئول برقراری ارتباط با API بک‌اند هستند.
-import { fetchCartContents, addItemToCart, updateCartItem, removeCartItem } from './api.js'; 
+import { fetchCartContents, addItem, updateCartItemQuantity, removeCartItem, clearCart, applyCoupon, removeCoupon } from './api.js';
 // این توابع مسئول به‌روزرسانی رابط کاربری (DOM) بر اساس داده‌های سبد خرید هستند.
-import { setCartLoadingState, renderMainCart, renderMiniCartDetails } from './renderer.js'; 
+import { setCartLoadingState, renderMainCart, renderMiniCartDetails } from './renderer.js';
 // این توابع مسئول کش کردن عناصر DOM و تنظیم Event Listenerها هستند.
 import {
     initializeDOMCache,
@@ -30,608 +30,356 @@ function updateQuantityInUI(itemId, newQuantity, itemPrice) {
     const mainCartItem = document.querySelector(`#cart-items-container [data-cart-item-id="${itemId}"]`);
     if (mainCartItem) {
         const quantitySpan = mainCartItem.querySelector('.item-quantity');
-        if (quantitySpan) {
-            quantitySpan.textContent = newQuantity;
-            quantitySpan.setAttribute('data-quantity', newQuantity);
-        }
-        // آپدیت subtotal در UI
-        const subtotalElement = mainCartItem.querySelector('.item-subtotal[data-subtotal]');
-        if (subtotalElement && itemPrice > 0) {
-            const newSubtotal = itemPrice * newQuantity;
-            subtotalElement.setAttribute('data-subtotal', newSubtotal);
-            const formattedPrice = new Intl.NumberFormat('fa-IR').format(newSubtotal);
-            subtotalElement.textContent = `${formattedPrice} تومان`;
-            console.log(`Subtotal updated in UI for main cart item ${itemId}: ${newSubtotal}`);
-        }
+        const subtotalSpan = mainCartItem.querySelector('.item-subtotal');
+        const oldQuantity = parseInt(quantitySpan.textContent);
+
+        quantitySpan.textContent = newQuantity;
+        quantitySpan.setAttribute('data-quantity', newQuantity);
+
+        // آپدیت ساب‌توتال آیتم
+        const newSubtotal = newQuantity * itemPrice;
+        subtotalSpan.textContent = newSubtotal.toLocaleString('fa-IR') + ' تومان';
+        subtotalSpan.setAttribute('data-subtotal', newSubtotal);
+
+        console.log(`Main cart item ${itemId} quantity updated from ${oldQuantity} to ${newQuantity}. Subtotal updated to: ${newSubtotal}`);
     }
-    
+
     // آپدیت mini cart
     const miniCartItem = document.querySelector(`#mini-cart-items-container [data-cart-item-id="${itemId}"]`);
     if (miniCartItem) {
-        const quantitySpan = miniCartItem.querySelector('.item-quantity');
-        if (quantitySpan) {
-            quantitySpan.textContent = newQuantity;
-            quantitySpan.setAttribute('data-quantity', newQuantity);
-        }
-        // آپدیت متن نمایش تعداد و قیمت در mini cart
-        const quantityPriceTextElement = miniCartItem.querySelector('.mr-1.text-gray-600.text-xs'); 
-        if (quantityPriceTextElement && itemPrice > 0) {
-            const newSubtotal = itemPrice * newQuantity;
-            quantityPriceTextElement.textContent = `x ${newQuantity} (${newSubtotal.toLocaleString('fa-IR')} تومان)`;
-            console.log(`Mini cart quantity text updated for item ${itemId}`);
-        }
+        const quantitySpan = miniCartItem.querySelector('.mini-cart-item-quantity');
+        const subtotalSpan = miniCartItem.querySelector('.mini-cart-item-subtotal');
+        const oldQuantity = parseInt(quantitySpan.textContent);
+
+        quantitySpan.textContent = newQuantity;
+        quantitySpan.setAttribute('data-quantity', newQuantity);
+
+        // آپدیت ساب‌توتال آیتم
+        const newSubtotal = newQuantity * itemPrice;
+        subtotalSpan.textContent = newSubtotal.toLocaleString('fa-IR') + ' تومان';
+        subtotalSpan.setAttribute('data-subtotal', newSubtotal);
+
+        console.log(`Mini cart item ${itemId} quantity updated from ${oldQuantity} to ${newQuantity}. Subtotal updated to: ${newSubtotal}`);
     }
 }
 
 /**
- * تابع برای حذف آیتم‌های تکراری در mini cart.
- * این تابع به جلوگیری از نمایش آیتم‌های تکراری در UI کمک می‌کند.
- */
-function removeDuplicateMiniCartItems() {
-    const miniCartContainer = document.getElementById('mini-cart-items-container');
-    if (!miniCartContainer) {
-        console.warn('Mini cart container not found for duplicate removal.');
-        return;
-    }
-    
-    const items = miniCartContainer.querySelectorAll('[data-cart-item-id]'); 
-    const seenIds = new Set();
-    
-    // Iterate in reverse to safely remove elements
-    for (let i = items.length - 1; i >= 0; i--) {
-        const item = items[i];
-        const itemId = item.getAttribute('data-cart-item-id');
-        if (seenIds.has(itemId)) {
-            console.log(`Removing duplicate mini cart item ${itemId}`);
-            item.remove();
-        } else {
-            seenIds.add(itemId);
-        }
-    }
-}
-
-/**
- * تابع برای debugging وضعیت سبد خرید.
- */
-function debugCartState() {
-    console.log('=== Cart Debug Info ===');
-    
-    const DOM = getDOM(); // Get cached DOM elements
-
-    // Main Cart Debugging
-    const mainCartItems = DOM.cartItemsContainer ? DOM.cartItemsContainer.querySelectorAll('[data-cart-item-id]') : [];
-    console.log('Main cart items found:', mainCartItems.length);
-
-    if (mainCartItems.length > 0) {
-        mainCartItems.forEach((item, index) => {
-            const cartItemId = item.getAttribute('data-cart-item-id') || 'unknown';
-            console.log(`\n=== Debugging: Main Cart Item ${index} (ID: ${cartItemId}) ===`);
-            console.log('Debugging: Full HTML:', item.outerHTML);
-            const quantitySpan = item.querySelector('.item-quantity');
-            if (quantitySpan) {
-                console.log(`Debugging:   Quantity span found: data-quantity=${quantitySpan.dataset.quantity}, text=${quantitySpan.textContent}`);
-            } else {
-                console.warn(`Debugging:   Quantity span NOT found for main cart item ${cartItemId}.`);
-            }
-            const subtotalElement = item.querySelector('.item-subtotal');
-            if (subtotalElement) {
-                console.log(`Debugging:   Subtotal element found: data-subtotal=${subtotalElement.dataset.subtotal}, text=${subtotalElement.textContent}`);
-            } else {
-                console.warn(`Debugging:   Subtotal element NOT found for main cart item ${cartItemId}.`);
-            }
-        });
-    } else {
-        console.log('No main cart items to debug (cart is empty or not yet rendered with items).');
-        // Check if empty message is visible
-        if (DOM.cartEmptyMessage && !DOM.cartEmptyMessage.classList.contains('hidden')) {
-            console.log('Main cart empty message is visible.');
-        }
-    }
-
-    // Mini Cart Debugging
-    const miniCartItems = DOM.miniCartItemsContainer ? DOM.miniCartItemsContainer.querySelectorAll('[data-cart-item-id]') : [];
-    console.log('Mini cart items found:', miniCartItems.length);
-
-    if (miniCartItems.length > 0) {
-        miniCartItems.forEach((item, index) => {
-            const cartItemId = item.getAttribute('data-cart-item-id') || 'unknown';
-            console.log(`\n=== Debugging: Mini Cart Item ${index} (ID: ${cartItemId}) ===`);
-            console.log('Debugging: Full HTML:', item.outerHTML);
-            const quantitySpan = item.querySelector('.item-quantity');
-            if (quantitySpan) {
-                console.log(`Debugging:   Quantity span found: data-quantity=${quantitySpan.dataset.quantity}, text=${quantitySpan.textContent}`);
-            } else {
-                console.warn(`Debugging:   Quantity span NOT found for mini cart item ${cartItemId}.`);
-            }
-        });
-    } else {
-        console.log('No mini cart items to debug (mini cart is empty or not yet rendered with items).');
-        // Check if empty message is visible
-        if (DOM.miniCartEmptyMessage && !DOM.miniCartEmptyMessage.classList.contains('hidden')) {
-            console.log('Mini cart empty message is visible.');
-        }
-    }
-
-    console.log('--- End Cart Debug Info ---');
-}
-
-
-/**
- * کلاس CartManager مسئول مدیریت کلی منطق سبد خرید در سمت کلاینت است.
- * این کلاس ماژول‌های API، Renderer و Events را هماهنگ می‌کند.
+ * کلاس CartManager مسئول مدیریت کلی وضعیت سبد خرید و هماهنگی بین API، Renderer و Events است.
  */
 class CartManager {
-    /**
-     * سازنده کلاس CartManager.
-     * @constructor
-     */
     constructor() {
-        // وضعیت اولیه سبد خرید
-        this.cartData = {
-            items: [],
-            totalQuantity: 0,
-            totalPrice: 0,
-            cartTotals: {} 
-        };
-        // Observer pattern: لیست آبزرورها برای اطلاع‌رسانی تغییرات سبد خرید
-        this.observers = [];
-        // پرچم جدید برای ردیابی وجود عناصر اصلی سبد خرید (مانند صفحه cart.blade.php)
-        this.hasMainCartElements = false; 
-        this.observer = null; // برای MutationObserver
-        
-        // Broadcast Channel برای همگام‌سازی بین تب‌ها
-        this.broadcastChannel = new BroadcastChannel('e-commerce-cart-sync');
-        console.log('CartManager initialized.');
-
-        // حذف کش کردن مستقیم عناصر DOM در سازنده
-        // این کار اکنون توسط initializeDOMCache در متد init انجام می‌شود.
-        this.DOM = {}; // یک شیء خالی برای نگهداری عناصر DOM کش شده
-        this.miniCartDOM = {}; // یک شیء خالی برای نگهداری عناصر mini cart DOM کش شده
-    }
-
-    /**
-     * متد اصلی برای راه‌اندازی سبد خرید.
-     * این متد باید پس از بارگذاری کامل DOM فراخوانی شود.
-     * مسئول کش کردن عناصر DOM، ثبت event listenerها و بارگذاری اولیه محتویات سبد خرید است.
-     */
-    async init() {
         if (isInitialized) {
-            console.log('CartManager already initialized, skipping init...');
+            console.warn('CartManager already initialized. Skipping re-initialization.');
             return;
         }
-        console.log('Initializing CartManager...'); // Added log
-
-        // کش DOM را راه‌اندازی کنید و عناصر حیاتی سبد خرید اصلی را بررسی کنید
-        this.hasMainCartElements = initializeDOMCache(); 
-        // پس از initializeDOMCache، عناصر کش شده را از getDOM دریافت کنید
-        this.DOM = getDOM(); 
-        // عناصر mini cart DOM نیز از getDOM قابل دسترسی هستند
-        this.miniCartDOM = getDOM();
-
-        // تنظیم شنونده مینی‌کارت (بقیه شنونده‌ها توسط event listener سراسری در پایین مدیریت می‌شوند)
-        setupMiniCartToggle();
-
-        // حذف آیتم‌های تکراری در mini cart قبل از هر پردازش
-        removeDuplicateMiniCartItems();
-        
-        // محتویات سبد خرید را بارگذاری و رندر کنید
-        await this.loadAndRenderCart();
-
-        // اضافه کردن شنونده برای Broadcast Channel
-        this.broadcastChannel.onmessage = (event) => {
-            // اگر پیام از این تب ارسال نشده باشد و نوع آن 'cart_updated' باشد، سبد خرید را دوباره بارگذاری کنید.
-            if (event.data && event.data.type === 'cart_updated' && event.data.senderId !== this.instanceId) {
-                console.log('Received cart_updated message from another tab. Reloading cart...');
-                this.loadAndRenderCart();
-            }
-        };
-
-        // یک شناسه منحصر به فرد برای این تب/اینستنس ایجاد کنید تا پیام‌های خود را نادیده بگیرید
-        this.instanceId = Date.now() + Math.random().toString(36).substring(2, 9);
-
-
-        // اضافه کردن لاگ‌های دیباگینگ در اینجا، پس از تلاش برای مقداردهی اولیه همه چیز
-        debugCartState(); // استفاده از تابع سراسری debugCartState
-
-        isInitialized = true; // تنظیم فلگ initialized
-        console.log('CartManager initialization complete.'); // Added log
+        this.dom = getDOM(); // کش کردن عناصر DOM
+        this.debouncedLoadAndRenderCart = debounce(this.loadAndRenderCart.bind(this), 300); // Debounce برای لود و رندر
+        this.debouncedUpdateCartItemQuantity = debounce(this.updateItemQuantity.bind(this), 500); // Debounce برای آپدیت تعداد
+        isInitialized = true;
     }
 
     /**
-     * محتویات سبد خرید را از API دریافت کرده و UI را به‌روزرسانی می‌کند.
-     * این متد می‌تواند پس از هر عملیات تغییر سبد (افزودن، حذف، به‌روزرسانی) فراخوانی شود.
+     * متد راه‌اندازی اولیه.
+     * عناصر DOM را کش می‌کند و Event Listenerها را تنظیم می‌نماید.
+     */
+    init() {
+        console.log('CartManager initializing...');
+        initializeDOMCache(); // اطمینان از کش شدن DOM
+        setupMiniCartToggle();
+        this.setupEventListeners();
+        this.loadAndRenderCart(); // بارگذاری اولیه محتویات سبد خرید
+    }
+
+    /**
+     * تنظیم Event Listenerهای اصلی برای تعاملات سبد خرید.
+     */
+    setupEventListeners() {
+        // Event Listener برای دکمه‌های افزودن به سبد خرید (در صفحات محصول)
+        document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+            button.addEventListener('click', this.handleAddToCartClick.bind(this));
+        });
+
+        // Event Listener برای دکمه‌های +/- و حذف در سبد خرید اصلی
+        if (this.dom.cartItemsContainer) {
+            this.dom.cartItemsContainer.addEventListener('click', this.handleCartItemAction.bind(this));
+        }
+
+        // Event Listener برای دکمه‌های اعمال/حذف کوپن
+        const applyCouponBtn = document.getElementById('apply-coupon-btn');
+        const removeCouponBtn = document.getElementById('remove-coupon-btn');
+        const couponCodeInput = document.getElementById('coupon-code-input');
+
+        if (applyCouponBtn && couponCodeInput) {
+            applyCouponBtn.addEventListener('click', async () => {
+                const couponCode = couponCodeInput.value;
+                if (couponCode) {
+                    await this.applyCoupon(couponCode);
+                } else {
+                    window.showMessage('لطفاً کد تخفیف را وارد کنید.', 'warning');
+                }
+            });
+        }
+
+        if (removeCouponBtn) {
+            removeCouponBtn.addEventListener('click', async () => {
+                await this.removeCoupon();
+            });
+        }
+
+        // Event Listener برای دکمه پاکسازی سبد خرید
+        const clearCartBtn = document.getElementById('clear-cart-btn');
+        if (clearCartBtn) {
+            clearCartBtn.addEventListener('click', async () => {
+                if (confirm('آیا مطمئن هستید که می‌خواهید سبد خرید خود را پاک کنید؟')) {
+                    await this.clearCart();
+                }
+            });
+        }
+    }
+
+    /**
+     * هندل کردن کلیک روی دکمه "افزودن به سبد خرید".
+     * @param {Event} event
+     */
+    async handleAddToCartClick(event) {
+        event.preventDefault();
+        const button = event.currentTarget;
+        const productId = button.dataset.productId;
+        const quantity = parseInt(button.dataset.quantity || 1); // مقدار پیش‌فرض 1
+        const productVariantId = button.dataset.productVariantId || null;
+
+        if (productId) {
+            // تغییر از addItemToCart به addItem
+            await this.addItem(productId, quantity, productVariantId);
+        } else {
+            console.error('Product ID not found for add to cart button.');
+            window.showMessage('خطا: شناسه محصول یافت نشد.', 'error');
+        }
+    }
+
+    /**
+     * هندل کردن کلیک روی دکمه‌های +/- و حذف در سبد خرید اصلی.
+     * @param {Event} event
+     */
+    handleCartItemAction(event) {
+        // بررسی برای دکمه‌های افزایش/کاهش تعداد
+        if (event.target.matches('.quantity-btn') || event.target.closest('.quantity-btn')) {
+            event.preventDefault();
+            const button = event.target.matches('.quantity-btn') ? event.target : event.target.closest('.quantity-btn');
+            const action = button.dataset.action;
+            const cartItemId = button.dataset.cartItemId;
+            const quantitySpan = document.querySelector(`#cart-items-container [data-cart-item-id="${cartItemId}"] .item-quantity`);
+            const itemPrice = parseFloat(document.querySelector(`#cart-items-container [data-cart-item-id="${cartItemId}"]`).dataset.unitPrice); // فرض می‌کنیم قیمت واحد در data-unit-price ذخیره شده
+
+            if (!quantitySpan || !cartItemId || isNaN(itemPrice)) {
+                console.error('Required data for quantity update not found.', { quantitySpan, cartItemId, itemPrice });
+                window.showMessage('خطا در به‌روزرسانی تعداد. اطلاعات ناقص است.', 'error');
+                return;
+            }
+
+            let newQuantity = parseInt(quantitySpan.textContent);
+            if (action === 'increase') {
+                newQuantity++;
+            } else if (action === 'decrease') {
+                newQuantity--;
+            }
+
+            // اگر تعداد به صفر رسید، آیتم را حذف می‌کنیم
+            if (newQuantity <= 0) {
+                if (confirm('آیا مطمئن هستید که می‌خواهید این محصول را از سبد خرید حذف کنید؟')) {
+                    this.removeItem(cartItemId);
+                }
+                return;
+            }
+
+            // آپدیت UI بلافاصله
+            updateQuantityInUI(cartItemId, newQuantity, itemPrice);
+
+            // آپدیت server از طریق CartManager با debounce
+            this.debouncedUpdateCartItemQuantity(cartItemId, newQuantity); // استفاده از نسخه debounce شده
+
+            return;
+        }
+
+        // بررسی برای دکمه‌های حذف (اگر جداگانه از دکمه‌های تعداد باشند)
+        if (event.target.matches('.remove-item-btn') || event.target.closest('.remove-item-btn')) {
+            event.preventDefault();
+            const removeBtn = event.target.matches('.remove-item-btn') ? event.target : event.target.closest('.remove-item-btn');
+            const cartItemId = removeBtn.getAttribute('data-cart-item-id');
+
+            if (cartItemId) {
+                console.log('Remove button clicked for item:', cartItemId);
+                if (confirm('آیا مطمئن هستید که می‌خواهید این محصول را از سبد خرید حذف کنید؟')) {
+                    this.removeItem(cartItemId);
+                }
+            }
+            return;
+        }
+    }
+
+    /**
+     * بارگذاری محتویات سبد خرید از API و رندر کردن آن در UI.
      */
     async loadAndRenderCart() {
-        console.log('loadAndRenderCart called. Stack trace:', new Error().stack); // Added stack trace log
-        setCartLoadingState(true); 
-        try {
-            const apiResponse = await fetchCartContents(); // دریافت کل پاسخ API
-
-            // بررسی کنید که آیا فراخوانی API موفق بوده و شامل کلید 'data' است
-            if (!apiResponse || !apiResponse.success || !apiResponse.data) {
-                throw new Error(apiResponse.message || 'ساختار پاسخ API نامعتبر است یا موفقیت‌آمیز نیست.');
-            }
-
-            const data = apiResponse.data; // استخراج داده‌های واقعی سبد خرید از کلید 'data'
-
-            // اکنون شیء 'data' استخراج شده را اعتبارسنجی کنید
-            if (!Array.isArray(data.items) || data.totalQuantity === undefined || data.totalPrice === undefined || typeof data.cartTotals !== 'object') {
-                throw new Error('داده‌های سبد خرید نامعتبر از API دریافت شد (فیلدهای مورد انتظار وجود ندارند).');
-            }
-
-            this.cartData = {
-                items: data.items,
-                totalQuantity: data.totalQuantity, 
-                totalPrice: data.totalPrice,
-                cartTotals: data.cartTotals 
-            };
-
-            renderMiniCartDetails(this.cartData.items, this.cartData.totalQuantity, this.cartData.totalPrice); 
-
-            if (this.hasMainCartElements) {
-                if (this.cartData.items.length === 0) {
-                    this.renderEmptyCart(); 
-                } else {
-                    renderMainCart(this.cartData.items, this.cartData.cartTotals); 
-                }
-            } else {
-                console.warn('عناصر اصلی سبد خرید وجود ندارند، رندرینگ سبد خرید اصلی نادیده گرفته می‌شود.');
-            }
-
-            this.notify('cartChanged', this.cartData); 
-
-            // این خط حذف شد تا از حلقه‌های بازخورد جلوگیری شود.
-            // this.broadcastChannel.postMessage({ type: 'cart_updated', senderId: this.instanceId });
-
-        } catch (error) {
-            console.error('بارگذاری و رندر سبد خرید با شکست مواجه شد:', error);
-            if (typeof window.showMessage === 'function') {
-                window.showMessage('خطا در بارگذاری سبد خرید. لطفاً دوباره تلاش کنید.', 'error');
-            }
-        } finally {
-            setCartLoadingState(false); 
-        }
-    }
-
-    /**
-     * رندر کردن وضعیت سبد خرید خالی در صفحه اصلی سبد خرید.
-     */
-    renderEmptyCart() {
-        // استفاده از this.DOM که اکنون از getDOM() پر شده است
-        if (this.DOM.cartEmptyMessage) {
-            this.DOM.cartEmptyMessage.classList.remove('hidden'); 
-        }
-        if (this.DOM.cartSummary) {
-            this.DOM.cartSummary.classList.add('hidden'); 
-        }
-        if (this.DOM.cartItemsContainer) {
-            // اطمینان حاصل کنید که این خط فقط محتوای کانتینر آیتم‌ها را پاک می‌کند
-            // و پیام "سبد خرید خالی است" را به جای آن قرار می‌دهد.
-            // این پیام توسط renderer.js مدیریت می‌شود، بنابراین اینجا فقط باید کانتینر آیتم‌ها را پاک کنیم.
-            this.DOM.cartItemsContainer.innerHTML = ''; 
-            // همچنین، کانتینر آیتم‌ها را پنهان کنید تا فقط پیام خالی بودن نمایش داده شود.
-            this.DOM.cartItemsContainer.classList.add('hidden');
-        }
-    }
-
-    /**
-     * اضافه کردن یک محصول به سبد خرید یا به‌روزرسانی تعداد آن اگر قبلاً موجود باشد.
-     * @param {string} productId - شناسه محصول.
-     * @param {number} quantity - تعداد محصول برای اضافه کردن.
-     */
-    async addItem(productId, quantity = 1) {
         setCartLoadingState(true);
         try {
-            // ابتدا بررسی کنید که آیا محصول قبلاً در client-side cartData وجود دارد
-            const existingCartItem = this.cartData.items.find(item => item.product_id == productId);
-
-            if (existingCartItem) {
-                // اگر محصول موجود است، quantity آن را افزایش دهید
-                const newQuantity = existingCartItem.quantity + quantity;
-                console.log(`Product ${productId} already in cart. Updating quantity from ${existingCartItem.quantity} to ${newQuantity}.`);
-                // فراخوانی متد updateItemQuantity که مسئول فراخوانی API و به‌روزرسانی UI است
-                await this.updateItemQuantity(existingCartItem.cart_item_id, newQuantity);
+            const response = await fetchCartContents();
+            if (response.success) {
+                const cartContents = response.data;
+                renderMainCart(cartContents);
+                renderMiniCartDetails(cartContents);
+                console.log('Cart contents loaded and rendered successfully.');
             } else {
-                // اگر محصول جدید است، آن را از طریق API به سبد اضافه کنید
-                console.log(`Product ${productId} not in cart. Adding new item with quantity ${quantity}.`);
-                const response = await addItemToCart(productId, quantity);
-                if (response.success) {
-                    await this.loadAndRenderCart(); // رندر کامل برای آیتم‌های جدید
-                    if (typeof window.showMessage === 'function') {
-                        window.showMessage('محصول به سبد خرید اضافه شد.', 'success');
-                    }
-                    // ارسال پیام به Broadcast Channel پس از افزودن موفقیت‌آمیز و رندر کامل
-                    this.broadcastChannel.postMessage({ type: 'cart_updated', senderId: this.instanceId });
-                } else {
-                    throw new Error(response.message || 'خطا در افزودن محصول به سبد خرید.');
-                }
+                window.showMessage(response.message, 'error');
             }
         } catch (error) {
-            console.error('Error adding/updating item in cart:', error);
-            if (typeof window.showMessage === 'function') {
-                window.showMessage(error.message || 'خطا در افزودن محصول به سبد خرید. لطفاً دوباره تلاش کنید.', 'error');
-            }
+            console.error('Error loading cart contents:', error);
+            window.showMessage('خطا در بارگذاری سبد خرید. لطفاً دوباره تلاش کنید.', 'error');
         } finally {
             setCartLoadingState(false);
         }
     }
 
     /**
-     * به‌روزرسانی تعداد یک آیتم در سبد خرید.
-     * @param {string} cartItemId - شناسه آیتم سبد خرید.
-     * @param {number} newQuantity - تعداد جدید محصول.
+     * افزودن محصول به سبد خرید.
+     * @param {number} productId
+     * @param {number} quantity
+     * @param {number|null} productVariantId
      */
-    async updateItemQuantity(cartItemId, newQuantity) { 
+    async addItem(productId, quantity, productVariantId = null) {
         setCartLoadingState(true);
         try {
-            const response = await updateCartItem(cartItemId, newQuantity); 
+            // تغییر از addItemToCart به addItem
+            const response = await addItem(productId, quantity, productVariantId);
             if (response.success) {
-                // یافتن آیتم در cartData محلی و به‌روزرسانی تعداد آن
-                const itemIndex = this.cartData.items.findIndex(item => item.cart_item_id == cartItemId);
-                if (itemIndex > -1) {
-                    this.cartData.items[itemIndex].quantity = newQuantity;
-                    // همچنین subtotal و سایر ویژگی‌های مشتق شده را برای سازگاری محلی به‌روزرسانی کنید
-                    // فرض بر این است که product_price روی آیتم موجود است
-                    this.cartData.items[itemIndex].subtotal = this.cartData.items[itemIndex].product_price * newQuantity;
-                }
-
-                // آپدیت UI بلافاصله برای پاسخگویی بهتر
-                const itemData = this.cartData.items.find(item => item.cart_item_id == cartItemId);
-                const itemPrice = itemData ? itemData.product_price : 0;
-                updateQuantityInUI(cartItemId, newQuantity, itemPrice); 
-                
-                // مجموع کل‌ها را به صورت محلی دوباره محاسبه کنید تا تجربه روان‌تری داشته باشید
-                this.cartData.totalQuantity = this.cartData.items.reduce((sum, item) => sum + item.quantity, 0);
-                this.cartData.totalPrice = this.cartData.items.reduce((sum, item) => sum + item.subtotal, 0);
-
-                // رندر مجدد فقط جزئیات مینی‌کارت و مجموع کل‌های سبد خرید اصلی
-                // این کار از فراخوانی کامل loadAndRenderCart() جلوگیری می‌کند
-                renderMiniCartDetails(this.cartData.items, this.cartData.totalQuantity, this.cartData.totalPrice);
-                // استفاده از this.DOM که اکنون از getDOM() پر شده است
-                if (this.DOM.cartTotalPrice) {
-                    this.DOM.cartTotalPrice.textContent = (this.cartData.totalPrice ?? 0).toLocaleString('fa-IR') + ' تومان';
-                }
-                const cartSubtotalElement = document.getElementById('cart-subtotal-price'); 
-                if (cartSubtotalElement) {
-                    cartSubtotalElement.textContent = (this.cartData.cartTotals.subtotal ?? 0).toLocaleString('fa-IR') + ' تومان';
-                }
-                const cartDiscountElement = document.getElementById('cart-discount-price'); 
-                if (cartDiscountElement) {
-                    cartDiscountElement.textContent = (this.cartData.cartTotals.discount ?? 0).toLocaleString('fa-IR') + ' تومان';
-                }
-                // اگر عناصر دیگری برای نمایش shipping و tax دارید، اینجا به‌روزرسانی کنید.
-
-                // به آبزرورها اطلاع دهید و تغییر را Broadcast کنید
-                this.notify('cartChanged', this.cartData); 
-                this.broadcastChannel.postMessage({ type: 'cart_updated', senderId: this.instanceId }); // Broadcast the change
-
-                if (typeof window.showMessage === 'function') {
-                    window.showMessage('تعداد محصول به‌روزرسانی شد.', 'success');
-                }
+                window.showMessage(response.message, 'success');
+                await this.loadAndRenderCart(); // Reload cart contents after adding
             } else {
-                throw new Error(response.message || 'خطا در به‌روزرسانی تعداد محصول.');
+                window.showMessage(response.message, 'error');
             }
         } catch (error) {
-            console.error('Error updating item quantity:', error);
-            if (typeof window.showMessage === 'function') {
-                window.showMessage(error.message || 'خطا در به‌روزرسانی تعداد محصول. لطفاً دوباره تلاش کنید.', 'error');
-            }
+            console.error('Error adding item to cart:', error);
+            window.showMessage('خطا در افزودن محصول به سبد خرید.', 'error');
         } finally {
             setCartLoadingState(false);
         }
     }
 
     /**
-     * حذف یک آیتم از سبد خرید.
-     * @param {string} cartItemId - شناسه آیتم سبد خرید برای حذف.
+     * به‌روزرسانی تعداد آیتم در سبد خرید.
+     * @param {string} cartItemId
+     * @param {number} quantity
      */
-    async removeItem(cartItemId) { 
+    async updateItemQuantity(cartItemId, quantity) {
         setCartLoadingState(true);
         try {
-            const response = await removeCartItem(cartItemId); 
+            // استفاده از updateCartItemQuantity که از api.js ایمپورت شده است.
+            const response = await updateCartItemQuantity(cartItemId, quantity);
             if (response.success) {
-                await this.loadAndRenderCart(); // همچنان loadAndRenderCart را صدا می‌زنیم تا کل وضعیت به‌روز شود
-                if (typeof window.showMessage === 'function') {
-                    window.showMessage('محصول از سبد خرید حذف شد.', 'success');
-                }
-                // ارسال پیام به Broadcast Channel پس از حذف موفقیت‌آمیز و رندر کامل
-                this.broadcastChannel.postMessage({ type: 'cart_updated', senderId: this.instanceId });
+                window.showMessage(response.message, 'success');
+                await this.loadAndRenderCart();
             } else {
-                throw new Error(response.message || 'خطا در حذف محصول از سبد خرید.');
+                window.showMessage(response.message, 'error');
+            }
+        } catch (error) {
+            console.error('Error updating cart item quantity:', error);
+            window.showMessage('خطا در به‌روزرسانی تعداد محصول در سبد خرید.', 'error');
+        } finally {
+            setCartLoadingState(false);
+        }
+    }
+
+    /**
+     * حذف آیتم از سبد خرید.
+     * @param {string} cartItemId
+     */
+    async removeItem(cartItemId) {
+        setCartLoadingState(true);
+        try {
+            const response = await removeCartItem(cartItemId);
+            if (response.success) {
+                window.showMessage(response.message, 'success');
+                await this.loadAndRenderCart();
+            } else {
+                window.showMessage(response.message, 'error');
             }
         } catch (error) {
             console.error('Error removing item from cart:', error);
-            if (typeof window.showMessage === 'function') {
-                window.showMessage(error.message || 'خطا در حذف محصول از سبد خرید. لطفاً دوباره تلاش کنید.', 'error');
-            }
+            window.showMessage('خطا در حذف محصول از سبد خرید.', 'error');
         } finally {
             setCartLoadingState(false);
         }
     }
 
     /**
-     * دریافت یک آیتم خاص از سبد خرید بر اساس شناسه محصول.
-     * @param {number} productId - شناسه محصول.
-     * @returns {Object | undefined} آیتم سبد خرید یا undefined اگر یافت نشود.
+     * پاک کردن کامل سبد خرید.
      */
-    getCartItem(productId) {
-        return this.cartData.items.find(item => item.product_id === productId);
-    }
-
-    /**
-     * محاسبه کل قیمت فعلی سبد خرید.
-     * @returns {number} قیمت کل سبد خرید.
-     */
-    getTotalPrice() {
-        return this.cartData.totalPrice;
-    }
-
-    /**
-     * بررسی خالی بودن سبد خرید.
-     * @returns {boolean} true اگر سبد خرید خالی باشد، در غیر این صورت false.
-     */
-    isEmpty() {
-        return this.cartData.items.length === 0;
-    }
-
-    /**
-     * دریافت خلاصه‌ای از وضعیت فعلی سبد خرید.
-     * @returns {Object} خلاصه سبد خرید شامل تعداد کل، قیمت کل و وضعیت خالی بودن.
-     */
-    getCartSummary() {
-        return {
-            totalQuantity: this.cartData.totalQuantity,
-            totalPrice: this.cartData.totalPrice,
-            itemCount: this.cartData.items.length,
-            isEmpty: this.isEmpty()
-        };
-    }
-
-    /**
-     * ثبت یک آبزرور برای گوش دادن به تغییرات سبد خرید.
-     * @param {Function} observer - تابعی که هنگام تغییر سبد خرید فراخوانی می‌شود.
-     */
-    subscribe(observer) {
-        if (typeof observer === 'function') {
-            this.observers.push(observer);
-        } else {
-            console.warn('Observer must be a function.');
+    async clearCart() {
+        setCartLoadingState(true);
+        try {
+            const response = await clearCart();
+            if (response.success) {
+                window.showMessage(response.message, 'success');
+                await this.loadAndRenderCart();
+            } else {
+                    window.showMessage(response.message, 'error');
+            }
+        } catch (error) {
+            console.error('Error clearing cart:', error);
+            window.showMessage('خطا در پاک کردن سبد خرید.', 'error');
+        } finally {
+            setCartLoadingState(false);
         }
     }
 
     /**
-     * حذف یک آبزرور از لیست.
-     * @param {Function} observer - تابعی که باید حذف شود.
+     * اعمال کد تخفیف به سبد خرید.
+     * @param {string} couponCode
      */
-    unsubscribe(observer) {
-        this.observers = this.observers.filter(obs => obs !== observer);
+    async applyCoupon(couponCode) {
+        setCartLoadingState(true);
+        try {
+            const response = await applyCoupon(couponCode);
+            if (response.success) {
+                window.showMessage(response.message, 'success');
+                await this.loadAndRenderCart();
+            } else {
+                window.showMessage(response.message, 'error');
+            }
+        } catch (error) {
+            console.error('Error applying coupon:', error);
+            window.showMessage('خطا در اعمال کد تخفیف.', 'error');
+        } finally {
+            setCartLoadingState(false);
+        }
     }
 
     /**
-     * اطلاع‌رسانی به تمامی آبزرورها در مورد تغییرات سبد خرید.
-     * @param {string} eventType - نوع رویداد (مثلاً 'cartChanged').
-     * @param {Object} data - داده‌های مربوط به رویداد.
+     * حذف کد تخفیف از سبد خرید.
      */
-    notify(eventType, data) {
-        this.observers.forEach(observer => {
-            try {
-                observer(eventType, data);
-            } catch (error) {
-                console.error('Error notifying observer:', error);
+    async removeCoupon() {
+        setCartLoadingState(true);
+        try {
+            const response = await removeCoupon();
+            if (response.success) {
+                window.showMessage(response.message, 'success');
+                await this.loadAndRenderCart();
+            } else {
+                window.showMessage(response.message, 'error');
             }
-        });
+        } catch (error) {
+            console.error('Error removing coupon:', error);
+            window.showMessage('خطا در حذف کد تخفیف.', 'error');
+        } finally {
+            setCartLoadingState(false);
+        }
     }
 }
-
-// تعریف debouncedAddCartItem و debouncedUpdateCartItem در خارج از event listener
-// تا بتوانند وضعیت داخلی debounce را حفظ کنند.
-const debouncedAddCartItem = debounce(async (productId, quantity) => {
-    console.log(`Debounced add triggered for productId: ${productId}, quantity: ${quantity}`); // Added log
-    if (window.cartManager) {
-        await window.cartManager.addItem(productId, quantity);
-    } else {
-        console.error('CartManager not available to add item.');
-    }
-}, 400); // 400 میلی‌ثانیه debounce delay، کمتر از 0.5 ثانیه محدودیت سرور
-
-const debouncedUpdateCartItemQuantity = debounce(async (itemId, newQuantity) => {
-    console.log(`Debounced update triggered for itemId: ${itemId}, newQuantity: ${newQuantity}`); // Added log
-    if (window.cartManager) {
-        await window.cartManager.updateItemQuantity(itemId, newQuantity);
-    } else {
-        console.error('CartManager not available to update item quantity.');
-    }
-}, 400); // 400 میلی‌ثانیه debounce delay
-
-// Event listener سراسری برای مدیریت کلیک‌ها
-document.addEventListener('click', function(event) {
-    // بررسی برای دکمه‌های "افزودن به سبد خرید"
-    if (event.target.matches('.add-to-cart-btn') || event.target.closest('.add-to-cart-btn')) {
-        event.preventDefault();
-        const addBtn = event.target.matches('.add-to-cart-btn') ? event.target : event.target.closest('.add-to-cart-btn');
-        const productId = addBtn.getAttribute('data-product-id');
-        const quantity = parseInt(addBtn.getAttribute('data-quantity')) || 1;
-        
-        if (productId) { // CartManager از طریق debouncedAddCartItem بررسی می‌شود
-            console.log(`Add to cart clicked for product ID: ${productId}, quantity: ${quantity}`);
-            debouncedAddCartItem(productId, quantity); // استفاده از نسخه debounce شده
-        } else {
-            console.error('Product ID not available for add to cart.');
-        }
-        return;
-    }
-
-    // بررسی برای دکمه‌های افزایش/کاهش تعداد
-    if (event.target.matches('.quantity-btn, .minus-btn, .plus-btn') || event.target.closest('.quantity-btn')) {
-        event.preventDefault();
-        
-        const cartItem = event.target.closest('[data-cart-item-id]'); 
-        if (!cartItem) {
-            console.warn('Clicked quantity button, but no parent cart item found with data-cart-item-id.');
-            return;
-        }
-        
-        const itemId = cartItem.getAttribute('data-cart-item-id');
-        
-        const quantitySpan = cartItem.querySelector('.item-quantity');
-        if (!quantitySpan) {
-            console.error(`Quantity span not found for item ${itemId}. Cannot update UI.`);
-            return;
-        }
-        
-        const currentQuantity = parseInt(quantitySpan.getAttribute('data-quantity')) || 1;
-        const isPlus = event.target.classList.contains('plus-btn') || 
-                      (event.target.classList.contains('quantity-btn') && event.target.textContent.trim() === '+');
-        
-        let newQuantity = currentQuantity + (isPlus ? 1 : -1);
-        newQuantity = Math.max(0, newQuantity); // جلوگیری از تعداد منفی
-
-        // اگر تعداد جدید 0 است، درخواست حذف آیتم را ارسال کنید
-        if (newQuantity === 0) {
-            if (window.cartManager) {
-                // برای حذف، debounce اعمال نمی‌کنیم تا عملیات فوری باشد
-                window.cartManager.removeItem(itemId); 
-            } else {
-                console.error('CartManager not available to remove item.');
-            }
-            return; 
-        }
-        
-        // آپدیت UI بلافاصله برای پاسخگویی بهتر
-        // نیازی به این خطوط نیست، زیرا updateItemQuantity خودش updateQuantityInUI را فراخوانی می‌کند
-        // quantitySpan.textContent = newQuantity;
-        // quantitySpan.setAttribute('data-quantity', newQuantity);
-        
-        // آپدیت server از طریق CartManager با debounce
-        debouncedUpdateCartItemQuantity(itemId, newQuantity); // استفاده از نسخه debounce شده
-        
-        return;
-    }
-
-    // بررسی برای دکمه‌های حذف (اگر جداگانه از دکمه‌های تعداد باشند)
-    if (event.target.matches('.remove-item-btn') || event.target.closest('.remove-item-btn')) {
-        event.preventDefault();
-        const removeBtn = event.target.matches('.remove-item-btn') ? event.target : event.target.closest('.remove-item-btn');
-        const cartItemId = removeBtn.getAttribute('data-cart-item-id');
-
-        if (cartItemId) {
-            console.log('Remove button clicked for item:', cartItemId);
-            if (window.cartManager) {
-                // برای حذف، debounce اعمال نمی‌کنیم تا عملیات فوری باشد
-                window.cartManager.removeItem(cartItemId);
-            } else {
-                console.error('CartManager not available to remove item.');
-            }
-        }
-        return;
-    }
-});
-
 
 // ایجاد یک نمونه از CartManager و راه‌اندازی آن پس از بارگذاری کامل DOM
 document.addEventListener('DOMContentLoaded', () => {
     const cartManager = new CartManager();
     // cartManager را به صورت سراسری در دسترس قرار دهید تا ماژول‌های دیگر (مانند events.js) بتوانند به آن دسترسی داشته باشند
     window.cartManager = cartManager;
-    cartManager.init(); 
+    cartManager.init();
 });

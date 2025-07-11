@@ -16,6 +16,7 @@ use App\Services\CartCalculationService;
 use App\Services\Responses\CartOperationResponse; // مطمئن شوید که این کلاس متدهای استاتیک success() و fail() را دارد
 use App\Services\Responses\CartContentsResponse;
 use App\DTOs\CartTotalsDTO; // برای ساخت CartTotalsDTO در تست‌ها
+use Carbon\Carbon; // اضافه شده برای Carbon
 
 class CartControllerTest extends TestCase
 {
@@ -102,7 +103,7 @@ class CartControllerTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertViewIs('cart'); // مطمئن شوید که ویو 'cart' رندر می‌شود
-        $response->assertViewHas('cartItems');
+        $response->assertViewHas('cartContents');
         $response->assertViewHas('cartTotals');
         $response->assertViewHas('isEmpty');
         $response->assertViewHas('totalQuantity');
@@ -147,8 +148,8 @@ class CartControllerTest extends TestCase
                 'price' => $itemUnitPrice, // Unit price of the item
                 'subtotal' => $itemTotalPrice, // Total price for this item (quantity * unit price)
                 'product' => $product->toArray(), // Full product data
-                'created_at' => now()->subMinutes(5)->toDateTimeString(),
-                'updated_at' => now()->toDateTimeString(),
+                'created_at' => Carbon::now()->subMinutes(5)->toDateTimeString(),
+                'updated_at' => Carbon::now()->toDateTimeString(),
             ]
         ];
 
@@ -174,12 +175,12 @@ class CartControllerTest extends TestCase
                 cartTotals: $cartTotalsDTO
             ));
 
-        $response = $this->getJson(route('cart.contents'));
+        $response = $this->getJson(route('api.cart.getContents')); // Changed route to api.cart.getContents
 
         $response->assertStatus(200)
                  ->assertJson([
                      'success' => true,
-                     'message' => 'سبد خرید با موفقیت بارگذاری شد', // From CartController::getContents
+                     'message' => 'سبد خرید با موفقیت بارگذاری شد', // From ApiCartController::getContents
                      'data' => [
                          'items' => [
                              [
@@ -217,7 +218,7 @@ class CartControllerTest extends TestCase
                              'formattedTax' => number_format($cartTotalsDTO->tax, 0, '.', ',') . ' تومان',
                          ],
                          'metadata' => [
-                             'itemCount' => $totalQuantity, // Assuming itemCount is totalQuantity
+                             'itemCount' => count($cartItemsData), // Updated: itemCount is number of distinct items
                              // 'lastUpdated' and 'requestId' are dynamic, so not asserting exact values here,
                              // but structure can be asserted.
                          ]
@@ -249,6 +250,19 @@ class CartControllerTest extends TestCase
         $itemUnitPrice = $product->price;
         $itemTotalPrice = $itemUnitPrice * $itemQuantity;
 
+        $cartItemsData = [
+            [
+                'id' => 1,
+                'product_id' => $product->id,
+                'quantity' => $itemQuantity,
+                'price' => $itemUnitPrice,
+                'subtotal' => $itemTotalPrice,
+                'product' => $product->toArray(),
+                'created_at' => Carbon::now()->subMinutes(1)->toDateTimeString(),
+                'updated_at' => Carbon::now()->toDateTimeString(),
+            ]
+        ];
+
         $cartTotalsDTO = new CartTotalsDTO(
             subtotal: $itemTotalPrice,
             discount: 0,
@@ -260,24 +274,13 @@ class CartControllerTest extends TestCase
         $this->cartService->shouldReceive('getCartContents')
             ->once()
             ->andReturn(new CartContentsResponse(
-                items: [
-                    [
-                        'id' => 1,
-                        'product_id' => $product->id,
-                        'quantity' => $itemQuantity,
-                        'price' => $itemUnitPrice,
-                        'subtotal' => $itemTotalPrice,
-                        'product' => $product->toArray(),
-                        'created_at' => now()->subMinutes(1)->toDateTimeString(),
-                        'updated_at' => now()->toDateTimeString(),
-                    ]
-                ],
+                items: $cartItemsData,
                 totalQuantity: $itemQuantity,
                 totalPrice: $itemTotalPrice,
                 cartTotals: $cartTotalsDTO
             ));
 
-        $response = $this->postJson(route('cart.add', ['product' => $product->id]), [
+        $response = $this->postJson(route('api.cart.add', ['product' => $product->id]), [ // Changed route to api.cart.add
             'quantity' => $itemQuantity,
         ]);
 
@@ -302,8 +305,8 @@ class CartControllerTest extends TestCase
                                  'totalPrice' => $itemTotalPrice,
                                  'formattedUnitPrice' => number_format($itemUnitPrice, 0, '.', ',') . ' تومان',
                                  'formattedTotalPrice' => number_format($itemTotalPrice, 0, '.', ',') . ' تومان',
-                                 'addedAt' => now()->subMinutes(1)->toDateTimeString(),
-                                 'updatedAt' => now()->toDateTimeString(),
+                                 'addedAt' => $cartItemsData[0]['created_at'],
+                                 'updatedAt' => $cartItemsData[0]['updated_at'],
                              ]
                          ],
                          'summary' => [
@@ -320,6 +323,9 @@ class CartControllerTest extends TestCase
                              'formattedShipping' => '0 تومان',
                              'tax' => 0,
                              'formattedTax' => '0 تومان',
+                         ],
+                         'metadata' => [
+                             'itemCount' => count($cartItemsData), // Updated: itemCount is number of distinct items
                          ]
                      ]
                  ]);
@@ -344,9 +350,9 @@ class CartControllerTest extends TestCase
         // Mock کردن addOrUpdateCartItem برای پرتاب استثنای موجودی ناکافی
         $this->cartService->shouldReceive('addOrUpdateCartItem')
             ->once()
-            ->andThrow(new \App\Exceptions\Cart\InsufficientStockException('موجودی کافی نیست.', 400));
+            ->andReturn(CartOperationResponse::fail('موجودی کافی نیست.', 400)); // Changed to return CartOperationResponse::fail
 
-        $response = $this->postJson(route('cart.add', ['product' => $product->id]), [
+        $response = $this->postJson(route('api.cart.add', ['product' => $product->id]), [ // Changed route to api.cart.add
             'quantity' => 10, // درخواست بیش از موجودی
         ]);
 
@@ -374,7 +380,7 @@ class CartControllerTest extends TestCase
             ->once()
             ->andReturn(true);
 
-        $this->cartService->shouldReceive('updateCartItemQuantity')
+        $this->cartService->shouldReceive('updateItemQuantity') // Changed to updateItemQuantity
             ->once()
             ->andReturn(CartOperationResponse::success('تعداد به‌روزرسانی شد.'));
 
@@ -385,6 +391,19 @@ class CartControllerTest extends TestCase
         $itemQuantity = 2;
         $itemUnitPrice = $product->price;
         $itemTotalPrice = $itemUnitPrice * $itemQuantity;
+
+        $cartItemsData = [
+            [
+                'id' => $cartItem->id,
+                'product_id' => $product->id,
+                'quantity' => $itemQuantity,
+                'price' => $itemUnitPrice,
+                'subtotal' => $itemTotalPrice,
+                'product' => $product->toArray(),
+                'created_at' => Carbon::now()->subMinutes(1)->toDateTimeString(),
+                'updated_at' => Carbon::now()->toDateTimeString(),
+            ]
+        ];
 
         $cartTotalsDTO = new CartTotalsDTO(
             subtotal: $itemTotalPrice,
@@ -397,24 +416,13 @@ class CartControllerTest extends TestCase
         $this->cartService->shouldReceive('getCartContents')
             ->once()
             ->andReturn(new CartContentsResponse(
-                items: [
-                    [
-                        'id' => $cartItem->id,
-                        'product_id' => $product->id,
-                        'quantity' => $itemQuantity,
-                        'price' => $itemUnitPrice,
-                        'subtotal' => $itemTotalPrice,
-                        'product' => $product->toArray(),
-                        'created_at' => now()->subMinutes(1)->toDateTimeString(),
-                        'updated_at' => now()->toDateTimeString(),
-                    ]
-                ],
+                items: $cartItemsData,
                 totalQuantity: $itemQuantity,
                 totalPrice: $itemTotalPrice,
                 cartTotals: $cartTotalsDTO
             ));
 
-        $response = $this->putJson(route('cart.update', ['cartItem' => $cartItem->id]), [
+        $response = $this->postJson(route('api.cart.updateQuantity', ['cartItem' => $cartItem->id]), [ // Changed route to api.cart.updateQuantity and method to POST
             'quantity' => $itemQuantity,
         ]);
 
@@ -439,8 +447,8 @@ class CartControllerTest extends TestCase
                                  'totalPrice' => $itemTotalPrice,
                                  'formattedUnitPrice' => number_format($itemUnitPrice, 0, '.', ',') . ' تومان',
                                  'formattedTotalPrice' => number_format($itemTotalPrice, 0, '.', ',') . ' تومان',
-                                 'addedAt' => now()->subMinutes(1)->toDateTimeString(),
-                                 'updatedAt' => now()->toDateTimeString(),
+                                 'addedAt' => $cartItemsData[0]['created_at'],
+                                 'updatedAt' => $cartItemsData[0]['updated_at'],
                              ]
                          ],
                          'summary' => [
@@ -457,6 +465,9 @@ class CartControllerTest extends TestCase
                              'formattedShipping' => '0 تومان',
                              'tax' => 0,
                              'formattedTax' => '0 تومان',
+                         ],
+                         'metadata' => [
+                             'itemCount' => count($cartItemsData), // Updated: itemCount is number of distinct items
                          ]
                      ]
                  ]);
@@ -489,7 +500,7 @@ class CartControllerTest extends TestCase
             ->once()
             ->andReturn(new CartContentsResponse([], 0, 0, $dummyCartTotalsDTO));
 
-        $response = $this->deleteJson(route('cart.remove', ['cartItem' => $cartItem->id]));
+        $response = $this->postJson(route('api.cart.removeItem', ['cartItem' => $cartItem->id])); // Changed route to api.cart.removeItem and method to POST
 
         $response->assertStatus(200)
                  ->assertJson([
@@ -510,6 +521,9 @@ class CartControllerTest extends TestCase
                              'formattedDiscount' => '0 تومان',
                              'formattedShipping' => '0 تومان',
                              'formattedTax' => '0 تومان',
+                         ],
+                         'metadata' => [
+                             'itemCount' => 0, // Updated: itemCount is number of distinct items
                          ]
                      ]
                  ]);
@@ -543,7 +557,7 @@ class CartControllerTest extends TestCase
             ->once()
             ->andReturn(new CartContentsResponse([], 0, 0, $dummyCartTotalsDTO));
 
-        $response = $this->postJson(route('cart.clear'));
+        $response = $this->postJson(route('api.cart.clear')); // Changed route to api.cart.clear
 
         $response->assertStatus(200)
                  ->assertJson([
@@ -564,6 +578,9 @@ class CartControllerTest extends TestCase
                              'formattedDiscount' => '0 تومان',
                              'formattedShipping' => '0 تومان',
                              'formattedTax' => '0 تومان',
+                         ],
+                         'metadata' => [
+                             'itemCount' => 0, // Updated: itemCount is number of distinct items
                          ]
                      ]
                  ]);
@@ -602,33 +619,35 @@ class CartControllerTest extends TestCase
             total: $itemTotalPrice - $coupon->value // 900
         );
 
+        $cartItemsData = [
+            [
+                'id' => 1,
+                'product_id' => 1,
+                'quantity' => $itemQuantity,
+                'price' => $itemUnitPrice,
+                'subtotal' => $itemTotalPrice,
+                'product' => [
+                    'id' => 1,
+                    'title' => 'Product 1',
+                    'slug' => 'product-1',
+                    'image' => 'img.jpg',
+                    'stock' => 10
+                ],
+                'created_at' => Carbon::now()->subMinutes(1)->toDateTimeString(),
+                'updated_at' => Carbon::now()->toDateTimeString(),
+            ]
+        ];
+
         $this->cartService->shouldReceive('getCartContents')
             ->once()
             ->andReturn(new CartContentsResponse(
-                items: [
-                    [
-                        'id' => 1,
-                        'product_id' => 1,
-                        'quantity' => $itemQuantity,
-                        'price' => $itemUnitPrice,
-                        'subtotal' => $itemTotalPrice,
-                        'product' => [
-                            'id' => 1,
-                            'title' => 'Product 1',
-                            'slug' => 'product-1',
-                            'image' => 'img.jpg',
-                            'stock' => 10
-                        ],
-                        'created_at' => now()->subMinutes(1)->toDateTimeString(),
-                        'updated_at' => now()->toDateTimeString(),
-                    ]
-                ],
+                items: $cartItemsData,
                 totalQuantity: $itemQuantity,
                 totalPrice: $cartTotalsDTO->total,
                 cartTotals: $cartTotalsDTO
             ));
 
-        $response = $this->postJson(route('cart.apply-coupon'), [
+        $response = $this->postJson(route('api.cart.applyCoupon'), [ // Changed route to api.cart.applyCoupon
             'coupon_code' => 'TESTCOUPON',
         ]);
 
@@ -653,8 +672,8 @@ class CartControllerTest extends TestCase
                                  'totalPrice' => $itemTotalPrice,
                                  'formattedUnitPrice' => number_format($itemUnitPrice, 0, '.', ',') . ' تومان',
                                  'formattedTotalPrice' => number_format($itemTotalPrice, 0, '.', ',') . ' تومان',
-                                 'addedAt' => now()->subMinutes(1)->toDateTimeString(),
-                                 'updatedAt' => now()->toDateTimeString(),
+                                 'addedAt' => $cartItemsData[0]['created_at'],
+                                 'updatedAt' => $cartItemsData[0]['updated_at'],
                              ]
                          ],
                          'summary' => [
@@ -671,6 +690,9 @@ class CartControllerTest extends TestCase
                              'formattedShipping' => number_format($cartTotalsDTO->shipping, 0, '.', ',') . ' تومان',
                              'tax' => $cartTotalsDTO->tax,
                              'formattedTax' => number_format($cartTotalsDTO->tax, 0, '.', ',') . ' تومان',
+                         ],
+                         'metadata' => [
+                             'itemCount' => count($cartItemsData), // Updated: itemCount is number of distinct items
                          ]
                      ]
                  ]);
@@ -708,33 +730,35 @@ class CartControllerTest extends TestCase
             total: $itemTotalPrice // 1000
         );
 
+        $cartItemsData = [
+            [
+                'id' => 1,
+                'product_id' => 1,
+                'quantity' => $itemQuantity,
+                'price' => $itemUnitPrice,
+                'subtotal' => $itemTotalPrice,
+                'product' => [
+                    'id' => 1,
+                    'title' => 'Product 1',
+                    'slug' => 'product-1',
+                    'image' => 'img.jpg',
+                    'stock' => 10
+                ],
+                'created_at' => Carbon::now()->subMinutes(1)->toDateTimeString(),
+                'updated_at' => Carbon::now()->toDateTimeString(),
+            ]
+        ];
+
         $this->cartService->shouldReceive('getCartContents')
             ->once()
             ->andReturn(new CartContentsResponse(
-                items: [
-                    [
-                        'id' => 1,
-                        'product_id' => 1,
-                        'quantity' => $itemQuantity,
-                        'price' => $itemUnitPrice,
-                        'subtotal' => $itemTotalPrice,
-                        'product' => [
-                            'id' => 1,
-                            'title' => 'Product 1',
-                            'slug' => 'product-1',
-                            'image' => 'img.jpg',
-                            'stock' => 10
-                        ],
-                        'created_at' => now()->subMinutes(1)->toDateTimeString(),
-                        'updated_at' => now()->toDateTimeString(),
-                    ]
-                ],
+                items: $cartItemsData,
                 totalQuantity: $itemQuantity,
                 totalPrice: $cartTotalsDTO->total,
                 cartTotals: $cartTotalsDTO
             ));
 
-        $response = $this->postJson(route('cart.remove-coupon'));
+        $response = $this->postJson(route('api.cart.removeCoupon')); // Changed route to api.cart.removeCoupon
 
         $response->assertStatus(200)
                  ->assertJson([
@@ -757,8 +781,8 @@ class CartControllerTest extends TestCase
                                  'totalPrice' => $itemTotalPrice,
                                  'formattedUnitPrice' => number_format($itemUnitPrice, 0, '.', ',') . ' تومان',
                                  'formattedTotalPrice' => number_format($itemTotalPrice, 0, '.', ',') . ' تومان',
-                                 'addedAt' => now()->subMinutes(1)->toDateTimeString(),
-                                 'updatedAt' => now()->toDateTimeString(),
+                                 'addedAt' => $cartItemsData[0]['created_at'],
+                                 'updatedAt' => $cartItemsData[0]['updated_at'],
                              ]
                          ],
                          'summary' => [
@@ -775,6 +799,9 @@ class CartControllerTest extends TestCase
                              'formattedShipping' => number_format($cartTotalsDTO->shipping, 0, '.', ',') . ' تومان',
                              'tax' => $cartTotalsDTO->tax,
                              'formattedTax' => number_format($cartTotalsDTO->tax, 0, '.', ',') . ' تومان',
+                         ],
+                         'metadata' => [
+                             'itemCount' => count($cartItemsData), // Updated: itemCount is number of distinct items
                          ]
                      ]
                  ]);
@@ -796,7 +823,7 @@ class CartControllerTest extends TestCase
         // در این سناریو، لاراول به طور خودکار به صفحه لاگین ریدایرکت می‌کند یا 401 برمی‌گرداند.
         // ما اینجا فرض می‌کنیم که middleware 'auth' روی این route اعمال شده است.
         // نیازی به Mock کردن getOrCreateCart نیست، زیرا middleware آن را قبل از کنترلر متوقف می‌کند.
-        $response = $this->postJson(route('cart.add', ['product' => $product->id]), [
+        $response = $this->postJson(route('api.cart.add', ['product' => $product->id]), [ // Changed route to api.cart.add
             'quantity' => 1,
         ]);
 
@@ -821,7 +848,7 @@ class CartControllerTest extends TestCase
             ->once()
             ->andReturn(false); // شبیه‌سازی دسترسی غیرمجاز
 
-        $response = $this->putJson(route('cart.update', ['cartItem' => $cartItem->id]), [
+        $response = $this->postJson(route('api.cart.updateQuantity', ['cartItem' => $cartItem->id]), [ // Changed route to api.cart.updateQuantity and method to POST
             'quantity' => 2,
         ]);
 
@@ -850,7 +877,7 @@ class CartControllerTest extends TestCase
             ->once()
             ->andReturn(false); // شبیه‌سازی دسترسی غیرمجاز
 
-        $response = $this->deleteJson(route('cart.remove', ['cartItem' => $cartItem->id]));
+        $response = $this->postJson(route('api.cart.removeItem', ['cartItem' => $cartItem->id])); // Changed route to api.cart.removeItem and method to POST
 
         $response->assertStatus(403) // Forbidden
                  ->assertJson([
@@ -876,7 +903,7 @@ class CartControllerTest extends TestCase
             ->once()
             ->andReturn(true);
 
-        $response = $this->putJson(route('cart.update', ['cartItem' => $cartItem->id]), [
+        $response = $this->postJson(route('api.cart.updateQuantity', ['cartItem' => $cartItem->id]), [ // Changed route to api.cart.updateQuantity and method to POST
             'quantity' => 'abc', // تعداد نامعتبر
         ]);
 
@@ -899,7 +926,7 @@ class CartControllerTest extends TestCase
             ->once()
             ->andReturn($cart);
 
-        $response = $this->postJson(route('cart.apply-coupon'), [
+        $response = $this->postJson(route('api.cart.applyCoupon'), [ // Changed route to api.cart.applyCoupon
             'coupon_code' => '', // کد کوپن خالی
         ]);
 
@@ -926,7 +953,7 @@ class CartControllerTest extends TestCase
             ->once()
             ->andReturn(CartOperationResponse::fail('کد تخفیف نامعتبر است.', 404));
 
-        $response = $this->postJson(route('cart.apply-coupon'), [
+        $response = $this->postJson(route('api.cart.applyCoupon'), [ // Changed route to api.cart.applyCoupon
             'coupon_code' => 'NONEXISTENT',
         ]);
 
@@ -956,7 +983,7 @@ class CartControllerTest extends TestCase
             ->once()
             ->andReturn(CartOperationResponse::fail('هیچ کد تخفیفی برای حذف وجود ندارد.', 400));
 
-        $response = $this->postJson(route('cart.remove-coupon'));
+        $response = $this->postJson(route('api.cart.removeCoupon')); // Changed route to api.cart.removeCoupon
 
         $response->assertStatus(400)
                  ->assertJson([
