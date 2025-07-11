@@ -4,7 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\MobileAuthController;
 use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\Api\CartController as ApiCartController; // تغییر: استفاده از نام مستعار برای جلوگیری از تداخل نام
+use App\Http\Controllers\Api\ApiCartController; // Changed: Use the renamed ApiCartController
 use App\Http\Controllers\OrderController;
 
 
@@ -26,26 +26,24 @@ Route::prefix('auth')->name('api.auth.')->group(function () {
     // Route::post('/register', [RegisterController::class, 'register'])->name('register');
 });
 
-// مسیرهای API مربوط به عملیات سبد خرید (بدون نیاز به احراز هویت)
+// API routes for cart operations (no authentication required for now)
 Route::prefix('cart')->name('api.cart.')->group(function () {
-    // دریافت محتویات سبد خرید
-    Route::get('/contents', [ApiCartController::class, 'getContents'])->name('getContents'); // اصلاح شده: نام متد به 'getContents' تغییر یافت
-    // افزودن محصول به سبد خرید
+    // Get cart contents
+    Route::get('/contents', [ApiCartController::class, 'getContents'])->name('getContents');
+    // Add product to cart
     Route::post('/add/{product}', [ApiCartController::class, 'add'])->name('add');
-    // به‌روزرسانی تعداد آیتم در سبد خرید
+    // Update item quantity in cart
     Route::post('/update-quantity/{cartItem}', [ApiCartController::class, 'updateQuantity'])->name('updateQuantity');
-    // حذف آیتم از سبد خرید
+    // Remove item from cart
     Route::post('/remove-item/{cartItem}', [ApiCartController::class, 'removeCartItem'])->name('removeItem');
-    // پاک کردن کامل سبد خرید
+    // Clear entire cart
     Route::post('/clear', [ApiCartController::class, 'clearCart'])->name('clear');
-    // اعمال کد تخفیف
+    // Apply discount coupon
     Route::post('/apply-coupon', [ApiCartController::class, 'applyCoupon'])->name('applyCoupon');
-    // حذف کد تخفیف
+    // Remove discount coupon
     Route::post('/remove-coupon', [ApiCartController::class, 'removeCoupon'])->name('removeCoupon');
 });
 
 
-// اضافه کردن مسیر placeOrder اگر در api.php باشد
-// این مسیر همچنان به middleware 'api' نیاز دارد.
+// Add placeOrder route if it's in api.php
 Route::post('/order/place', [OrderController::class, 'placeOrder'])->name('order.place')->middleware('api');
-
