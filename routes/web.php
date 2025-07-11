@@ -35,6 +35,8 @@ Route::prefix('auth')->name('auth.')->group(function () {
     Route::post('/verify-otp', [MobileAuthController::class, 'verify-otp'])->name('verify-otp');
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register-form');
     Route::post('/register', [RegisterController::class, 'register'])->name('register');
+    // اضافه شدن روت logout برای رفع خطای RouteNotFoundException در ویوها
+    Route::post('/logout', [MobileAuthController::class, 'logout'])->name('logout');
 });
 
 Route::prefix('cart')->name('cart.')->group(function () {
@@ -45,7 +47,8 @@ Route::prefix('cart')->name('cart.')->group(function () {
     Route::delete('/remove/{cartItem}', [CartController::class, 'removeCartItem'])->name('remove');
     Route::post('/clear', [CartController::class, 'clearCart'])->name('clear');
     Route::post('/apply-coupon', [CartController::class, 'applyCoupon'])->name('apply-coupon');
-    Route::post('/remove-coupon', [CartController::class, 'remove-coupon'])->name('remove-coupon');
+    // اصلاح نام متد از remove-coupon به removeCoupon برای مطابقت با نام متد در کنترلر
+    Route::post('/remove-coupon', [CartController::class, 'removeCoupon'])->name('remove-coupon');
 });
 
 Route::middleware(['auth', 'profile.completed'])->group(function () {

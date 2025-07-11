@@ -13,7 +13,7 @@ use App\Models\Coupon;
 use App\Models\Category; // اضافه شده: برای ایجاد دسته‌بندی پیش‌فرض
 use App\Services\Contracts\CartServiceInterface;
 use App\Services\CartCalculationService;
-use App\Services\Responses\CartOperationResponse;
+use App\Services\Responses\CartOperationResponse; // مطمئن شوید که این کلاس متدهای استاتیک success() و fail() را دارد
 use App\Services\Responses\CartContentsResponse;
 use App\DTOs\CartTotalsDTO; // برای ساخت CartTotalsDTO در تست‌ها
 
@@ -41,7 +41,10 @@ class CartControllerTest extends TestCase
         $dummyCartTotalsDTO = new CartTotalsDTO(0, 0, 0, 0, 0);
 
         // Mock کردن متد getCartContents برای سناریوهای پیش‌فرض
+        // این Mock باید قبل از هر تستی که getCartContents را فراخوانی می‌کند، تنظیم شود.
+        // در تست‌هایی که انتظار محتوای خاصی داریم، این Mock بازنویسی می‌شود.
         $this->cartService->shouldReceive('getCartContents')
+            ->zeroOrMoreTimes() // این متد ممکن است چندین بار فراخوانی شود
             ->andReturnUsing(function ($cart) use ($dummyCartTotalsDTO) {
                 // یک CartContentsResponse خالی برمی‌گرداند
                 return new CartContentsResponse([], 0, 0, $dummyCartTotalsDTO);
@@ -105,7 +108,7 @@ class CartControllerTest extends TestCase
         $this->cartService->shouldReceive('getCartContents')
             ->once()
             ->andReturn(new CartContentsResponse(
-                [['id' => 1, 'product_id' => 1, 'quantity' => 1, 'price' => 1000, 'product' => ['title' => 'Product 1', 'slug' => 'product-1', 'image' => 'img.jpg', 'stock' => 10]]],
+                [['id' => 1, 'product_id' => 1, 'quantity' => 1, 'price' => 1000, 'product' => ['id' => 1, 'title' => 'Product 1', 'slug' => 'product-1', 'image' => 'img.jpg', 'stock' => 10]]], // اضافه شدن 'id' به product
                 1,
                 1000,
                 $dummyCartTotalsDTO
@@ -138,7 +141,15 @@ class CartControllerTest extends TestCase
                              'totalPrice',
                              'isEmpty',
                              'formattedTotalPrice',
-                             'currency'
+                             'currency',
+                             'subtotal', // اضافه شدن فیلدهای DTO
+                             'formattedSubtotal',
+                             'discount',
+                             'formattedDiscount',
+                             'shipping',
+                             'formattedShipping',
+                             'tax',
+                             'formattedTax',
                          ],
                          'metadata' => [
                              'itemCount',
@@ -150,12 +161,16 @@ class CartControllerTest extends TestCase
                  ])
                  ->assertJson([
                      'success' => true,
-                     'message' => 'سبد خرید با موفقیت دریافت شد', // پیام از CartResource::with()
+                     'message' => 'سبد خرید با موفقیت بارگذاری شد', // پیام از CartController::getContents
                      'data' => [
                          'summary' => [
                              'totalQuantity' => 1,
                              'totalPrice' => 1000,
                              'isEmpty' => false,
+                             'subtotal' => 1000,
+                             'discount' => 0,
+                             'shipping' => 0,
+                             'tax' => 0,
                          ]
                      ]
                  ]);
@@ -214,6 +229,10 @@ class CartControllerTest extends TestCase
                          'summary' => [
                              'totalQuantity' => 1,
                              'totalPrice' => 500,
+                             'subtotal' => 500,
+                             'discount' => 0,
+                             'shipping' => 0,
+                             'tax' => 0,
                          ]
                      ]
                  ]);
@@ -309,6 +328,10 @@ class CartControllerTest extends TestCase
                          'summary' => [
                              'totalQuantity' => 2,
                              'totalPrice' => 200,
+                             'subtotal' => 200,
+                             'discount' => 0,
+                             'shipping' => 0,
+                             'tax' => 0,
                          ]
                      ]
                  ]);
@@ -362,6 +385,10 @@ class CartControllerTest extends TestCase
                              'totalQuantity' => 0,
                              'totalPrice' => 0,
                              'isEmpty' => true,
+                             'subtotal' => 0,
+                             'discount' => 0,
+                             'shipping' => 0,
+                             'tax' => 0,
                          ]
                      ]
                  ]);
@@ -416,6 +443,10 @@ class CartControllerTest extends TestCase
                              'totalQuantity' => 0,
                              'totalPrice' => 0,
                              'isEmpty' => true,
+                             'subtotal' => 0,
+                             'discount' => 0,
+                             'shipping' => 0,
+                             'tax' => 0,
                          ]
                      ]
                  ]);
@@ -447,7 +478,7 @@ class CartControllerTest extends TestCase
         $this->cartService->shouldReceive('getCartContents')
             ->once()
             ->andReturn(new CartContentsResponse(
-                [['id' => 1, 'product_id' => 1, 'quantity' => 1, 'price' => 1000, 'product' => ['title' => 'Product 1']]],
+                [['id' => 1, 'product_id' => 1, 'quantity' => 1, 'price' => 1000, 'product' => ['id' => 1, 'title' => 'Product 1', 'slug' => 'product-1', 'image' => 'img.jpg', 'stock' => 10]]],
                 1,
                 1000,
                 $dummyCartTotalsDTO
@@ -473,6 +504,10 @@ class CartControllerTest extends TestCase
                      'data' => [
                          'summary' => [
                              'totalPrice' => 900, // قیمت پس از تخفیف
+                             'subtotal' => 1000,
+                             'discount' => 100,
+                             'shipping' => 0,
+                             'tax' => 0,
                          ]
                      ]
                  ]);
@@ -503,7 +538,7 @@ class CartControllerTest extends TestCase
         $this->cartService->shouldReceive('getCartContents')
             ->once()
             ->andReturn(new CartContentsResponse(
-                [['id' => 1, 'product_id' => 1, 'quantity' => 1, 'price' => 1000, 'product' => ['title' => 'Product 1']]],
+                [['id' => 1, 'product_id' => 1, 'quantity' => 1, 'price' => 1000, 'product' => ['id' => 1, 'title' => 'Product 1', 'slug' => 'product-1', 'image' => 'img.jpg', 'stock' => 10]]],
                 1,
                 1000,
                 $dummyCartTotalsDTO
@@ -527,6 +562,10 @@ class CartControllerTest extends TestCase
                      'data' => [
                          'summary' => [
                              'totalPrice' => 1000, // قیمت پس از حذف تخفیف
+                             'subtotal' => 1000,
+                             'discount' => 0,
+                             'shipping' => 0,
+                             'tax' => 0,
                          ]
                      ]
                  ]);
@@ -548,6 +587,7 @@ class CartControllerTest extends TestCase
         // انتظار داریم که متد getOrCreateCart فراخوانی نشود یا با خطای احراز هویت مواجه شود
         // در این سناریو، لاراول به طور خودکار به صفحه لاگین ریدایرکت می‌کند یا 401 برمی‌گرداند.
         // ما اینجا فرض می‌کنیم که middleware 'auth' روی این route اعمال شده است.
+        // نیازی به Mock کردن getOrCreateCart نیست، زیرا middleware آن را قبل از کنترلر متوقف می‌کند.
         $response = $this->postJson(route('cart.add', ['product' => $product->id]), [
             'quantity' => 1,
         ]);
@@ -567,7 +607,6 @@ class CartControllerTest extends TestCase
         $product = Product::factory()->create();
         $cart = Cart::factory()->forUser($owner)->create();
         $cartItem = CartItem::factory()->for($cart)->for($product)->create(['quantity' => 1]);
-
         $this->actingAs($unauthorizedUser);
 
         $this->cartService->shouldReceive('userOwnsCartItem')
@@ -597,7 +636,6 @@ class CartControllerTest extends TestCase
         $product = Product::factory()->create();
         $cart = Cart::factory()->forUser($owner)->create();
         $cartItem = CartItem::factory()->for($cart)->for($product)->create(['quantity' => 1]);
-
         $this->actingAs($unauthorizedUser);
 
         $this->cartService->shouldReceive('userOwnsCartItem')
@@ -679,7 +717,7 @@ class CartControllerTest extends TestCase
         // Mock کردن applyCoupon برای بازگرداندن پاسخ ناموفق
         $this->cartService->shouldReceive('applyCoupon')
             ->once()
-            ->andReturn(CartOperationResponse::error('کد تخفیف نامعتبر است.', 404));
+            ->andReturn(CartOperationResponse::fail('کد تخفیف نامعتبر است.', 404)); // تغییر از error() به fail()
 
         $response = $this->postJson(route('cart.apply-coupon'), [
             'coupon_code' => 'NONEXISTENT',
@@ -710,7 +748,7 @@ class CartControllerTest extends TestCase
         // Mock کردن removeCoupon برای بازگرداندن پاسخ ناموفق
         $this->cartService->shouldReceive('removeCoupon')
             ->once()
-            ->andReturn(CartOperationResponse::error('هیچ کد تخفیفی برای حذف وجود ندارد.', 400));
+            ->andReturn(CartOperationResponse::fail('هیچ کد تخفیفی برای حذف وجود ندارد.', 400)); // تغییر از error() به fail()
 
         $response = $this->postJson(route('cart.remove-coupon'));
 

@@ -23,9 +23,8 @@ class CartItemFactory extends Factory
      */
     public function definition(): array
     {
-        // اطمینان حاصل کنید که Cart و Product وجود دارند یا به صورت Lazy ایجاد شوند.
-        // اگر در تست‌ها از for() استفاده می‌کنید، نیازی به ایجاد اینجا نیست.
-        // اما برای اطمینان، می‌توانیم از findOrNew استفاده کنیم یا فرض کنیم که توسط تست ایجاد می‌شوند.
+        // ایجاد یک سبد خرید و محصول پیش‌فرض در صورتی که به صورت صریح در فراخوانی factory مشخص نشده باشند.
+        // این کار تضمین می‌کند که آیتم سبد خرید همیشه به یک سبد و محصول معتبر مرتبط است.
         $cart = Cart::factory()->create();
         $product = Product::factory()->create();
 
@@ -33,14 +32,15 @@ class CartItemFactory extends Factory
             'cart_id' => $cart->id,
             'product_id' => $product->id,
             'quantity' => $this->faker->numberBetween(1, 5),
-            'price' => $product->price, // قیمت آیتم را از محصول مرتبط بگیرید
-            'product_variant_id' => null, // اگر تنوع محصول ندارید، null باشد
-            'user_id' => $cart->user_id, // اگر سبد خرید مرتبط با کاربر باشد
+            'price' => $product->price, // قیمت واحد آیتم از محصول مرتبط گرفته می‌شود
+            'product_variant_id' => null, // اگر محصول دارای تنوع است، اینجا تنظیم شود؛ در غیر این صورت null
+            'user_id' => $cart->user_id, // همگام‌سازی user_id آیتم با user_id سبد خرید
         ];
     }
 
     /**
      * Indicate that the cart item belongs to a specific cart.
+     * نشان می‌دهد که آیتم سبد خرید متعلق به یک سبد خرید خاص است.
      *
      * @param \App\Models\Cart $cart
      * @return \Illuminate\Database\Eloquent\Factories\Factory
@@ -55,6 +55,7 @@ class CartItemFactory extends Factory
 
     /**
      * Indicate that the cart item belongs to a specific product.
+     * نشان می‌دهد که آیتم سبد خرید متعلق به یک محصول خاص است.
      *
      * @param \App\Models\Product $product
      * @return \Illuminate\Database\Eloquent\Factories\Factory
@@ -67,4 +68,3 @@ class CartItemFactory extends Factory
         ]);
     }
 }
-
