@@ -136,6 +136,12 @@ export async function fetchCartContents() {
             throw new Error(data.message || `HTTP error! status: ${response.status}`);
         }
 
+        // اطمینان حاصل کنید که 'items' همیشه یک آرایه است
+        if (data && !Array.isArray(data.data.items)) {
+            console.warn("API response for cart contents did not contain 'items' as an array. Defaulting to empty array.");
+            data.data.items = [];
+        }
+
         return data;
     } catch (error) {
         console.error('Error in fetchCartContents API call:', error);

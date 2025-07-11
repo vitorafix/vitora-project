@@ -68,11 +68,13 @@ export function renderMiniCartDetails(items, totalQuantity, totalPrice) {
 
         // رندر آیتم‌ها در دراپ‌داون
         DOM.miniCartItemsContainer.innerHTML = ''; // پاک کردن آیتم‌های قبلی
-        if (items.length === 0) {
+
+        // اضافه کردن بررسی Array.isArray
+        if (Array.isArray(items) && items.length === 0) {
             DOM.miniCartEmptyMessage.classList.remove('hidden');
             DOM.miniCartSummary.classList.add('hidden');
             DOM.miniCartItemsContainer.classList.add('hidden');
-        } else {
+        } else if (Array.isArray(items)) { // مطمئن شوید که items یک آرایه است
             DOM.miniCartEmptyMessage.classList.add('hidden');
             DOM.miniCartSummary.classList.remove('hidden');
             DOM.miniCartItemsContainer.classList.remove('hidden');
@@ -113,6 +115,12 @@ export function renderMiniCartDetails(items, totalQuantity, totalPrice) {
             if (DOM.miniCartTotalPrice) {
                 DOM.miniCartTotalPrice.textContent = totalPrice.toLocaleString('fa-IR') + ' تومان';
             }
+        } else {
+            console.error("Expected items to be an array but got:", items);
+            // می‌توانید در اینجا یک پیام خطا در UI نمایش دهید یا فقط لاگ کنید
+            DOM.miniCartEmptyMessage.classList.remove('hidden');
+            DOM.miniCartSummary.classList.add('hidden');
+            DOM.miniCartItemsContainer.classList.add('hidden');
         }
     }, 'خطا در رندر مینی‌کارت.');
 }
@@ -133,11 +141,12 @@ export function renderMainCart(items, cartTotals) {
 
         DOM.cartItemsContainer.innerHTML = ''; // پاک کردن آیتم‌های قبلی
 
-        if (items.length === 0) {
+        // اضافه کردن بررسی Array.isArray
+        if (Array.isArray(items) && items.length === 0) {
             DOM.cartEmptyMessage.classList.remove('hidden');
             DOM.cartItemsContainer.classList.add('hidden');
             DOM.cartSummary.classList.add('hidden');
-        } else {
+        } else if (Array.isArray(items)) { // مطمئن شوید که items یک آرایه است
             DOM.cartEmptyMessage.classList.add('hidden');
             DOM.cartItemsContainer.classList.remove('hidden');
             DOM.cartSummary.classList.remove('hidden');
@@ -191,6 +200,12 @@ export function renderMainCart(items, cartTotals) {
                 cartDiscountElement.textContent = (cartTotals.discount ?? 0).toLocaleString('fa-IR') + ' تومان';
             }
             // ... و برای shipping و tax
+        } else {
+            console.error("Expected items to be an array but got:", items);
+            // می‌توانید در اینجا یک پیام خطا در UI نمایش دهید یا فقط لاگ کنید
+            DOM.cartEmptyMessage.classList.remove('hidden');
+            DOM.cartItemsContainer.classList.add('hidden');
+            DOM.cartSummary.classList.add('hidden');
         }
     }, 'خطا در رندر سبد خرید اصلی.');
 }
