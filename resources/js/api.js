@@ -13,7 +13,7 @@ function getCsrfToken() {
  * @param {number} quantity - تعداد جدید محصول.
  * @returns {Promise<Object>} پاسخ از سرور.
  */
-export async function updateCartItemQuantity(cartItemId, quantity) { // تغییر نام تابع
+export async function updateCartItemQuantity(cartItemId, quantity) {
     const csrfToken = getCsrfToken();
     if (!csrfToken) {
         console.error('CSRF token not found. Please ensure <meta name="csrf-token" content="..."> is in your HTML head.');
@@ -21,9 +21,8 @@ export async function updateCartItemQuantity(cartItemId, quantity) { // تغیی
     }
 
     try {
-        // تغییر URL و متد به POST برای هماهنگی با api.php
         const response = await fetch(`/api/cart/update-quantity/${cartItemId}`, {
-            method: 'POST', // تغییر متد از PUT به POST
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': csrfToken,
@@ -40,7 +39,7 @@ export async function updateCartItemQuantity(cartItemId, quantity) { // تغیی
 
         return data;
     } catch (error) {
-        console.error('Error in updateCartItemQuantity API call:', error); // تغییر نام تابع در لاگ
+        console.error('Error in updateCartItemQuantity API call:', error);
         throw error;
     }
 }
@@ -51,7 +50,7 @@ export async function updateCartItemQuantity(cartItemId, quantity) { // تغیی
  * @param {number} quantity - تعداد محصول.
  * @returns {Promise<Object>} پاسخ از سرور.
  */
-export async function addItem(productId, quantity) { // تغییر نام تابع
+export async function addItem(productId, quantity) {
     const csrfToken = getCsrfToken();
     if (!csrfToken) {
         console.error('CSRF token not found. Please ensure <meta name="csrf-token" content="..."> is in your HTML head.');
@@ -59,7 +58,6 @@ export async function addItem(productId, quantity) { // تغییر نام تاب
     }
 
     try {
-        // تغییر URL برای هماهنگی با api.php
         const response = await fetch(`/api/cart/add/${productId}`, {
             method: 'POST',
             headers: {
@@ -78,7 +76,7 @@ export async function addItem(productId, quantity) { // تغییر نام تاب
 
         return data;
     } catch (error) {
-        console.error('Error in addItem API call:', error); // تغییر نام تابع در لاگ
+        console.error('Error in addItem API call:', error);
         throw error;
     }
 }
@@ -96,9 +94,8 @@ export async function removeCartItem(cartItemId) {
     }
 
     try {
-        // تغییر URL و متد به POST برای هماهنگی با api.php
         const response = await fetch(`/api/cart/remove-item/${cartItemId}`, {
-            method: 'POST', // تغییر متد از DELETE به POST
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': csrfToken,
@@ -125,7 +122,6 @@ export async function removeCartItem(cartItemId) {
  */
 export async function fetchCartContents() {
     try {
-        // تغییر URL برای هماهنگی با api.php
         const response = await fetch('/api/cart/contents', {
             method: 'GET',
             headers: {
@@ -143,6 +139,110 @@ export async function fetchCartContents() {
         return data;
     } catch (error) {
         console.error('Error in fetchCartContents API call:', error);
+        throw error;
+    }
+}
+
+/**
+ * ارسال درخواست به API برای پاک کردن کامل سبد خرید.
+ * @returns {Promise<Object>} پاسخ از سرور.
+ */
+export async function clearCart() {
+    const csrfToken = getCsrfToken();
+    if (!csrfToken) {
+        console.error('CSRF token not found. Please ensure <meta name="csrf-token" content="..."> is in your HTML head.');
+        throw new Error('CSRF token is missing.');
+    }
+
+    try {
+        const response = await fetch('/api/cart/clear', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Error in clearCart API call:', error);
+        throw error;
+    }
+}
+
+/**
+ * ارسال درخواست به API برای اعمال کد تخفیف.
+ * @param {string} couponCode - کد تخفیف.
+ * @returns {Promise<Object>} پاسخ از سرور.
+ */
+export async function applyCoupon(couponCode) {
+    const csrfToken = getCsrfToken();
+    if (!csrfToken) {
+        console.error('CSRF token not found. Please ensure <meta name="csrf-token" content="..."> is in your HTML head.');
+        throw new Error('CSRF token is missing.');
+    }
+
+    try {
+        const response = await fetch('/api/cart/apply-coupon', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ coupon_code: couponCode })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Error in applyCoupon API call:', error);
+        throw error;
+    }
+}
+
+/**
+ * ارسال درخواست به API برای حذف کد تخفیف.
+ * @returns {Promise<Object>} پاسخ از سرور.
+ */
+export async function removeCoupon() {
+    const csrfToken = getCsrfToken();
+    if (!csrfToken) {
+        console.error('CSRF token not found. Please ensure <meta name="csrf-token" content="..."> is in your HTML head.');
+        throw new Error('CSRF token is missing.');
+    }
+
+    try {
+        const response = await fetch('/api/cart/remove-coupon', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Error in removeCoupon API call:', error);
         throw error;
     }
 }
