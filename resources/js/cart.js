@@ -100,6 +100,7 @@ class CartManager {
         });
 
         // Event Listener برای دکمه‌های +/- و حذف در سبد خرید اصلی
+        // این بخش فقط در صورتی اجرا می‌شود که DOM.cartItemsContainer وجود داشته باشد
         if (this.dom.cartItemsContainer) {
             this.dom.cartItemsContainer.addEventListener('click', this.handleCartItemAction.bind(this));
         }
@@ -130,9 +131,10 @@ class CartManager {
         const clearCartBtn = document.getElementById('clear-cart-btn');
         if (clearCartBtn) {
             clearCartBtn.addEventListener('click', async () => {
-                if (confirm('آیا مطمئن هستید که می‌خواهید سبد خرید خود را پاک کنید؟')) {
-                    await this.clearCart();
-                }
+                // استفاده از showMessage به جای confirm برای جلوگیری از مشکلات iFrame
+                window.showMessage('آیا مطمئن هستید که می‌خواهید سبد خرید خود را پاک کنید؟', 'confirm', () => {
+                    this.clearCart();
+                });
             });
         }
     }
@@ -149,7 +151,6 @@ class CartManager {
         const productVariantId = button.dataset.productVariantId || null;
 
         if (productId) {
-            // تغییر از addItemToCart به addItem
             await this.addItem(productId, quantity, productVariantId);
         } else {
             console.error('Product ID not found for add to cart button.');
@@ -186,9 +187,10 @@ class CartManager {
 
             // اگر تعداد به صفر رسید، آیتم را حذف می‌کنیم
             if (newQuantity <= 0) {
-                if (confirm('آیا مطمئن هستید که می‌خواهید این محصول را از سبد خرید حذف کنید؟')) {
+                // استفاده از showMessage به جای confirm برای جلوگیری از مشکلات iFrame
+                window.showMessage('آیا مطمئن هستید که می‌خواهید این محصول را از سبد خرید حذف کنید؟', 'confirm', () => {
                     this.removeItem(cartItemId);
-                }
+                });
                 return;
             }
 
@@ -209,9 +211,10 @@ class CartManager {
 
             if (cartItemId) {
                 console.log('Remove button clicked for item:', cartItemId);
-                if (confirm('آیا مطمئن هستید که می‌خواهید این محصول را از سبد خرید حذف کنید؟')) {
+                // استفاده از showMessage به جای confirm برای جلوگیری از مشکلات iFrame
+                window.showMessage('آیا مطمئن هستید که می‌خواهید این محصول را از سبد خرید حذف کنید؟', 'confirm', () => {
                     this.removeItem(cartItemId);
-                }
+                });
             }
             return;
         }
@@ -226,7 +229,10 @@ class CartManager {
             const response = await fetchCartContents();
             if (response.success) {
                 const cartContents = response.data;
-                renderMainCart(cartContents);
+                // فقط در صورتی renderMainCart را فراخوانی کنید که DOM.cartItemsContainer وجود داشته باشد
+                if (this.dom.cartItemsContainer) {
+                    renderMainCart(cartContents);
+                }
                 renderMiniCartDetails(cartContents);
                 console.log('Cart contents loaded and rendered successfully.');
             } else {
@@ -249,7 +255,6 @@ class CartManager {
     async addItem(productId, quantity, productVariantId = null) {
         setCartLoadingState(true);
         try {
-            // تغییر از addItemToCart به addItem
             const response = await addItem(productId, quantity, productVariantId);
             if (response.success) {
                 window.showMessage(response.message, 'success');
