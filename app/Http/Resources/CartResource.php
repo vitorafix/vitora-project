@@ -75,6 +75,7 @@ class CartResource extends JsonResource
 
     /**
      * Format cart items for the response.
+     * آیتم‌های سبد خرید را برای پاسخ فرمت می‌کند.
      *
      * @param bool $isMobile
      * @return array
@@ -82,18 +83,26 @@ class CartResource extends JsonResource
     protected function formatItems(bool $isMobile): array
     {
         return collect($this->resource->getItems())->map(function ($item) use ($isMobile) {
-            $product = $item['product']; // فرض می‌کنیم که جزئیات محصول در 'product' وجود دارد
+            // اطمینان از وجود کلیدها با استفاده از عملگر null coalescing
+            $product = $item['product'] ?? []; // فرض می‌کنیم که جزئیات محصول در 'product' وجود دارد
+            
+            // محاسبه subtotal به جای فرض وجود آن
+            // فرض می‌کنیم 'price' قیمت واحد آیتم در سبد خرید است.
+            $unitPrice = (float) ($item['price'] ?? 0);
+            $quantity = (int) ($item['quantity'] ?? 0);
+            $subtotal = $unitPrice * $quantity;
+
             return [
-                'id' => $item['id'],
+                'id' => $item['id'] ?? null,
                 'product' => $this->formatProduct($product, $isMobile),
-                'quantity' => (int) $item['quantity'],
-                'unitPrice' => (float) $item['price'],
-                'totalPrice' => (float) $item['subtotal'], // فرض می‌کنیم subtotal آیتم همان totalPrice است
+                'quantity' => $quantity,
+                'unitPrice' => $unitPrice,
+                'totalPrice' => $subtotal, // استفاده از subtotal محاسبه شده
                 $this->mergeWhen(!$isMobile, [
-                    'formattedUnitPrice' => $this->formatPrice($item['price']),
-                    'formattedTotalPrice' => $this->formatPrice($item['subtotal']),
-                    'addedAt' => Carbon::parse($item['created_at'])->toDateTimeString(),
-                    'updatedAt' => Carbon::parse($item['updated_at'])->toDateTimeString(),
+                    'formattedUnitPrice' => $this->formatPrice($unitPrice),
+                    'formattedTotalPrice' => $this->formatPrice($subtotal),
+                    'addedAt' => Carbon::parse($item['created_at'] ?? now())->toDateTimeString(),
+                    'updatedAt' => Carbon::parse($item['updated_at'] ?? now())->toDateTimeString(),
                 ]),
             ];
         })->toArray();
@@ -101,6 +110,7 @@ class CartResource extends JsonResource
 
     /**
      * Format product details for the response.
+     * جزئیات محصول را برای پاسخ فرمت می‌کند.
      *
      * @param array $product
      * @param bool $isMobile
@@ -109,19 +119,20 @@ class CartResource extends JsonResource
     protected function formatProduct(array $product, bool $isMobile): array
     {
         return [
-            'id' => $product['id'],
-            'name' => $product['title'], // فرض می‌کنیم 'title' نام محصول است
-            'inStock' => $product['stock'] > 0, // فرض می‌کنیم 'stock' موجودی کالا است
+            'id' => $product['id'] ?? null,
+            'name' => $product['title'] ?? 'N/A', // فرض می‌کنیم 'title' نام محصول است
+            'inStock' => ($product['stock'] ?? 0) > 0, // فرض می‌کنیم 'stock' موجودی کالا است
             $this->mergeWhen(!$isMobile, [
-                'slug' => $product['slug'],
-                'image' => $product['image'] ? asset('storage/' . $product['image']) : null, // مسیر کامل تصویر
-                'stockQuantity' => (int) $product['stock'],
+                'slug' => $product['slug'] ?? null,
+                'image' => ($product['image'] ?? null) ? asset('storage/' . $product['image']) : null, // مسیر کامل تصویر
+                'stockQuantity' => (int) ($product['stock'] ?? 0),
             ]),
         ];
     }
 
     /**
      * Format summary details for the response.
+     * جزئیات خلاصه را برای پاسخ فرمت می‌کند.
      *
      * @param bool $isMobile
      * @return array
@@ -150,6 +161,7 @@ class CartResource extends JsonResource
 
     /**
      * Format metadata for the response.
+     * متادیتا را برای پاسخ فرمت می‌کند.
      *
      * @return array
      */
@@ -165,6 +177,7 @@ class CartResource extends JsonResource
 
     /**
      * Format price to a localized string.
+     * قیمت را به یک رشته محلی شده فرمت می‌کند.
      *
      * @param float $price
      * @return string
@@ -176,6 +189,7 @@ class CartResource extends JsonResource
 
     /**
      * Get additional data for the response.
+     * داده‌های اضافی را برای پاسخ دریافت می‌کند.
      *
      * @param Request $request
      * @return array<string, mixed>

@@ -157,16 +157,18 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         $startTime = microtime(true);
         try {
             if ($quantity <= 0) {
-                return CartOperationResponse::error('تعداد نمی‌تواند صفر یا منفی باشد.', 400);
+                return CartOperationResponse::fail('تعداد نمی‌تواند صفر یا منفی باشد.', 400); // Changed to fail
             }
 
             DB::beginTransaction();
 
+            // Use the new findByIdWithLock method
+            // از متد جدید findByIdWithLock استفاده کنید.
             $product = $this->productRepository->findByIdWithLock($productId);
             if (!$product) {
                 DB::rollBack();
                 Log::error('Product not found during add/update cart item.', ['product_id' => $productId]);
-                return CartOperationResponse::error('محصول یافت نشد.', 404);
+                return CartOperationResponse::fail('محصول یافت نشد.', 404); // Changed to fail
             }
 
             $cartItem = $cart->items->first(function ($item) use ($productId, $productVariantId) {
@@ -190,7 +192,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                     'old_quantity_this_item' => $oldQuantity
                 ]);
                 $message = 'موجودی کافی نیست. حداکثر موجودی قابل افزودن: ' . ($availableStockConsideringOtherReservations - $oldQuantity) . ' عدد.';
-                return CartOperationResponse::error($message, 400);
+                return CartOperationResponse::fail($message, 400); // Changed to fail
             }
 
             if ($cartItem) {
@@ -265,16 +267,18 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         $startTime = microtime(true);
         try {
             if ($newQuantity < 0) {
-                return CartOperationResponse::error('تعداد نمی‌تواند منفی باشد.', 400);
+                return CartOperationResponse::fail('تعداد نمی‌تواند منفی باشد.', 400); // Changed to fail
             }
 
             DB::beginTransaction();
 
-            $product = Product::where('id', $cartItem->product_id)->lockForUpdate()->first();
+            // Use the new findByIdWithLock method
+            // از متد جدید findByIdWithLock استفاده کنید.
+            $product = $this->productRepository->findByIdWithLock($cartItem->product_id);
             if (!$product) {
                 DB::rollBack();
                 Log::error('Product not found for cart item during quantity update (locked).', ['cart_item_id' => $cartItem->id]);
-                return CartOperationResponse::error('محصول مرتبط با آیتم سبد خرید یافت نشد.', 404);
+                return CartOperationResponse::fail('محصول مرتبط با آیتم سبد خرید یافت نشد.', 404); // Changed to fail
             }
 
             $oldQuantity = $cartItem->quantity;
@@ -293,7 +297,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                     'old_quantity_this_item' => $oldQuantity
                 ]);
                 $message = 'موجودی کافی نیست. حداکثر موجودی قابل تنظیم: ' . $availableStockConsideringOtherReservations . ' عدد.';
-                return CartOperationResponse::error($message, 400);
+                return CartOperationResponse::fail($message, 400); // Changed to fail
             }
 
             $cartItem->quantity = $newQuantity;
@@ -354,7 +358,9 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         try {
             DB::beginTransaction();
             if ($this->stockManager) {
-                $product = Product::where('id', $cartItem->product_id)->lockForUpdate()->first();
+                // Use the new findByIdWithLock method
+                // از متد جدید findByIdWithLock استفاده کنید.
+                $product = $this->productRepository->findByIdWithLock($cartItem->product_id);
                 if ($product) {
                     $this->stockManager->releaseStock($product, $cartItem->quantity);
                 } else {
@@ -407,7 +413,9 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
 
             if ($this->stockManager) {
                 foreach ($cart->items as $item) {
-                    $product = Product::where('id', $item->product_id)->lockForUpdate()->first();
+                    // Use the new findByIdWithLock method
+                    // از متد جدید findByIdWithLock استفاده کنید.
+                    $product = $this->productRepository->findByIdWithLock($item->product_id);
                     if ($product) {
                         $this->stockManager->releaseStock($product, $item->quantity);
                     } else {
@@ -624,7 +632,9 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                 continue;
             }
 
-            $product = Product::where('id', $product->id)->lockForUpdate()->first();
+            // Use the new findByIdWithLock method
+            // از متد جدید findByIdWithLock استفاده کنید.
+            $product = $this->productRepository->findByIdWithLock($product->id);
             if (!$product) {
                  $issues[] = ['type' => 'missing_product_after_lock', 'cart_item_id' => $item->id];
                  continue;
@@ -810,7 +820,9 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             if ($guestCart) {
                 if ($userCart) {
                     foreach ($guestCart->items as $guestItem) {
-                        $product = Product::where('id', $guestItem->product_id)->lockForUpdate()->first();
+                        // Use the new findByIdWithLock method
+                        // از متد جدید findByIdWithLock استفاده کنید.
+                        $product = $this->productRepository->findByIdWithLock($guestItem->product_id);
                         if (!$product) {
                             Log::warning('Product not found during guest cart merge, skipping item.', ['product_id' => $guestItem->product_id]);
                             continue;

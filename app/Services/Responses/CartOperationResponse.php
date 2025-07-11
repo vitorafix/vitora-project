@@ -29,6 +29,20 @@ class CartOperationResponse implements JsonSerializable
         return new self(false, $message, $data, $code);
     }
 
+    /**
+     * Static method to create an error response.
+     * متد استاتیک برای ایجاد پاسخ خطا.
+     *
+     * @param string $message The error message.
+     * @param int $code The HTTP status code.
+     * @param mixed $data Optional additional data.
+     * @return self
+     */
+    public static function error(string $message, int $code = 500, mixed $data = null): self
+    {
+        return new self(false, $message, $data, $code);
+    }
+
     public function isSuccess(): bool
     {
         return $this->success;
@@ -65,6 +79,9 @@ class CartOperationResponse implements JsonSerializable
     }
 
     /**
+     * Helper method to get the cart from the data.
+     * Assumes if data is an array or object and has a 'cart' key, it returns it.
+     * Otherwise, it returns the data itself or null.
      * متد کمکی برای گرفتن سبد خرید از داده‌ها.
      * فرض می‌کند اگر داده‌ها آرایه یا شیء هستند و کلید 'cart' دارند، آن را برمی‌گرداند.
      * در غیر اینصورت خود داده را برمی‌گرداند یا null.
