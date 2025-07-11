@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\SearchController;
-use App\Http\Controllers\CartController;
+use App\Http\Controllers\Api\CartController as WebCartController; // اصلاح شده: استفاده از نام مستعار برای CartController موجود در پوشه Api
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\BlogController;
@@ -40,15 +40,15 @@ Route::prefix('auth')->name('auth.')->group(function () {
 });
 
 Route::prefix('cart')->name('cart.')->group(function () {
-    Route::get('/', [CartController::class, 'index'])->name('index');
-    Route::get('/contents', [CartController::class, 'getContents'])->name('contents');
-    Route::post('/add/{product}', [CartController::class, 'add'])->name('add');
-    Route::put('/update/{cartItem}', [CartController::class, 'updateQuantity'])->name('update');
-    Route::delete('/remove/{cartItem}', [CartController::class, 'removeCartItem'])->name('remove');
-    Route::post('/clear', [CartController::class, 'clearCart'])->name('clear');
-    Route::post('/apply-coupon', [CartController::class, 'applyCoupon'])->name('apply-coupon');
+    Route::get('/', [WebCartController::class, 'index'])->name('index'); // اصلاح شده: استفاده از WebCartController
+    Route::get('/contents', [WebCartController::class, 'getContents'])->name('contents'); // اصلاح شده: استفاده از WebCartController
+    Route::post('/add/{product}', [WebCartController::class, 'add'])->name('add'); // اصلاح شده: استفاده از WebCartController
+    Route::put('/update/{cartItem}', [WebCartController::class, 'updateQuantity'])->name('update'); // اصلاح شده: استفاده از WebCartController
+    Route::delete('/remove/{cartItem}', [WebCartController::class, 'removeCartItem'])->name('remove'); // اصلاح شده: استفاده از WebCartController
+    Route::post('/clear', [WebCartController::class, 'clearCart'])->name('clear'); // اصلاح شده: استفاده از WebCartController
+    Route::post('/apply-coupon', [WebCartController::class, 'applyCoupon'])->name('apply-coupon'); // اصلاح شده: استفاده از WebCartController
     // اصلاح نام متد از remove-coupon به removeCoupon برای مطابقت با نام متد در کنترلر
-    Route::post('/remove-coupon', [CartController::class, 'removeCoupon'])->name('remove-coupon');
+    Route::post('/remove-coupon', [WebCartController::class, 'removeCoupon'])->name('remove-coupon'); // اصلاح شده: استفاده از WebCartController
 });
 
 Route::middleware(['auth', 'profile.completed'])->group(function () {

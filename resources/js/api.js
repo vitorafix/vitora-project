@@ -13,46 +13,7 @@ function getCsrfToken() {
  * @param {number} quantity - تعداد جدید محصول.
  * @returns {Promise<Object>} پاسخ از سرور.
  */
-export async function updateCartItem(cartItemId, quantity) {
-    const csrfToken = getCsrfToken();
-    if (!csrfToken) {
-        console.error('CSRF token not found. Please ensure <meta name="csrf-token" content="..."> is in your HTML head.');
-        // می‌توانید اینجا یک پیام خطا به کاربر نمایش دهید یا عملیات را متوقف کنید.
-        throw new Error('CSRF token is missing.');
-    }
-
-    try {
-        const response = await fetch(`/cart/update/${cartItemId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken, // اضافه کردن توکن CSRF به هدر
-                'X-Requested-With': 'XMLHttpRequest' // معمولاً برای تشخیص درخواست‌های AJAX استفاده می‌شود
-            },
-            body: JSON.stringify({ quantity: quantity })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            // اگر پاسخ موفقیت‌آمیز نبود، یک خطا پرتاب کنید
-            throw new Error(data.message || `HTTP error! status: ${response.status}`);
-        }
-
-        return data;
-    } catch (error) {
-        console.error('Error in updateCartItem API call:', error);
-        throw error; // خطا را مجدداً پرتاب کنید تا در CartManager مدیریت شود
-    }
-}
-
-/**
- * ارسال درخواست به API برای افزودن محصول به سبد خرید.
- * @param {string} productId - شناسه محصول.
- * @param {number} quantity - تعداد محصول.
- * @returns {Promise<Object>} پاسخ از سرور.
- */
-export async function addItemToCart(productId, quantity) {
+export async function updateCartItemQuantity(cartItemId, quantity) { // تغییر نام تابع
     const csrfToken = getCsrfToken();
     if (!csrfToken) {
         console.error('CSRF token not found. Please ensure <meta name="csrf-token" content="..."> is in your HTML head.');
@@ -60,11 +21,12 @@ export async function addItemToCart(productId, quantity) {
     }
 
     try {
-        const response = await fetch(`/cart/add/${productId}`, {
-            method: 'POST',
+        // تغییر URL و متد به POST برای هماهنگی با api.php
+        const response = await fetch(`/api/cart/update-quantity/${cartItemId}`, {
+            method: 'POST', // تغییر متد از PUT به POST
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken, // اضافه کردن توکن CSRF به هدر
+                'X-CSRF-TOKEN': csrfToken,
                 'X-Requested-With': 'XMLHttpRequest'
             },
             body: JSON.stringify({ quantity: quantity })
@@ -78,7 +40,45 @@ export async function addItemToCart(productId, quantity) {
 
         return data;
     } catch (error) {
-        console.error('Error in addItemToCart API call:', error);
+        console.error('Error in updateCartItemQuantity API call:', error); // تغییر نام تابع در لاگ
+        throw error;
+    }
+}
+
+/**
+ * ارسال درخواست به API برای افزودن محصول به سبد خرید.
+ * @param {string} productId - شناسه محصول.
+ * @param {number} quantity - تعداد محصول.
+ * @returns {Promise<Object>} پاسخ از سرور.
+ */
+export async function addItem(productId, quantity) { // تغییر نام تابع
+    const csrfToken = getCsrfToken();
+    if (!csrfToken) {
+        console.error('CSRF token not found. Please ensure <meta name="csrf-token" content="..."> is in your HTML head.');
+        throw new Error('CSRF token is missing.');
+    }
+
+    try {
+        // تغییر URL برای هماهنگی با api.php
+        const response = await fetch(`/api/cart/add/${productId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ quantity: quantity })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Error in addItem API call:', error); // تغییر نام تابع در لاگ
         throw error;
     }
 }
@@ -96,11 +96,12 @@ export async function removeCartItem(cartItemId) {
     }
 
     try {
-        const response = await fetch(`/cart/remove/${cartItemId}`, {
-            method: 'DELETE',
+        // تغییر URL و متد به POST برای هماهنگی با api.php
+        const response = await fetch(`/api/cart/remove-item/${cartItemId}`, {
+            method: 'POST', // تغییر متد از DELETE به POST
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken, // اضافه کردن توکن CSRF به هدر
+                'X-CSRF-TOKEN': csrfToken,
                 'X-Requested-With': 'XMLHttpRequest'
             }
         });
@@ -124,7 +125,8 @@ export async function removeCartItem(cartItemId) {
  */
 export async function fetchCartContents() {
     try {
-        const response = await fetch('/cart/contents', {
+        // تغییر URL برای هماهنگی با api.php
+        const response = await fetch('/api/cart/contents', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',

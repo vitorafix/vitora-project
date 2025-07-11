@@ -4,7 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\MobileAuthController;
 use App\Http\Controllers\Auth\RegisterController;
-// use App\Http\Controllers\CartController; // نیازی به ایمپورت CartController در اینجا نیست اگر هیچ مسیر کارتی وجود ندارد
+use App\Http\Controllers\Api\CartController as ApiCartController; // تغییر: استفاده از نام مستعار برای جلوگیری از تداخل نام
 use App\Http\Controllers\OrderController;
 
 
@@ -26,13 +26,26 @@ Route::prefix('auth')->name('api.auth.')->group(function () {
     // Route::post('/register', [RegisterController::class, 'register'])->name('register');
 });
 
-// مسیرهای مربوط به عملیات سبد خرید به routes/web.php منتقل شده‌اند.
-// اگر نیاز به APIهای دیگری دارید که به Session نیاز ندارند، می‌توانید آن‌ها را اینجا اضافه کنید.
+// مسیرهای API مربوط به عملیات سبد خرید (بدون نیاز به احراز هویت)
+Route::prefix('cart')->name('api.cart.')->group(function () {
+    // دریافت محتویات سبد خرید
+    Route::get('/contents', [ApiCartController::class, 'getContents'])->name('getContents'); // اصلاح شده: نام متد به 'getContents' تغییر یافت
+    // افزودن محصول به سبد خرید
+    Route::post('/add/{product}', [ApiCartController::class, 'add'])->name('add');
+    // به‌روزرسانی تعداد آیتم در سبد خرید
+    Route::post('/update-quantity/{cartItem}', [ApiCartController::class, 'updateQuantity'])->name('updateQuantity');
+    // حذف آیتم از سبد خرید
+    Route::post('/remove-item/{cartItem}', [ApiCartController::class, 'removeCartItem'])->name('removeItem');
+    // پاک کردن کامل سبد خرید
+    Route::post('/clear', [ApiCartController::class, 'clearCart'])->name('clear');
+    // اعمال کد تخفیف
+    Route::post('/apply-coupon', [ApiCartController::class, 'applyCoupon'])->name('applyCoupon');
+    // حذف کد تخفیف
+    Route::post('/remove-coupon', [ApiCartController::class, 'removeCoupon'])->name('removeCoupon');
+});
+
 
 // اضافه کردن مسیر placeOrder اگر در api.php باشد
-// اگر placeOrder در web.php است، نیازی به این بخش نیست.
-// با توجه به اینکه PlaceOrderRequest و OrderController برای placeOrder استفاده می شوند،
-// و درخواست placeOrder در cart.js به /order/place میرود،
-// باید مطمئن شویم که این مسیر در routes/web.php یا routes/api.php تعریف شده باشد.
-// اگر از AJAX برای placeOrder استفاده می کنید، معمولاً در api.php تعریف می شود.
-// Route::post('/order/place', [OrderController::class, 'placeOrder'])->name('order.place')->middleware('api');
+// این مسیر همچنان به middleware 'api' نیاز دارد.
+Route::post('/order/place', [OrderController::class, 'placeOrder'])->name('order.place')->middleware('api');
+

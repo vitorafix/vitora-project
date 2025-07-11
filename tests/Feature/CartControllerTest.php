@@ -36,18 +36,21 @@ class CartControllerTest extends TestCase
         // ایجاد یک دسته‌بندی پیش‌فرض با ID 1 برای ProductFactory
         Category::factory()->create(['id' => 1]);
 
-        // تنظیم پیش‌فرض برای CartContentsResponse در صورت نیاز
-        // این DTO برای CartContentsResponse استفاده می‌شود
-        $dummyCartTotalsDTO = new CartTotalsDTO(0, 0, 0, 0, 0);
-
-        // Mock کردن متد getCartContents برای سناریوهای پیش‌فرض
-        // این Mock باید قبل از هر تستی که getCartContents را فراخوانی می‌کند، تنظیم شود.
-        // در تست‌هایی که انتظار محتوای خاصی داریم، این Mock بازنویسی می‌شود.
+        // Mock پیش‌فرض برای getCartContents:
+        // این Mock تضمین می‌کند که getCartContents همیشه یک پاسخ معتبر (حتی اگر خالی) برمی‌گرداند.
+        // این از خطاهای Mockery\Exception\InvalidCountException در تست‌هایی که getCartContents به صورت ضمنی فراخوانی می‌شود
+        // (مثلاً توسط CartResource در متد additional) جلوگیری می‌کند.
         $this->cartService->shouldReceive('getCartContents')
-            ->zeroOrMoreTimes() // این متد ممکن است چندین بار فراخوانی شود
-            ->andReturnUsing(function ($cart) use ($dummyCartTotalsDTO) {
-                // یک CartContentsResponse خالی برمی‌گرداند
-                return new CartContentsResponse([], 0, 0, $dummyCartTotalsDTO);
+            ->zeroOrMoreTimes()
+            ->andReturnUsing(function ($cart) {
+                // یک CartContentsResponse خالی با totals صفر برمی‌گرداند
+                $dummyCartTotalsDTO = new CartTotalsDTO(0, 0, 0, 0, 0);
+                return new CartContentsResponse(
+                    items: [],
+                    totalQuantity: 0,
+                    totalPrice: 0,
+                    cartTotals: $dummyCartTotalsDTO
+                );
             });
     }
 
@@ -67,12 +70,29 @@ class CartControllerTest extends TestCase
             ->once()
             ->andReturn($cart);
 
-        // Mock کردن getCartContents برای بازگرداندن محتویات سبد خرید
+        // Mock دقیق برای getCartContents در این تست
         $dummyCartTotalsDTO = new CartTotalsDTO(1000, 0, 0, 0, 1000);
         $this->cartService->shouldReceive('getCartContents')
             ->once()
             ->andReturn(new CartContentsResponse(
-                [['id' => 1, 'product_id' => 1, 'quantity' => 1, 'price' => 1000, 'product' => ['title' => 'Product 1']]],
+                [
+                    [
+                        'id' => 1,
+                        'product_id' => 1,
+                        'quantity' => 1,
+                        'price' => 1000,
+                        'subtotal' => 1000, // اضافه شدن subtotal برای آیتم
+                        'product' => [
+                            'id' => 1,
+                            'title' => 'Product 1',
+                            'slug' => 'product-1',
+                            'image' => 'img.jpg',
+                            'stock' => 10
+                        ],
+                        'created_at' => now()->toDateTimeString(), // برای formatItems
+                        'updated_at' => now()->toDateTimeString(), // برای formatItems
+                    ]
+                ],
                 1,
                 1000,
                 $dummyCartTotalsDTO
@@ -104,73 +124,102 @@ class CartControllerTest extends TestCase
             ->once()
             ->andReturn($cart);
 
-        $dummyCartTotalsDTO = new CartTotalsDTO(1000, 0, 0, 0, 1000);
+        // Realistic Product Data
+        $product = Product::factory()->create([
+            'id' => 1,
+            'title' => 'Test Product',
+            'slug' => 'test-product',
+            'image' => 'img.jpg',
+            'stock' => 10,
+            'price' => 1000, // Ensure product has a price for item calculation
+        ]);
+
+        $itemQuantity = 2;
+        $itemUnitPrice = $product->price; // 1000
+        $itemTotalPrice = $itemUnitPrice * $itemQuantity; // 2000
+
+        // Realistic Cart Item Data (as expected by CartContentsResponse)
+        $cartItemsData = [
+            [
+                'id' => 1, // CartItem ID
+                'product_id' => $product->id,
+                'quantity' => $itemQuantity,
+                'price' => $itemUnitPrice, // Unit price of the item
+                'subtotal' => $itemTotalPrice, // Total price for this item (quantity * unit price)
+                'product' => $product->toArray(), // Full product data
+                'created_at' => now()->subMinutes(5)->toDateTimeString(),
+                'updated_at' => now()->toDateTimeString(),
+            ]
+        ];
+
+        // Realistic Cart Totals DTO
+        $cartTotalsDTO = new CartTotalsDTO(
+            subtotal: $itemTotalPrice, // 2000
+            discount: 100,
+            shipping: 50,
+            tax: 150,
+            total: $itemTotalPrice - 100 + 50 + 150 // 2000 - 100 + 50 + 150 = 2100
+        );
+
+        // Calculate overall totals for CartContentsResponse constructor
+        $totalQuantity = $itemQuantity;
+        $totalPrice = $cartTotalsDTO->total; // Use the final calculated total
+
         $this->cartService->shouldReceive('getCartContents')
             ->once()
             ->andReturn(new CartContentsResponse(
-                [['id' => 1, 'product_id' => 1, 'quantity' => 1, 'price' => 1000, 'product' => ['id' => 1, 'title' => 'Product 1', 'slug' => 'product-1', 'image' => 'img.jpg', 'stock' => 10]]], // اضافه شدن 'id' به product
-                1,
-                1000,
-                $dummyCartTotalsDTO
+                items: $cartItemsData,
+                totalQuantity: $totalQuantity,
+                totalPrice: $totalPrice,
+                cartTotals: $cartTotalsDTO
             ));
 
         $response = $this->getJson(route('cart.contents'));
 
         $response->assertStatus(200)
-                 ->assertJsonStructure([
-                     'success',
-                     'message',
+                 ->assertJson([
+                     'success' => true,
+                     'message' => 'سبد خرید با موفقیت بارگذاری شد', // From CartController::getContents
                      'data' => [
                          'items' => [
-                             '*' => [
-                                 'id',
+                             [
+                                 'id' => 1,
                                  'product' => [
-                                     'id', 'name', 'inStock', 'slug', 'image', 'stockQuantity' // فیلدهای کامل برای غیرموبایل
+                                     'id' => $product->id,
+                                     'name' => $product->title, // 'title' from product, 'name' in resource
+                                     'inStock' => true, // stock > 0
+                                     'slug' => $product->slug,
+                                     'image' => asset('storage/' . $product->image),
+                                     'stockQuantity' => $product->stock,
                                  ],
-                                 'quantity',
-                                 'unitPrice',
-                                 'totalPrice',
-                                 'formattedUnitPrice',
-                                 'formattedTotalPrice',
-                                 'addedAt',
-                                 'updatedAt',
+                                 'quantity' => $itemQuantity,
+                                 'unitPrice' => $itemUnitPrice,
+                                 'totalPrice' => $itemTotalPrice,
+                                 'formattedUnitPrice' => number_format($itemUnitPrice, 0, '.', ',') . ' تومان',
+                                 'formattedTotalPrice' => number_format($itemTotalPrice, 0, '.', ',') . ' تومان',
+                                 'addedAt' => $cartItemsData[0]['created_at'], // Match exact string
+                                 'updatedAt' => $cartItemsData[0]['updated_at'], // Match exact string
                              ]
                          ],
                          'summary' => [
-                             'totalQuantity',
-                             'totalPrice',
-                             'isEmpty',
-                             'formattedTotalPrice',
-                             'currency',
-                             'subtotal', // اضافه شدن فیلدهای DTO
-                             'formattedSubtotal',
-                             'discount',
-                             'formattedDiscount',
-                             'shipping',
-                             'formattedShipping',
-                             'tax',
-                             'formattedTax',
+                             'totalQuantity' => $totalQuantity,
+                             'totalPrice' => $totalPrice, // Final total
+                             'isEmpty' => false,
+                             'formattedTotalPrice' => number_format($totalPrice, 0, '.', ',') . ' تومان',
+                             'currency' => 'IRR',
+                             'subtotal' => $cartTotalsDTO->subtotal,
+                             'formattedSubtotal' => number_format($cartTotalsDTO->subtotal, 0, '.', ',') . ' تومان',
+                             'discount' => $cartTotalsDTO->discount,
+                             'formattedDiscount' => number_format($cartTotalsDTO->discount, 0, '.', ',') . ' تومان',
+                             'shipping' => $cartTotalsDTO->shipping,
+                             'formattedShipping' => number_format($cartTotalsDTO->shipping, 0, '.', ',') . ' تومان',
+                             'tax' => $cartTotalsDTO->tax,
+                             'formattedTax' => number_format($cartTotalsDTO->tax, 0, '.', ',') . ' تومان',
                          ],
                          'metadata' => [
-                             'itemCount',
-                             'lastUpdated',
-                             'version',
-                             'requestId'
-                         ]
-                     ]
-                 ])
-                 ->assertJson([
-                     'success' => true,
-                     'message' => 'سبد خرید با موفقیت بارگذاری شد', // پیام از CartController::getContents
-                     'data' => [
-                         'summary' => [
-                             'totalQuantity' => 1,
-                             'totalPrice' => 1000,
-                             'isEmpty' => false,
-                             'subtotal' => 1000,
-                             'discount' => 0,
-                             'shipping' => 0,
-                             'tax' => 0,
+                             'itemCount' => $totalQuantity, // Assuming itemCount is totalQuantity
+                             // 'lastUpdated' and 'requestId' are dynamic, so not asserting exact values here,
+                             // but structure can be asserted.
                          ]
                      ]
                  ]);
@@ -184,7 +233,7 @@ class CartControllerTest extends TestCase
     public function test_user_can_add_item_to_cart_successfully()
     {
         $user = User::factory()->create();
-        $product = Product::factory()->create(['stock' => 10, 'price' => 500]); // استفاده از 'stock' به جای 'stock_quantity'
+        $product = Product::factory()->create(['stock' => 10, 'price' => 500]);
         $this->actingAs($user);
 
         $cart = Cart::factory()->forUser($user)->create();
@@ -192,47 +241,85 @@ class CartControllerTest extends TestCase
             ->once()
             ->andReturn($cart);
 
-        // Mock کردن addOrUpdateCartItem
         $this->cartService->shouldReceive('addOrUpdateCartItem')
             ->once()
             ->andReturn(CartOperationResponse::success('محصول اضافه شد.'));
 
-        // Mock کردن getCartContents پس از افزودن آیتم
-        $dummyCartTotalsDTO = new CartTotalsDTO(500, 0, 0, 0, 500);
+        $itemQuantity = 1;
+        $itemUnitPrice = $product->price;
+        $itemTotalPrice = $itemUnitPrice * $itemQuantity;
+
+        $cartTotalsDTO = new CartTotalsDTO(
+            subtotal: $itemTotalPrice,
+            discount: 0,
+            shipping: 0,
+            tax: 0,
+            total: $itemTotalPrice
+        );
+
         $this->cartService->shouldReceive('getCartContents')
             ->once()
             ->andReturn(new CartContentsResponse(
-                [['id' => 1, 'product_id' => $product->id, 'quantity' => 1, 'price' => 500, 'product' => $product->toArray()]],
-                1,
-                500,
-                $dummyCartTotalsDTO
+                items: [
+                    [
+                        'id' => 1,
+                        'product_id' => $product->id,
+                        'quantity' => $itemQuantity,
+                        'price' => $itemUnitPrice,
+                        'subtotal' => $itemTotalPrice,
+                        'product' => $product->toArray(),
+                        'created_at' => now()->subMinutes(1)->toDateTimeString(),
+                        'updated_at' => now()->toDateTimeString(),
+                    ]
+                ],
+                totalQuantity: $itemQuantity,
+                totalPrice: $itemTotalPrice,
+                cartTotals: $cartTotalsDTO
             ));
 
-        $response = $this->postJson(route('cart.add', ['product' => $product->id]), [ // استفاده از ID محصول
-            'quantity' => 1,
+        $response = $this->postJson(route('cart.add', ['product' => $product->id]), [
+            'quantity' => $itemQuantity,
         ]);
 
         $response->assertStatus(200)
-                 ->assertJsonStructure([
-                     'success',
-                     'message',
-                     'data' => [
-                         'items',
-                         'summary',
-                         'metadata'
-                     ],
-                 ])
                  ->assertJson([
                      'success' => true,
                      'message' => 'محصول با موفقیت به سبد خرید اضافه شد.',
                      'data' => [
+                         'items' => [
+                             [
+                                 'id' => 1,
+                                 'product' => [
+                                     'id' => $product->id,
+                                     'name' => $product->title,
+                                     'inStock' => true,
+                                     'slug' => $product->slug,
+                                     'image' => asset('storage/' . $product->image),
+                                     'stockQuantity' => $product->stock,
+                                 ],
+                                 'quantity' => $itemQuantity,
+                                 'unitPrice' => $itemUnitPrice,
+                                 'totalPrice' => $itemTotalPrice,
+                                 'formattedUnitPrice' => number_format($itemUnitPrice, 0, '.', ',') . ' تومان',
+                                 'formattedTotalPrice' => number_format($itemTotalPrice, 0, '.', ',') . ' تومان',
+                                 'addedAt' => now()->subMinutes(1)->toDateTimeString(),
+                                 'updatedAt' => now()->toDateTimeString(),
+                             ]
+                         ],
                          'summary' => [
-                             'totalQuantity' => 1,
-                             'totalPrice' => 500,
-                             'subtotal' => 500,
+                             'totalQuantity' => $itemQuantity,
+                             'totalPrice' => $itemTotalPrice,
+                             'isEmpty' => false,
+                             'formattedTotalPrice' => number_format($itemTotalPrice, 0, '.', ',') . ' تومان',
+                             'currency' => 'IRR',
+                             'subtotal' => $itemTotalPrice,
+                             'formattedSubtotal' => number_format($itemTotalPrice, 0, '.', ',') . ' تومان',
                              'discount' => 0,
+                             'formattedDiscount' => '0 تومان',
                              'shipping' => 0,
+                             'formattedShipping' => '0 تومان',
                              'tax' => 0,
+                             'formattedTax' => '0 تومان',
                          ]
                      ]
                  ]);
@@ -263,7 +350,7 @@ class CartControllerTest extends TestCase
             'quantity' => 10, // درخواست بیش از موجودی
         ]);
 
-        $response->assertStatus(400) // یا 422 اگر اعتبارسنجی سمت سرور باشد
+        $response->assertStatus(400)
                  ->assertJson([
                      'success' => false,
                      'message' => 'موجودی کافی نیست.',
@@ -287,51 +374,89 @@ class CartControllerTest extends TestCase
             ->once()
             ->andReturn(true);
 
-        // Mock کردن updateCartItemQuantity
         $this->cartService->shouldReceive('updateCartItemQuantity')
             ->once()
             ->andReturn(CartOperationResponse::success('تعداد به‌روزرسانی شد.'));
 
-        // Mock کردن getCartById و getCartContents پس از به‌روزرسانی
         $this->cartService->shouldReceive('getCartById')
             ->once()
-            ->andReturn($cart); // باید نمونه Cart را برگرداند
+            ->andReturn($cart);
 
-        $dummyCartTotalsDTO = new CartTotalsDTO(200, 0, 0, 0, 200);
+        $itemQuantity = 2;
+        $itemUnitPrice = $product->price;
+        $itemTotalPrice = $itemUnitPrice * $itemQuantity;
+
+        $cartTotalsDTO = new CartTotalsDTO(
+            subtotal: $itemTotalPrice,
+            discount: 0,
+            shipping: 0,
+            tax: 0,
+            total: $itemTotalPrice
+        );
+
         $this->cartService->shouldReceive('getCartContents')
             ->once()
             ->andReturn(new CartContentsResponse(
-                [['id' => $cartItem->id, 'product_id' => $product->id, 'quantity' => 2, 'price' => 100, 'product' => $product->toArray()]],
-                2,
-                200,
-                $dummyCartTotalsDTO
+                items: [
+                    [
+                        'id' => $cartItem->id,
+                        'product_id' => $product->id,
+                        'quantity' => $itemQuantity,
+                        'price' => $itemUnitPrice,
+                        'subtotal' => $itemTotalPrice,
+                        'product' => $product->toArray(),
+                        'created_at' => now()->subMinutes(1)->toDateTimeString(),
+                        'updated_at' => now()->toDateTimeString(),
+                    ]
+                ],
+                totalQuantity: $itemQuantity,
+                totalPrice: $itemTotalPrice,
+                cartTotals: $cartTotalsDTO
             ));
 
         $response = $this->putJson(route('cart.update', ['cartItem' => $cartItem->id]), [
-            'quantity' => 2,
+            'quantity' => $itemQuantity,
         ]);
 
         $response->assertStatus(200)
-                 ->assertJsonStructure([
-                     'success',
-                     'message',
-                     'data' => [
-                         'items',
-                         'summary',
-                         'metadata'
-                     ],
-                 ])
                  ->assertJson([
                      'success' => true,
                      'message' => 'تعداد آیتم سبد خرید با موفقیت به‌روزرسانی شد.',
                      'data' => [
+                         'items' => [
+                             [
+                                 'id' => $cartItem->id,
+                                 'product' => [
+                                     'id' => $product->id,
+                                     'name' => $product->title,
+                                     'inStock' => true,
+                                     'slug' => $product->slug,
+                                     'image' => asset('storage/' . $product->image),
+                                     'stockQuantity' => $product->stock,
+                                 ],
+                                 'quantity' => $itemQuantity,
+                                 'unitPrice' => $itemUnitPrice,
+                                 'totalPrice' => $itemTotalPrice,
+                                 'formattedUnitPrice' => number_format($itemUnitPrice, 0, '.', ',') . ' تومان',
+                                 'formattedTotalPrice' => number_format($itemTotalPrice, 0, '.', ',') . ' تومان',
+                                 'addedAt' => now()->subMinutes(1)->toDateTimeString(),
+                                 'updatedAt' => now()->toDateTimeString(),
+                             ]
+                         ],
                          'summary' => [
-                             'totalQuantity' => 2,
-                             'totalPrice' => 200,
-                             'subtotal' => 200,
+                             'totalQuantity' => $itemQuantity,
+                             'totalPrice' => $itemTotalPrice,
+                             'isEmpty' => false,
+                             'formattedTotalPrice' => number_format($itemTotalPrice, 0, '.', ',') . ' تومان',
+                             'currency' => 'IRR',
+                             'subtotal' => $itemTotalPrice,
+                             'formattedSubtotal' => number_format($itemTotalPrice, 0, '.', ',') . ' تومان',
                              'discount' => 0,
+                             'formattedDiscount' => '0 تومان',
                              'shipping' => 0,
+                             'formattedShipping' => '0 تومان',
                              'tax' => 0,
+                             'formattedTax' => '0 تومان',
                          ]
                      ]
                  ]);
@@ -354,7 +479,6 @@ class CartControllerTest extends TestCase
             ->once()
             ->andReturn(true);
 
-        // Mock کردن removeCartItem
         $this->cartService->shouldReceive('removeCartItem')
             ->once()
             ->andReturn(CartOperationResponse::success('آیتم حذف شد.'));
@@ -368,19 +492,11 @@ class CartControllerTest extends TestCase
         $response = $this->deleteJson(route('cart.remove', ['cartItem' => $cartItem->id]));
 
         $response->assertStatus(200)
-                 ->assertJsonStructure([
-                     'success',
-                     'message',
-                     'data' => [
-                         'items',
-                         'summary',
-                         'metadata'
-                     ],
-                 ])
                  ->assertJson([
                      'success' => true,
                      'message' => 'آیتم با موفقیت از سبد خرید حذف شد.',
                      'data' => [
+                         'items' => [], // انتظار آرایه خالی
                          'summary' => [
                              'totalQuantity' => 0,
                              'totalPrice' => 0,
@@ -389,6 +505,11 @@ class CartControllerTest extends TestCase
                              'discount' => 0,
                              'shipping' => 0,
                              'tax' => 0,
+                             'formattedTotalPrice' => '0 تومان',
+                             'formattedSubtotal' => '0 تومان',
+                             'formattedDiscount' => '0 تومان',
+                             'formattedShipping' => '0 تومان',
+                             'formattedTax' => '0 تومان',
                          ]
                      ]
                  ]);
@@ -412,7 +533,6 @@ class CartControllerTest extends TestCase
             ->once()
             ->andReturn($cart);
 
-        // Mock کردن clearCart
         $this->cartService->shouldReceive('clearCart')
             ->once()
             ->andReturn(CartOperationResponse::success('سبد خرید پاک شد.'));
@@ -426,19 +546,11 @@ class CartControllerTest extends TestCase
         $response = $this->postJson(route('cart.clear'));
 
         $response->assertStatus(200)
-                 ->assertJsonStructure([
-                     'success',
-                     'message',
-                     'data' => [
-                         'items',
-                         'summary',
-                         'metadata'
-                     ],
-                 ])
                  ->assertJson([
                      'success' => true,
                      'message' => 'سبد خرید با موفقیت پاک شد.',
                      'data' => [
+                         'items' => [], // انتظار آرایه خالی
                          'summary' => [
                              'totalQuantity' => 0,
                              'totalPrice' => 0,
@@ -447,6 +559,11 @@ class CartControllerTest extends TestCase
                              'discount' => 0,
                              'shipping' => 0,
                              'tax' => 0,
+                             'formattedTotalPrice' => '0 تومان',
+                             'formattedSubtotal' => '0 تومان',
+                             'formattedDiscount' => '0 تومان',
+                             'formattedShipping' => '0 تومان',
+                             'formattedTax' => '0 تومان',
                          ]
                      ]
                  ]);
@@ -468,20 +585,47 @@ class CartControllerTest extends TestCase
             ->once()
             ->andReturn($cart);
 
-        // Mock کردن applyCoupon
         $this->cartService->shouldReceive('applyCoupon')
             ->once()
             ->andReturn(CartOperationResponse::success('کوپن اعمال شد.'));
 
+        $itemQuantity = 1;
+        $itemUnitPrice = 1000;
+        $itemTotalPrice = $itemUnitPrice * $itemQuantity; // 1000
+
         // Mock کردن getCartContents پس از اعمال کوپن
-        $dummyCartTotalsDTO = new CartTotalsDTO(1000, 100, 0, 0, 900); // فرض کنید 1000 تومان بوده و 100 تومان تخفیف خورده
+        $cartTotalsDTO = new CartTotalsDTO(
+            subtotal: $itemTotalPrice, // 1000
+            discount: $coupon->value, // 100
+            shipping: 0,
+            tax: 0,
+            total: $itemTotalPrice - $coupon->value // 900
+        );
+
         $this->cartService->shouldReceive('getCartContents')
             ->once()
             ->andReturn(new CartContentsResponse(
-                [['id' => 1, 'product_id' => 1, 'quantity' => 1, 'price' => 1000, 'product' => ['id' => 1, 'title' => 'Product 1', 'slug' => 'product-1', 'image' => 'img.jpg', 'stock' => 10]]],
-                1,
-                1000,
-                $dummyCartTotalsDTO
+                items: [
+                    [
+                        'id' => 1,
+                        'product_id' => 1,
+                        'quantity' => $itemQuantity,
+                        'price' => $itemUnitPrice,
+                        'subtotal' => $itemTotalPrice,
+                        'product' => [
+                            'id' => 1,
+                            'title' => 'Product 1',
+                            'slug' => 'product-1',
+                            'image' => 'img.jpg',
+                            'stock' => 10
+                        ],
+                        'created_at' => now()->subMinutes(1)->toDateTimeString(),
+                        'updated_at' => now()->toDateTimeString(),
+                    ]
+                ],
+                totalQuantity: $itemQuantity,
+                totalPrice: $cartTotalsDTO->total,
+                cartTotals: $cartTotalsDTO
             ));
 
         $response = $this->postJson(route('cart.apply-coupon'), [
@@ -489,25 +633,44 @@ class CartControllerTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-                 ->assertJsonStructure([
-                     'success',
-                     'message',
-                     'data' => [
-                         'items',
-                         'summary',
-                         'metadata'
-                     ],
-                 ])
                  ->assertJson([
                      'success' => true,
                      'message' => 'کد تخفیف با موفقیت اعمال شد.',
                      'data' => [
+                         'items' => [
+                             [
+                                 'id' => 1,
+                                 'product' => [
+                                     'id' => 1,
+                                     'name' => 'Product 1',
+                                     'inStock' => true,
+                                     'slug' => 'product-1',
+                                     'image' => asset('storage/img.jpg'),
+                                     'stockQuantity' => 10,
+                                 ],
+                                 'quantity' => $itemQuantity,
+                                 'unitPrice' => $itemUnitPrice,
+                                 'totalPrice' => $itemTotalPrice,
+                                 'formattedUnitPrice' => number_format($itemUnitPrice, 0, '.', ',') . ' تومان',
+                                 'formattedTotalPrice' => number_format($itemTotalPrice, 0, '.', ',') . ' تومان',
+                                 'addedAt' => now()->subMinutes(1)->toDateTimeString(),
+                                 'updatedAt' => now()->toDateTimeString(),
+                             ]
+                         ],
                          'summary' => [
-                             'totalPrice' => 900, // قیمت پس از تخفیف
-                             'subtotal' => 1000,
-                             'discount' => 100,
-                             'shipping' => 0,
-                             'tax' => 0,
+                             'totalQuantity' => $itemQuantity,
+                             'totalPrice' => $cartTotalsDTO->total,
+                             'isEmpty' => false,
+                             'formattedTotalPrice' => number_format($cartTotalsDTO->total, 0, '.', ',') . ' تومان',
+                             'currency' => 'IRR',
+                             'subtotal' => $cartTotalsDTO->subtotal,
+                             'formattedSubtotal' => number_format($cartTotalsDTO->subtotal, 0, '.', ',') . ' تومان',
+                             'discount' => $cartTotalsDTO->discount,
+                             'formattedDiscount' => number_format($cartTotalsDTO->discount, 0, '.', ',') . ' تومان',
+                             'shipping' => $cartTotalsDTO->shipping,
+                             'formattedShipping' => number_format($cartTotalsDTO->shipping, 0, '.', ',') . ' تومان',
+                             'tax' => $cartTotalsDTO->tax,
+                             'formattedTax' => number_format($cartTotalsDTO->tax, 0, '.', ',') . ' تومان',
                          ]
                      ]
                  ]);
@@ -528,44 +691,90 @@ class CartControllerTest extends TestCase
             ->once()
             ->andReturn($cart);
 
-        // Mock کردن removeCoupon
         $this->cartService->shouldReceive('removeCoupon')
             ->once()
             ->andReturn(CartOperationResponse::success('کوپن حذف شد.'));
 
+        $itemQuantity = 1;
+        $itemUnitPrice = 1000;
+        $itemTotalPrice = $itemUnitPrice * $itemQuantity; // 1000
+
         // Mock کردن getCartContents پس از حذف کوپن (بازگشت به قیمت اصلی)
-        $dummyCartTotalsDTO = new CartTotalsDTO(1000, 0, 0, 0, 1000); // فرض کنید 1000 تومان بوده و تخفیف حذف شده
+        $cartTotalsDTO = new CartTotalsDTO(
+            subtotal: $itemTotalPrice, // 1000
+            discount: 0, // تخفیف حذف شده
+            shipping: 0,
+            tax: 0,
+            total: $itemTotalPrice // 1000
+        );
+
         $this->cartService->shouldReceive('getCartContents')
             ->once()
             ->andReturn(new CartContentsResponse(
-                [['id' => 1, 'product_id' => 1, 'quantity' => 1, 'price' => 1000, 'product' => ['id' => 1, 'title' => 'Product 1', 'slug' => 'product-1', 'image' => 'img.jpg', 'stock' => 10]]],
-                1,
-                1000,
-                $dummyCartTotalsDTO
+                items: [
+                    [
+                        'id' => 1,
+                        'product_id' => 1,
+                        'quantity' => $itemQuantity,
+                        'price' => $itemUnitPrice,
+                        'subtotal' => $itemTotalPrice,
+                        'product' => [
+                            'id' => 1,
+                            'title' => 'Product 1',
+                            'slug' => 'product-1',
+                            'image' => 'img.jpg',
+                            'stock' => 10
+                        ],
+                        'created_at' => now()->subMinutes(1)->toDateTimeString(),
+                        'updated_at' => now()->toDateTimeString(),
+                    ]
+                ],
+                totalQuantity: $itemQuantity,
+                totalPrice: $cartTotalsDTO->total,
+                cartTotals: $cartTotalsDTO
             ));
 
         $response = $this->postJson(route('cart.remove-coupon'));
 
         $response->assertStatus(200)
-                 ->assertJsonStructure([
-                     'success',
-                     'message',
-                     'data' => [
-                         'items',
-                         'summary',
-                         'metadata'
-                     ],
-                 ])
                  ->assertJson([
                      'success' => true,
                      'message' => 'کد تخفیف با موفقیت حذف شد.',
                      'data' => [
+                         'items' => [
+                             [
+                                 'id' => 1,
+                                 'product' => [
+                                     'id' => 1,
+                                     'name' => 'Product 1',
+                                     'inStock' => true,
+                                     'slug' => 'product-1',
+                                     'image' => asset('storage/' . 'img.jpg'),
+                                     'stockQuantity' => 10,
+                                 ],
+                                 'quantity' => $itemQuantity,
+                                 'unitPrice' => $itemUnitPrice,
+                                 'totalPrice' => $itemTotalPrice,
+                                 'formattedUnitPrice' => number_format($itemUnitPrice, 0, '.', ',') . ' تومان',
+                                 'formattedTotalPrice' => number_format($itemTotalPrice, 0, '.', ',') . ' تومان',
+                                 'addedAt' => now()->subMinutes(1)->toDateTimeString(),
+                                 'updatedAt' => now()->toDateTimeString(),
+                             ]
+                         ],
                          'summary' => [
-                             'totalPrice' => 1000, // قیمت پس از حذف تخفیف
-                             'subtotal' => 1000,
-                             'discount' => 0,
-                             'shipping' => 0,
-                             'tax' => 0,
+                             'totalQuantity' => $itemQuantity,
+                             'totalPrice' => $cartTotalsDTO->total,
+                             'isEmpty' => false,
+                             'formattedTotalPrice' => number_format($cartTotalsDTO->total, 0, '.', ',') . ' تومان',
+                             'currency' => 'IRR',
+                             'subtotal' => $cartTotalsDTO->subtotal,
+                             'formattedSubtotal' => number_format($cartTotalsDTO->subtotal, 0, '.', ',') . ' تومان',
+                             'discount' => $cartTotalsDTO->discount,
+                             'formattedDiscount' => number_format($cartTotalsDTO->discount, 0, '.', ',') . ' تومان',
+                             'shipping' => $cartTotalsDTO->shipping,
+                             'formattedShipping' => number_format($cartTotalsDTO->shipping, 0, '.', ',') . ' تومان',
+                             'tax' => $cartTotalsDTO->tax,
+                             'formattedTax' => number_format($cartTotalsDTO->tax, 0, '.', ',') . ' تومان',
                          ]
                      ]
                  ]);
@@ -584,7 +793,6 @@ class CartControllerTest extends TestCase
     {
         $product = Product::factory()->create(['stock' => 10]);
 
-        // انتظار داریم که متد getOrCreateCart فراخوانی نشود یا با خطای احراز هویت مواجه شود
         // در این سناریو، لاراول به طور خودکار به صفحه لاگین ریدایرکت می‌کند یا 401 برمی‌گرداند.
         // ما اینجا فرض می‌کنیم که middleware 'auth' روی این route اعمال شده است.
         // نیازی به Mock کردن getOrCreateCart نیست، زیرا middleware آن را قبل از کنترلر متوقف می‌کند.
@@ -714,10 +922,9 @@ class CartControllerTest extends TestCase
             ->once()
             ->andReturn($cart);
 
-        // Mock کردن applyCoupon برای بازگرداندن پاسخ ناموفق
         $this->cartService->shouldReceive('applyCoupon')
             ->once()
-            ->andReturn(CartOperationResponse::fail('کد تخفیف نامعتبر است.', 404)); // تغییر از error() به fail()
+            ->andReturn(CartOperationResponse::fail('کد تخفیف نامعتبر است.', 404));
 
         $response = $this->postJson(route('cart.apply-coupon'), [
             'coupon_code' => 'NONEXISTENT',
@@ -738,17 +945,16 @@ class CartControllerTest extends TestCase
     public function test_cannot_remove_coupon_from_cart_without_coupon()
     {
         $user = User::factory()->create();
-        $cart = Cart::factory()->forUser($user)->create(['coupon_id' => null]); // سبد خرید بدون کوپن
+        $cart = Cart::factory()->forUser($user)->create(['coupon_id' => null]);
         $this->actingAs($user);
 
         $this->cartService->shouldReceive('getOrCreateCart')
             ->once()
             ->andReturn($cart);
 
-        // Mock کردن removeCoupon برای بازگرداندن پاسخ ناموفق
         $this->cartService->shouldReceive('removeCoupon')
             ->once()
-            ->andReturn(CartOperationResponse::fail('هیچ کد تخفیفی برای حذف وجود ندارد.', 400)); // تغییر از error() به fail()
+            ->andReturn(CartOperationResponse::fail('هیچ کد تخفیفی برای حذف وجود ندارد.', 400));
 
         $response = $this->postJson(route('cart.remove-coupon'));
 
