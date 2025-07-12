@@ -23,7 +23,7 @@ use App\Contracts\Services\OtpServiceInterface;
 use App\Contracts\Services\RateLimitServiceInterface;
 use App\Contracts\Services\AuditServiceInterface;
 use App\Http\Requests\SendOtpRequest;
-use App->Http\Requests\VerifyOtpRequest;
+use App\Http\Requests\VerifyOtpRequest;
 
 class MobileAuthController extends Controller
 {
