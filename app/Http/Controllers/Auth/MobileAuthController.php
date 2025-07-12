@@ -21,10 +21,13 @@ use Illuminate\Support\Facades\Validator;
 
 // Import new service classes and interfaces
 use App\Contracts\Services\OtpServiceInterface;
-use App\Contracts\Services\RateLimitServiceInterface; // Fixed '->' to '\'
-use App\Contracts\Services\AuditServiceInterface;     // Fixed '->' to '\'
+use App\Contracts\Services\RateLimitServiceInterface;
+use App\Contracts\Services\AuditServiceInterface;
 use App\Http\Requests\SendOtpRequest;
 use App\Http\Requests\VerifyOtpRequest;
+
+// Make sure the helper file is loaded (e.g., via composer.json "files" autoload)
+// require_once app_path('Helpers/SecurityHelper.php'); // Not strictly necessary if autoloaded by composer
 
 class MobileAuthController extends Controller
 {
@@ -92,7 +95,11 @@ class MobileAuthController extends Controller
         try {
             $mobileNumber = Crypt::decryptString($encryptedMobileNumber);
         } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-            Log::error('Could not decrypt mobile number from session: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
+            // Using maskForLog for logging sensitive data
+            Log::error('Could not decrypt mobile number from session: ' . $e->getMessage(), [
+                'exception' => $e->getTraceAsString(),
+                'mobile_masked' => maskForLog($mobileNumber ?? 'N/A', 'phone') // Mask mobile if available
+            ]);
             return redirect()->route('auth.mobile-login-form')->with('error', 'خطا در بازیابی شماره موبایل. لطفاً دوباره تلاش کنید.');
         }
 
@@ -123,14 +130,17 @@ class MobileAuthController extends Controller
                 $ipAddress,
                 $request->session(),
                 $this->rateLimitService, // Pass the injected RateLimitService
-                function ($message, $level = 'info', $userId = null, $userType = null, $objectId = null) use ($request, $mobileNumber) {
+                function ($message, $level = 'info', $userId = null, $userType = null, $objectId = null) use ($request, $mobileNumber, $ipAddress) {
                     // This closure allows the service to log audits without direct dependency on AuditService
                     $this->auditService->log(
                         'otp_send_event',
                         $message,
                         $request,
-                        ['mobile_number' => $mobileNumber],
-                        hash('sha256', $mobileNumber),
+                        [
+                            'mobile_number_masked' => maskForLog($mobileNumber, 'phone'), // Masked for context
+                            'ip_address_masked' => maskForLog($ipAddress, 'ip') // Masked for context
+                        ],
+                        hashForCache($mobileNumber, 'audit_mobile_hash'), // Using hashForCache for identifier
                         $userId, $userType, $objectId, $level
                     );
                 }
@@ -148,10 +158,14 @@ class MobileAuthController extends Controller
             // Log the critical error via AuditService.
             $this->auditService->log(
                 'otp_send_failed_exception',
-                'Failed to send OTP for mobile number: ' . $mobileNumber . ' Error: ' . $e->getMessage(),
+                'Failed to send OTP for mobile number: ' . maskForLog($mobileNumber, 'phone') . ' Error: ' . $e->getMessage(), // Masked in message
                 $request,
-                ['mobile_number' => $mobileNumber, 'error' => $e->getMessage()],
-                hash('sha256', $mobileNumber),
+                [
+                    'mobile_number_masked' => maskForLog($mobileNumber, 'phone'), // Masked for context
+                    'ip_address_masked' => maskForLog($ipAddress, 'ip'), // Masked for context
+                    'error' => $e->getMessage()
+                ],
+                hashForCache($mobileNumber, 'audit_mobile_hash'), // Using hashForCache for identifier
                 null, null, null, 'error'
             );
 
@@ -187,14 +201,17 @@ class MobileAuthController extends Controller
                 $ipAddress,
                 $request->session(),
                 $this->rateLimitService, // Pass the injected RateLimitService
-                function ($message, $level = 'info', $userId = null, $userType = null, $objectId = null) use ($request, $mobileNumber) {
+                function ($message, $level = 'info', $userId = null, $userType = null, $objectId = null) use ($request, $mobileNumber, $ipAddress) {
                     // This closure allows the service to log audits
                     $this->auditService->log(
                         'otp_verify_event',
                         $message,
                         $request,
-                        ['mobile_number' => $mobileNumber],
-                        hash('sha256', $mobileNumber),
+                        [
+                            'mobile_number_masked' => maskForLog($mobileNumber, 'phone'), // Masked for context
+                            'ip_address_masked' => maskForLog($ipAddress, 'ip') // Masked for context
+                        ],
+                        hashForCache($mobileNumber, 'audit_mobile_hash'), // Using hashForCache for identifier
                         $userId, $userType, $objectId, $level
                     );
                 }
@@ -206,10 +223,13 @@ class MobileAuthController extends Controller
             // Log user login via audit service.
             $this->auditService->log(
                 'user_logged_in_via_otp',
-                'User logged in via OTP: ' . $mobileNumber,
+                'User logged in via OTP: ' . maskForLog($mobileNumber, 'phone'), // Masked in message
                 $request,
-                ['user_id' => $user->id, 'mobile_number' => $mobileNumber],
-                hash('sha256', $mobileNumber),
+                [
+                    'user_id' => $user->id,
+                    'mobile_number_masked' => maskForLog($mobileNumber, 'phone') // Masked for context
+                ],
+                hashForCache($mobileNumber, 'audit_mobile_hash'), // Using hashForCache for identifier
                 $user->id, 'User', $user->id, 'info'
             );
 
@@ -224,10 +244,14 @@ class MobileAuthController extends Controller
             // Controller catches exceptions from the service and responds appropriately.
             $this->auditService->log(
                 'otp_verify_failed_exception',
-                'Failed to verify OTP for mobile number: ' . $mobileNumber . ' Error: ' . $e->getMessage(),
+                'Failed to verify OTP for mobile number: ' . maskForLog($mobileNumber, 'phone') . ' Error: ' . $e->getMessage(), // Masked in message
                 $request,
-                ['mobile_number' => $mobileNumber, 'error' => $e->getMessage()],
-                hash('sha256', $mobileNumber),
+                [
+                    'mobile_number_masked' => maskForLog($mobileNumber, 'phone'), // Masked for context
+                    'ip_address_masked' => maskForLog($ipAddress, 'ip'), // Masked for context
+                    'error' => $e->getMessage()
+                ],
+                hashForCache($mobileNumber, 'audit_mobile_hash'), // Using hashForCache for identifier
                 null, null, null, 'error'
             );
 
@@ -273,13 +297,16 @@ class MobileAuthController extends Controller
                 $ipAddress,
                 $request->session(),
                 $this->rateLimitService,
-                function ($message, $level = 'info', $userId = null, $userType = null, $objectId = null) use ($request, $newMobileNumber) {
+                function ($message, $level = 'info', $userId = null, $userType = null, $objectId = null) use ($request, $newMobileNumber, $ipAddress) {
                     $this->auditService->log(
                         'otp_send_event_new_mobile',
                         $message,
                         $request,
-                        ['mobile_number' => $newMobileNumber],
-                        hash('sha256', $newMobileNumber),
+                        [
+                            'mobile_number_masked' => maskForLog($newMobileNumber, 'phone'), // Masked for context
+                            'ip_address_masked' => maskForLog($ipAddress, 'ip') // Masked for context
+                        ],
+                        hashForCache($newMobileNumber, 'audit_mobile_hash'), // Using hashForCache for identifier
                         $userId, $userType, $objectId, $level
                     );
                 }
@@ -292,10 +319,14 @@ class MobileAuthController extends Controller
             // Log the error
             $this->auditService->log(
                 'change_mobile_number_failed_exception',
-                'Failed to change mobile number: ' . $newMobileNumber . ' Error: ' . $e->getMessage(),
+                'Failed to change mobile number: ' . maskForLog($newMobileNumber, 'phone') . ' Error: ' . $e->getMessage(), // Masked in message
                 $request,
-                ['mobile_number' => $newMobileNumber, 'error' => $e->getMessage()],
-                hash('sha256', $newMobileNumber),
+                [
+                    'mobile_number_masked' => maskForLog($newMobileNumber, 'phone'), // Masked for context
+                    'ip_address_masked' => maskForLog($ipAddress, 'ip'), // Masked for context
+                    'error' => $e->getMessage()
+                ],
+                hashForCache($newMobileNumber, 'audit_mobile_hash'), // Using hashForCache for identifier
                 null, null, null, 'error'
             );
 
@@ -325,8 +356,11 @@ class MobileAuthController extends Controller
             'user_logged_out',
             'User logged out.',
             $request,
-            ['user_id' => $userId, 'mobile_number' => $mobileNumber],
-            $mobileNumber ? hash('sha256', $mobileNumber) : null,
+            [
+                'user_id' => $userId,
+                'mobile_number_masked' => maskForLog($mobileNumber ?? 'N/A', 'phone') // Masked for context
+            ],
+            $mobileNumber ? hashForCache($mobileNumber, 'audit_mobile_hash') : null, // Using hashForCache for identifier
             $userId, 'User', $userId, 'info'
         );
 
@@ -354,7 +388,7 @@ class MobileAuthController extends Controller
         }
 
         if (!preg_match('/^09\d{9}$/', $normalizedNumber)) {
-            Log::warning('Invalid mobile number after normalization: ' . $mobileNumber . ' -> ' . $normalizedNumber);
+            Log::warning('Invalid mobile number after normalization: ' . maskForLog($mobileNumber, 'phone') . ' -> ' . maskForLog($normalizedNumber, 'phone')); // Using maskForLog
             throw new \InvalidArgumentException('شماره موبایل پس از نرمال‌سازی نامعتبر است.');
         }
 

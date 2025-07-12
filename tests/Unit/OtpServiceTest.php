@@ -1,327 +1,233 @@
 <?php
 
-namespace App\Services;
+namespace Tests\Unit;
 
-use App\Contracts\Services\OtpServiceInterface;
-use App\Contracts\Services\RateLimitServiceInterface; // Keep the interface for type hinting in method signatures
-use App\Contracts\Services\AuditServiceInterface; // Keep the interface for type hinting in method signatures
 use App\Models\User;
+use App\Services\OtpService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Crypt; // Added for encryption/decryption
-use Illuminate\Support\Facades\DB;
-use Illuminate\Session\Store as SessionStore; // For type hinting Laravel's session store
-use Illuminate\Contracts\Encryption\DecryptException; // Added for handling decryption exceptions
+use Illuminate\Session\Store as SessionStore;
+use Mockery;
+use Tests\TestCase;
 
-class OtpService implements OtpServiceInterface
+class OtpServiceTest extends TestCase
 {
-    // Constants for Session & Cache Keys (duplicated from controller for clarity,
-    // ideally these would be in a shared config or enum)
-    const SESSION_MOBILE_FOR_OTP = 'mobile_number_for_otp';
-    const SESSION_MOBILE_FOR_REGISTRATION = 'mobile_number_for_registration';
-    const CACHE_PENDING_REGISTRATION_PREFIX = 'pending_registration_';
-    const PENDING_REGISTRATION_CACHE_TTL_MINUTES = 10;
+    use RefreshDatabase;
 
-    // Constants for OTP expiry duration (added as per suggestion)
-    const OTP_EXPIRY_MINUTES = 2;
-    const OTP_EXPIRY_SECONDS = self::OTP_EXPIRY_MINUTES * 60;
+    protected OtpService $otpService;
+    protected $rateLimitServiceMock;
+    protected $sessionMock;
+    protected $auditLogger;
 
-    // We no longer inject RateLimitService and AuditService directly into the constructor
-    // of OtpService to reduce its direct dependencies and make it more focused on OTP logic.
-    // Instead, they are passed as arguments to the specific methods that need them,
-    // or the auditLogger is passed as a callable.
-
-    public function __construct()
+    protected function setUp(): void
     {
-        // Constructor is now empty as direct injection of RateLimitService and AuditService is removed.
+        parent::setUp();
+
+        $this->otpService = new OtpService();
+
+        // Mock کردن RateLimitService
+        $this->rateLimitServiceMock = Mockery::mock('App\Contracts\Services\RateLimitServiceInterface');
+        $this->rateLimitServiceMock
+            ->shouldReceive('checkAndIncrementIpAttempts')->andReturn(true)
+            ->shouldReceive('checkAndIncrementSendAttempts')->andReturn(true)
+            ->shouldReceive('checkAndIncrementVerifyAttempts')->andReturn(true)
+            ->shouldReceive('resetVerifyAttempts')->andReturnNull()
+            ->shouldReceive('resetIpAttempts')->andReturnNull();
+
+        // Mock کردن SessionStore
+        $this->sessionMock = Mockery::mock(SessionStore::class);
+        $this->sessionMock->shouldReceive('put')->andReturnNull();
+
+        // Mock AuditLogger (callable)
+        $this->auditLogger = function($message, $level = 'info', $userId = null, $model = null, $modelId = null) {
+            // فقط لاگ بزنیم (می‌تونیم Assert کنیم در صورت نیاز)
+            Log::info("AuditLog: [$level] $message");
+        };
+
+        // فیک Cache و Crypt با دستورات زیر، اما چون Cache و Crypt واقعی‌ هستن در Laravel TestCase
+        Cache::flush();
+        Crypt::setKey(config('app.key')); // اگر لازم بود
+
+        // برای تولید و تایید OTP، Crypt واقعی است و Cache واقعی با RefreshDatabase
     }
 
-    /**
-     * Generates a hashed key for OTP cache based on mobile number.
-     * This prevents direct exposure of mobile numbers in cache keys.
-     *
-     * @param string $mobileNumber
-     * @return string
-     */
-    private function getOtpCacheKey(string $mobileNumber): string
+    protected function tearDown(): void
     {
-        // Use app.key for additional salt to make hash unique per application
-        return 'otp:' . hash('sha256', $mobileNumber . config('app.key'));
+        Mockery::close();
+        parent::tearDown();
     }
 
-    /**
-     * Generates a hashed key for pending registration cache based on mobile number.
-     * This prevents direct exposure of mobile numbers in cache keys.
-     *
-     * @param string $mobileNumber
-     * @return string
-     */
-    private function getPendingRegistrationCacheKey(string $mobileNumber): string
+    public function test_generate_and_store_otp_and_verify_success()
     {
-        return 'pending_registration:' . hash('sha256', $mobileNumber . config('app.key'));
+        $mobile = '09123456789';
+
+        $otp = $this->otpService->generateAndStoreOtp($mobile);
+
+        $this->assertMatchesRegularExpression('/^\d{6}$/', $otp);
+
+        $verified = $this->otpService->verifyOtp($mobile, $otp);
+
+        $this->assertTrue($verified);
     }
 
-    /**
-     * Generates and stores an OTP for a given mobile number, encrypting it before caching.
-     *
-     * @param string $mobileNumber
-     * @return string The generated OTP.
-     */
-    public function generateAndStoreOtp(string $mobileNumber): string
+    public function test_sendOtpForMobile_for_new_user()
     {
-        // Generate a 6-digit OTP
-        $otp = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+        $mobile = '09129998877';
+        $ip = '123.123.123.123';
 
-        // Prepare OTP data with OTP, a timestamp, and a hash of the mobile number for additional verification
-        $otpData = [
-            'otp' => $otp,
-            'timestamp' => time(), // Optional, for expiry check
-            'mobile_hash' => hash('sha256', $mobileNumber) // Added for additional verification
+        // مطمئن شو کاربر وجود ندارد
+        $this->assertDatabaseMissing('users', ['mobile_number' => $mobile]);
+
+        $this->otpService->sendOtpForMobile(
+            $mobile,
+            $ip,
+            $this->sessionMock,
+            $this->rateLimitServiceMock,
+            $this->auditLogger
+        );
+
+        // مطمئن شو session برای ثبت نام تنظیم شده
+        $this->sessionMock->shouldHaveReceived('put')->with('mobile_number_for_registration', Mockery::type('string'))->once();
+        $this->sessionMock->shouldHaveReceived('put')->with('mobile_number_for_otp', Mockery::type('string'))->once();
+    }
+
+    public function test_sendOtpForMobile_for_existing_user()
+    {
+        $mobile = '09120001122';
+        $ip = '111.111.111.111';
+
+        // ایجاد کاربر
+        User::factory()->create(['mobile_number' => $mobile]);
+
+        $this->otpService->sendOtpForMobile(
+            $mobile,
+            $ip,
+            $this->sessionMock,
+            $this->rateLimitServiceMock,
+            $this->auditLogger
+        );
+
+        // برای کاربر موجود، session ثبت نام نباید ست بشه (چک دقیق‌تر می‌خوای بگو)
+        $this->sessionMock->shouldHaveReceived('put')->with('mobile_number_for_otp', Mockery::type('string'))->once();
+    }
+
+    public function test_verifyOtpForMobile_success_creates_user_if_not_exists()
+    {
+        $mobile = '09125554433';
+        $ip = '222.222.222.222';
+
+        // ذخیره pending registration data در Cache به صورت رمزنگاری شده
+        $registrationData = [
+            'name' => 'Ali',
+            'lastname' => 'Ahmadi',
+            'mobile_number' => $mobile,
         ];
 
-        // Encrypt the OTP data before storing it in the cache
-        $encryptedOtp = Crypt::encryptString(json_encode($otpData));
+        Cache::put('pending_registration:' . hash('sha256', $mobile . config('app.key')), Crypt::encrypt($registrationData), now()->addMinutes(10));
 
-        // Store encrypted OTP in cache using a hashed key
-        Cache::put($this->getOtpCacheKey($mobileNumber), $encryptedOtp, now()->addMinutes(self::OTP_EXPIRY_MINUTES));
+        // تولید OTP و ذخیره
+        $otp = $this->otpService->generateAndStoreOtp($mobile);
 
-        return $otp;
+        $user = $this->otpService->verifyOtpForMobile(
+            $mobile,
+            $otp,
+            $ip,
+            $this->sessionMock,
+            $this->rateLimitServiceMock,
+            $this->auditLogger
+        );
+
+        $this->assertInstanceOf(User::class, $user);
+        $this->assertDatabaseHas('users', ['mobile_number' => $mobile]);
+        $this->assertEquals('Ali', $user->name);
     }
 
-    /**
-     * Verifies if the provided OTP matches the stored (and encrypted) OTP for a mobile number.
-     * It decrypts the stored OTP and checks for validity, optional expiry, and mobile hash integrity.
-     *
-     * @param string $mobileNumber
-     * @param string $otp
-     * @return bool
-     */
-    public function verifyOtp(string $mobileNumber, string $otp): bool
+    public function test_verifyOtpForMobile_fails_with_invalid_otp()
     {
-        // Retrieve the encrypted OTP from cache using the hashed key
-        $encryptedOtp = Cache::get($this->getOtpCacheKey($mobileNumber));
+        $mobile = '09125554444';
+        $ip = '10.10.10.10';
 
-        // If no encrypted OTP is found, it means it doesn't exist or has expired
-        if (!$encryptedOtp) {
-            return false;
-        }
+        $otp = $this->otpService->generateAndStoreOtp($mobile);
 
-        try {
-            // Decrypt the stored OTP string
-            $otpDataJson = Crypt::decryptString($encryptedOtp);
-            
-            // Decode the JSON string back into an array
-            $otpData = json_decode($otpDataJson, true);
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('کد تأیید نامعتبر است. لطفاً دوباره بررسی کنید.');
 
-            // Validate if JSON decoding was successful and if essential keys exist
-            if (json_last_error() !== JSON_ERROR_NONE || !is_array($otpData) || !isset($otpData['otp'], $otpData['timestamp'], $otpData['mobile_hash'])) {
-                Log::error('Invalid or corrupted OTP data retrieved for mobile number: ' . $mobileNumber);
-                return false;
-            }
-
-            // Verify the mobile hash to ensure the OTP belongs to the correct mobile number
-            if ($otpData['mobile_hash'] !== hash('sha256', $mobileNumber)) {
-                Log::warning('Mobile number hash mismatch during OTP verification for: ' . $mobileNumber);
-                return false;
-            }
-
-            // Check the timestamp for expiry
-            if (time() - $otpData['timestamp'] > self::OTP_EXPIRY_SECONDS) {
-                return false; // OTP has expired
-            }
-
-            // Compare the provided OTP with the stored (and decrypted) OTP
-            return $otpData['otp'] === $otp;
-
-        } catch (DecryptException $e) {
-            // Error during decryption, meaning the OTP is invalid or corrupted
-            Log::error('OTP decryption failed for mobile number: ' . $mobileNumber . ' Error: ' . $e->getMessage());
-            return false;
-        } catch (\Exception $e) {
-            // Catch any other general exceptions during JSON decoding or data access
-            Log::error('Error processing OTP data for mobile number: ' . $mobileNumber . ' Error: ' . $e->getMessage());
-            return false;
-        }
+        $this->otpService->verifyOtpForMobile(
+            $mobile,
+            '000000', // OTP اشتباه
+            $ip,
+            $this->sessionMock,
+            $this->rateLimitServiceMock,
+            $this->auditLogger
+        );
     }
 
-    /**
-     * Clears the stored OTP for a given mobile number.
-     *
-     * @param string $mobileNumber
-     * @return void
-     */
-    public function clearOtp(string $mobileNumber): void
+    public function test_clearOtp_removes_otp_from_cache()
     {
-        // Forget the OTP from cache using the hashed key
-        Cache::forget($this->getOtpCacheKey($mobileNumber));
+        $mobile = '09127778899';
+
+        $otp = $this->otpService->generateAndStoreOtp($mobile);
+
+        $cacheKeyMethod = (new \ReflectionClass($this->otpService))->getMethod('getOtpCacheKey');
+        $cacheKeyMethod->setAccessible(true);
+        $cacheKey = $cacheKeyMethod->invokeArgs($this->otpService, [$mobile]);
+
+        $this->assertNotNull(Cache::get($cacheKey));
+
+        $this->otpService->clearOtp($mobile);
+
+        $this->assertNull(Cache::get($cacheKey));
     }
 
-    /**
-     * Sends an OTP to the given mobile number.
-     * Handles OTP generation, storage, rate limiting, and SMS sending.
-     *
-     * @param string $mobileNumber The mobile number to send OTP to.
-     * @param string $ipAddress The IP address of the request for rate limiting.
-     * @param SessionStore $session The current session instance.
-     * @param RateLimitServiceInterface $rateLimitService The rate limit service instance.
-     * @param callable $auditLogger A callable function for logging audit events.
-     * @throws \Exception If OTP sending fails due to rate limits, internal errors, etc.
-     */
-    public function sendOtpForMobile(
-        string $mobileNumber,
-        string $ipAddress,
-        SessionStore $session,
-        RateLimitServiceInterface $rateLimitService, // Injected here
-        callable $auditLogger
-    ): void {
-        // Service's responsibility: Apply rate limits.
-        // Note: The rateLimitService methods are expected to handle their own key hashing internally.
-        if (!$rateLimitService->checkAndIncrementIpAttempts($ipAddress)) {
-            $auditLogger('Too many OTP send attempts from IP: ' . $ipAddress, 'warning');
-            throw new \Exception('تعداد درخواست‌ها از این IP بیش از حد مجاز است. لطفاً بعداً تلاش کنید.', 429);
-        }
+    public function test_sendOtpForMobile_throws_exception_when_rate_limit_exceeded()
+    {
+        $mobile = '09123334455';
+        $ip = '8.8.8.8';
 
-        if (!$rateLimitService->checkAndIncrementSendAttempts($mobileNumber)) {
-            $auditLogger('Too many OTP send attempts for mobile number: ' . $mobileNumber, 'warning');
-            throw new \Exception('تعداد درخواست‌های ارسال کد بیش از حد مجاز است. لطفاً یک دقیقه دیگر تلاش کنید.', 429);
-        }
+        $this->rateLimitServiceMock
+            ->shouldReceive('checkAndIncrementIpAttempts')
+            ->once()
+            ->andReturnFalse();
 
-        // Service's responsibility: Check user existence and manage registration state.
-        $user = User::where('mobile_number', $mobileNumber)->first();
-        if (!$user) {
-            try {
-                $encryptedMobileNumber = Crypt::encryptString($mobileNumber);
-                $session->put(self::SESSION_MOBILE_FOR_REGISTRATION, $encryptedMobileNumber);
-                $auditLogger('OTP sent for new registration: ' . $mobileNumber, 'info');
-            } catch (\Exception $e) {
-                Log::error('Failed to encrypt mobile number for registration session: ' . $e->getMessage());
-                throw new \Exception('خطا در آماده‌سازی ثبت‌نام. لطفاً دوباره تلاش کنید.', 500);
-            }
-        } else {
-            $auditLogger('OTP sent for existing user login: ' . $mobileNumber, 'info', $user->id, 'User', $user->id);
-        }
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('تعداد درخواست‌ها از این IP بیش از حد مجاز است. لطفاً بعداً تلاش کنید.');
 
-        try {
-            // Service's responsibility: Generate and store OTP.
-            $otp = $this->generateAndStoreOtp($mobileNumber);
-
-            // In a real application, you would integrate with an SMS service here.
-            // Example: MelipayamakSmsService::send($mobileNumber, $otp);
-            Log::debug("OTP for {$mobileNumber}: {$otp}"); // Use debug level for production
-
-            // Service's responsibility: Store encrypted mobile number in session for verification.
-            try {
-                $encryptedMobileNumber = Crypt::encryptString($mobileNumber);
-                $session->put(self::SESSION_MOBILE_FOR_OTP, $encryptedMobileNumber);
-            } catch (\Exception $e) {
-                Log::error('Failed to encrypt mobile number for OTP verification session: ' . $e->getMessage());
-                throw new \Exception('خطا در آماده‌سازی تأیید کد. لطفاً دوباره تلاش کنید.', 500);
-            }
-
-            $auditLogger('OTP successfully sent to ' . $mobileNumber, 'info');
-
-        } catch (\Exception $e) {
-            $auditLogger('Failed to send OTP for mobile number: ' . $mobileNumber . ' Error: ' . $e->getMessage(), 'error');
-            throw new \Exception('خطا در ارسال کد تأیید. لطفاً دوباره تلاش کنید.', 500);
-        }
+        $this->otpService->sendOtpForMobile(
+            $mobile,
+            $ip,
+            $this->sessionMock,
+            $this->rateLimitServiceMock,
+            $this->auditLogger
+        );
     }
 
-    /**
-     * Verifies the provided OTP for a given mobile number.
-     * Handles OTP validation, clearing, rate limit resets, and user lookup/creation.
-     *
-     * @param string $mobileNumber The mobile number for verification.
-     * @param string $otp The OTP provided by the user.
-     * @param string $ipAddress The IP address of the request for rate limiting.
-     * @param SessionStore $session The current session instance.
-     * @param RateLimitServiceInterface $rateLimitService The rate limit service instance.
-     * @param callable $auditLogger A callable function for logging audit events.
-     * @return \App\Models\User The authenticated user model.
-     * @throws \Exception If OTP verification fails (invalid OTP, rate limit, etc.).
-     */
-    public function verifyOtpForMobile(
-        string $mobileNumber,
-        string $otp,
-        string $ipAddress,
-        SessionStore $session,
-        RateLimitServiceInterface $rateLimitService, // Injected here
-        callable $auditLogger
-    ): User {
-        // Service's responsibility: Apply rate limits.
-        // Note: The rateLimitService methods are expected to handle their own key hashing internally.
-        if (!$rateLimitService->checkAndIncrementIpAttempts($ipAddress)) {
-            $auditLogger('Too many OTP verification attempts from IP: ' . $ipAddress, 'warning');
-            throw new \Exception('تعداد تلاش‌ها از این IP بیش از حد مجاز است. لطفاً بعداً تلاش کنید.', 429);
-        }
+    public function test_verifyOtpForMobile_throws_exception_when_rate_limit_exceeded()
+    {
+        $mobile = '09124445566';
+        $ip = '7.7.7.7';
 
-        if (!$rateLimitService->checkAndIncrementVerifyAttempts($mobileNumber)) {
-            $auditLogger('Too many OTP verification attempts for mobile number: ' . $mobileNumber, 'warning');
-            throw new \Exception('تعداد تلاش‌های تأیید کد بیش از حد مجاز است. لطفاً ۵ دقیقه دیگر تلاش کنید.', 429);
-        }
+        $this->rateLimitServiceMock
+            ->shouldReceive('checkAndIncrementIpAttempts')
+            ->once()
+            ->andReturnTrue();
 
-        // Service's responsibility: Verify OTP.
-        if (!$this->verifyOtp($mobileNumber, $otp)) {
-            $auditLogger('Invalid OTP provided for mobile number: ' . $mobileNumber, 'warning');
-            throw new \Exception('کد تأیید نامعتبر است. لطفاً دوباره بررسی کنید.', 401);
-        }
+        $this->rateLimitServiceMock
+            ->shouldReceive('checkAndIncrementVerifyAttempts')
+            ->once()
+            ->andReturnFalse();
 
-        // OTP is valid, clear it and reset rate limits.
-        $this->clearOtp($mobileNumber);
-        $rateLimitService->resetVerifyAttempts($mobileNumber);
-        $rateLimitService->resetIpAttempts($ipAddress);
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('تعداد تلاش‌های تأیید کد بیش از حد مجاز است. لطفاً ۵ دقیقه دیگر تلاش کنید.');
 
-        // Service's responsibility: Find or create user.
-        $user = User::where('mobile_number', $mobileNumber)->first();
-
-        if (!$user) {
-            // User does not exist, check for pending registration data from cache.
-            $encryptedRegistrationData = Cache::get($this->getPendingRegistrationCacheKey($mobileNumber));
-            $registrationData = null;
-
-            if ($encryptedRegistrationData) {
-                try {
-                    $registrationData = Crypt::decrypt($encryptedRegistrationData);
-                } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-                    Log::error('Could not decrypt registration data from cache: ' . $e->getMessage());
-                    throw new \Exception('خطا در بازیابی اطلاعات ثبت‌نام. لطفاً دوباره از ابتدا شروع کنید.', 500);
-                }
-            }
-
-            if ($registrationData) {
-                // Create user with provided registration data.
-                try {
-                    DB::beginTransaction();
-                    $user = User::create([
-                        'name' => $registrationData['name'],
-                        'lastname' => $registrationData['lastname'],
-                        'mobile_number' => $registrationData['mobile_number'],
-                        'profile_completed' => false,
-                        'status' => 'active',
-                    ]);
-
-                    // Assign a default role, e.g., 'user' (assuming Spatie/laravel-permission)
-                    // $user->assignRole('user');
-
-                    DB::commit();
-                    Cache::forget($this->getPendingRegistrationCacheKey($mobileNumber));
-                    $auditLogger('New user registered via OTP: ' . $mobileNumber, 'info', $user->id, 'User', $user->id);
-
-                } catch (\Illuminate\Database\QueryException $e) { // Use QueryException for database errors
-                    DB::rollBack();
-                    Log::error('Database error during new user registration via OTP: ' . $e->getMessage());
-                    throw new \Exception('خطا در ثبت‌نام کاربر (پایگاه داده). لطفاً دوباره تلاش کنید.', 500);
-                } catch (\Exception $e) {
-                    DB::rollBack();
-                    Log::error('General error during new user registration via OTP: ' . $e->getMessage());
-                    throw new \Exception('خطا در ثبت‌نام کاربر. لطفاً دوباره تلاش کنید.', 500);
-                }
-            } else {
-                $auditLogger('OTP valid but no user or pending registration data found for mobile: ' . $mobileNumber, 'warning');
-                throw new \Exception('مشکلی در فرآیند ثبت‌نام رخ داد. لطفاً دوباره از ابتدا شروع کنید.', 400);
-            }
-        }
-
-        $auditLogger('OTP successfully verified for ' . $mobileNumber, 'info', $user->id, 'User', $user->id);
-        return $user;
+        $this->otpService->verifyOtpForMobile(
+            $mobile,
+            '123456',
+            $ip,
+            $this->sessionMock,
+            $this->rateLimitServiceMock,
+            $this->auditLogger
+        );
     }
 }

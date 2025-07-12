@@ -9,6 +9,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Models\AuditLog; // Assuming you have an AuditLog model for DB operations, or directly use DB::table
 
+// Make sure the helper file is loaded (e.g., via composer.json "files" autoload)
+// require_once app_path('Helpers/SecurityHelper.php'); // Not strictly necessary if autoloaded by composer
+
 class AuditService implements AuditServiceInterface
 {
     /**
@@ -18,7 +21,7 @@ class AuditService implements AuditServiceInterface
      * @param string $description Human-readable description of the action
      * @param Request $request The HTTP request object (Now required, not nullable)
      * @param array $metadata Additional data to store with the log (Now the 4th argument)
-     * @param string|null $mobileHash Mobile device hash for tracking
+     * @param string|null $mobileHash Mobile device hash for tracking (already hashed by caller)
      * @param int|null $userId User ID who performed the action
      * @param string|null $model The model class name if applicable
      * @param int|null $modelId The model ID if applicable
@@ -30,7 +33,7 @@ class AuditService implements AuditServiceInterface
         string $description,
         Request $request, // Changed: Must be Illuminate\Http\Request and not nullable
         array $metadata = [], // Changed: Name and type of the 4th argument
-        ?string $mobileHash = null,
+        ?string $mobileHash = null, // This is already expected to be hashed by the caller (e.g., MobileAuthController)
         ?int $userId = null,
         ?string $model = null, // Added: New argument from interface
         ?int $modelId = null, // Added: New argument from interface
@@ -42,7 +45,11 @@ class AuditService implements AuditServiceInterface
             $sessionId = $request->session() ? $request->session()->getId() : null;
 
             // Ensure mobileHash is used if provided, otherwise derive from metadata if present
-            $finalMobileHash = $mobileHash ?? ($metadata['mobile_number'] ?? null ? hash('sha256', $metadata['mobile_number']) : null);
+            // The mobileHash parameter is now expected to be already hashed by the caller (e.g., MobileAuthController)
+            $finalMobileHash = $mobileHash;
+
+            // Hash the IP address for storage in the audit log database for privacy
+            $hashedIp = hashForCache($ip, 'audit_ip_hash');
 
             // Using AuditLog model if it exists, otherwise DB::table
             // Assuming AuditLog model has fillable fields for these.
@@ -51,11 +58,11 @@ class AuditService implements AuditServiceInterface
                 'user_id' => $userId ?? (Auth::check() ? Auth::id() : null),
                 'action' => $action,
                 'description' => $description,
-                'ip_address' => $ip,
+                'ip_address' => $hashedIp, // Storing hashed IP in the database
                 'user_agent' => $userAgent,
                 'session_id' => $sessionId,
-                'mobile_hash' => $finalMobileHash,
-                'metadata' => json_encode($metadata), // Store metadata as JSON
+                'mobile_hash' => $finalMobileHash, // This is already hashed by the caller
+                'metadata' => json_encode($metadata), // Metadata should contain masked values for display
                 'model_type' => $model,
                 'model_id' => $modelId,
                 'level' => $level,
@@ -66,8 +73,8 @@ class AuditService implements AuditServiceInterface
             Log::debug('Audit log recorded successfully', [
                 'action' => $action,
                 'user_id' => $userId,
-                'ip' => $ip,
-                'extra' => $metadata,
+                'ip_masked' => maskForLog($ip, 'ip'), // Using maskForLog for debug log
+                'extra' => $metadata, // Metadata already contains masked values
             ]);
 
             return true; // Successfully logged
@@ -75,7 +82,7 @@ class AuditService implements AuditServiceInterface
             Log::error('Failed to record audit log: ' . $e->getMessage(), [
                 'action' => $action,
                 'user_id' => $userId ?? (Auth::check() ? Auth::id() : null),
-                'ip' => $request->ip() ?? 'unknown',
+                'ip_masked' => maskForLog($request->ip() ?? 'unknown', 'ip'), // Using maskForLog for debug log
                 'error' => $e->getMessage(),
                 'exception_trace' => $e->getTraceAsString(), // Added for more detailed debugging
             ]);
