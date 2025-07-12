@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\SearchController;
-use App\Http\Controllers\Web\CartController; // Changed: Use the Web CartController
+use App\Http\Controllers\Web\CartController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\BlogController;
@@ -17,45 +17,42 @@ use App\Http\Controllers\Editor\PostController as EditorPostController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CheckoutController;
 
+// عمومی‌ترین مسیرها
 Route::get('/', [PageController::class, 'home'])->name('home');
 Route::get('/about', [PageController::class, 'about'])->name('about');
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
-// Change the route to use product ID
 Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
-
 Route::get('/search', [SearchController::class, 'search'])->name('search');
 
-// Explicitly apply 'web' middleware to the auth group for clarity and to ensure session is always available
+// گروه مسیرهای احراز هویت (با middleware 'web' برای پشتیبانی از Session و CSRF)
 Route::middleware(['web'])->prefix('auth')->name('auth.')->group(function () {
     Route::get('/login', [MobileAuthController::class, 'showMobileLoginForm'])->name('mobile-login-form');
-    // مسیر send-otp به routes/api.php منتقل شد.
-    // Route::post('/send-otp', [MobileAuthController::class, 'sendOtp'])->name('send-otp');
+    // مسیر send-otp به routes/api.php منتقل شده بود، حالا به web.php برگردانده می‌شود.
+    Route::post('/send-otp', [MobileAuthController::class, 'sendOtp'])->name('send-otp'); // این خط اضافه شد.
+
     Route::get('/verify-otp-form', [MobileAuthController::class, 'showOtpVerifyForm'])->name('verify-otp-form');
-    // اصلاح نام متد کنترلر از 'verify-otp' به 'verifyOtp'
-    Route::post('/verify-otp', [MobileAuthController::class, 'verifyOtp'])->name('verify-otp');
+    Route::post('/verify-otp', [MobileAuthController::class, 'verifyOtp'])->name('verify-otp'); // این مسیر در VerifyCsrfToken مستثنی شده است.
+
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register-form');
     Route::post('/register', [RegisterController::class, 'register'])->name('register');
     Route::post('/logout', [MobileAuthController::class, 'logout'])->name('logout');
-    // NEW: Route for changing mobile number, now in web.php for session support
-    Route::post('/change-mobile-number', [MobileAuthController::class, 'changeMobileNumber'])->name('change-mobile-number');
+    Route::post('/change-mobile-number', [MobileAuthController::class, 'changeMobileNumber'])->name('change-mobile-number'); // این مسیر در VerifyCsrfToken مستثنی شده است.
 });
 
-// Web Cart Routes - now using App\Http\Controllers\Web\CartController
+// مسیرهای سبد خرید وب (با middleware 'web' به صورت ضمنی)
 Route::prefix('cart')->name('cart.')->group(function () {
     Route::get('/', [CartController::class, 'index'])->name('index');
-    // The 'contents' route is typically for API, but if you need a web view for it, keep it.
-    // However, for web, 'index' usually suffices to show contents.
-    // Route::get('/contents', [CartController::class, 'getContents'])->name('contents'); // Removed if not needed for web
     Route::post('/add/{product}', [CartController::class, 'add'])->name('add');
-    Route::put('/update/{cartItem}', [CartController::class, 'update'])->name('update'); // Changed method name to 'update'
-    Route::delete('/remove/{cartItem}', [CartController::class, 'remove'])->name('remove'); // Changed method name to 'remove'
+    Route::put('/update/{cartItem}', [CartController::class, 'update'])->name('update');
+    Route::delete('/remove/{cartItem}', [CartController::class, 'remove'])->name('remove');
     Route::post('/clear', [CartController::class, 'clear'])->name('clear');
     Route::post('/apply-coupon', [CartController::class, 'applyCoupon'])->name('apply-coupon');
     Route::post('/remove-coupon', [CartController::class, 'removeCoupon'])->name('remove-coupon');
 });
 
+// مسیرهای نیازمند احراز هویت و تکمیل پروفایل
 Route::middleware(['auth', 'profile.completed'])->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
@@ -87,6 +84,7 @@ Route::middleware(['auth', 'profile.completed'])->group(function () {
     });
 });
 
+// مسیرهای پنل مدیریت (نیازمند احراز هویت و نقش admin)
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
@@ -100,6 +98,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     });
 });
 
+// مسیرهای پنل ویرایشگر (نیازمند احراز هویت و نقش editor)
 Route::middleware(['auth', 'role:editor'])->prefix('editor')->name('editor.')->group(function () {
     Route::get('/dashboard', [EditorDashboardController::class, 'index'])->name('dashboard');
     Route::resource('/posts', EditorPostController::class);

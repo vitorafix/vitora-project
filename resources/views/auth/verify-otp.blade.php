@@ -128,7 +128,7 @@
 
     {{-- Hidden div to pass routes to JavaScript --}}
     <div id="app-routes"
-         data-api-send-otp-route="{{ route('api.auth.send-otp') }}" {{-- Changed to use the API route --}}
+         data-api-send-otp-route="{{ route('auth.send-otp') }}" {{-- Changed to use the web route --}}
          data-auth-change-mobile-number-route="{{ route('auth.change-mobile-number') }}"
          data-auth-verify-otp-route="{{ route('auth.verify-otp') }}">
     </div>
@@ -361,7 +361,8 @@
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') // CSRF token برای این مسیر لازم است
                             },
                             body: JSON.stringify({ mobile_number: mobileNumber })
                         });
@@ -407,12 +408,6 @@
                 });
             }
 
-            if (closeModalButton) {
-                closeModalButton.addEventListener('click', function() {
-                    changeMobileModal.classList.remove('active');
-                });
-            }
-
             if (sendNewOtpButton) {
                 sendNewOtpButton.addEventListener('click', async function() {
                     const newMobileNumber = newMobileInput.value;
@@ -427,7 +422,7 @@
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') // CSRF token برای این مسیر لازم است
                             },
                             body: JSON.stringify({ new_mobile_number: newMobileNumber })
                         });
