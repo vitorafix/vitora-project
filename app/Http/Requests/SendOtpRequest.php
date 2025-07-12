@@ -3,23 +3,23 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Log; // اضافه شده برای لاگ کردن خطا در exceedsRateLimit
+use Illuminate\Support\Facades\Log;
+use App\Contracts\Services\RateLimitServiceInterface; // Import the RateLimitServiceInterface
 
 class SendOtpRequest extends FormRequest
 {
     /**
-     * تعیین کنید آیا کاربر مجاز به انجام این درخواست است یا خیر.
+     * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        // اگر نیاز به محدودیت rate limiting دارید، می‌توانید آن را اینجا بررسی کنید.
-        // در غیر این صورت، true برگردانید.
+        // Check rate limiting here.
         return !$this->exceedsRateLimit();
     }
 
     /**
-     * منطق بررسی محدودیت نرخ (rate limiting) برای جلوگیری از اسپم.
-     * این یک پیاده‌سازی ساده است و باید با سرویس RateLimitService واقعی شما هماهنگ شود.
+     * Logic to check rate limiting to prevent spam.
+     * This implementation should be coordinated with your actual RateLimitService.
      */
     private function exceedsRateLimit(): bool
     {
@@ -27,35 +27,36 @@ class SendOtpRequest extends FormRequest
             $mobileNumber = $this->input('mobile_number');
             $ipAddress = $this->ip();
 
-            // در اینجا می‌توانید منطق واقعی استفاده از RateLimitService را اضافه کنید.
-            // مثلا:
-            // $rateLimitService = app(\App\Contracts\Services\RateLimitServiceInterface::class);
-            // $isMobileRateLimited = !$rateLimitService->checkAndIncrementSendAttempts($mobileNumber);
-            // $isIpRateLimited = !$rateLimitService->checkAndIncrementIpAttempts($ipAddress);
-            // return $isMobileRateLimited || $isIpRateLimited;
+            // Instantiate the RateLimitService using Laravel's service container
+            $rateLimitService = app(RateLimitServiceInterface::class);
 
-            // برای سادگی فعلاً false برگردانده می‌شود تا درخواست‌ها رد نشوند.
-            return false;
+            // Check and increment attempts for both mobile number and IP address
+            $isMobileRateLimited = !$rateLimitService->checkAndIncrementSendAttempts($mobileNumber);
+            $isIpRateLimited = !$rateLimitService->checkAndIncrementIpAttempts($ipAddress);
+
+            // If either is rate limited, return true (exceeds rate limit)
+            return $isMobileRateLimited || $isIpRateLimited;
+
         } catch (\Exception $e) {
-            // خطا را لاگ کنید و اجازه دهید درخواست ادامه یابد (یا رد شود، بسته به سیاست امنیتی)
+            // Log the error and allow the request to proceed (or deny, depending on security policy)
             Log::warning('Rate limit check failed: ' . $e->getMessage(), [
                 'mobile_number' => $this->input('mobile_number'),
                 'ip_address' => $this->ip(),
                 'user_agent' => $this->userAgent(),
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString() // اضافه شده برای ردیابی کامل خطا
+                'trace' => $e->getTraceAsString()
             ]);
-            return false; // یا true اگر می‌خواهید در صورت خطا هم رد شود
+            return false; // Return false to not block the request if the rate limit check itself fails
         }
     }
 
     /**
-     * داده‌ها را برای اعتبارسنجی آماده کنید.
+     * Prepare the data for validation.
      */
     protected function prepareForValidation()
     {
-        // آدرس IP کاربر، User Agent و timestamp را به داده‌های درخواست اضافه کنید
-        // تا بتوانید آن‌ها را اعتبارسنجی، لاگ یا برای throttling استفاده کنید.
+        // Add user's IP address, User Agent, and timestamp to the request data
+        // so you can validate them, log them, or use them for throttling.
         $this->merge([
             'ip_address' => $this->ip(),
             'user_agent' => $this->userAgent(),
@@ -64,7 +65,7 @@ class SendOtpRequest extends FormRequest
     }
 
     /**
-     * قوانین اعتبارسنجی را که برای درخواست اعمال می‌شود، دریافت کنید.
+     * Get the validation rules that apply to the request.
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
      */
@@ -74,22 +75,22 @@ class SendOtpRequest extends FormRequest
             'mobile_number' => [
                 'required',
                 'string',
-                'regex:/^09[0-9]{9}$/', // اطمینان از فرمت صحیح 09xxxxxxxxx
-                'size:11', // اطمینان از اینکه دقیقاً 11 کاراکتر است
-                'not_regex:/^(.)\1{10}$/', // جلوگیری از تکرار 11 کاراکتر یکسان (مثال: 09111111111)
-                // جلوگیری از پترن‌های معمول و ساده (مثال: 09123456789 یا 09987654321)
-                'not_regex:/^09(123456789|987654321|012345678|876543210)$/', // الگوهای متوالی و معکوس
-                'not_regex:/^09(000000000|111111111|222222222|333333333|444444444|555555555|666666666|777777777|888888888|999999999)$/', // الگوهای تکراری صفر تا نه
+                'regex:/^09[0-9]{9}$/', // Ensure correct 09xxxxxxxxx format
+                'size:11', // Ensure it is exactly 11 characters
+                'not_regex:/^(.)\1{10}$/', // Prevent 11 identical repeating characters (e.g., 09111111111)
+                // Prevent common and simple patterns (e.g., 09123456789 or 09987654321)
+                'not_regex:/^09(123456789|987654321|012345678|876543210)$/', // Sequential and reverse patterns
+                'not_regex:/^09(000000000|111111111|222222222|333333333|444444444|555555555|666666666|777777777|888888888|999999999)$/', // Repeating patterns from zero to nine
             ],
-            'ip_address' => ['required', 'ip'], // اعتبارسنجی آدرس IP
-            'user_agent' => ['nullable', 'string', 'max:255'], // User Agent اختیاری است
-            'timestamp' => ['required', 'integer'], // timestamp برای لاگ و throttling
-            // می‌توانید قوانین اعتبارسنجی دیگری را نیز اینجا اضافه کنید.
+            'ip_address' => ['required', 'ip'], // IP address validation
+            'user_agent' => ['nullable', 'string', 'max:255'], // User Agent is optional
+            'timestamp' => ['required', 'integer'], // timestamp for logging and throttling
+            // You can add other validation rules here.
         ];
     }
 
     /**
-     * پیام‌های خطای سفارشی را برای قوانین اعتبارسنجی دریافت کنید.
+     * Get custom error messages for validation rules.
      *
      * @return array
      */
@@ -100,7 +101,7 @@ class SendOtpRequest extends FormRequest
             'mobile_number.string' => 'شماره موبایل باید از نوع متن باشد.',
             'mobile_number.regex' => 'فرمت شماره موبایل نامعتبر است. شماره باید با 09 شروع شده و شامل ۱۱ رقم باشد.',
             'mobile_number.size' => 'شماره موبایل باید دقیقاً ۱۱ رقم باشد.',
-            'mobile_number.not_regex' => 'شماره موبایل وارد شده معتبر نیست. لطفاً شماره موبایل واقعی خود را وارد کنید.', // بهبود یافته
+            'mobile_number.not_regex' => 'شماره موبایل وارد شده معتبر نیست. لطفاً شماره موبایل واقعی خود را وارد کنید.', // Improved
             'ip_address.required' => 'آدرس IP الزامی است.',
             'ip_address.ip' => 'فرمت آدرس IP نامعتبر است.',
             'user_agent.string' => 'User Agent باید از نوع متن باشد.',
@@ -111,8 +112,8 @@ class SendOtpRequest extends FormRequest
     }
 
     /**
-     * نام‌های سفارشی برای ویژگی‌ها را دریافت کنید.
-     * این نام‌ها در پیام‌های خطای اعتبارسنجی نمایش داده می‌شوند.
+     * Get custom names for attributes.
+     * These names are displayed in validation error messages.
      *
      * @return array
      */

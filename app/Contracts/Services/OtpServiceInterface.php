@@ -2,30 +2,57 @@
 
 namespace App\Contracts\Services;
 
+use Illuminate\Session\Store as SessionStore; // For type hinting Laravel's session store
+
 interface OtpServiceInterface
 {
     /**
-     * Generates a new OTP, stores it in cache, and returns it.
-     * نام متد به generateAndStoreOtp تغییر یافت تا با OtpService هماهنگ باشد.
+     * Sends an OTP to the given mobile number.
+     * Handles OTP generation, storage, rate limiting, and SMS sending.
+     *
+     * @param string $mobileNumber The mobile number to send OTP to.
+     * @param string $ipAddress The IP address of the request for rate limiting.
+     * @param SessionStore $session The current session instance.
+     * @param RateLimitServiceInterface $rateLimitService The rate limit service instance.
+     * @param callable $auditLogger A callable function for logging audit events.
+     * @throws \Exception If OTP sending fails due to rate limits, internal errors, etc.
+     */
+    public function sendOtpForMobile(string $mobileNumber, string $ipAddress, SessionStore $session, RateLimitServiceInterface $rateLimitService, callable $auditLogger): void;
+
+    /**
+     * Verifies the provided OTP for a given mobile number.
+     * Handles OTP validation, clearing, rate limit resets, and user lookup/creation.
+     *
+     * @param string $mobileNumber The mobile number for verification.
+     * @param string $otp The OTP provided by the user.
+     * @param string $ipAddress The IP address of the request for rate limiting.
+     * @param SessionStore $session The current session instance.
+     * @param RateLimitServiceInterface $rateLimitService The rate limit service instance.
+     * @param callable $auditLogger A callable function for logging audit events.
+     * @return \App\Models\User The authenticated user model.
+     * @throws \Exception If OTP verification fails (invalid OTP, rate limit, etc.).
+     */
+    public function verifyOtpForMobile(string $mobileNumber, string $otp, string $ipAddress, SessionStore $session, RateLimitServiceInterface $rateLimitService, callable $auditLogger): \App\Models\User;
+
+    /**
+     * Generates and stores an OTP for a given mobile number.
      *
      * @param string $mobileNumber
-     * @return string The generated OTP
+     * @return string The generated OTP.
      */
     public function generateAndStoreOtp(string $mobileNumber): string;
 
     /**
-     * Verifies the provided OTP against the stored one for the given mobile number.
-     * نام متد به verifyOtp تغییر یافت تا با OtpService هماهنگ باشد.
+     * Verifies if the provided OTP matches the stored OTP for a mobile number.
      *
      * @param string $mobileNumber
-     * @param string $otp The OTP provided by the user
-     * @return bool True if OTP is valid, false otherwise
+     * @param string $otp
+     * @return bool
      */
     public function verifyOtp(string $mobileNumber, string $otp): bool;
 
     /**
-     * Clears the stored OTP for a given mobile number after successful verification.
-     * این متد اضافه شد تا با OtpService هماهنگ باشد.
+     * Clears the stored OTP for a given mobile number.
      *
      * @param string $mobileNumber
      * @return void

@@ -14,7 +14,7 @@
                 </p>
                 @if (isset($mobileNumber))
                     <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                        {{ __('شماره موبایل:') }} <span class="font-bold text-gray-800 dark:text-gray-200">{{ $mobileNumber }}</span>
+                        {{ __('شماره موبایل:') }} <span id="current-mobile-number" class="font-bold text-gray-800 dark:text-gray-200">{{ $mobileNumber }}</span>
                     </p>
                 @endif
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-4 mb-6">
@@ -26,7 +26,7 @@
                 </div>
             </div>
 
-            {{-- Displaying session status messages --}}
+            {{-- نمایش پیام‌های وضعیت سشن --}}
             @if (session('status'))
                 <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
                     <strong class="font-bold">موفقیت!</strong>
@@ -34,7 +34,7 @@
                 </div>
             @endif
 
-            {{-- Displaying validation errors --}}
+            {{-- نمایش خطاهای اعتبارسنجی --}}
             @if ($errors->any())
                 <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
                     <strong class="font-bold">خطا!</strong>
@@ -50,7 +50,7 @@
                 @csrf
 
                 {{-- این فیلدهای hidden برای ارسال شماره موبایل و تعداد تلاش‌ها به کنترلر ضروری هستند --}}
-                <input type="hidden" name="mobile_number" value="{{ $mobileNumber ?? '' }}">
+                <input type="hidden" name="mobile_number" id="hidden-mobile-number" value="{{ $mobileNumber ?? '' }}">
                 <input type="hidden" name="attempt_count" value="{{ $attemptCount ?? 0 }}">
 
                 <div>
@@ -77,10 +77,14 @@
                 </div>
 
                 <div class="flex items-center justify-between mt-6">
-                    <a href="{{ route('auth.mobile-login-form') }}"
-                       class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900/20 rounded-lg transition-all duration-200 ease-in-out ml-4">
+                    {{-- دکمه تغییر شماره موبایل که مودال را باز می‌کند --}}
+                    <button type="button" id="change-mobile-button"
+                       class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900/20 rounded-lg transition-all duration-200 ease-in-out ml-4"
+                       role="button"
+                       tabindex="0"
+                    >
                         {{ __('تغییر شماره موبایل') }}
-                    </a>
+                    </button>
 
                     <button type="submit"
                             class="inline-flex items-center justify-center px-6 py-3 text-lg font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 ease-in-out min-w-[180px]">
@@ -104,6 +108,49 @@
         </div>
     </section>
 
+    {{-- Modal for changing mobile number --}}
+    <div id="change-mobile-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50 hidden" aria-modal="true" role="dialog">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-sm relative" dir="rtl">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+                {{ __('تغییر شماره موبایل') }}
+            </h3>
+
+            <button type="button" id="close-modal-button" class="absolute top-4 left-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                <span class="sr-only">{{ __('بستن') }}</span>
+            </button>
+
+            <form id="new-mobile-form" class="space-y-4">
+                @csrf
+                <div>
+                    <label for="new_mobile_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        {{ __('شماره موبایل جدید') }}
+                    </label>
+                    <input id="new_mobile_number"
+                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400"
+                           type="text"
+                           name="mobile_number"
+                           placeholder="مثال: 09123456789"
+                           required
+                           inputmode="numeric"
+                           pattern="[0-9]*">
+                    <p id="modal-error-message" class="mt-2 text-sm text-red-500 hidden"></p>
+                    <p id="modal-success-message" class="mt-2 text-sm text-green-500 hidden"></p>
+                </div>
+
+                <div class="flex justify-center mt-6">
+                    <button type="submit" id="send-new-otp-button"
+                            class="inline-flex items-center justify-center px-6 py-3 text-lg font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 ease-in-out min-w-[150px]">
+                        {{ __('ارسال کد به شماره جدید') }}
+                        <i class="fas fa-paper-plane mr-2"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     {{-- اسکریپت‌های جاوااسکریپت مستقیماً در اینجا قرار می‌گیرند --}}
     <script>
         function debounce(func, wait) {
@@ -125,16 +172,37 @@
             let otpInput = document.getElementById('otp');
             let timerAnnouncement = document.getElementById('timer-announcement');
             let timerText = document.getElementById('timer-text');
+            let currentMobileNumberSpan = document.getElementById('current-mobile-number');
+            let hiddenMobileNumberInput = document.getElementById('hidden-mobile-number');
 
-            if (!timerElement || !resendButton || !resendForm || !otpInput || !timerAnnouncement || !timerText) {
-                console.error("یکی از المنت‌های مورد نیاز برای اسکریپت تأیید OTP یافت نشد. اسکریپت اجرا نخواهد شد.");
+            // Modal elements
+            let changeMobileButton = document.getElementById('change-mobile-button');
+            let changeMobileModal = document.getElementById('change-mobile-modal');
+            let closeModalButton = document.getElementById('close-modal-button');
+            let newMobileForm = document.getElementById('new-mobile-form');
+            let newMobileInput = document.getElementById('new_mobile_number');
+            let sendNewOtpButton = document.getElementById('send-new-otp-button');
+            let modalErrorMessage = document.getElementById('modal-error-message');
+            let modalSuccessMessage = document.getElementById('modal-success-message');
+
+            if (!timerElement || !resendButton || !resendForm || !otpInput || !timerAnnouncement || !timerText || !currentMobileNumberSpan || !hiddenMobileNumberInput || !changeMobileButton || !changeMobileModal || !closeModalButton || !newMobileForm || !newMobileInput || !sendNewOtpButton || !modalErrorMessage || !modalSuccessMessage) {
+                console.error("یکی از المنت‌های مورد نیاز برای اسکریپت تأیید OTP یا مودال یافت نشد. اسکریپت اجرا نخواهد شد.");
                 return;
             }
 
-            // Hardcoding expiry time for standalone page, assuming 2 minutes (120 seconds)
-            // در محیط لاراول واقعی، این مقدار می‌تواند از config('auth.otp.expiry_minutes', 2) * 60 خوانده شود.
-            let timeLeft = 120;
+            let timeLeft = 120; // Default 2 minutes
             let timerInterval;
+
+            function startTimer() {
+                clearInterval(timerInterval); // Clear any existing timer
+                timeLeft = 120; // Reset timer
+                resendButton.disabled = true;
+                resendButton.classList.add('opacity-50', 'cursor-not-allowed');
+                resendButton.innerHTML = '{{ __("ارسال مجدد کد") }} <i class="fas fa-redo-alt mr-2"></i>'; // Reset button text
+
+                timerInterval = setInterval(updateTimer, 1000);
+                updateTimer(); // Call immediately to show initial time
+            }
 
             function updateTimer() {
                 let minutes = Math.floor(timeLeft / 60);
@@ -144,7 +212,7 @@
                 seconds = seconds < 10 ? '0' + seconds : seconds;
 
                 timerElement.textContent = minutes + ':' + seconds;
-                timerText.textContent = minutes + ':' + seconds;
+                timerText.textContent = minutes + ':' + seconds; // For screen readers
 
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
@@ -154,19 +222,16 @@
                     resendButton.classList.remove('opacity-50', 'cursor-not-allowed');
                 } else {
                     timeLeft--;
-                    resendButton.disabled = true;
-                    resendButton.classList.add('opacity-50', 'cursor-not-allowed');
                 }
             }
 
-            timerInterval = setInterval(updateTimer, 1000);
-            updateTimer();
+            startTimer(); // Initial call to start the timer
 
             resendForm.addEventListener('submit', function() {
                 resendButton.disabled = true;
                 resendButton.classList.add('opacity-50', 'cursor-not-allowed');
                 resendButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> {{ __("در حال ارسال...") }}';
-                // فراخوانی‌های gtag حذف شده‌اند
+                // gtag calls removed as per instructions
             });
 
             const debouncedOtpInput = debounce(function() {
@@ -188,7 +253,6 @@
 
                 if (this.value.length === 6) {
                     document.querySelector('form button[type="submit"]').focus();
-                    // فراخوانی‌های gtag حذف شده‌اند
                     if ('vibrate' in navigator) {
                         navigator.vibrate([50, 50, 50]);
                     }
@@ -197,10 +261,100 @@
 
             otpInput.addEventListener('input', debouncedOtpInput);
 
-            // فراخوانی‌های gtag حذف شده‌اند
             const errorContainer = document.querySelector('.error-container');
             if (errorContainer && 'vibrate' in navigator) {
                 navigator.vibrate(100);
+            }
+
+            // Modal Logic
+            changeMobileButton.addEventListener('click', function() {
+                changeMobileModal.classList.remove('hidden');
+                newMobileInput.value = ''; // Clear input when opening
+                modalErrorMessage.classList.add('hidden');
+                modalSuccessMessage.classList.add('hidden');
+            });
+
+            closeModalButton.addEventListener('click', function() {
+                changeMobileModal.classList.add('hidden');
+            });
+
+            // Close modal if clicked outside
+            changeMobileModal.addEventListener('click', function(event) {
+                if (event.target === changeMobileModal) {
+                    changeMobileModal.classList.add('hidden');
+                }
+            });
+
+            // Handle new mobile number form submission via AJAX
+            newMobileForm.addEventListener('submit', async function(event) {
+                event.preventDefault(); // Prevent default form submission
+
+                modalErrorMessage.classList.add('hidden');
+                modalSuccessMessage.classList.add('hidden');
+                sendNewOtpButton.disabled = true;
+                sendNewOtpButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> {{ __("در حال ارسال...") }}';
+
+                const newMobileNumber = newMobileInput.value;
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content'); // Assuming you have a CSRF token meta tag
+
+                try {
+                    const response = await fetch('{{ route('auth.send-otp') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken // Include CSRF token
+                        },
+                        body: JSON.stringify({ mobile_number: newMobileNumber })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        // Success: Update mobile number on page and hidden input
+                        currentMobileNumberSpan.textContent = newMobileNumber;
+                        hiddenMobileNumberInput.value = newMobileNumber;
+                        modalSuccessMessage.textContent = data.message || '{{ __("کد تأیید به شماره جدید ارسال شد.") }}';
+                        modalSuccessMessage.classList.remove('hidden');
+                        changeMobileModal.classList.add('hidden');
+                        startTimer(); // Restart the timer for the new OTP
+                        otpInput.value = ''; // Clear OTP input field
+                        otpInput.focus(); // Focus on OTP input
+                    } else {
+                        // Error: Display error message
+                        modalErrorMessage.textContent = data.message || '{{ __("خطا در ارسال کد به شماره جدید.") }}';
+                        modalErrorMessage.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    modalErrorMessage.textContent = '{{ __("خطایی رخ داد. لطفاً دوباره تلاش کنید.") }}';
+                    modalErrorMessage.classList.remove('hidden');
+                } finally {
+                    sendNewOtpButton.disabled = false;
+                    sendNewOtpButton.innerHTML = '{{ __("ارسال کد به شماره جدید") }} <i class="fas fa-paper-plane mr-2"></i>';
+                }
+            });
+
+            // JavaScript for converting Persian/Arabic digits to English for the new mobile number input
+            if (newMobileInput) {
+                newMobileInput.addEventListener('input', function(event) {
+                    let value = event.target.value;
+                    let convertedValue = '';
+
+                    const persianToEnglishMap = {
+                        '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
+                        '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
+                        '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+                        '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
+                    };
+
+                    for (let i = 0; i < value.length; i++) {
+                        const char = value[i];
+                        convertedValue += persianToEnglishMap[char] || char;
+                    }
+
+                    event.target.value = convertedValue;
+                });
             }
         });
     </script>
