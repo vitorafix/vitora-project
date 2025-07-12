@@ -1,7 +1,10 @@
 @props(['messages'])
 
+{{-- Check if there are any messages to display --}}
 @if ($messages)
-    <ul {{ $attributes->merge(['class' => 'text-sm text-red-600 space-y-1']) }}>
+    {{-- Merge attributes for the unordered list, applying default Tailwind classes --}}
+    <ul {{ $attributes->merge(['class' => 'text-red-600 text-sm mt-1']) }}>
+        {{-- Loop through each message and display it as a list item --}}
         @foreach ((array) $messages as $message)
             <li>{{ $message }}</li>
         @endforeach

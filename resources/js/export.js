@@ -1,24 +1,25 @@
 // resources/js/export.js
 
-// این خط import را حذف می‌کنیم، زیرا showMessage به صورت سراسری در window تعریف شده است.
-// import { showMessage } from './app.js';
+// نیازی به import showMessage نیست چون به صورت global در window تعریف شده است.
 
 export function setupExportButtons() {
-    // Export to Excel (using SheetJS)
+    // دکمه Export Excel
     const exportExcelButton = document.getElementById('export-excel');
+
     if (exportExcelButton) {
         exportExcelButton.addEventListener('click', () => {
             const data = [
                 ['نام محصول', 'قیمت', 'موجودی'],
                 ['چای سیاه', 50000, 1000],
                 ['چای سبز', 60000, 500],
-                ['چای ارل گری', 75000, 300]
+                ['چای ارل گری', 75000, 300],
             ];
+
             const ws = XLSX.utils.aoa_to_sheet(data);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "گزارش محصولات");
-            XLSX.writeFile(wb, "گزارش_محصولات.xlsx");
-            // استفاده از window.showMessage به جای showMessage مستقیم
+            XLSX.utils.book_append_sheet(wb, ws, 'گزارش محصولات');
+            XLSX.writeFile(wb, 'گزارش_محصولات.xlsx');
+
             if (typeof window.showMessage === 'function') {
                 window.showMessage('فایل اکسل با موفقیت صادر شد.', 'success');
             } else {
@@ -27,91 +28,81 @@ export function setupExportButtons() {
         });
     }
 
-    // Export to PDF (using jsPDF and html2canvas)
+    // دکمه Export PDF
     const exportPdfButton = document.getElementById('export-pdf');
+
     if (exportPdfButton) {
         exportPdfButton.addEventListener('click', async () => {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
-            // Select the content you want to export (e.g., the reports section)
-            const content = document.getElementById('reports-content'); // Or any other section
+            const content = document.getElementById('reports-content');
 
-            if (content) {
-                // Temporarily show the report content if it's hidden
-                const isHidden = content.classList.contains('hidden') || !content.classList.contains('active');
-                if (isHidden) {
-                    content.style.display = 'block'; // Make it visible for capture
-                    content.classList.add('temp-visible-for-pdf'); // Mark for removal later
-                }
-
-                // Ensure Vazirmatn font is loaded for jsPDF if needed, or use a fallback
-                // For jsPDF to use custom fonts, they need to be added. This is a complex step
-                // and usually involves converting the font to base64 and adding it to jsPDF.
-                // For simplicity, we'll assume a default font or that Vazirmatn is somehow available
-                // via browser's default or a pre-configured jsPDF setup.
-                // doc.setFont('Vazirmatn', 'normal'); // Uncomment if Vazirmatn is properly added to jsPDF
-
-                await html2canvas(content, {
-                    scale: 2, // Increase scale for better quality
-                    useCORS: true, // If images/assets are from different origin
-                    windowWidth: document.body.scrollWidth,
-                    windowHeight: document.body.scrollHeight,
-                }).then(canvas => {
-                    const imgData = canvas.toDataURL('image/png');
-                    const imgWidth = 210; // A4 width in mm
-                    const pageHeight = 297; // A4 height in mm
-                    const imgHeight = canvas.height * imgWidth / canvas.width;
-                    let heightLeft = imgHeight;
-                    let position = 0;
-
-                    doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                    heightLeft -= pageHeight;
-
-                    while (heightLeft >= 0) {
-                        position = heightLeft - imgHeight;
-                        doc.addPage();
-                        doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                        heightLeft -= pageHeight;
-                    }
-                    doc.save("گزارش.pdf");
-                    // استفاده از window.showMessage به جای showMessage مستقیم
-                    if (typeof window.showMessage === 'function') {
-                        window.showMessage('فایل PDF با موفقیت صادر شد.', 'success');
-                    } else {
-                        console.log('فایل PDF با موفقیت صادر شد.');
-                    }
-
-                    // Revert display style if temporarily changed
-                    if (isHidden) {
-                        content.style.display = ''; // Revert to original display
-                        content.classList.remove('temp-visible-for-pdf');
-                    }
-                }).catch(error => {
-                    console.error("Error generating PDF:", error);
-                    // استفاده از window.showMessage به جای showMessage مستقیم
-                    if (typeof window.showMessage === 'function') {
-                        window.showMessage('خطا در تولید PDF: ' + error.message, 'error');
-                    } else {
-                        console.log('خطا در تولید PDF: ' + error.message);
-                    }
-                    // Ensure display style is reverted even on error
-                    if (content.classList.contains('temp-visible-for-pdf')) {
-                        content.style.display = '';
-                        content.classList.remove('temp-visible-for-pdf');
-                    }
-                });
-            } else {
-                // استفاده از window.showMessage به جای showMessage مستقیم
+            if (!content) {
                 if (typeof window.showMessage === 'function') {
                     window.showMessage('محتوای گزارش برای تولید PDF یافت نشد.', 'error');
                 } else {
                     console.log('محتوای گزارش برای تولید PDF یافت نشد.');
+                }
+                return;
+            }
+
+            // اگر محتوا مخفی بود، موقتاً نشان داده شود
+            const isHidden = content.classList.contains('hidden') || !content.classList.contains('active');
+
+            if (isHidden) {
+                content.style.display = 'block';
+                content.classList.add('temp-visible-for-pdf');
+            }
+
+            try {
+                const canvas = await html2canvas(content, {
+                    scale: 2,
+                    useCORS: true,
+                    windowWidth: document.body.scrollWidth,
+                    windowHeight: document.body.scrollHeight,
+                });
+
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = 210; // A4 عرض mm
+                const pageHeight = 297; // A4 ارتفاع mm
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                while (heightLeft > 0) {
+                    position = heightLeft - imgHeight;
+                    doc.addPage();
+                    doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
+                doc.save('گزارش.pdf');
+
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage('فایل PDF با موفقیت صادر شد.', 'success');
+                } else {
+                    console.log('فایل PDF با موفقیت صادر شد.');
+                }
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage('خطا در تولید PDF: ' + error.message, 'error');
+                } else {
+                    console.log('خطا در تولید PDF: ' + error.message);
+                }
+            } finally {
+                if (isHidden) {
+                    content.style.display = '';
+                    content.classList.remove('temp-visible-for-pdf');
                 }
             }
         });
     }
 }
 
-// Call setupExportButtons when DOM is ready
+// فعال‌سازی پس از لود کامل DOM
 document.addEventListener('DOMContentLoaded', setupExportButtons);
