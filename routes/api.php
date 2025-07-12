@@ -4,7 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\MobileAuthController;
 use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\Api\ApiCartController; // Changed: Use the renamed ApiCartController
+use App\Http\Controllers\Api\ApiCartController;
 use App\Http\Controllers\OrderController;
 
 
@@ -24,6 +24,7 @@ Route::prefix('auth')->name('api.auth.')->group(function () {
     Route::post('/send-otp', [MobileAuthController::class, 'sendOtp'])->name('send-otp');
     Route::post('/verify-otp', [MobileAuthController::class, 'verifyOtp'])->name('verify-otp');
     // Route::post('/register', [RegisterController::class, 'register'])->name('register');
+    // REMOVED: Route::post('/change-mobile-number', [MobileAuthController::class, 'changeMobileNumber'])->name('change-mobile-number');
 });
 
 // API routes for cart operations (no authentication required for now)

@@ -45,22 +45,19 @@
 
                 <input type="hidden" name="mobile_number" id="hidden-mobile-number" value="{{ $mobileNumber ?? old('mobile_number') }}">
 
-                <!-- OTP Input -->
+                <!-- OTP Input (Multi-digit) -->
                 <div>
-                    <label for="otp" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label for="otp-digit-1" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         کد تأیید
                     </label>
-                    <input id="otp"
-                           class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400 text-center tracking-widest"
-                           type="text"
-                           name="otp"
-                           value="{{ old('otp') }}"
-                           placeholder="مثال: 123456"
-                           required
-                           autofocus
-                           maxlength="6"
-                           inputmode="numeric"
-                           pattern="[0-9]*">
+                    <div class="flex justify-center space-x-2 rtl:space-x-reverse">
+                        <input id="otp-digit-1" class="otp-digit-input w-12 h-12 text-center text-2xl font-bold rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]*" required>
+                        <input id="otp-digit-2" class="otp-digit-input w-12 h-12 text-center text-2xl font-bold rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]*" required>
+                        <input id="otp-digit-3" class="otp-digit-input w-12 h-12 text-center text-2xl font-bold rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]*" required>
+                        <input id="otp-digit-4" class="otp-digit-input w-12 h-12 text-center text-2xl font-bold rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]*" required>
+                        <input id="otp-digit-5" class="otp-digit-input w-12 h-12 text-center text-2xl font-bold rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]*" required>
+                        <input id="otp-digit-6" class="otp-digit-input w-12 h-12 text-center text-2xl font-bold rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]*" required>
+                    </div>
                     {{-- Using the x-input-error component for displaying OTP validation errors --}}
                     <x-input-error :messages="$errors->get('otp')" class="mt-2 text-sm" />
                 </div>
@@ -76,7 +73,7 @@
 
             <div class="flex flex-col items-center justify-center mt-4 space-y-2">
                 <button id="resend-otp-button"
-                        class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-transparent hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200 ease-in-out opacity-50 cursor-not-allowed"
+                        class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-transparent hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-300 ease-in-out opacity-50 cursor-not-allowed"
                         data-mobile-number="{{ $mobileNumber ?? old('mobile_number') }}"
                         disabled
                         aria-disabled="true">
@@ -84,7 +81,7 @@
                 </button>
 
                 <button id="change-mobile-button"
-                        class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900/20 rounded-lg transition-all duration-200 ease-in-out">
+                        class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900/20 rounded-lg transition-all duration-300 ease-in-out">
                     تغییر شماره موبایل
                 </button>
             </div>
@@ -117,11 +114,60 @@
 
 @push('scripts')
     <script>
+        // Utility function for debouncing
+        const debounce = (func, delay) => {
+            let timeoutId;
+            return (...args) => {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => func.apply(null, args), delay);
+            };
+        };
+
+        // Class to manage countdown timers
+        class CountdownTimer {
+            constructor(element, initialSeconds, onCompleteCallback) {
+                this.element = element;
+                this.seconds = initialSeconds;
+                this.onCompleteCallback = onCompleteCallback;
+                this.interval = null;
+            }
+
+            start() {
+                this.stop(); // Ensure any existing timer is stopped
+                this.updateDisplay(); // Update immediately
+                this.interval = setInterval(() => {
+                    this.seconds--;
+                    this.updateDisplay();
+                    if (this.seconds <= 0) {
+                        this.stop();
+                        this.onCompleteCallback?.(); // Call callback if provided
+                    }
+                }, 1000);
+            }
+
+            stop() {
+                clearInterval(this.interval);
+                this.interval = null;
+            }
+
+            reset(newSeconds) {
+                this.stop();
+                this.seconds = newSeconds;
+                this.updateDisplay();
+            }
+
+            updateDisplay() {
+                const minutes = Math.floor(this.seconds / 60);
+                const seconds = this.seconds % 60;
+                this.element.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const countdownTimerElement = document.getElementById('countdown-timer');
             const resendButton = document.getElementById('resend-otp-button');
             const resendTimerElement = resendButton.querySelector('#resend-timer'); // Select the span inside the button
-            const otpInput = document.getElementById('otp');
+            const otpDigitInputs = document.querySelectorAll('.otp-digit-input'); // New: Get all OTP digit inputs
             const hiddenMobileNumberInput = document.getElementById('hidden-mobile-number');
             const currentMobileNumberSpan = document.getElementById('current-mobile-number');
 
@@ -132,10 +178,8 @@
             const sendNewOtpButton = document.getElementById('send-new-otp-button');
             const modalErrorMessage = document.getElementById('modal-error-message');
 
-            let countdownSeconds = 120; // 2 minutes
-            let resendCooldownSeconds = 120; // 2 minutes for resend
-            let countdownInterval;
-            let resendInterval;
+            let mainCountdownTimer;
+            let resendCooldownTimer;
 
             // Function to convert Persian/Arabic digits to English and remove non-digits
             const convertAndFilterDigits = (value) => {
@@ -154,12 +198,34 @@
                 return convertedValue.replace(/\D/g, '');
             };
 
-            // Apply digit conversion and filtering to OTP input
-            if (otpInput) {
-                otpInput.addEventListener('input', function(event) {
-                    event.target.value = convertAndFilterDigits(event.target.value);
+            // New: Function to get the combined OTP string from individual inputs
+            const getCombinedOtp = () => {
+                let otp = '';
+                otpDigitInputs.forEach(input => {
+                    otp += input.value;
                 });
-            }
+                return otp;
+            };
+
+            // Apply digit conversion and filtering to each OTP input, and handle auto-focus/backspace
+            otpDigitInputs.forEach((input, index) => {
+                input.addEventListener('input', function(event) {
+                    // Convert and filter the single digit
+                    event.target.value = convertAndFilterDigits(event.target.value);
+
+                    // Auto-focus to the next input if a digit is entered and it's not the last input
+                    if (event.target.value.length === 1 && index < otpDigitInputs.length - 1) {
+                        otpDigitInputs[index + 1].focus();
+                    }
+                });
+
+                input.addEventListener('keydown', function(event) {
+                    // Handle backspace to move to previous input if current input is empty and it's not the first input
+                    if (event.key === 'Backspace' && event.target.value === '' && index > 0) {
+                        otpDigitInputs[index - 1].focus();
+                    }
+                });
+            });
 
             // Apply digit conversion and filtering to new mobile number input in modal
             if (newMobileInput) {
@@ -168,59 +234,41 @@
                 });
             }
 
-            // --- Countdown Timer Logic ---
-            function updateCountdownTimer() {
-                const minutes = Math.floor(countdownSeconds / 60);
-                const seconds = countdownSeconds % 60;
-                countdownTimerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            // Initialize main countdown timer
+            mainCountdownTimer = new CountdownTimer(countdownTimerElement, 120, () => {
+                // Callback when main countdown finishes
+                resendButton.disabled = false;
+                resendButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                resendButton.removeAttribute('aria-disabled');
+                resendTimerElement.textContent = ''; // Clear timer text
+            });
 
-                if (countdownSeconds <= 0) {
-                    clearInterval(countdownInterval);
-                    resendButton.disabled = false;
-                    resendButton.classList.remove('opacity-50', 'cursor-not-allowed');
-                    resendButton.removeAttribute('aria-disabled');
-                    resendTimerElement.textContent = ''; // Clear timer text
-                } else {
-                    countdownSeconds--;
-                }
-            }
+            // Initialize resend cooldown timer (initially not running)
+            resendCooldownTimer = new CountdownTimer(resendTimerElement, 120, () => {
+                // Callback when resend cooldown finishes
+                resendButton.disabled = false;
+                resendButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                resendButton.removeAttribute('aria-disabled');
+                resendTimerElement.textContent = ''; // Clear timer text
+            });
 
+            // Update startCountdown function to use the new class
             function startCountdown() {
-                clearInterval(countdownInterval); // Clear any existing interval
-                countdownSeconds = 120; // Reset timer
+                mainCountdownTimer.reset(120);
+                mainCountdownTimer.start();
                 resendButton.disabled = true;
                 resendButton.classList.add('opacity-50', 'cursor-not-allowed');
                 resendButton.setAttribute('aria-disabled', 'true');
                 resendTimerElement.textContent = '02:00'; // Reset resend timer display
-                updateCountdownTimer(); // Call immediately to show initial time
-                countdownInterval = setInterval(updateCountdownTimer, 1000);
             }
 
-            // --- Resend OTP Cooldown Logic ---
-            function updateResendCooldownTimer() {
-                const minutes = Math.floor(resendCooldownSeconds / 60);
-                const seconds = resendCooldownSeconds % 60;
-                resendTimerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
-                if (resendCooldownSeconds <= 0) {
-                    clearInterval(resendInterval);
-                    resendButton.disabled = false;
-                    resendButton.classList.remove('opacity-50', 'cursor-not-allowed');
-                    resendButton.removeAttribute('aria-disabled');
-                    resendTimerElement.textContent = ''; // Clear timer text
-                } else {
-                    resendCooldownSeconds--;
-                }
-            }
-
+            // Update startResendCooldown function to use the new class
             function startResendCooldown() {
-                clearInterval(resendInterval); // Clear any existing interval
-                resendCooldownSeconds = 120; // Reset cooldown
+                resendCooldownTimer.reset(120);
+                resendCooldownTimer.start();
                 resendButton.disabled = true;
                 resendButton.classList.add('opacity-50', 'cursor-not-allowed');
                 resendButton.setAttribute('aria-disabled', 'true');
-                updateResendCooldownTimer(); // Call immediately to show initial time
-                resendInterval = setInterval(updateResendCooldownTimer, 1000);
             }
 
             // --- Event Listeners ---
@@ -233,7 +281,7 @@
                     }
 
                     try {
-                        const response = await fetch('/auth/resend-otp', {
+                        const response = await fetch('{{ route('api.auth.send-otp') }}', { // Changed URL to use route() helper
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -263,6 +311,7 @@
                 changeMobileButton.addEventListener('click', function() {
                     changeMobileModal.classList.add('active');
                     modalErrorMessage.classList.add('hidden'); // Hide any previous error messages
+                    modalErrorMessage.classList.remove('animate-pulse'); // Ensure pulse is removed
                     newMobileInput.value = ''; // Clear input
                 });
             }
@@ -281,13 +330,16 @@
                     if (!mobileRegex.test(newMobileNumber)) {
                         modalErrorMessage.textContent = 'لطفاً یک شماره موبایل معتبر (مثال: 09123456789) وارد کنید.';
                         modalErrorMessage.classList.remove('hidden');
+                        modalErrorMessage.classList.add('animate-pulse'); // Add pulse animation for error
+                        setTimeout(() => modalErrorMessage.classList.remove('animate-pulse'), 2000); // Remove pulse after 2 seconds
                         return;
                     } else {
                         modalErrorMessage.classList.add('hidden');
+                        modalErrorMessage.classList.remove('animate-pulse');
                     }
 
                     try {
-                        const response = await fetch('/auth/change-mobile-number', {
+                        const response = await fetch('{{ route('auth.change-mobile-number') }}', { // Changed URL to use route() helper for web route
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -308,13 +360,33 @@
                         } else {
                             modalErrorMessage.textContent = data.message || 'خطا در تغییر شماره موبایل.';
                             modalErrorMessage.classList.remove('hidden');
+                            modalErrorMessage.classList.add('animate-pulse'); // Add pulse animation for error
+                            setTimeout(() => modalErrorMessage.classList.remove('animate-pulse'), 2000); // Remove pulse after 2 seconds
                         }
                     } catch (error) {
                         console.error('Error changing mobile number:', error);
                         window.showMessage('خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.', 'error');
                         modalErrorMessage.textContent = 'خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.';
                         modalErrorMessage.classList.remove('hidden');
+                        modalErrorMessage.classList.add('animate-pulse'); // Add pulse animation for error
+                        setTimeout(() => modalErrorMessage.classList.remove('animate-pulse'), 2000); // Remove pulse after 2 seconds
                     }
+                });
+            }
+
+            // Modify form submission to use combined OTP from multi-digit inputs
+            const otpForm = document.querySelector('form[action="{{ route('auth.verify-otp') }}"]');
+            if (otpForm) {
+                otpForm.addEventListener('submit', function(event) {
+                    // Create a hidden input for the combined OTP value
+                    let combinedOtpInput = document.createElement('input');
+                    combinedOtpInput.type = 'hidden';
+                    combinedOtpInput.name = 'otp'; // Ensure the name matches what Laravel expects
+                    combinedOtpInput.value = getCombinedOtp();
+                    otpForm.appendChild(combinedOtpInput);
+
+                    // If the original 'otp' input (if it existed) had a name, you might need to disable it
+                    // to prevent duplicate form fields, but since we replaced it, this is fine.
                 });
             }
 

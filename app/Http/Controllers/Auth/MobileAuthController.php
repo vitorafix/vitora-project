@@ -17,11 +17,12 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Validator;
 
 // Import new service classes and interfaces
 use App\Contracts\Services\OtpServiceInterface;
-use App\Contracts\Services\RateLimitServiceInterface;
-use App\Contracts\Services\AuditServiceInterface;
+use App\Contracts\Services\RateLimitServiceInterface; // Fixed '->' to '\'
+use App\Contracts\Services\AuditServiceInterface;     // Fixed '->' to '\'
 use App\Http\Requests\SendOtpRequest;
 use App\Http\Requests\VerifyOtpRequest;
 
@@ -43,16 +44,16 @@ class MobileAuthController extends Controller
 
     // Dependency Injection for services
     protected OtpServiceInterface $otpService;
-    protected RateLimitServiceInterface $rateLimitService; // Keep injecting RateLimitService here
+    protected RateLimitServiceInterface $rateLimitService;
     protected AuditServiceInterface $auditService;
 
     public function __construct(
         OtpServiceInterface $otpService,
-        RateLimitServiceInterface $rateLimitService, // Keep injecting RateLimitService here
+        RateLimitServiceInterface $rateLimitService,
         AuditServiceInterface $auditService
     ) {
         $this->otpService = $otpService;
-        $this->rateLimitService = $rateLimitService; // Assign injected service
+        $this->rateLimitService = $rateLimitService;
         $this->auditService = $auditService;
     }
 
@@ -240,6 +241,71 @@ class MobileAuthController extends Controller
     }
 
     /**
+     * Handles the request to change the mobile number and send a new OTP.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function changeMobileNumber(Request $request)
+    {
+        // 1. Validate the new mobile number
+        $validator = Validator::make($request->all(), [
+            'new_mobile_number' => ['required', 'string', 'regex:/^09[0-9]{9}$/', 'unique:users,mobile_number'],
+        ], [
+            'new_mobile_number.required' => 'شماره موبایل جدید الزامی است.',
+            'new_mobile_number.regex' => 'فرمت شماره موبایل جدید صحیح نیست.',
+            'new_mobile_number.unique' => 'این شماره موبایل قبلاً ثبت شده است.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => $validator->errors()->first()], 422);
+        }
+
+        $newMobileNumber = $this->normalizeMobileNumber($request->input('new_mobile_number'));
+        $ipAddress = $request->ip();
+
+        try {
+            // 2. Send a new OTP to the new mobile number
+            // Reuse the existing sendOtp logic, which handles rate limiting and auditing
+            // The OtpService::sendOtpForMobile will handle putting the new mobile number in session for OTP verification
+            $this->otpService->sendOtpForMobile(
+                $newMobileNumber,
+                $ipAddress,
+                $request->session(),
+                $this->rateLimitService,
+                function ($message, $level = 'info', $userId = null, $userType = null, $objectId = null) use ($request, $newMobileNumber) {
+                    $this->auditService->log(
+                        'otp_send_event_new_mobile',
+                        $message,
+                        $request,
+                        ['mobile_number' => $newMobileNumber],
+                        hash('sha256', $newMobileNumber),
+                        $userId, $userType, $objectId, $level
+                    );
+                }
+            );
+
+            // 3. If successful, respond with success message
+            return response()->json(['message' => 'شماره موبایل با موفقیت تغییر یافت و کد جدید ارسال شد.']);
+
+        } catch (\Exception $e) {
+            // Log the error
+            $this->auditService->log(
+                'change_mobile_number_failed_exception',
+                'Failed to change mobile number: ' . $newMobileNumber . ' Error: ' . $e->getMessage(),
+                $request,
+                ['mobile_number' => $newMobileNumber, 'error' => $e->getMessage()],
+                hash('sha256', $newMobileNumber),
+                null, null, null, 'error'
+            );
+
+            // Respond with error message
+            return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 500);
+        }
+    }
+
+
+    /**
      * Log the user out of the application.
      *
      * @param Request $request
@@ -331,7 +397,7 @@ class MobileAuthController extends Controller
         Request $request,
         string $errorField = 'general',
         ?string $redirectRoute = null,
-        bool $showRegisterLink = false
+        bool  $showRegisterLink = false
     ) {
         if ($request->expectsJson()) {
             return response()->json(['message' => $message, 'error_field' => $errorField], $code);

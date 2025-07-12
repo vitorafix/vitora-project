@@ -37,6 +37,8 @@ Route::prefix('auth')->name('auth.')->group(function () {
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register-form');
     Route::post('/register', [RegisterController::class, 'register'])->name('register');
     Route::post('/logout', [MobileAuthController::class, 'logout'])->name('logout');
+    // NEW: Route for changing mobile number, now in web.php for session support
+    Route::post('/change-mobile-number', [MobileAuthController::class, 'changeMobileNumber'])->name('change-mobile-number');
 });
 
 // Web Cart Routes - now using App\Http\Controllers\Web\CartController
