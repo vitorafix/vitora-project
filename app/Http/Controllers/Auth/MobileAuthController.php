@@ -179,10 +179,12 @@ class MobileAuthController extends Controller
             );
 
             // اگر فراخوانی سرویس موفقیت آمیز بود، پاسخ را بر اساس نوع درخواست تعیین کنید.
+            // اگر درخواست از نوع AJAX/JSON باشد، پاسخ JSON برگردانده می‌شود.
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'کد تأیید با موفقیت به شماره جدید ارسال شد.']);
+                return response()->json(['message' => 'کد تأیید با موفقیت ارسال شد.']);
             }
 
+            // در غیر این صورت، به صفحه تایید OTP هدایت می‌شود.
             return redirect()->route('auth.verify-otp-form')->with('status', 'کد تأیید با موفقیت ارسال شد.');
 
         } catch (OtpSendException $e) { // Catch the custom exception
@@ -374,6 +376,11 @@ class MobileAuthController extends Controller
             $request->session()->forget(self::SESSION_MOBILE_FOR_OTP);
             $request->session()->forget(self::SESSION_MOBILE_FOR_REGISTRATION);
 
+            // اگر درخواست از نوع AJAX/JSON باشد، پاسخ JSON برگردانده می‌شود.
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'ورود با موفقیت انجام شد.']);
+            }
+
             // هدایت به URL مورد نظر یا داشبورد.
             return redirect()->intended(route('dashboard'));
 
@@ -461,7 +468,13 @@ class MobileAuthController extends Controller
 
             // 3. If successful, respond with success message
             // در صورت موفقیت، پاسخ با پیام موفقیت
-            return response()->json(['message' => 'شماره موبایل با موفقیت تغییر یافت و کد جدید ارسال شد.']);
+            // اگر درخواست از نوع AJAX/JSON باشد، پاسخ JSON برگردانده می‌شود.
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'شماره موبایل با موفقیت تغییر یافت و کد جدید ارسال شد.']);
+            }
+            // در غیر این صورت، نیازی به ریدایرکت نیست زیرا این متد فقط برای AJAX استفاده می‌شود.
+            // اگر این متد برای فرم‌های سنتی هم استفاده شود، باید ریدایرکت مناسب اضافه شود.
+            return response()->json(['message' => 'شماره موبایل با موفقیت تغییر یافت و کد جدید ارسال شد.']); // Fallback JSON response
 
         } catch (OtpSendException $e) { // Catch the custom exception
             $generatedOtp = $e->getGeneratedOtp(); // Get the generated OTP from the exception

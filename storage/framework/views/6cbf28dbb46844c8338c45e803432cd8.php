@@ -148,7 +148,7 @@
 
     
     <div id="app-routes"
-         data-api-send-otp-route="<?php echo e(route('auth.send-otp')); ?>" 
+         data-api-send-otp-route="<?php echo e(route('api.auth.send-otp')); ?>" 
          data-auth-change-mobile-number-route="<?php echo e(route('auth.change-mobile-number')); ?>"
          data-auth-verify-otp-route="<?php echo e(route('auth.verify-otp')); ?>">
     </div>

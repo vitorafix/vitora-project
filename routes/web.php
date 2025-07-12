@@ -30,8 +30,8 @@ Route::get('/search', [SearchController::class, 'search'])->name('search');
 // Explicitly apply 'web' middleware to the auth group for clarity and to ensure session is always available
 Route::middleware(['web'])->prefix('auth')->name('auth.')->group(function () {
     Route::get('/login', [MobileAuthController::class, 'showMobileLoginForm'])->name('mobile-login-form');
-    // اصلاح نام متد کنترلر از 'send-otp' به 'sendOtp'
-    Route::post('/send-otp', [MobileAuthController::class, 'sendOtp'])->name('send-otp');
+    // مسیر send-otp به routes/api.php منتقل شد.
+    // Route::post('/send-otp', [MobileAuthController::class, 'sendOtp'])->name('send-otp');
     Route::get('/verify-otp-form', [MobileAuthController::class, 'showOtpVerifyForm'])->name('verify-otp-form');
     // اصلاح نام متد کنترلر از 'verify-otp' به 'verifyOtp'
     Route::post('/verify-otp', [MobileAuthController::class, 'verifyOtp'])->name('verify-otp');

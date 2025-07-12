@@ -128,7 +128,7 @@
 
     {{-- Hidden div to pass routes to JavaScript --}}
     <div id="app-routes"
-         data-api-send-otp-route="{{ route('auth.send-otp') }}" {{-- Changed from api.auth.send-otp --}}
+         data-api-send-otp-route="{{ route('api.auth.send-otp') }}" {{-- Changed to use the API route --}}
          data-auth-change-mobile-number-route="{{ route('auth.change-mobile-number') }}"
          data-auth-verify-otp-route="{{ route('auth.verify-otp') }}">
     </div>
