@@ -25,6 +25,7 @@ use App\Contracts\Services\RateLimitServiceInterface;
 use App\Contracts\Services\AuditServiceInterface;
 use App\Http\Requests\SendOtpRequest;
 use App\Http\Requests\VerifyOtpRequest;
+use App\Http\Requests\RegisterRequest; // Import the new RegisterRequest
 
 // Make sure the helper file is loaded (e.g., via composer.json "files" autoload)
 // require_once app_path('Helpers/SecurityHelper.php'); // Not strictly necessary if autoloaded by composer
@@ -62,29 +63,31 @@ class MobileAuthController extends Controller
 
     /**
      * Show the mobile login form.
+     * نمایش فرم ورود با موبایل.
      *
      * @return View
      */
     public function showMobileLoginForm(): View
     {
-        // Controller's responsibility: Render the view for mobile login.
-        // If user is already authenticated, redirect them to dashboard.
+        // مسئولیت کنترلر: رندر کردن ویو برای ورود با موبایل.
+        // اگر کاربر از قبل احراز هویت شده است، او را به داشبورد هدایت کنید.
         if (Auth::check()) {
             return redirect()->intended(route('dashboard'));
         }
-        return view('login'); // Assuming 'resources/views/login.blade.php'
+        return view('login'); // فرض بر این است که 'resources/views/login.blade.php' وجود دارد.
     }
 
     /**
      * Show the OTP verification form.
-     * This method is called after sending OTP or when redirected to verify.
+     * نمایش فرم تایید OTP.
+     * این متد پس از ارسال OTP یا هنگام هدایت به صفحه تایید فراخوانی می‌شود.
      *
      * @param Request $request
      * @return View|RedirectResponse
      */
     public function showOtpVerifyForm(Request $request): View|RedirectResponse
     {
-        // Controller's responsibility: Manage session state for view rendering.
+        // مسئولیت کنترلر: مدیریت وضعیت سشن برای رندر کردن ویو.
         $encryptedMobileNumber = $request->session()->get(self::SESSION_MOBILE_FOR_OTP);
         $mobileNumber = null;
 
@@ -95,23 +98,24 @@ class MobileAuthController extends Controller
         try {
             $mobileNumber = Crypt::decryptString($encryptedMobileNumber);
         } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-            // Using maskForLog for logging sensitive data
+            // استفاده از maskForLog برای لاگ کردن داده‌های حساس
             Log::error('Could not decrypt mobile number from session: ' . $e->getMessage(), [
                 'exception' => $e->getTraceAsString(),
-                'mobile_masked' => maskForLog($mobileNumber ?? 'N/A', 'phone') // Mask mobile if available
+                'mobile_masked' => maskForLog($mobileNumber ?? 'N/A', 'phone') // ماسک کردن شماره موبایل در صورت وجود
             ]);
             return redirect()->route('auth.mobile-login-form')->with('error', 'خطا در بازیابی شماره موبایل. لطفاً دوباره تلاش کنید.');
         }
 
         $attemptCount = $request->session()->get('otp_attempt_count', 0);
 
-        // Render the OTP verification view.
-        return view('auth.verify-otp', compact('mobileNumber', 'attemptCount')); // Assuming 'resources/views/auth/verify-otp.blade.php'
+        // رندر کردن ویو تایید OTP.
+        return view('auth.verify-otp', compact('mobileNumber', 'attemptCount')); // فرض بر این است که 'resources/views/auth/verify-otp.blade.php' وجود دارد.
     }
 
 
     /**
      * Send OTP to the provided mobile number.
+     * ارسال OTP به شماره موبایل ارائه شده.
      *
      * @param SendOtpRequest $request
      * @return RedirectResponse|\Illuminate\Http\JsonResponse
@@ -119,34 +123,35 @@ class MobileAuthController extends Controller
      */
     public function sendOtp(SendOtpRequest $request)
     {
-        $mobileNumber = $this->normalizeMobileNumber($request->mobile_number);
+        // شماره موبایل قبلاً توسط SendOtpRequest اعتبارسنجی و پاکسازی شده است.
+        $mobileNumber = $request->mobile_number;
         $ipAddress = $request->ip();
 
         try {
-            // Controller delegates the core OTP sending logic to the OtpService.
-            // Pass RateLimitService and a callable auditLogger to the service.
+            // کنترلر منطق اصلی ارسال OTP را به OtpService واگذار می‌کند.
+            // RateLimitService و یک auditLogger قابل فراخوانی را به سرویس ارسال کنید.
             $this->otpService->sendOtpForMobile(
                 $mobileNumber,
                 $ipAddress,
                 $request->session(),
-                $this->rateLimitService, // Pass the injected RateLimitService
+                $this->rateLimitService, // ارسال RateLimitService تزریق شده
                 function ($message, $level = 'info', $userId = null, $userType = null, $objectId = null) use ($request, $mobileNumber, $ipAddress) {
-                    // This closure allows the service to log audits without direct dependency on AuditService
+                    // این closure به سرویس اجازه می‌دهد بدون وابستگی مستقیم به AuditService، لاگ‌های حسابرسی را ثبت کند.
                     $this->auditService->log(
                         'otp_send_event',
                         $message,
                         $request,
                         [
-                            'mobile_number_masked' => maskForLog($mobileNumber, 'phone'), // Masked for context
-                            'ip_address_masked' => maskForLog($ipAddress, 'ip') // Masked for context
+                            'mobile_number_masked' => maskForLog($mobileNumber, 'phone'), // ماسک شده برای زمینه
+                            'ip_address_masked' => maskForLog($ipAddress, 'ip') // ماسک شده برای زمینه
                         ],
-                        hashForCache($mobileNumber, 'audit_mobile_hash'), // Using hashForCache for identifier
+                        hashForCache($mobileNumber, 'audit_mobile_hash'), // استفاده از hashForCache برای شناسه
                         $userId, $userType, $objectId, $level
                     );
                 }
             );
 
-            // If the service call is successful, decide response based on request type.
+            // اگر فراخوانی سرویس موفقیت آمیز بود، پاسخ را بر اساس نوع درخواست تعیین کنید.
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'کد تأیید با موفقیت به شماره جدید ارسال شد.']);
             }
@@ -154,25 +159,25 @@ class MobileAuthController extends Controller
             return redirect()->route('auth.verify-otp-form')->with('status', 'کد تأیید با موفقیت ارسال شد.');
 
         } catch (\Exception $e) {
-            // Controller catches exceptions from the service and responds appropriately.
-            // Log the critical error via AuditService.
+            // کنترلر استثنائات را از سرویس دریافت کرده و به طور مناسب پاسخ می‌دهد.
+            // خطای حیاتی را از طریق AuditService ثبت کنید.
             $this->auditService->log(
                 'otp_send_failed_exception',
-                'Failed to send OTP for mobile number: ' . maskForLog($mobileNumber, 'phone') . ' Error: ' . $e->getMessage(), // Masked in message
+                'Failed to send OTP for mobile number: ' . maskForLog($mobileNumber, 'phone') . ' Error: ' . $e->getMessage(), // ماسک شده در پیام
                 $request,
                 [
-                    'mobile_number_masked' => maskForLog($mobileNumber, 'phone'), // Masked for context
-                    'ip_address_masked' => maskForLog($ipAddress, 'ip'), // Masked for context
+                    'mobile_number_masked' => maskForLog($mobileNumber, 'phone'), // ماسک شده برای زمینه
+                    'ip_address_masked' => maskForLog($ipAddress, 'ip'), // ماسک شده برای زمینه
                     'error' => $e->getMessage()
                 ],
-                hashForCache($mobileNumber, 'audit_mobile_hash'), // Using hashForCache for identifier
+                hashForCache($mobileNumber, 'audit_mobile_hash'), // استفاده از hashForCache برای شناسه
                 null, null, null, 'error'
             );
 
-            // Use the respondWithError helper for consistent error handling.
+            // از respondWithError helper برای مدیریت خطای سازگار استفاده کنید.
             return $this->respondWithError(
-                $e->getMessage(), // Use the exception message for user feedback
-                $e->getCode() ?: 500, // Use exception code or default to 500
+                $e->getMessage(), // استفاده از پیام استثنا برای بازخورد کاربر
+                $e->getCode() ?: 500, // استفاده از کد استثنا یا پیش‌فرض 500
                 $request,
                 'mobile_number'
             );
@@ -180,7 +185,85 @@ class MobileAuthController extends Controller
     }
 
     /**
+     * Register a new user.
+     * ثبت نام کاربر جدید.
+     *
+     * @param RegisterRequest $request
+     * @return RedirectResponse|\Illuminate\Http\JsonResponse
+     */
+    public function register(RegisterRequest $request)
+    {
+        // داده‌ها قبلاً توسط RegisterRequest اعتبارسنجی و پاکسازی شده‌اند.
+        $validatedData = $request->validated();
+
+        try {
+            // ایجاد کاربر
+            $user = User::create([
+                'name' => $validatedData['name'],
+                'lastname' => $validatedData['lastname'] ?? null, // نام خانوادگی می‌تواند null باشد.
+                'mobile_number' => $validatedData['mobile_number'],
+                // می‌توانید یک رمز عبور پیش‌فرض اضافه کنید یا ایجاد رمز عبور را بعداً مدیریت کنید.
+                // برای سیستم‌های مبتنی بر OTP، رمز عبور ممکن است در هنگام ثبت نام لازم نباشد.
+                // 'password' => Hash::make(Str::random(10)), // مثال: تولید یک رمز عبور تصادفی
+            ]);
+
+            // ثبت رویداد ثبت نام
+            $this->auditService->log(
+                'user_registered',
+                'New user registered: ' . maskForLog($user->mobile_number, 'phone'),
+                $request,
+                [
+                    'user_id' => $user->id,
+                    'mobile_number_masked' => maskForLog($user->mobile_number, 'phone'),
+                ],
+                hashForCache($user->mobile_number, 'audit_mobile_hash'),
+                $user->id, 'User', $user->id, 'info'
+            );
+
+            // اگر ثبت نام موفقیت آمیز بود، می‌توانید:
+            // 1. کاربر را بلافاصله وارد کنید: Auth::login($user);
+            // 2. به صفحه تایید OTP برای شماره تازه ثبت نام شده هدایت کنید (توصیه می‌شود برای جریان‌های احراز هویت موبایل)
+            //    شماره موبایل را در سشن برای تایید OTP ذخیره کنید.
+            $request->session()->put(self::SESSION_MOBILE_FOR_OTP, Crypt::encryptString($user->mobile_number));
+            $request->session()->put(self::SESSION_MOBILE_FOR_REGISTRATION, true); // نشان می‌دهد که این یک جریان ثبت نام است.
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'ثبت‌نام با موفقیت انجام شد. کد تأیید ارسال شد.'], 201);
+            }
+
+            return redirect()->route('auth.verify-otp-form')->with('status', 'ثبت‌نام شما با موفقیت انجام شد. کد تأیید برای شما ارسال گردید.');
+
+        } catch (QueryException $e) {
+            // مدیریت خطاهای خاص پایگاه داده، به عنوان مثال، ورودی تکراری اگر قانون unique به نوعی شکست بخورد یا شرایط رقابتی
+            Log::error('Database error during registration: ' . $e->getMessage(), [
+                'mobile_number_masked' => maskForLog($validatedData['mobile_number'], 'phone'),
+                'exception' => $e->getTraceAsString()
+            ]);
+            return $this->respondWithError(
+                'خطا در ثبت‌نام. لطفاً دوباره تلاش کنید.',
+                500,
+                $request,
+                'general'
+            );
+        } catch (\Exception $e) {
+            // دریافت هرگونه استثنای عمومی دیگر
+            Log::error('General error during registration: ' . $e->getMessage(), [
+                'mobile_number_masked' => maskForLog($validatedData['mobile_number'], 'phone'),
+                'exception' => $e->getTraceAsString()
+            ]);
+            return $this->respondWithError(
+                'خطایی رخ داد. لطفاً دوباره تلاش کنید.',
+                500,
+                $request,
+                'general'
+            );
+        }
+    }
+
+
+    /**
      * Verify OTP and log in the user or redirect to registration.
+     * تایید OTP و ورود کاربر یا هدایت به ثبت نام.
      *
      * @param VerifyOtpRequest $request
      * @return RedirectResponse|\Illuminate\Http\JsonResponse
@@ -188,76 +271,77 @@ class MobileAuthController extends Controller
      */
     public function verifyOtp(VerifyOtpRequest $request)
     {
-        $mobileNumber = $this->normalizeMobileNumber($request->mobile_number);
-        $otp = $this->normalizeOtp($request->otp);
+        // شماره موبایل و OTP قبلاً توسط VerifyOtpRequest اعتبارسنجی و پاکسازی شده‌اند.
+        $mobileNumber = $request->mobile_number;
+        $otp = $request->otp;
         $ipAddress = $request->ip();
 
         try {
-            // Controller delegates verification logic to OtpService.
-            // Pass RateLimitService and a callable auditLogger to the service.
+            // کنترلر منطق تایید را به OtpService واگذار می‌کند.
+            // RateLimitService و یک auditLogger قابل فراخوانی را به سرویس ارسال کنید.
             $user = $this->otpService->verifyOtpForMobile(
                 $mobileNumber,
                 $otp,
                 $ipAddress,
                 $request->session(),
-                $this->rateLimitService, // Pass the injected RateLimitService
+                $this->rateLimitService, // ارسال RateLimitService تزریق شده
                 function ($message, $level = 'info', $userId = null, $userType = null, $objectId = null) use ($request, $mobileNumber, $ipAddress) {
-                    // This closure allows the service to log audits
+                    // این closure به سرویس اجازه می‌دهد لاگ‌های حسابرسی را ثبت کند.
                     $this->auditService->log(
                         'otp_verify_event',
                         $message,
                         $request,
                         [
-                            'mobile_number_masked' => maskForLog($mobileNumber, 'phone'), // Masked for context
-                            'ip_address_masked' => maskForLog($ipAddress, 'ip') // Masked for context
+                            'mobile_number_masked' => maskForLog($mobileNumber, 'phone'), // ماسک شده برای زمینه
+                            'ip_address_masked' => maskForLog($ipAddress, 'ip') // ماسک شده برای زمینه
                         ],
-                        hashForCache($mobileNumber, 'audit_mobile_hash'), // Using hashForCache for identifier
+                        hashForCache($mobileNumber, 'audit_mobile_hash'), // استفاده از hashForCache برای شناسه
                         $userId, $userType, $objectId, $level
                     );
                 }
             );
 
-            // If verification is successful, log in the user.
+            // اگر تایید موفقیت آمیز بود، کاربر را وارد کنید.
             Auth::login($user, $request->boolean('remember'));
 
-            // Log user login via audit service.
+            // ثبت ورود کاربر از طریق سرویس حسابرسی.
             $this->auditService->log(
                 'user_logged_in_via_otp',
-                'User logged in via OTP: ' . maskForLog($mobileNumber, 'phone'), // Masked in message
+                'User logged in via OTP: ' . maskForLog($mobileNumber, 'phone'), // ماسک شده در پیام
                 $request,
                 [
                     'user_id' => $user->id,
-                    'mobile_number_masked' => maskForLog($mobileNumber, 'phone') // Masked for context
+                    'mobile_number_masked' => maskForLog($mobileNumber, 'phone') // ماسک شده برای زمینه
                 ],
-                hashForCache($mobileNumber, 'audit_mobile_hash'), // Using hashForCache for identifier
+                hashForCache($mobileNumber, 'audit_mobile_hash'), // استفاده از hashForCache برای شناسه
                 $user->id, 'User', $user->id, 'info'
             );
 
-            // Clear session data used for OTP verification.
+            // پاک کردن داده‌های سشن استفاده شده برای تایید OTP.
             $request->session()->forget(self::SESSION_MOBILE_FOR_OTP);
             $request->session()->forget(self::SESSION_MOBILE_FOR_REGISTRATION);
 
-            // Redirect to intended URL or dashboard.
+            // هدایت به URL مورد نظر یا داشبورد.
             return redirect()->intended(route('dashboard'));
 
         } catch (\Exception $e) {
-            // Controller catches exceptions from the service and responds appropriately.
+            // کنترلر استثنائات را از سرویس دریافت کرده و به طور مناسب پاسخ می‌دهد.
             $this->auditService->log(
                 'otp_verify_failed_exception',
-                'Failed to verify OTP for mobile number: ' . maskForLog($mobileNumber, 'phone') . ' Error: ' . $e->getMessage(), // Masked in message
+                'Failed to verify OTP for mobile number: ' . maskForLog($mobileNumber, 'phone') . ' Error: ' . $e->getMessage(), // ماسک شده در پیام
                 $request,
                 [
-                    'mobile_number_masked' => maskForLog($mobileNumber, 'phone'), // Masked for context
-                    'ip_address_masked' => maskForLog($ipAddress, 'ip'), // Masked for context
+                    'mobile_number_masked' => maskForLog($mobileNumber, 'phone'), // ماسک شده برای زمینه
+                    'ip_address_masked' => maskForLog($ipAddress, 'ip'), // ماسک شده برای زمینه
                     'error' => $e->getMessage()
                 ],
-                hashForCache($mobileNumber, 'audit_mobile_hash'), // Using hashForCache for identifier
+                hashForCache($mobileNumber, 'audit_mobile_hash'), // استفاده از hashForCache برای شناسه
                 null, null, null, 'error'
             );
 
             return $this->respondWithError(
                 $e->getMessage(),
-                $e->getCode() ?: 401, // Default to 401 for verification errors
+                $e->getCode() ?: 401, // پیش‌فرض 401 برای خطاهای تایید
                 $request,
                 'otp'
             );
@@ -266,6 +350,7 @@ class MobileAuthController extends Controller
 
     /**
      * Handles the request to change the mobile number and send a new OTP.
+     * مدیریت درخواست تغییر شماره موبایل و ارسال OTP جدید.
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -273,6 +358,7 @@ class MobileAuthController extends Controller
     public function changeMobileNumber(Request $request)
     {
         // 1. Validate the new mobile number
+        // اعتبارسنجی شماره موبایل جدید (اینجا از FormRequest استفاده نشده، بنابراین اعتبارسنجی دستی انجام می‌شود)
         $validator = Validator::make($request->all(), [
             'new_mobile_number' => ['required', 'string', 'regex:/^09[0-9]{9}$/', 'unique:users,mobile_number'],
         ], [
@@ -285,13 +371,15 @@ class MobileAuthController extends Controller
             return response()->json(['message' => $validator->errors()->first()], 422);
         }
 
+        // پاکسازی و نرمال‌سازی شماره موبایل جدید
         $newMobileNumber = $this->normalizeMobileNumber($request->input('new_mobile_number'));
         $ipAddress = $request->ip();
 
         try {
             // 2. Send a new OTP to the new mobile number
-            // Reuse the existing sendOtp logic, which handles rate limiting and auditing
-            // The OtpService::sendOtpForMobile will handle putting the new mobile number in session for OTP verification
+            // ارسال OTP جدید به شماره موبایل جدید
+            // استفاده مجدد از منطق موجود sendOtp که محدودیت نرخ و حسابرسی را مدیریت می‌کند.
+            // OtpService::sendOtpForMobile شماره موبایل جدید را در سشن برای تایید OTP قرار می‌دهد.
             $this->otpService->sendOtpForMobile(
                 $newMobileNumber,
                 $ipAddress,
@@ -303,34 +391,35 @@ class MobileAuthController extends Controller
                         $message,
                         $request,
                         [
-                            'mobile_number_masked' => maskForLog($newMobileNumber, 'phone'), // Masked for context
-                            'ip_address_masked' => maskForLog($ipAddress, 'ip') // Masked for context
+                            'mobile_number_masked' => maskForLog($newMobileNumber, 'phone'), // ماسک شده برای زمینه
+                            'ip_address_masked' => maskForLog($ipAddress, 'ip') // ماسک شده برای زمینه
                         ],
-                        hashForCache($newMobileNumber, 'audit_mobile_hash'), // Using hashForCache for identifier
+                        hashForCache($newMobileNumber, 'audit_mobile_hash'), // استفاده از hashForCache برای شناسه
                         $userId, $userType, $objectId, $level
                     );
                 }
             );
 
             // 3. If successful, respond with success message
+            // در صورت موفقیت، پاسخ با پیام موفقیت
             return response()->json(['message' => 'شماره موبایل با موفقیت تغییر یافت و کد جدید ارسال شد.']);
 
         } catch (\Exception $e) {
-            // Log the error
+            // ثبت خطا
             $this->auditService->log(
                 'change_mobile_number_failed_exception',
-                'Failed to change mobile number: ' . maskForLog($newMobileNumber, 'phone') . ' Error: ' . $e->getMessage(), // Masked in message
+                'Failed to change mobile number: ' . maskForLog($newMobileNumber, 'phone') . ' Error: ' . $e->getMessage(), // ماسک شده در پیام
                 $request,
                 [
-                    'mobile_number_masked' => maskForLog($newMobileNumber, 'phone'), // Masked for context
-                    'ip_address_masked' => maskForLog($ipAddress, 'ip'), // Masked for context
+                    'mobile_number_masked' => maskForLog($newMobileNumber, 'phone'), // ماسک شده برای زمینه
+                    'ip_address_masked' => maskForLog($ipAddress, 'ip'), // ماسک شده برای زمینه
                     'error' => $e->getMessage()
                 ],
-                hashForCache($newMobileNumber, 'audit_mobile_hash'), // Using hashForCache for identifier
+                hashForCache($newMobileNumber, 'audit_mobile_hash'), // استفاده از hashForCache برای شناسه
                 null, null, null, 'error'
             );
 
-            // Respond with error message
+            // پاسخ با پیام خطا
             return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 500);
         }
     }
@@ -338,6 +427,7 @@ class MobileAuthController extends Controller
 
     /**
      * Log the user out of the application.
+     * خروج کاربر از برنامه.
      *
      * @param Request $request
      * @return RedirectResponse
@@ -358,9 +448,9 @@ class MobileAuthController extends Controller
             $request,
             [
                 'user_id' => $userId,
-                'mobile_number_masked' => maskForLog($mobileNumber ?? 'N/A', 'phone') // Masked for context
+                'mobile_number_masked' => maskForLog($mobileNumber ?? 'N/A', 'phone') // ماسک شده برای زمینه
             ],
-            $mobileNumber ? hashForCache($mobileNumber, 'audit_mobile_hash') : null, // Using hashForCache for identifier
+            $mobileNumber ? hashForCache($mobileNumber, 'audit_mobile_hash') : null, // استفاده از hashForCache برای شناسه
             $userId, 'User', $userId, 'info'
         );
 
@@ -370,6 +460,8 @@ class MobileAuthController extends Controller
     /**
      * Helper method to normalize mobile number (remove spaces, convert Persian/Arabic digits, ensure 09 prefix).
      * This is a utility function, and can remain in the controller or be moved to a dedicated helper/utility class.
+     * متد کمکی برای نرمال‌سازی شماره موبایل (حذف فواصل، تبدیل ارقام فارسی/عربی، اطمینان از پیشوند 09).
+     * این یک تابع کمکی است و می‌تواند در کنترلر باقی بماند یا به یک کلاس کمکی/ابزاری اختصاصی منتقل شود.
      *
      * @param string $mobileNumber
      * @return string
@@ -388,7 +480,7 @@ class MobileAuthController extends Controller
         }
 
         if (!preg_match('/^09\d{9}$/', $normalizedNumber)) {
-            Log::warning('Invalid mobile number after normalization: ' . maskForLog($mobileNumber, 'phone') . ' -> ' . maskForLog($normalizedNumber, 'phone')); // Using maskForLog
+            Log::warning('Invalid mobile number after normalization: ' . maskForLog($mobileNumber, 'phone') . ' -> ' . maskForLog($normalizedNumber, 'phone')); // استفاده از maskForLog
             throw new \InvalidArgumentException('شماره موبایل پس از نرمال‌سازی نامعتبر است.');
         }
 
@@ -398,6 +490,8 @@ class MobileAuthController extends Controller
     /**
      * Helper method to normalize OTP input (remove spaces, convert Persian/Arabic digits).
      * Similar to normalizeMobileNumber, this can be a utility function.
+     * متد کمکی برای نرمال‌سازی ورودی OTP (حذف فواصل، تبدیل ارقام فارسی/عربی).
+     * مشابه normalizeMobileNumber، این می‌تواند یک تابع کمکی باشد.
      *
      * @param string $otp
      * @return string
@@ -416,6 +510,8 @@ class MobileAuthController extends Controller
     /**
      * Helper method to respond with error, either JSON or redirect.
      * This method is a controller-level utility for consistent error responses.
+     * متد کمکی برای پاسخ با خطا، چه JSON و چه ریدایرکت.
+     * این متد یک ابزار در سطح کنترلر برای پاسخ‌های خطای سازگار است.
      *
      * @param string $message
      * @param int $code

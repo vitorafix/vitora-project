@@ -182,21 +182,22 @@
             let resendCooldownTimer;
 
             // Function to convert Persian/Arabic digits to English and remove non-digits
-            const convertAndFilterDigits = (value) => {
-                const persianToEnglishMap = {
-                    '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
-                    '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
-                    '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
-                    '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
-                };
-                let convertedValue = '';
-                for (let i = 0; i < value.length; i++) {
-                    const char = value[i];
-                    convertedValue += persianToEnglishMap[char] || char;
-                }
-                // Remove any non-digit characters after conversion
-                return convertedValue.replace(/\D/g, '');
-            };
+            // این تابع اکنون در VerifyOtpRequest.php مدیریت می‌شود و نیازی به تکرار در اینجا نیست.
+            // const convertAndFilterDigits = (value) => {
+            //     const persianToEnglishMap = {
+            //         '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
+            //         '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
+            //         '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+            //         '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
+            //     };
+            //     let convertedValue = '';
+            //     for (let i = 0; i < value.length; i++) {
+            //         const char = value[i];
+            //         convertedValue += persianToEnglishMap[char] || char;
+            //     }
+            //     // Remove any non-digit characters after conversion
+            //     return convertedValue.replace(/\D/g, '');
+            // };
 
             // New: Function to get the combined OTP string from individual inputs
             const getCombinedOtp = () => {
@@ -210,8 +211,8 @@
             // Apply digit conversion and filtering to each OTP input, and handle auto-focus/backspace
             otpDigitInputs.forEach((input, index) => {
                 input.addEventListener('input', function(event) {
-                    // Convert and filter the single digit
-                    event.target.value = convertAndFilterDigits(event.target.value);
+                    // Convert and filter the single digit - این بخش در prepareForValidation در Form Request مدیریت می‌شود.
+                    // event.target.value = convertAndFilterDigits(event.target.value);
 
                     // Auto-focus to the next input if a digit is entered and it's not the last input
                     if (event.target.value.length === 1 && index < otpDigitInputs.length - 1) {
@@ -230,7 +231,8 @@
             // Apply digit conversion and filtering to new mobile number input in modal
             if (newMobileInput) {
                 newMobileInput.addEventListener('input', function(event) {
-                    event.target.value = convertAndFilterDigits(event.target.value);
+                    // این بخش در prepareForValidation در Form Request مدیریت می‌شود.
+                    // event.target.value = convertAndFilterDigits(event.target.value);
                 });
             }
 
@@ -297,7 +299,13 @@
                             startCountdown(); // Restart main countdown
                             startResendCooldown(); // Start resend cooldown
                         } else {
-                            window.showMessage(data.message || 'خطا در ارسال مجدد کد.', 'error');
+                            // Display validation errors from server if any
+                            if (data.errors) {
+                                const errorMessages = Object.values(data.errors).flat().join('\n');
+                                window.showMessage(errorMessages || 'خطا در ارسال مجدد کد.', 'error');
+                            } else {
+                                window.showMessage(data.message || 'خطا در ارسال مجدد کد.', 'error');
+                            }
                         }
                     } catch (error) {
                         console.error('Error resending OTP:', error);
@@ -324,19 +332,19 @@
 
             if (sendNewOtpButton) {
                 sendNewOtpButton.addEventListener('click', async function() {
-                    const newMobileNumber = convertAndFilterDigits(newMobileInput.value); // Use the new filtering function
-                    const mobileRegex = /^09[0-9]{9}$/; // Basic Iranian mobile number regex
+                    const newMobileNumber = newMobileInput.value; // نیازی به پاکسازی در اینجا نیست، در Form Request انجام می‌شود.
+                    // const mobileRegex = /^09[0-9]{9}$/; // این اعتبارسنجی به Form Request منتقل شده است.
 
-                    if (!mobileRegex.test(newMobileNumber)) {
-                        modalErrorMessage.textContent = 'لطفاً یک شماره موبایل معتبر (مثال: 09123456789) وارد کنید.';
-                        modalErrorMessage.classList.remove('hidden');
-                        modalErrorMessage.classList.add('animate-pulse'); // Add pulse animation for error
-                        setTimeout(() => modalErrorMessage.classList.remove('animate-pulse'), 2000); // Remove pulse after 2 seconds
-                        return;
-                    } else {
-                        modalErrorMessage.classList.add('hidden');
-                        modalErrorMessage.classList.remove('animate-pulse');
-                    }
+                    // if (!mobileRegex.test(newMobileNumber)) { // این اعتبارسنجی به Form Request منتقل شده است.
+                    //     modalErrorMessage.textContent = 'لطفاً یک شماره موبایل معتبر (مثال: 09123456789) وارد کنید.';
+                    //     modalErrorMessage.classList.remove('hidden');
+                    //     modalErrorMessage.classList.add('animate-pulse'); // Add pulse animation for error
+                    //     setTimeout(() => modalErrorMessage.classList.remove('animate-pulse'), 2000); // Remove pulse after 2 seconds
+                    //     return;
+                    // } else {
+                    //     modalErrorMessage.classList.add('hidden');
+                    //     modalErrorMessage.classList.remove('animate-pulse');
+                    // }
 
                     try {
                         const response = await fetch('{{ route('auth.change-mobile-number') }}', { // Changed URL to use route() helper for web route
@@ -358,10 +366,19 @@
                             startCountdown(); // Restart countdown for the new OTP
                             startResendCooldown(); // Start resend cooldown for the new OTP
                         } else {
-                            modalErrorMessage.textContent = data.message || 'خطا در تغییر شماره موبایل.';
-                            modalErrorMessage.classList.remove('hidden');
-                            modalErrorMessage.classList.add('animate-pulse'); // Add pulse animation for error
-                            setTimeout(() => modalErrorMessage.classList.remove('animate-pulse'), 2000); // Remove pulse after 2 seconds
+                            // Display validation errors from server if any
+                            if (data.errors) {
+                                const errorMessages = Object.values(data.errors).flat().join('\n');
+                                modalErrorMessage.textContent = errorMessages;
+                                modalErrorMessage.classList.remove('hidden');
+                                modalErrorMessage.classList.add('animate-pulse');
+                                setTimeout(() => modalErrorMessage.classList.remove('animate-pulse'), 2000);
+                            } else {
+                                modalErrorMessage.textContent = data.message || 'خطا در تغییر شماره موبایل.';
+                                modalErrorMessage.classList.remove('hidden');
+                                modalErrorMessage.classList.add('animate-pulse'); // Add pulse animation for error
+                                setTimeout(() => modalErrorMessage.classList.remove('animate-pulse'), 2000); // Remove pulse after 2 seconds
+                            }
                         }
                     } catch (error) {
                         console.error('Error changing mobile number:', error);

@@ -18,7 +18,7 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
+            'name' => fake()->firstName(),
             'lastname' => fake()->lastName(),
             'mobile_number' => fake()->unique()->phoneNumber(),
             'email' => fake()->unique()->safeEmail(),
@@ -27,8 +27,9 @@ class UserFactory extends Factory
             'profile_completed' => fake()->boolean(),
             'national_id' => fake()->unique()->numerify('##########'),
             'birth_date' => fake()->date('Y-m-d'),
-            'phone' => fake()->phoneNumber(),
-            // 'password' حذف شده است
+            'fixed_phone' => fake()->phoneNumber(), // اصلاح شد!
+            'username' => fake()->unique()->userName(), // اگر لازم داری
+            'status' => 'active', // اگر enum داری بهتره مقدار پیش‌فرض داشته باشه
         ];
     }
 
