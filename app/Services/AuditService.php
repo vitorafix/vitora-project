@@ -42,7 +42,9 @@ class AuditService implements AuditServiceInterface
         try {
             $ip = $request->ip();
             $userAgent = $request->userAgent();
-            $sessionId = $request->session() ? $request->session()->getId() : null;
+            
+            // Check if session is available before trying to get its ID
+            $sessionId = $request->hasSession() ? $request->session()->getId() : null;
 
             // Ensure mobileHash is used if provided, otherwise derive from metadata if present
             // The mobileHash parameter is now expected to be already hashed by the caller (e.g., MobileAuthController)

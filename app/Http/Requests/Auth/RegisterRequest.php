@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Auth; // Changed: Updated namespace to match the expected folder structure (app/Http/Requests/Auth)
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule; // Import the Rule class for unique validation
@@ -10,26 +10,35 @@ class RegisterRequest extends FormRequest
     /**
      * Define common invalid mobile number patterns.
      * These patterns are used to prevent common test or invalid numbers.
+     * الگوهای رایج شماره موبایل نامعتبر را تعریف می‌کند.
+     * این الگوها برای جلوگیری از شماره‌های تستی یا نامعتبر رایج استفاده می‌شوند.
      *
      * @var array
      */
     private const INVALID_MOBILE_PATTERNS = [
-        '/^(.)\1{10}$/', // جلوگیری از تکرار یک رقم در کل شماره (مثال: 09111111111)
-        '/^09(123456789|987654321|012345678|876543210)$/', // الگوهای ترتیبی رایج (مثال: 09123456789)
-        '/^09([0-9])\1{9}$/', // جلوگیری از تکرار رقم دوم در کل شماره (مثال: 09111111111) - بهبود یافته برای وضوح بیشتر
+        '/^(.)\1{10}$/', // Prevents repetition of a single digit throughout the number (e.g., 09111111111)
+        // جلوگیری از تکرار یک رقم در کل شماره (مثال: 09111111111)
+        '/^09(123456789|987654321|012345678|876543210)$/', // Common sequential patterns (e.g., 09123456789)
+        // الگوهای ترتیبی رایج (مثال: 09123456789)
+        '/^09([0-9])\1{9}$/', // Prevents repetition of the second digit throughout the number (e.g., 09111111111) - improved for clarity
+        // جلوگیری از تکرار رقم دوم در کل شماره (مثال: 09111111111) - بهبود یافته برای وضوح بیشتر
     ];
 
     /**
      * Determine if the user is authorized to make this request.
+     * کاربر مجاز به انجام این درخواست است یا خیر.
      *
      * @return bool
      */
     public function authorize(): bool
     {
+        // Only guest users (not logged in) can register.
+        // Uncomment the line below to enable this restriction.
         // فقط کاربران مهمان (غیر وارد شده) می‌توانند ثبت‌نام کنند.
         // برای فعال‌سازی این محدودیت، خط زیر را از حالت کامنت خارج کنید.
         return auth()->guest();
 
+        // Currently, it allows all access.
         // در حال حاضر، به همه اجازه دسترسی می‌دهد.
         // return true;
     }
@@ -38,6 +47,8 @@ class RegisterRequest extends FormRequest
      * Prepare the data for validation.
      * This method is called before the validation rules are applied.
      * It's a good place to sanitize or modify input data.
+     * این متد قبل از اعمال قوانین اعتبارسنجی فراخوانی می‌شود.
+     * مکان مناسبی برای پاکسازی یا اصلاح داده‌های ورودی است.
      */
     protected function prepareForValidation()
     {
@@ -45,6 +56,10 @@ class RegisterRequest extends FormRequest
         // This ensures that even if malicious HTML/JS is submitted, it's removed.
         // Trim 'mobile_number' to remove any leading/trailing whitespace.
         // Convert Persian/Arabic digits to English digits before validation.
+        // نام و نام خانوادگی را با حذف تگ‌های HTML برای جلوگیری از XSS پاکسازی می‌کند.
+        // این تضمین می‌کند که حتی اگر HTML/JS مخرب ارسال شود، حذف می‌شود.
+        // 'mobile_number' را برای حذف هرگونه فضای خالی ابتدایی/انتهایی Trim می‌کند.
+        // ارقام فارسی/عربی را قبل از اعتبارسنجی به ارقام انگلیسی تبدیل می‌کند.
         $this->merge([
             'name' => strip_tags($this->input('name')),
             'lastname' => strip_tags($this->input('lastname')),
@@ -54,6 +69,7 @@ class RegisterRequest extends FormRequest
 
     /**
      * Get the validation rules that apply to the request.
+     * قوانین اعتبارسنجی که برای این درخواست اعمال می‌شوند را برمی‌گرداند.
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
      */
@@ -63,8 +79,10 @@ class RegisterRequest extends FormRequest
             'name' => [
                 'required',
                 'string',
-                'min:2', // حداقل 2 کاراکتر
+                'min:2', // Minimum 2 characters
+                // حداقل 2 کاراکتر
                 'max:255',
+                // Allows only letters (including Persian letters), spaces, and hyphens
                 // فقط حروف (شامل حروف فارسی)، فاصله و خط تیره را مجاز می‌کند
                 'regex:/^[\pL\s\-]+$/u'
             ],
@@ -72,16 +90,21 @@ class RegisterRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:255',
+                // Applies the same regex as name for lastname
                 // همان regex نام را برای نام خانوادگی نیز اعمال می‌کند
                 'regex:/^[\pL\s\-]+$/u'
             ],
             'mobile_number' => [
                 'required',
                 'string',
-                'regex:/^09[0-9]{9}$/', // اطمینان از فرمت صحیح 09xxxxxxxxx
-                'size:11', // اطمینان از اینکه دقیقاً 11 کاراکتر است
+                'regex:/^09[0-9]{9}$/', // Ensures correct format 09xxxxxxxxx
+                // اطمینان از فرمت صحیح 09xxxxxxxxx
+                'size:11', // Ensures it's exactly 11 characters
+                // اطمینان از اینکه دقیقاً 11 کاراکتر است
+                // Ensures uniqueness of mobile number in the 'users' table
                 // اطمینان از یکتا بودن شماره موبایل در جدول 'users'
                 Rule::unique('users', 'mobile_number'),
+                // Uses a helper method to check for invalid patterns
                 // استفاده از متد کمکی برای بررسی الگوهای نامعتبر
                 function ($attribute, $value, $fail) {
                     if (!$this->isValidMobilePattern($value)) {
@@ -89,11 +112,14 @@ class RegisterRequest extends FormRequest
                     }
                 },
             ],
+            // Add other validation rules as needed (e.g., password if used)
+            // سایر قوانین اعتبارسنجی را در صورت نیاز اضافه کنید (مثلاً رمز عبور در صورت استفاده)
         ];
     }
 
     /**
      * Check if mobile number passes all validation patterns.
+     * بررسی می‌کند که آیا شماره موبایل از تمام الگوهای اعتبارسنجی عبور می‌کند یا خیر.
      *
      * @param string $mobile
      * @return bool
@@ -110,6 +136,7 @@ class RegisterRequest extends FormRequest
 
     /**
      * Converts Persian/Arabic digits in a string to English digits.
+     * ارقام فارسی/عربی را در یک رشته به ارقام انگلیسی تبدیل می‌کند.
      *
      * @param string $input The string containing digits.
      * @return string The string with converted digits.
@@ -119,6 +146,7 @@ class RegisterRequest extends FormRequest
         $persianDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
         $englishDigits = ['0','1','2','3','4','5','6','7','8','9'];
         // Also include Arabic digits if necessary, as they are often used interchangeably
+        // در صورت لزوم، ارقام عربی را نیز اضافه کنید، زیرا اغلب به جای یکدیگر استفاده می‌شوند.
         $arabicDigits = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
 
         $input = str_replace($persianDigits, $englishDigits, $input);
@@ -129,6 +157,7 @@ class RegisterRequest extends FormRequest
 
     /**
      * Get custom error messages for validation rules.
+     * پیام‌های خطای سفارشی برای قوانین اعتبارسنجی را برمی‌گرداند.
      *
      * @return array
      */
@@ -156,6 +185,8 @@ class RegisterRequest extends FormRequest
     /**
      * Get custom names for attributes.
      * These names are displayed in validation error messages.
+     * نام‌های سفارشی برای ویژگی‌ها را برمی‌گرداند.
+     * این نام‌ها در پیام‌های خطای اعتبارسنجی نمایش داده می‌شوند.
      *
      * @return array
      */

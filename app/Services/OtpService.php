@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Crypt; // Added for encryption/decryption
 use Illuminate\Support\Facades\DB;
 use Illuminate\Session\Store as SessionStore; // For type hinting Laravel's session store
 use Illuminate\Contracts\Encryption\DecryptException; // Added for handling decryption exceptions
+use App\Http\Controllers\Auth\OtpSendException; // Added: Import the custom exception (assuming it's here or App\Exceptions\)
 
 // Make sure the helper file is loaded (e.g., via composer.json "files" autoload)
 // require_once app_path('Helpers/SecurityHelper.php'); // Not strictly necessary if autoloaded by composer
@@ -195,14 +196,18 @@ class OtpService implements OtpServiceInterface
             $auditLogger('OTP sent for existing user login: ' . maskForLog($mobileNumber, 'phone'), 'info', $user->id, 'User', $user->id); // Using maskForLog
         }
 
-        try {
-            // Service's responsibility: Generate and store OTP.
-            $otp = $this->generateAndStoreOtp($mobileNumber);
+        // Generate OTP before the try-catch block for SMS sending
+        // This ensures the OTP is generated even if SMS sending fails
+        $otp = $this->generateAndStoreOtp($mobileNumber);
 
+        try {
             // In a real application, you would integrate with an SMS service here.
             // IMPORTANT: Send original mobile number to SMS service
             // Example: MelipayamakSmsService::send($mobileNumber, $otp);
-            Log::debug("OTP for " . maskForLog($mobileNumber, 'phone') . ": {$otp}"); // Using maskForLog for debug log
+            
+            // For testing purposes, log the OTP instead of sending an actual SMS.
+            // برای اهداف تست، OTP را به جای ارسال پیامک واقعی، لاگ کنید.
+            Log::info("Generated OTP for {$mobileNumber}: {$otp}"); 
 
             // Service's responsibility: Store encrypted mobile number in session for verification.
             try {
@@ -214,11 +219,34 @@ class OtpService implements OtpServiceInterface
                 throw new \Exception('خطا در آماده‌سازی تأیید کد. لطفاً دوباره تلاش کنید.', 500);
             }
 
-            $auditLogger('OTP successfully sent to ' . maskForLog($mobileNumber, 'phone'), 'info'); // Using maskForLog
+            // ✅ اضافه کردن OTP و mobile_number_masked به metadata لاگ موفق
+            $auditLogger(
+                'otp_send_event', // Action type
+                'OTP successfully sent to ' . maskForLog($mobileNumber, 'phone'), // Message
+                null, // user ID
+                null, // user type
+                null, // object ID
+                [
+                    'generated_otp' => $otp,
+                    'mobile_number_masked' => maskForLog($mobileNumber, 'phone')
+                ]
+            );
 
         } catch (\Exception $e) {
-            $auditLogger('Failed to send OTP for mobile number: ' . maskForLog($mobileNumber, 'phone') . ' Error: ' . $e->getMessage(), 'error'); // Using maskForLog
-            throw new \Exception('خطا در ارسال کد تأیید. لطفاً دوباره تلاش کنید.', 500);
+            // Pass the generated OTP to the audit logger's metadata when logging failure
+            $auditLogger(
+                'otp_send_failed_exception', // Action type
+                'Failed to send OTP for mobile number: ' . maskForLog($mobileNumber, 'phone') . ' Error: ' . $e->getMessage(), // Message
+                null, // user ID
+                null, // user type
+                null, // object ID
+                [
+                    'generated_otp' => $otp,
+                    'mobile_number_masked' => maskForLog($mobileNumber, 'phone') // Also include masked mobile number for consistency
+                ]
+            );
+            // Throw custom OtpSendException to carry the generated OTP to the controller
+            throw new OtpSendException('خطا در ارسال کد تأیید. لطفاً دوباره تلاش کنید.', $otp, 500, $e);
         }
     }
 

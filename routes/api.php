@@ -19,13 +19,13 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-// API routes for mobile authentication (OTP)
-Route::prefix('auth')->name('api.auth.')->group(function () {
-    Route::post('/send-otp', [MobileAuthController::class, 'sendOtp'])->name('send-otp');
-    Route::post('/verify-otp', [MobileAuthController::class, 'verifyOtp'])->name('verify-otp');
-    // Route::post('/register', [RegisterController::class, 'register'])->name('register');
-    // REMOVED: Route::post('/change-mobile-number', [MobileAuthController::class, 'changeMobileNumber'])->name('change-mobile-number');
-});
+// OTP routes moved to web.php to enable session middleware support (stateless API does not support sessions)
+// Route::prefix('auth')->name('api.auth.')->group(function () {
+//     Route::post('/send-otp', [MobileAuthController::class, 'sendOtp'])->name('send-otp');
+//     Route::post('/verify-otp', [MobileAuthController::class, 'verifyOtp'])->name('verify-otp');
+//     // Route::post('/register', [RegisterController::class, 'register'])->name('register');
+//     // REMOVED: Route::post('/change-mobile-number', [MobileAuthController::class, 'changeMobileNumber'])->name('change-mobile-number');
+// });
 
 // API routes for cart operations (no authentication required for now)
 Route::prefix('cart')->name('api.cart.')->group(function () {

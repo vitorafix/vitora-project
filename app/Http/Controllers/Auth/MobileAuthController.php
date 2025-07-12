@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Validator;
+use Throwable; // Added to handle Throwable in custom exception
 
 // Import new service classes and interfaces
 use App\Contracts\Services\OtpServiceInterface;
@@ -25,10 +26,35 @@ use App\Contracts\Services\RateLimitServiceInterface;
 use App\Contracts\Services\AuditServiceInterface;
 use App\Http\Requests\SendOtpRequest;
 use App\Http\Requests\VerifyOtpRequest;
-use App\Http\Requests\RegisterRequest; // Import the new RegisterRequest
+use App\Http\Requests\Auth\RegisterRequest; // Changed: Updated namespace for RegisterRequest
 
 // Make sure the helper file is loaded (e.g., via composer.json "files" autoload)
 // require_once app_path('Helpers/SecurityHelper.php'); // Not strictly necessary if autoloaded by composer
+
+/**
+ * Custom Exception to carry generated OTP on failure.
+ * Ideally, this class should be in its own file (e.g., App/Exceptions/OtpSendException.php)
+ * but for demonstration purposes, it's included here.
+ * استثنای سفارشی برای حمل OTP تولید شده در صورت شکست.
+ * به صورت ایده‌آل، این کلاس باید در فایل خودش باشد (مثلاً App/Exceptions/OtpSendException.php)
+ * اما برای اهداف نمایشی، در اینجا گنجانده شده است.
+ */
+class OtpSendException extends \Exception
+{
+    public ?string $generatedOtp;
+
+    public function __construct(string $message, ?string $generatedOtp = null, int $code = 0, Throwable $previous = null)
+    {
+        parent::__construct($message, $code, $previous);
+        $this->generatedOtp = $generatedOtp;
+    }
+
+    public function getGeneratedOtp(): ?string
+    {
+        return $this->generatedOtp;
+    }
+}
+
 
 class MobileAuthController extends Controller
 {
@@ -133,18 +159,19 @@ class MobileAuthController extends Controller
             $this->otpService->sendOtpForMobile(
                 $mobileNumber,
                 $ipAddress,
-                $request->session(),
+                $request->session(), // ارسال فقط شیء سشن
                 $this->rateLimitService, // ارسال RateLimitService تزریق شده
-                function ($message, $level = 'info', $userId = null, $userType = null, $objectId = null) use ($request, $mobileNumber, $ipAddress) {
-                    // این closure به سرویس اجازه می‌دهد بدون وابستگی مستقیم به AuditService، لاگ‌های حسابرسی را ثبت کند.
+                function ($message, $level = 'info', $userId = null, $userType = null, $objectId = null, $extra = []) use ($request, $mobileNumber, $ipAddress) {
+                    // این closure به سرویس اجازه می‌دهد بدون وابندگی مستقیم به AuditService، لاگ‌های حسابرسی را ثبت کند.
+                    // پارامتر $extra را به AuditService->log ارسال کنید.
                     $this->auditService->log(
                         'otp_send_event',
                         $message,
                         $request,
-                        [
+                        array_merge($extra, [ // ادغام extra ارسالی از OtpService با داده‌های کنترلر
                             'mobile_number_masked' => maskForLog($mobileNumber, 'phone'), // ماسک شده برای زمینه
                             'ip_address_masked' => maskForLog($ipAddress, 'ip') // ماسک شده برای زمینه
-                        ],
+                        ]),
                         hashForCache($mobileNumber, 'audit_mobile_hash'), // استفاده از hashForCache برای شناسه
                         $userId, $userType, $objectId, $level
                     );
@@ -158,9 +185,34 @@ class MobileAuthController extends Controller
 
             return redirect()->route('auth.verify-otp-form')->with('status', 'کد تأیید با موفقیت ارسال شد.');
 
-        } catch (\Exception $e) {
+        } catch (OtpSendException $e) { // Catch the custom exception
+            $generatedOtp = $e->getGeneratedOtp(); // Get the generated OTP from the exception
+            $this->auditService->log(
+                'otp_send_failed_exception',
+                'Failed to send OTP for mobile number: ' . maskForLog($mobileNumber, 'phone') . ' Error: ' . $e->getMessage(), // ماسک شده در پیام
+                $request,
+                [
+                    'mobile_number_masked' => maskForLog($mobileNumber, 'phone'), // ماسک شده برای زمینه
+                    'ip_address_masked' => maskForLog($ipAddress, 'ip'), // ماسک شده برای زمینه
+                    'error' => $e->getMessage(),
+                    'generated_otp' => $generatedOtp // Include generated OTP in the log
+                ],
+                hashForCache($mobileNumber, 'audit_mobile_hash'), // استفاده از hashForCache برای شناسه
+                null, null, null, 'error'
+            );
+
+            // از respondWithError helper برای مدیریت خطای سازگار استفاده کنید.
+            return $this->respondWithError(
+                $e->getMessage(), // استفاده از پیام استثنا برای بازخورد کاربر
+                $e->getCode() ?: 500, // استفاده از کد استثنا یا پیش‌فرض 500
+                $request,
+                'mobile_number'
+            );
+        } catch (\Exception $e) { // Catch any other generic exceptions
             // کنترلر استثنائات را از سرویس دریافت کرده و به طور مناسب پاسخ می‌دهد.
             // خطای حیاتی را از طریق AuditService ثبت کنید.
+            // در اینجا، extra را از OtpService دریافت نمی‌کنیم، بنابراین فقط اطلاعات کنترلر را ارسال می‌کنیم.
+            // OtpService خودش generated_otp را در لاگ خطای خود ثبت می‌کند.
             $this->auditService->log(
                 'otp_send_failed_exception',
                 'Failed to send OTP for mobile number: ' . maskForLog($mobileNumber, 'phone') . ' Error: ' . $e->getMessage(), // ماسک شده در پیام
@@ -283,18 +335,19 @@ class MobileAuthController extends Controller
                 $mobileNumber,
                 $otp,
                 $ipAddress,
-                $request->session(),
+                $request->session(), // ارسال فقط شیء سشن
                 $this->rateLimitService, // ارسال RateLimitService تزریق شده
-                function ($message, $level = 'info', $userId = null, $userType = null, $objectId = null) use ($request, $mobileNumber, $ipAddress) {
+                function ($message, $level = 'info', $userId = null, $userType = null, $objectId = null, $extra = []) use ($request, $mobileNumber, $ipAddress) {
                     // این closure به سرویس اجازه می‌دهد لاگ‌های حسابرسی را ثبت کند.
+                    // پارامتر $extra را به AuditService->log ارسال کنید.
                     $this->auditService->log(
                         'otp_verify_event',
                         $message,
                         $request,
-                        [
+                        array_merge($extra, [ // ادغام extra ارسالی از OtpService با داده‌های کنترلر
                             'mobile_number_masked' => maskForLog($mobileNumber, 'phone'), // ماسک شده برای زمینه
                             'ip_address_masked' => maskForLog($ipAddress, 'ip') // ماسک شده برای زمینه
-                        ],
+                        ]),
                         hashForCache($mobileNumber, 'audit_mobile_hash'), // استفاده از hashForCache برای شناسه
                         $userId, $userType, $objectId, $level
                     );
@@ -326,6 +379,8 @@ class MobileAuthController extends Controller
 
         } catch (\Exception $e) {
             // کنترلر استثنائات را از سرویس دریافت کرده و به طور مناسب پاسخ می‌دهد.
+            // در اینجا، extra را از OtpService دریافت نمی‌کنیم، بنابراین فقط اطلاعات کنترلر را ارسال می‌کنیم.
+            // OtpService خودش generated_otp را در لاگ خطای خود ثبت می‌کند.
             $this->auditService->log(
                 'otp_verify_failed_exception',
                 'Failed to verify OTP for mobile number: ' . maskForLog($mobileNumber, 'phone') . ' Error: ' . $e->getMessage(), // ماسک شده در پیام
@@ -372,6 +427,10 @@ class MobileAuthController extends Controller
         }
 
         // پاکسازی و نرمال‌سازی شماره موبایل جدید
+        // این متد normalizeMobileNumber باید از کنترلر حذف شود و به یک FormRequest جدید منتقل شود
+        // یا در OtpService به عنوان یک متد private باقی بماند اگر فقط در آنجا استفاده می‌شود.
+        // با توجه به اینکه SendOtpRequest و VerifyOtpRequest این منطق را دارند،
+        // این متد در اینجا تکراری است و باید حذف شود.
         $newMobileNumber = $this->normalizeMobileNumber($request->input('new_mobile_number'));
         $ipAddress = $request->ip();
 
@@ -383,17 +442,17 @@ class MobileAuthController extends Controller
             $this->otpService->sendOtpForMobile(
                 $newMobileNumber,
                 $ipAddress,
-                $request->session(),
+                $request->session(), // ارسال فقط شیء سشن
                 $this->rateLimitService,
-                function ($message, $level = 'info', $userId = null, $userType = null, $objectId = null) use ($request, $newMobileNumber, $ipAddress) {
+                function ($message, $level = 'info', $userId = null, $userType = null, $objectId = null, $extra = []) use ($request, $newMobileNumber, $ipAddress) {
                     $this->auditService->log(
                         'otp_send_event_new_mobile',
                         $message,
                         $request,
-                        [
+                        array_merge($extra, [ // ادغام extra ارسالی از OtpService با داده‌های کنترلر
                             'mobile_number_masked' => maskForLog($newMobileNumber, 'phone'), // ماسک شده برای زمینه
                             'ip_address_masked' => maskForLog($ipAddress, 'ip') // ماسک شده برای زمینه
-                        ],
+                        ]),
                         hashForCache($newMobileNumber, 'audit_mobile_hash'), // استفاده از hashForCache برای شناسه
                         $userId, $userType, $objectId, $level
                     );
@@ -404,8 +463,28 @@ class MobileAuthController extends Controller
             // در صورت موفقیت، پاسخ با پیام موفقیت
             return response()->json(['message' => 'شماره موبایل با موفقیت تغییر یافت و کد جدید ارسال شد.']);
 
-        } catch (\Exception $e) {
+        } catch (OtpSendException $e) { // Catch the custom exception
+            $generatedOtp = $e->getGeneratedOtp(); // Get the generated OTP from the exception
+            $this->auditService->log(
+                'change_mobile_number_failed_exception',
+                'Failed to change mobile number: ' . maskForLog($newMobileNumber, 'phone') . ' Error: ' . $e->getMessage(), // ماسک شده در پیام
+                $request,
+                [
+                    'mobile_number_masked' => maskForLog($newMobileNumber, 'phone'), // ماسک شده برای زمینه
+                    'ip_address_masked' => maskForLog($ipAddress, 'ip'), // ماسک شده برای زمینه
+                    'error' => $e->getMessage(),
+                    'generated_otp' => $generatedOtp // Include generated OTP in the log
+                ],
+                hashForCache($newMobileNumber, 'audit_mobile_hash'), // استفاده از hashForCache برای شناسه
+                null, null, null, 'error'
+            );
+
+            // پاسخ با پیام خطا
+            return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 500);
+        } catch (\Exception $e) { // Catch any other generic exceptions
             // ثبت خطا
+            // در اینجا، extra را از OtpService دریافت نمی‌کنیم، بنابراین فقط اطلاعات کنترلر را ارسال می‌کنیم.
+            // OtpService خودش generated_otp را در لاگ خطای خود ثبت می‌کند.
             $this->auditService->log(
                 'change_mobile_number_failed_exception',
                 'Failed to change mobile number: ' . maskForLog($newMobileNumber, 'phone') . ' Error: ' . $e->getMessage(), // ماسک شده در پیام
@@ -514,11 +593,11 @@ class MobileAuthController extends Controller
      * این متد یک ابزار در سطح کنترلر برای پاسخ‌های خطای سازگار است.
      *
      * @param string $message
-     * @param int $code
+     * @param int    $code
      * @param Request $request
      * @param string $errorField
      * @param string|null $redirectRoute
-     * @param bool $showRegisterLink
+     * @param bool   $showRegisterLink
      * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     private function respondWithError(
