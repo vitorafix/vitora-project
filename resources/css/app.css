@@ -21,6 +21,57 @@
     .card-hover-effect {
         @apply transform transition-transform duration-300 hover:scale-105 hover:shadow-xl;
     }
+
+    /* Custom Modal Styles (from app.blade.php, kept here as it's general purpose) */
+    .custom-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.6);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+        backdrop-filter: blur(5px);
+    }
+    .custom-modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    .custom-modal-content {
+        background-color: #fff;
+        padding: 3rem;
+        border-radius: 1rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        text-align: center;
+        max-width: 500px;
+        width: 90%;
+        position: relative;
+        transform: translateY(-20px);
+        transition: transform 0.3s ease;
+    }
+    .custom-modal-overlay.active .custom-modal-content {
+        transform: translateY(0);
+    }
+    .custom-modal-close-btn {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #6B7280;
+        transition: color 0.2s ease;
+    }
+    .custom-modal-close-btn:hover {
+        color: #EF4444;
+    }
 }
 
 
@@ -93,57 +144,6 @@
     background: #a1a1a1;
 }
 
-/* Custom Modal Styles (from app.blade.php, kept here as it's general purpose) */
-.custom-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-    backdrop-filter: blur(5px);
-}
-.custom-modal-overlay.active {
-    opacity: 1;
-    visibility: visible;
-}
-.custom-modal-content {
-    background-color: #fff;
-    padding: 3rem;
-    border-radius: 1rem;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-    text-align: center;
-    max-width: 500px;
-    width: 90%;
-    position: relative;
-    transform: translateY(-20px);
-    transition: transform 0.3s ease;
-}
-.custom-modal-overlay.active .custom-modal-content {
-    transform: translateY(0);
-}
-.custom-modal-close-btn {
-    position: absolute;
-    top: 1rem;
-    left: 1rem;
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: #6B7280;
-    transition: color 0.2s ease;
-}
-.custom-modal-close-btn:hover {
-    color: #EF4444;
-}
-
 /* Specific styles for brown color from tailwind.config.js */
 .text-brown-900 {
     color: #4a2c2a;
@@ -153,4 +153,19 @@
 }
 .focus\:border-brown-500:focus {
     border-color: #6f4e37; /* brown-800 or brown-500 if defined */
+}
+
+/* بهبود مدیریت خطا: اضافه کردن به app.css */
+.error-container {
+    @apply bg-red-50 border border-red-200 rounded-md p-4 mb-4;
+    transition: all 0.3s ease-in-out;
+}
+
+.error-container.fade-in {
+    animation: fadeIn 0.3s ease-in-out forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }

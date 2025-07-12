@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'چای ابراهیم')</title>
+    <title><?php echo $__env->yieldContent('title', 'چای ابراهیم'); ?></title>
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -68,10 +68,11 @@
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 min-h-screen flex items-center justify-center">
-    {{-- محتوای اصلی صفحه در اینجا قرار می‌گیرد --}}
-    @yield('content')
+    
+    <?php echo $__env->yieldContent('content'); ?>
 
-    {{-- اسکریپت‌های سفارشی که از ویوهای فرزند push می‌شوند (اگر نیازی باشد) --}}
-    @stack('scripts')
+    
+    <?php echo $__env->yieldPushContent('scripts'); ?>
 </body>
 </html>
+<?php /**PATH C:\xampp\htdocs\myshop\resources\views/layouts/guest.blade.php ENDPATH**/ ?>

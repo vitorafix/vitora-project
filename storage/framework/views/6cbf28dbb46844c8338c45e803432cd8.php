@@ -1,61 +1,64 @@
-@extends('layouts.guest') {{-- ارث‌بری از لایه‌بندی جدید guest --}}
+ 
 
-@section('title', 'تأیید کد - چای ابراهیم')
+<?php $__env->startSection('title', 'تأیید کد - چای ابراهیم'); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
     <section class="container mx-auto px-4 py-8 md:py-16 max-w-md">
         <div class="w-full bg-white dark:bg-gray-800 shadow-xl rounded-lg p-8 sm:p-10 border border-gray-200 dark:border-gray-700" dir="rtl">
             <div class="text-center mb-8">
                 <h2 class="text-2xl font-extrabold text-gray-900 dark:text-white mb-2">
-                    {{ __('تأیید کد') }}
+                    <?php echo e(__('تأیید کد')); ?>
+
                 </h2>
                 <p class="text-md text-gray-600 dark:text-gray-400">
-                    {{ __('کد تأیید به شماره موبایل شما ارسال شد. لطفا کد را وارد کنید.') }}
+                    <?php echo e(__('کد تأیید به شماره موبایل شما ارسال شد. لطفا کد را وارد کنید.')); ?>
+
                 </p>
-                @if (isset($mobileNumber))
+                <?php if(isset($mobileNumber)): ?>
                     <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                        {{ __('شماره موبایل:') }} <span class="font-bold text-gray-800 dark:text-gray-200">{{ $mobileNumber }}</span>
+                        <?php echo e(__('شماره موبایل:')); ?> <span class="font-bold text-gray-800 dark:text-gray-200"><?php echo e($mobileNumber); ?></span>
                     </p>
-                @endif
+                <?php endif; ?>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-4 mb-6">
-                    {{ __('زمان باقی‌مانده:') }} <span id="countdown-timer" class="font-bold text-red-600 dark:text-red-400">02:00</span>
+                    <?php echo e(__('زمان باقی‌مانده:')); ?> <span id="countdown-timer" class="font-bold text-red-600 dark:text-red-400">02:00</span>
                 </p>
-                {{-- بهبود Accessibility: اضافه کردن live region برای screen readers --}}
+                
                 <div aria-live="polite" aria-atomic="true" class="sr-only" id="timer-announcement">
-                    {{ __('زمان باقی‌مانده:') }} <span id="timer-text">02:00</span>
+                    <?php echo e(__('زمان باقی‌مانده:')); ?> <span id="timer-text">02:00</span>
                 </div>
             </div>
 
-            {{-- Displaying session status messages --}}
-            @if (session('status'))
+            
+            <?php if(session('status')): ?>
                 <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
                     <strong class="font-bold">موفقیت!</strong>
-                    <span class="block sm:inline">{{ session('status') }}</span>
+                    <span class="block sm:inline"><?php echo e(session('status')); ?></span>
                 </div>
-            @endif
+            <?php endif; ?>
 
-            {{-- Displaying validation errors --}}
-            @if ($errors->any())
+            
+            <?php if($errors->any()): ?>
                 <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
                     <strong class="font-bold">خطا!</strong>
                     <ul class="mt-3 list-disc list-inside text-sm">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
+                        <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <li><?php echo e($error); ?></li>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </ul>
                 </div>
-            @endif
+            <?php endif; ?>
 
-            <form method="POST" action="{{ route('auth.verify-otp') }}" class="space-y-6">
-                @csrf
+            <form method="POST" action="<?php echo e(route('auth.verify-otp')); ?>" class="space-y-6">
+                <?php echo csrf_field(); ?>
 
-                {{-- این فیلدهای hidden برای ارسال شماره موبایل و تعداد تلاش‌ها به کنترلر ضروری هستند --}}
-                <input type="hidden" name="mobile_number" value="{{ $mobileNumber ?? '' }}">
-                <input type="hidden" name="attempt_count" value="{{ $attemptCount ?? 0 }}">
+                
+                <input type="hidden" name="mobile_number" value="<?php echo e($mobileNumber ?? ''); ?>">
+                <input type="hidden" name="attempt_count" value="<?php echo e($attemptCount ?? 0); ?>">
 
                 <div>
                     <label for="otp" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        {{ __('کد تأیید') }}
+                        <?php echo e(__('کد تأیید')); ?>
+
                     </label>
                     <input id="otp"
                            class="block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400 text-center tracking-widest"
@@ -67,36 +70,46 @@
                            autofocus
                            inputmode="numeric"
                            pattern="[0-9]*"
-                           value="{{ old('otp') }}"
+                           value="<?php echo e(old('otp')); ?>"
                            aria-describedby="otp-help otp-error"
                            autocomplete="one-time-code">
-                    <span id="otp-help" class="sr-only">{{ __('لطفاً کد تأیید ۶ رقمی که به شماره موبایل شما ارسال شده است را وارد کنید.') }}</span>
-                    @error('otp')
-                        <p class="mt-2 text-sm text-red-500">{{ $message }}</p>
-                    @enderror
+                    <span id="otp-help" class="sr-only"><?php echo e(__('لطفاً کد تأیید ۶ رقمی که به شماره موبایل شما ارسال شده است را وارد کنید.')); ?></span>
+                    <?php $__errorArgs = ['otp'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                        <p class="mt-2 text-sm text-red-500"><?php echo e($message); ?></p>
+                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                 </div>
 
                 <div class="flex items-center justify-between mt-6">
-                    <a href="{{ route('auth.mobile-login-form') }}"
+                    <a href="<?php echo e(route('auth.mobile-login-form')); ?>"
                        class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900/20 rounded-lg transition-all duration-200 ease-in-out ml-4">
-                        {{ __('تغییر شماره موبایل') }}
+                        <?php echo e(__('تغییر شماره موبایل')); ?>
+
                     </a>
 
                     <button type="submit"
                             class="inline-flex items-center justify-center px-6 py-3 text-lg font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 ease-in-out min-w-[180px]">
-                        {{ __('تأیید و ورود') }}
+                        <?php echo e(__('تأیید و ورود')); ?>
+
                         <i class="fas fa-check-circle mr-2"></i>
                     </button>
                 </div>
             </form>
 
             <div class="flex items-center justify-center mt-4">
-                <form id="resend-otp-form" method="POST" action="{{ route('auth.send-otp') }}">
-                    @csrf
-                    <input type="hidden" name="mobile_number" value="{{ $mobileNumber ?? '' }}">
+                <form id="resend-otp-form" method="POST" action="<?php echo e(route('auth.send-otp')); ?>">
+                    <?php echo csrf_field(); ?>
+                    <input type="hidden" name="mobile_number" value="<?php echo e($mobileNumber ?? ''); ?>">
                     <button type="submit" id="resend-otp-button"
                             class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-green-700 dark:text-green-400 bg-transparent hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-all duration-200 ease-in-out font-bold">
-                        {{ __('ارسال مجدد کد') }}
+                        <?php echo e(__('ارسال مجدد کد')); ?>
+
                         <i class="fas fa-redo-alt mr-2"></i>
                     </button>
                 </form>
@@ -104,7 +117,7 @@
         </div>
     </section>
 
-    {{-- اسکریپت‌های جاوااسکریپت مستقیماً در اینجا قرار می‌گیرند --}}
+    
     <script>
         function debounce(func, wait) {
             let timeout;
@@ -148,8 +161,8 @@
 
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    timerElement.textContent = '{{ __("منقضی شد!") }}';
-                    timerText.textContent = '{{ __("منقضی شد!") }}';
+                    timerElement.textContent = '<?php echo e(__("منقضی شد!")); ?>';
+                    timerText.textContent = '<?php echo e(__("منقضی شد!")); ?>';
                     resendButton.disabled = false;
                     resendButton.classList.remove('opacity-50', 'cursor-not-allowed');
                 } else {
@@ -165,7 +178,7 @@
             resendForm.addEventListener('submit', function() {
                 resendButton.disabled = true;
                 resendButton.classList.add('opacity-50', 'cursor-not-allowed');
-                resendButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> {{ __("در حال ارسال...") }}';
+                resendButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> <?php echo e(__("در حال ارسال...")); ?>';
                 // فراخوانی‌های gtag حذف شده‌اند
             });
 
@@ -204,4 +217,6 @@
             }
         });
     </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.guest', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\xampp\htdocs\myshop\resources\views/auth/verify-otp.blade.php ENDPATH**/ ?>

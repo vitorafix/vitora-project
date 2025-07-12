@@ -29,9 +29,11 @@ Route::get('/search', [SearchController::class, 'search'])->name('search');
 
 Route::prefix('auth')->name('auth.')->group(function () {
     Route::get('/login', [MobileAuthController::class, 'showMobileLoginForm'])->name('mobile-login-form');
-    Route::post('/send-otp', [MobileAuthController::class, 'send-otp'])->name('send-otp');
+    // اصلاح نام متد کنترلر از 'send-otp' به 'sendOtp'
+    Route::post('/send-otp', [MobileAuthController::class, 'sendOtp'])->name('send-otp');
     Route::get('/verify-otp-form', [MobileAuthController::class, 'showOtpVerifyForm'])->name('verify-otp-form');
-    Route::post('/verify-otp', [MobileAuthController::class, 'verify-otp'])->name('verify-otp');
+    // اصلاح نام متد کنترلر از 'verify-otp' به 'verifyOtp'
+    Route::post('/verify-otp', [MobileAuthController::class, 'verifyOtp'])->name('verify-otp');
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register-form');
     Route::post('/register', [RegisterController::class, 'register'])->name('register');
     Route::post('/logout', [MobileAuthController::class, 'logout'])->name('logout');
