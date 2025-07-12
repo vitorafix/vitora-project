@@ -50,6 +50,18 @@ class OtpService implements OtpServiceInterface
     }
 
     /**
+     * Generates a hashed key for pending registration cache based on mobile number.
+     * This prevents direct exposure of mobile numbers in cache keys.
+     *
+     * @param string $mobileNumber
+     * @return string
+     */
+    private function getPendingRegistrationCacheKey(string $mobileNumber): string
+    {
+        return 'pending_registration:' . hash('sha256', $mobileNumber . config('app.key'));
+    }
+
+    /**
      * Generates and stores an OTP for a given mobile number, encrypting it before caching.
      *
      * @param string $mobileNumber
@@ -236,6 +248,7 @@ class OtpService implements OtpServiceInterface
         callable $auditLogger
     ): User {
         // Service's responsibility: Apply rate limits.
+        // Note: The rateLimitService methods are expected to handle their own key hashing internally.
         if (!$rateLimitService->checkAndIncrementIpAttempts($ipAddress)) {
             $auditLogger('Too many OTP verification attempts from IP: ' . $ipAddress, 'warning');
             throw new \Exception('تعداد تلاش‌ها از این IP بیش از حد مجاز است. لطفاً بعداً تلاش کنید.', 429);
@@ -262,7 +275,7 @@ class OtpService implements OtpServiceInterface
 
         if (!$user) {
             // User does not exist, check for pending registration data from cache.
-            $encryptedRegistrationData = Cache::get(self::CACHE_PENDING_REGISTRATION_PREFIX . $mobileNumber);
+            $encryptedRegistrationData = Cache::get($this->getPendingRegistrationCacheKey($mobileNumber));
             $registrationData = null;
 
             if ($encryptedRegistrationData) {
@@ -290,7 +303,7 @@ class OtpService implements OtpServiceInterface
                     // $user->assignRole('user');
 
                     DB::commit();
-                    Cache::forget(self::CACHE_PENDING_REGISTRATION_PREFIX . $mobileNumber);
+                    Cache::forget($this->getPendingRegistrationCacheKey($mobileNumber));
                     $auditLogger('New user registered via OTP: ' . $mobileNumber, 'info', $user->id, 'User', $user->id);
 
                 } catch (\Illuminate\Database\QueryException $e) { // Use QueryException for database errors

@@ -26,6 +26,42 @@ class RateLimitService implements RateLimitServiceInterface
     }
 
     /**
+     * Generates a hashed key for SMS attempts cache based on mobile number.
+     * This prevents direct exposure of mobile numbers in cache keys.
+     *
+     * @param string $mobileNumber
+     * @return string
+     */
+    private function getSmsAttemptsCacheKey(string $mobileNumber): string
+    {
+        return 'sms_attempts_' . hash('sha256', $mobileNumber . config('app.key'));
+    }
+
+    /**
+     * Generates a hashed key for OTP verification attempts cache based on mobile number.
+     * This prevents direct exposure of mobile numbers in cache keys.
+     *
+     * @param string $mobileNumber
+     * @return string
+     */
+    private function getVerifyAttemptsCacheKey(string $mobileNumber): string
+    {
+        return 'verify_attempts_' . hash('sha256', $mobileNumber . config('app.key'));
+    }
+
+    /**
+     * Generates a hashed key for IP attempts cache based on IP address.
+     * This prevents direct exposure of IP addresses in cache keys.
+     *
+     * @param string $ipAddress
+     * @return string
+     */
+    private function getIpAttemptsCacheKey(string $ipAddress): string
+    {
+        return 'ip_attempts_' . hash('sha256', $ipAddress . config('app.key'));
+    }
+
+    /**
      * Checks if mobile number is rate limited for OTP sending and increments attempt count.
      *
      * @param string $mobileNumber
@@ -33,7 +69,7 @@ class RateLimitService implements RateLimitServiceInterface
      */
     public function checkAndIncrementSendAttempts(string $mobileNumber): bool
     {
-        $attemptsCacheKey = 'sms_attempts_' . $mobileNumber;
+        $attemptsCacheKey = $this->getSmsAttemptsCacheKey($mobileNumber); // Using hashed key
         $attempts = Cache::get($attemptsCacheKey, 0);
 
         if ($attempts >= $this->sendMaxAttempts) {
@@ -61,7 +97,7 @@ class RateLimitService implements RateLimitServiceInterface
      */
     public function checkAndIncrementVerifyAttempts(string $mobileNumber): bool
     {
-        $verifyAttemptsCacheKey = 'verify_attempts_' . $mobileNumber;
+        $verifyAttemptsCacheKey = $this->getVerifyAttemptsCacheKey($mobileNumber); // Using hashed key
         $verifyAttempts = Cache::get($verifyAttemptsCacheKey, 0);
 
         if ($verifyAttempts >= $this->verifyMaxAttempts) {
@@ -89,12 +125,12 @@ class RateLimitService implements RateLimitServiceInterface
      */
     public function checkAndIncrementIpAttempts(string $ipAddress): bool
     {
-        $ipAttemptsCacheKey = 'ip_attempts_' . $ipAddress;
+        $ipAttemptsCacheKey = $this->getIpAttemptsCacheKey($ipAddress); // Using hashed key
         $ipAttempts = Cache::get($ipAttemptsCacheKey, 0);
 
         if ($ipAttempts >= $this->ipMaxAttempts) {
             Log::warning('Too many attempts from IP (RateLimitService).', [
-                'ip' => $ipAddress,
+                'ip_hash' => hash('sha256', $ipAddress), // Logging hashed IP
                 'attempts' => $ipAttempts
             ]);
             return false; // Rate limited
@@ -105,7 +141,7 @@ class RateLimitService implements RateLimitServiceInterface
         } else {
             Cache::increment($ipAttemptsCacheKey);
         }
-        Log::info('IP attempt count updated (RateLimitService).', ['ip' => $ipAddress, 'new_attempts' => $ipAttempts + 1]);
+        Log::info('IP attempt count updated (RateLimitService).', ['ip_hash' => hash('sha256', $ipAddress), 'new_attempts' => $ipAttempts + 1]); // Logging hashed IP
         return true; // Not rate limited, attempt recorded
     }
 
@@ -117,7 +153,7 @@ class RateLimitService implements RateLimitServiceInterface
      */
     public function resetVerifyAttempts(string $mobileNumber): void
     {
-        Cache::forget('verify_attempts_' . $mobileNumber);
+        Cache::forget($this->getVerifyAttemptsCacheKey($mobileNumber)); // Using hashed key
         Log::info('OTP verification attempts reset (RateLimitService).', ['mobile_hash' => hash('sha256', $mobileNumber)]);
     }
 
@@ -129,7 +165,7 @@ class RateLimitService implements RateLimitServiceInterface
      */
     public function resetIpAttempts(string $ipAddress): void
     {
-        Cache::forget('ip_attempts_' . $ipAddress);
-        Log::info('IP attempts reset (RateLimitService).', ['ip' => $ipAddress]);
+        Cache::forget($this->getIpAttemptsCacheKey($ipAddress)); // Using hashed key
+        Log::info('IP attempts reset (RateLimitService).', ['ip_hash' => hash('sha256', $ipAddress)]); // Logging hashed IP
     }
 }
