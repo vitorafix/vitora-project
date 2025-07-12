@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Cart;
+use App\Models\Cart; // اگر در اینجا استفاده نمی‌شود، می‌توان حذف کرد
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,15 +12,15 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator; // Still used for internal helper validation
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
-use App\Services\MelipayamakSmsService;
+use App\Services\MelipayamakSmsService; // اگر مستقیماً استفاده نمی‌شود، می‌توان حذف کرد
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Session;
-use App\Services\CartService;
+use App\Services\CartService; // اگر در اینجا استفاده نمی‌شود، می‌توان حذف کرد
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Crypt; // اضافه کردن Crypt facade
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\QueryException; // Added for specific database error handling
+use Illuminate\Database\QueryException;
 
 // Import new service classes and interfaces
 use App\Contracts\Services\OtpServiceInterface;
@@ -32,10 +32,14 @@ use App\Http\Requests\VerifyOtpRequest;
 class MobileAuthController extends Controller
 {
     // Constants for Rate Limiting
-    const OTP_SEND_RATE_LIMIT = 5;
-    const OTP_SEND_TIMEOUT_MINUTES = 1;
-    const OTP_VERIFY_RATE_LIMIT = 10;
-    const OTP_VERIFY_TIMEOUT_MINUTES = 5;
+    // این مقادیر از config/auth.php خوانده می‌شوند، اما برای وضوح در اینجا نیز تعریف شده‌اند.
+    // تغییرات اصلی باید در config/auth.php یا فایل .env انجام شود.
+    const OTP_SEND_RATE_LIMIT = 5; // پیش‌فرض config/auth.php
+    const OTP_SEND_COOLDOWN_MINUTES = 1; // پیش‌فرض config/auth.php
+    const OTP_VERIFY_RATE_LIMIT = 10; // پیش‌فرض config/auth.php
+    const OTP_VERIFY_COOLDOWN_MINUTES = 5; // پیش‌فرض config/auth.php
+    const OTP_IP_MAX_ATTEMPTS = 10; // پیش‌فرض config/auth.php
+    const OTP_IP_COOLDOWN_MINUTES = 60; // پیش‌فرض config/auth.php
 
     // Constants for Session & Cache Keys
     const SESSION_MOBILE_FOR_OTP = 'mobile_number_for_otp';
@@ -51,9 +55,9 @@ class MobileAuthController extends Controller
 
     public function __construct(
         CartService $cartService,
-        OtpServiceInterface $otpService, // Type-hinting against interface
-        RateLimitServiceInterface $rateLimitService, // Type-hinting against interface
-        AuditServiceInterface $auditService // Type-hinting against interface
+        OtpServiceInterface $otpService,
+        RateLimitServiceInterface $rateLimitService,
+        AuditServiceInterface $auditService
     ) {
         $this->cartService = $cartService;
         $this->otpService = $otpService;
@@ -93,14 +97,13 @@ class MobileAuthController extends Controller
             // Attempt to decrypt the mobile number
             $mobileNumber = Crypt::decryptString($encryptedMobileNumber);
         } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-            // If decryption fails (e.g., wrong key or corrupted data)
+            // If decryption fails (e.g., wrong key or corrupted data), log and redirect
             Log::error('Could not decrypt mobile number from session: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
-            // Redirect to login with an error message
             return redirect()->route('auth.mobile-login-form')->with('error', 'خطا در بازیابی شماره موبایل. لطفاً دوباره تلاش کنید.');
         }
 
         // You might also want to pass attemptCount if you are tracking it in the session
-        $attemptCount = $request->session()->get('otp_attempt_count', 0); // Assuming you store it under 'otp_attempt_count'
+        $attemptCount = $request->session()->get('otp_attempt_count', 0);
 
         return view('auth.verify-otp', compact('mobileNumber', 'attemptCount'));
     }
@@ -116,19 +119,39 @@ class MobileAuthController extends Controller
     public function sendOtp(SendOtpRequest $request)
     {
         $mobileNumber = $this->normalizeMobileNumber($request->mobile_number);
+        $ipAddress = $request->ip();
 
-        // Rate limit check
-        if ($this->rateLimitService->tooManyAttempts('send_otp:' . $mobileNumber, self::OTP_SEND_RATE_LIMIT, self::OTP_SEND_TIMEOUT_MINUTES)) { // Using constants
+        // Rate limit check for IP address
+        // این متد هم تعداد تلاش‌ها را بررسی می‌کند و هم آن را افزایش می‌دهد.
+        if (!$this->rateLimitService->checkAndIncrementIpAttempts($ipAddress)) {
             $this->auditService->log(
-                'otp_send_failed_rate_limit',
+                'otp_send_failed_ip_rate_limit',
+                'Too many OTP send attempts from IP: ' . $ipAddress,
+                $request,
+                ['ip_address' => $ipAddress, 'mobile_number' => $mobileNumber],
+                hash('sha256', $mobileNumber),
+                null, null, null, 'warning'
+            );
+            return $this->respondWithError(
+                'تعداد درخواست‌ها از این IP بیش از حد مجاز است. لطفاً بعداً تلاش کنید.',
+                429,
+                $request,
+                'general',
+                null,
+                false
+            );
+        }
+
+        // Rate limit check for mobile number
+        // این متد هم تعداد تلاش‌ها را بررسی می‌کند و هم آن را افزایش می‌دهد.
+        if (!$this->rateLimitService->checkAndIncrementSendAttempts($mobileNumber)) {
+            $this->auditService->log(
+                'otp_send_failed_mobile_rate_limit',
                 'Too many OTP send attempts for mobile number: ' . $mobileNumber,
                 $request,
                 ['mobile_number' => $mobileNumber],
                 hash('sha256', $mobileNumber),
-                null, // userId
-                null, // model
-                null, // modelId
-                'warning' // level
+                null, null, null, 'warning'
             );
             return $this->respondWithError(
                 'تعداد درخواست‌های ارسال کد بیش از حد مجاز است. لطفاً یک دقیقه دیگر تلاش کنید.',
@@ -136,7 +159,7 @@ class MobileAuthController extends Controller
                 $request,
                 'mobile_number',
                 null,
-                false // Do not show register link on rate limit
+                false
             );
         }
 
@@ -144,31 +167,34 @@ class MobileAuthController extends Controller
         $user = User::where('mobile_number', $mobileNumber)->first();
         if (!$user) {
             // If user doesn't exist, store mobile number in session for registration
-            // Encrypt mobile number before storing in session
-            $encryptedMobileNumber = Crypt::encryptString($mobileNumber);
-            $request->session()->put(self::SESSION_MOBILE_FOR_REGISTRATION, $encryptedMobileNumber); // Using constant
-            $this->auditService->log(
-                'otp_send_for_new_registration',
-                'OTP sent for new registration: ' . $mobileNumber,
-                $request,
-                ['mobile_number' => $mobileNumber],
-                hash('sha256', $mobileNumber),
-                null, // userId
-                'User', // model
-                null, // modelId
-                'info' // level
-            );
+            try {
+                $encryptedMobileNumber = Crypt::encryptString($mobileNumber);
+                $request->session()->put(self::SESSION_MOBILE_FOR_REGISTRATION, $encryptedMobileNumber);
+                $this->auditService->log(
+                    'otp_send_for_new_registration',
+                    'OTP sent for new registration: ' . $mobileNumber,
+                    $request,
+                    ['mobile_number' => $mobileNumber],
+                    hash('sha256', $mobileNumber),
+                    null, 'User', null, 'info'
+                );
+            } catch (\Exception $e) {
+                Log::error('Failed to encrypt mobile number for registration session: ' . $e->getMessage());
+                return $this->respondWithError(
+                    'خطا در آماده‌سازی ثبت‌نام. لطفاً دوباره تلاش کنید.',
+                    500,
+                    $request,
+                    'mobile_number'
+                );
+            }
         } else {
             $this->auditService->log(
                 'otp_send_for_login',
-                'OTP sent for existing user login: ' . $mobileNumber, 
+                'OTP sent for existing user login: ' . $mobileNumber,
                 $request,
                 ['mobile_number' => $mobileNumber],
                 hash('sha256', $mobileNumber),
-                $user->id, // userId
-                'User', // model
-                $user->id, // modelId
-                'info' // level
+                $user->id, 'User', $user->id, 'info'
             );
         }
 
@@ -177,14 +203,22 @@ class MobileAuthController extends Controller
 
             // In a real application, you would send the OTP via SMS here.
             // For example: MelipayamakSmsService::send($mobileNumber, $otp);
-            Log::info("OTP for {$mobileNumber}: {$otp}"); // For debugging purposes only
-
-            $this->rateLimitService->hit('send_otp:' . $mobileNumber);
+            // برای محیط Production، این لاگ را حذف یا به Log::debug تغییر دهید.
+            Log::debug("OTP for {$mobileNumber}: {$otp}"); // تغییر به debug برای امنیت بیشتر
 
             // Store mobile number in session for OTP verification form
-            // Encrypt mobile number before storing in session
-            $encryptedMobileNumber = Crypt::encryptString($mobileNumber);
-            $request->session()->put(self::SESSION_MOBILE_FOR_OTP, $encryptedMobileNumber); // Using constant
+            try {
+                $encryptedMobileNumber = Crypt::encryptString($mobileNumber);
+                $request->session()->put(self::SESSION_MOBILE_FOR_OTP, $encryptedMobileNumber);
+            } catch (\Exception $e) {
+                Log::error('Failed to encrypt mobile number for OTP verification session: ' . $e->getMessage());
+                return $this->respondWithError(
+                    'خطا در آماده‌سازی تأیید کد. لطفاً دوباره تلاش کنید.',
+                    500,
+                    $request,
+                    'mobile_number'
+                );
+            }
 
             return redirect()->route('auth.verify-otp-form')->with('status', 'کد تأیید با موفقیت ارسال شد.');
 
@@ -218,19 +252,37 @@ class MobileAuthController extends Controller
     {
         $mobileNumber = $this->normalizeMobileNumber($request->mobile_number);
         $otp = $this->normalizeOtp($request->otp);
+        $ipAddress = $request->ip();
+
+        // Rate limit check for IP address
+        // این متد هم تعداد تلاش‌ها را بررسی می‌کند و هم آن را افزایش می‌دهد.
+        if (!$this->rateLimitService->checkAndIncrementIpAttempts($ipAddress)) {
+            $this->auditService->log(
+                'otp_verify_failed_ip_rate_limit',
+                'Too many OTP verification attempts from IP: ' . $ipAddress,
+                $request,
+                ['ip_address' => $ipAddress, 'mobile_number' => $mobileNumber],
+                hash('sha256', $mobileNumber),
+                null, null, null, 'warning'
+            );
+            return $this->respondWithError(
+                'تعداد تلاش‌ها از این IP بیش از حد مجاز است. لطفاً بعداً تلاش کنید.',
+                429,
+                $request,
+                'general'
+            );
+        }
 
         // Rate limit check for OTP verification
-        if ($this->rateLimitService->tooManyAttempts('verify_otp:' . $mobileNumber, self::OTP_VERIFY_RATE_LIMIT, self::OTP_VERIFY_TIMEOUT_MINUTES)) { // Using constants
+        // این متد هم تعداد تلاش‌ها را بررسی می‌کند و هم آن را افزایش می‌دهد.
+        if (!$this->rateLimitService->checkAndIncrementVerifyAttempts($mobileNumber)) {
             $this->auditService->log(
-                'otp_verify_failed_rate_limit',
+                'otp_verify_failed_mobile_rate_limit',
                 'Too many OTP verification attempts for mobile number: ' . $mobileNumber,
                 $request,
                 ['mobile_number' => $mobileNumber],
                 hash('sha256', $mobileNumber),
-                null, // userId
-                null, // model
-                null, // modelId
-                'warning' // level
+                null, null, null, 'warning'
             );
             return $this->respondWithError(
                 'تعداد تلاش‌های تأیید کد بیش از حد مجاز است. لطفاً ۵ دقیقه دیگر تلاش کنید.',
@@ -241,17 +293,14 @@ class MobileAuthController extends Controller
         }
 
         if (!$this->otpService->verifyOtp($mobileNumber, $otp)) {
-            $this->rateLimitService->hit('verify_otp:' . $mobileNumber);
+            // اگر تأیید ناموفق باشد، checkAndIncrementVerifyAttempts قبلاً تعداد تلاش را افزایش داده است.
             $this->auditService->log(
                 'otp_verify_failed_invalid',
                 'Invalid OTP provided for mobile number: ' . $mobileNumber,
                 $request,
                 ['mobile_number' => $mobileNumber, 'otp' => $otp],
                 hash('sha256', $mobileNumber),
-                null, // userId
-                null, // model
-                null, // modelId
-                'warning' // level
+                null, null, null, 'warning'
             );
             return $this->respondWithError(
                 'کد تأیید نامعتبر است. لطفاً دوباره بررسی کنید.',
@@ -261,26 +310,34 @@ class MobileAuthController extends Controller
             );
         }
 
-        // OTP is valid, clear it
+        // OTP is valid, clear it and reset rate limits
         $this->otpService->clearOtp($mobileNumber);
-        $this->rateLimitService->clear('verify_otp:' . $mobileNumber);
-        $this->rateLimitService->clear('send_otp:' . $mobileNumber);
+        $this->rateLimitService->resetVerifyAttempts($mobileNumber); // Reset verify attempts on success
+        $this->rateLimitService->resetIpAttempts($request->ip()); // Reset IP attempts on success
 
         // Find or create user
         $user = User::where('mobile_number', $mobileNumber)->first();
 
         if (!$user) {
             // User does not exist, check for pending registration data
-            // Decrypt registration data if it was encrypted
             $encryptedRegistrationData = Cache::get(self::CACHE_PENDING_REGISTRATION_PREFIX . $mobileNumber);
             $registrationData = null;
             if ($encryptedRegistrationData) {
                 try {
-                    $registrationData = Crypt::decrypt($encryptedRegistrationData); // Assuming it was encrypted as an array
+                    $registrationData = Crypt::decrypt($encryptedRegistrationData);
                 } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
                     Log::error('Could not decrypt registration data from cache: ' . $e->getMessage());
                     return $this->respondWithError(
                         'خطا در بازیابی اطلاعات ثبت‌نام. لطفاً دوباره از ابتدا شروع کنید.',
+                        500,
+                        $request,
+                        'general',
+                        'auth.mobile-login-form'
+                    );
+                } catch (\Exception $e) { // Catch any other cache related errors
+                    Log::error('Error retrieving registration data from cache: ' . $e->getMessage());
+                    return $this->respondWithError(
+                        'خطا در بازیابی اطلاعات ثبت‌نام از کش. لطفاً دوباره از ابتدا شروع کنید.',
                         500,
                         $request,
                         'general',
@@ -297,17 +354,16 @@ class MobileAuthController extends Controller
                         'name' => $registrationData['name'],
                         'lastname' => $registrationData['lastname'],
                         'mobile_number' => $registrationData['mobile_number'],
-                        'profile_completed' => false, // Set to false, to be completed later
-                        'status' => 'active', // Default status for new users
+                        'profile_completed' => false,
+                        'status' => 'active',
                     ]);
 
                     // Assign a default role, e.g., 'user'
-                    // Make sure the 'user' role exists in your database (roles table)
                     $user->assignRole('user');
 
                     DB::commit();
 
-                    Cache::forget(self::CACHE_PENDING_REGISTRATION_PREFIX . $mobileNumber); // Using constant
+                    Cache::forget(self::CACHE_PENDING_REGISTRATION_PREFIX . $mobileNumber);
 
                     $this->auditService->log(
                         'user_registered_via_otp',
@@ -315,12 +371,10 @@ class MobileAuthController extends Controller
                         $request,
                         ['user_id' => $user->id, 'mobile_number' => $mobileNumber],
                         hash('sha256', $mobileNumber),
-                        $user->id,
-                        'User', $user->id,
-                        'info' // level
+                        $user->id, 'User', $user->id, 'info'
                     );
 
-                } catch (QueryException $e) { // Specific database exception handling
+                } catch (QueryException $e) {
                     DB::rollBack();
                     $this->auditService->log(
                         'user_registration_failed_db_query',
@@ -336,7 +390,7 @@ class MobileAuthController extends Controller
                         $request,
                         'general'
                     );
-                } catch (\Exception $e) { // General exception handling
+                } catch (\Exception $e) {
                     DB::rollBack();
                     $this->auditService->log(
                         'user_registration_failed_general',
@@ -354,8 +408,6 @@ class MobileAuthController extends Controller
                     );
                 }
             } else {
-                // This scenario means OTP was valid, but no user and no pending registration data.
-                // This might happen if OTP expired or was cleared before registration data was stored.
                 $this->auditService->log(
                     'otp_valid_no_user_or_pending_registration',
                     'OTP valid but no user or pending registration data found for mobile: ' . $mobileNumber,
@@ -369,7 +421,7 @@ class MobileAuthController extends Controller
                     400,
                     $request,
                     'general',
-                    'auth.mobile-login-form' // Redirect to login to restart
+                    'auth.mobile-login-form'
                 );
             }
         }
@@ -383,15 +435,12 @@ class MobileAuthController extends Controller
             $request,
             ['user_id' => $user->id, 'mobile_number' => $mobileNumber],
             hash('sha256', $mobileNumber),
-            $user->id,
-            'User', $user->id,
-            'info' // level
+            $user->id, 'User', $user->id, 'info'
         );
 
         // Clear session data used for OTP verification
-        $request->session()->forget(self::SESSION_MOBILE_FOR_OTP); // Using constant
-        $request->session()->forget(self::SESSION_MOBILE_FOR_REGISTRATION); // Using constant
-
+        $request->session()->forget(self::SESSION_MOBILE_FOR_OTP);
+        $request->session()->forget(self::SESSION_MOBILE_FOR_REGISTRATION);
 
         // Redirect to intended URL or dashboard
         return redirect()->intended(route('dashboard'));
@@ -419,10 +468,7 @@ class MobileAuthController extends Controller
             $request,
             ['user_id' => $userId, 'mobile_number' => $mobileNumber],
             $mobileNumber ? hash('sha256', $mobileNumber) : null,
-            $userId, // userId
-            'User', // model
-            $userId, // modelId (assuming userId is modelId for logout)
-            'info' // level
+            $userId, 'User', $userId, 'info'
         );
 
         return redirect('/');

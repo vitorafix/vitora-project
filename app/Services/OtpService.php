@@ -5,147 +5,85 @@ namespace App\Services;
 use App\Contracts\Services\OtpServiceInterface;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Request;
-use Illuminate\Support\Facades\Session;
+// use Illuminate\Support\Facades\DB; // حذف شد: مسئولیت لاگ به AuditService واگذار شد
+// use Illuminate\Support\Facades\Request; // حذف شد: مسئولیت لاگ به AuditService واگذار شد
+// use Illuminate\Support\Facades\Session; // حذف شد: مسئولیت لاگ به AuditService واگذار شد
+use Illuminate\Support\Str; // این همچنان می‌تواند برای تولید کد استفاده شود اگرچه در حال حاضر مستقیماً استفاده نمی‌شود.
 
 class OtpService implements OtpServiceInterface
 {
-    /**
-     * تولید و ذخیره OTP
-     */
-    public function generateAndStore(string $mobileNumber): string
+    // پیشوند کلیدهای کش برای ذخیره OTP
+    const OTP_CACHE_PREFIX = 'otp_';
+    // زمان انقضای OTP (بر حسب دقیقه) - این مقدار باید با config/auth.php هماهنگ باشد
+    protected $otpExpiryMinutes;
+
+    public function __construct()
     {
-        $otp = random_int(100000, 999999);
-        $cacheKey = 'otp_' . $mobileNumber;
-
-        Cache::put($cacheKey, $otp, now()->addMinutes(config('auth.otp.expiry_minutes', 2)));
-
-        $this->writeAuditLog([
-            'action' => 'otp_generated',
-            'description' => 'OTP generated and stored.',
-            'mobile_hash' => $this->hashMobile($mobileNumber),
-        ]);
-
-        $logData = [
-            'mobile_hash' => $this->hashMobile($mobileNumber),
-            'otp_cache_key' => $cacheKey,
-        ];
-
-        if (app()->environment(['local', 'development'])) {
-            $logData['otp_value_for_debug'] = $otp;
-        }
-
-        Log::info('OTP generated and stored.', $logData);
-
-        return (string) $otp;
+        // خواندن زمان انقضای OTP از فایل پیکربندی auth.php
+        $this->otpExpiryMinutes = config('auth.otp.expiry_minutes', 2);
     }
 
     /**
-     * تایید OTP
+     * Generates a new OTP, stores it in cache, and returns it.
+     * نام متد به generateAndStoreOtp تغییر یافت تا با MobileAuthController هماهنگ باشد.
+     *
+     * @param string $mobileNumber
+     * @return string The generated OTP
      */
-    public function verify(string $mobileNumber, string $enteredOtp, ?int $currentAttempt = null): bool
+    public function generateAndStoreOtp(string $mobileNumber): string
     {
-        $cacheKey = 'otp_' . $mobileNumber;
+        // تولید یک کد OTP 6 رقمی تصادفی
+        $otp = (string) random_int(100000, 999999);
+        $cacheKey = self::OTP_CACHE_PREFIX . $mobileNumber;
+
+        // ذخیره OTP در کش با زمان انقضا
+        Cache::put($cacheKey, $otp, now()->addMinutes($this->otpExpiryMinutes));
+
+        Log::info("Generated and stored OTP for mobile: {$mobileNumber} - OTP: {$otp}");
+
+        return $otp;
+    }
+
+    /**
+     * Verifies the provided OTP against the stored one for the given mobile number.
+     * نام متد به verifyOtp تغییر یافت تا با MobileAuthController هماهنگ باشد.
+     *
+     * @param string $mobileNumber
+     * @param string $otp The OTP provided by the user
+     * @return bool True if OTP is valid, false otherwise
+     */
+    public function verifyOtp(string $mobileNumber, string $otp): bool
+    {
+        $cacheKey = self::OTP_CACHE_PREFIX . $mobileNumber;
         $storedOtp = Cache::get($cacheKey);
-        $mobileHash = $this->hashMobile($mobileNumber);
 
-        Log::debug('Verifying OTP', [
-            'mobile_hash' => $mobileHash,
-            'cache_key' => $cacheKey,
-            'stored_exists' => Cache::has($cacheKey),
-            'stored_otp' => app()->environment(['local', 'development']) ? $storedOtp : 'HIDDEN',
-            'entered_otp' => app()->environment(['local', 'development']) ? $enteredOtp : 'HIDDEN',
-            'stored_type' => gettype($storedOtp),
-            'entered_type' => gettype($enteredOtp),
-        ]);
+        // لاگ کردن برای دیباگ: کد ذخیره شده و کد وارد شده
+        Log::debug("Verifying OTP for mobile: {$mobileNumber}. Stored: {$storedOtp}, Provided: {$otp}");
 
-        $failureReason = null;
-
-        if (!$storedOtp) {
-            $failureReason = 'OTP expired or not found';
-            $this->writeAuditLog([
-                'action' => 'otp_verification_failed',
-                'description' => 'OTP not found or expired.',
-                'mobile_hash' => $mobileHash,
-                'attempt_number' => $currentAttempt,
-                'failure_reason' => $failureReason,
-            ]);
-            Log::warning($failureReason, ['mobile_hash' => $mobileHash]);
-            return false;
+        // بررسی اینکه آیا OTP ذخیره شده وجود دارد و با OTP وارد شده مطابقت دارد
+        if ($storedOtp && (string)$storedOtp === (string)$otp) {
+            Log::info("OTP successfully verified for mobile: {$mobileNumber}");
+            return true;
         }
 
-        $isVerified = (string)$storedOtp === (string)$enteredOtp;
-
-        if ($isVerified) {
-            Cache::forget($cacheKey);
-
-            $this->writeAuditLog([
-                'action' => 'otp_verification_success',
-                'description' => 'OTP verified successfully and removed.',
-                'mobile_hash' => $mobileHash,
-                'attempt_number' => $currentAttempt,
-            ]);
-
-            Log::info('OTP verified and removed.', ['mobile_hash' => $mobileHash]);
-        } else {
-            $failureReason = 'OTP mismatch';
-            $this->writeAuditLog([
-                'action' => 'otp_verification_failed',
-                'description' => 'OTP verification failed: Mismatch.',
-                'mobile_hash' => $mobileHash,
-                'attempt_number' => $currentAttempt,
-                'failure_reason' => $failureReason,
-            ]);
-            Log::warning($failureReason, [
-                'mobile_hash' => $mobileHash,
-                'stored_otp' => app()->environment(['local', 'development']) ? $storedOtp : 'HIDDEN',
-                'entered_otp' => app()->environment(['local', 'development']) ? $enteredOtp : 'HIDDEN',
-            ]);
-        }
-
-        return $isVerified;
+        Log::warning("OTP verification failed for mobile: {$mobileNumber}. Provided OTP: {$otp}");
+        return false;
     }
 
     /**
-     * ثبت لاگ در جدول audit_logs
+     * Clears the stored OTP for a given mobile number after successful verification.
+     * این متد اضافه شد زیرا در MobileAuthController فراخوانی می‌شود.
+     *
+     * @param string $mobileNumber
+     * @return void
      */
-    protected function writeAuditLog(array $data): void
+    public function clearOtp(string $mobileNumber): void
     {
-        $defaultData = [
-            'ip_address' => Request::ip(),
-            'user_agent' => Request::userAgent(),
-            'session_id' => Session::getId(),
-            'attempt_number' => $data['attempt_number'] ?? null,
-            'failure_reason' => $data['failure_reason'] ?? null,
-            'request_source' => 'web',
-            'geo_location' => json_encode($this->getGeoLocation(Request::ip())),
-            'ip_is_blacklisted' => false,
-            'device_info' => Request::userAgent(),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ];
-
-        DB::table('audit_logs')->insert(array_merge($defaultData, $data));
+        $cacheKey = self::OTP_CACHE_PREFIX . $mobileNumber;
+        Cache::forget($cacheKey);
+        Log::info("Cleared OTP from cache for mobile: {$mobileNumber}");
     }
 
-    /**
-     * هش شماره موبایل
-     */
-    protected function hashMobile(string $mobile): string
-    {
-        return hash('sha256', $mobile);
-    }
-
-    /**
-     * موقعیت جغرافیایی (نمونه)
-     */
-    protected function getGeoLocation(?string $ip): array
-    {
-        return [
-            'ip' => $ip,
-            'country' => 'Unknown',
-            'city' => 'Unknown',
-        ];
-    }
+    // متدهای writeAuditLog, hashMobile, getGeoLocation از اینجا حذف شدند.
+    // این مسئولیت‌ها به AuditService واگذار شده‌اند.
 }
