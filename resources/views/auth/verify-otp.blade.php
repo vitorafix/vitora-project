@@ -128,9 +128,9 @@
 
     {{-- Hidden div to pass routes to JavaScript --}}
     <div id="app-routes"
-         data-api-send-otp-route="{{ route('auth.send-otp') }}" {{-- Changed to use the web route --}}
-         data-auth-change-mobile-number-route="{{ route('auth.change-mobile-number') }}"
-         data-auth-verify-otp-route="{{ route('auth.verify-otp') }}">
+         data-send-otp-route="{{ route('auth.send-otp') }}" {{-- Changed to use the correct web route --}}
+         data-change-mobile-number-route="{{ route('auth.change-mobile-number') }}"
+         data-verify-otp-route="{{ route('auth.verify-otp') }}">
     </div>
 @endsection
 
@@ -142,14 +142,15 @@
         console.log('appRoutesElement:', appRoutesElement);
         if (appRoutesElement) {
             console.log('appRoutesElement.dataset:', appRoutesElement.dataset);
-            console.log('Value of data-api-send-otp-route:', appRoutesElement.dataset.apiSendOtpRoute);
+            console.log('Value of data-send-otp-route:', appRoutesElement.dataset.sendOtpRoute);
         } else {
             console.error('Element with ID "app-routes" not found.');
         }
 
-        const apiSendOtpRoute = appRoutesElement.dataset.apiSendOtpRoute; // This variable name is now misleading, but kept for minimal change
-        const authChangeMobileNumberRoute = appRoutesElement.dataset.authChangeMobileNumberRoute;
-        const authVerifyOtpRoute = appRoutesElement.dataset.authVerifyOtpRoute;
+        // Assign route URLs to JavaScript variables
+        const sendOtpRoute = appRoutesElement.dataset.sendOtpRoute;
+        const authChangeMobileNumberRoute = appRoutesElement.dataset.changeMobileNumberRoute;
+        const authVerifyOtpRoute = appRoutesElement.dataset.verifyOtpRoute;
 
         // Utility function for debouncing
         const debounce = (func, delay) => {
@@ -345,7 +346,7 @@
             // --- Event Listeners ---
             if (resendButton) {
                 resendButton.addEventListener('click', async function() {
-                    const mobileNumber = this.dataset.mobileNumber;
+                    const mobileNumber = this.dataset.mobileNumber; // Problematic line
                     if (!mobileNumber) {
                         window.showMessage('شماره موبایل یافت نشد.', 'error');
                         return;
@@ -357,12 +358,13 @@
                     resendButton.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال ارسال...'; // Loading spinner and text
 
                     try {
-                        const response = await fetch(apiSendOtpRoute, { // Using the defined JS variable
+                        // Use the dynamically retrieved route URL
+                        const response = await fetch(sendOtpRoute, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Accept': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') // CSRF token برای این مسیر لازم است
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') // CSRF token is required for this route
                             },
                             body: JSON.stringify({ mobile_number: mobileNumber })
                         });
@@ -418,11 +420,12 @@
                     sendNewOtpButton.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال ارسال...'; // Loading spinner and text
 
                     try {
-                        const response = await fetch(authChangeMobileNumberRoute, { // Using the defined JS variable
+                        // Use the dynamically retrieved route URL
+                        const response = await fetch(authChangeMobileNumberRoute, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') // CSRF token برای این مسیر لازم است
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') // CSRF token is required for this route
                             },
                             body: JSON.stringify({ new_mobile_number: newMobileNumber })
                         });

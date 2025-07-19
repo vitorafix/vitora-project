@@ -6,190 +6,218 @@ use App\Contracts\Services\RateLimitServiceInterface;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
-// Make sure the helper file is loaded (e.g., via composer.json "files" autoload)
-// require_once app_path('Helpers/SecurityHelper.php'); // Not strictly necessary if autoloaded by composer
+// Make sure SecurityHelper.php is properly autoloaded, e.g., by adding it to composer.json
+// or by using a global helper file in Laravel.
+// For this example, we assume hashForCache and maskForLog functions are available.
 
 class RateLimitService implements RateLimitServiceInterface
 {
-    protected $sendMaxAttempts;
-    protected $sendCooldownMinutes;
-    protected $verifyMaxAttempts;
-    protected $verifyCooldownMinutes;
-    protected $ipMaxAttempts;
-    protected $ipCooldownMinutes;
+    // Constants for rate limiting
+    const OTP_SEND_ATTEMPTS_LIMIT = 3; // Max attempts to send OTP per mobile number
+    const OTP_SEND_WINDOW_MINUTES = 1; // Time window for OTP send attempts
+    const OTP_IP_ATTEMPTS_LIMIT = 5; // Max attempts to send OTP per IP address
+    const OTP_IP_WINDOW_MINUTES = 5; // Time window for IP-based OTP send attempts
 
-    public function __construct()
-    {
-        $this->sendMaxAttempts = config('auth.otp.send_attempts.max_attempts', 3);
-        $this->sendCooldownMinutes = config('auth.otp.send_attempts.cooldown_minutes', 15);
-        $this->verifyMaxAttempts = config('auth.otp.verify_attempts.max_attempts', 5);
-        $this->verifyCooldownMinutes = config('auth.otp.verify_attempts.cooldown_minutes', 30);
-        $this->ipMaxAttempts = config('auth.otp.ip_attempts.max_attempts', 10);
-        $this->ipCooldownMinutes = config('auth.otp.ip_attempts.cooldown_minutes', 60);
-    }
+    const OTP_VERIFY_ATTEMPTS_LIMIT = 5; // Max attempts to verify OTP per mobile number
+    const OTP_VERIFY_WINDOW_MINUTES = 5; // Time window for OTP verification attempts
+    const OTP_IP_VERIFY_ATTEMPTS_LIMIT = 10; // Max attempts to verify OTP per IP address
+    const OTP_IP_VERIFY_WINDOW_MINUTES = 10; // Time window for IP-based OTP verification attempts
 
     /**
-     * Generates a hashed key for SMS attempts cache based on mobile number using the helper.
-     * This prevents direct exposure of mobile numbers in cache keys.
+     * Generates a hashed cache key for mobile number based rate limits.
      *
      * @param string $mobileNumber
+     * @param string $type 'send' or 'verify'
      * @return string
      */
-    private function getSmsAttemptsCacheKey(string $mobileNumber): string
+    private function getMobileCacheKey(string $mobileNumber, string $type): string
     {
-        return 'sms_attempts_' . hashForCache($mobileNumber, 'sms_attempts_key');
+        return 'rate_limit:' . $type . ':' . hashForCache($mobileNumber, $type . '_mobile_rate_limit');
     }
 
     /**
-     * Generates a hashed key for OTP verification attempts cache based on mobile number using the helper.
-     * This prevents direct exposure of mobile numbers in cache keys.
-     *
-     * @param string $mobileNumber
-     * @return string
-     */
-    private function getVerifyAttemptsCacheKey(string $mobileNumber): string
-    {
-        return 'verify_attempts_' . hashForCache($mobileNumber, 'verify_attempts_key');
-    }
-
-    /**
-     * Generates a hashed key for IP attempts cache based on IP address using the helper.
-     * This prevents direct exposure of IP addresses in cache keys.
+     * Generates a hashed cache key for IP address based rate limits.
      *
      * @param string $ipAddress
+     * @param string $type 'send' or 'verify'
      * @return string
      */
-    private function getIpAttemptsCacheKey(string $ipAddress): string
+    private function getIpCacheKey(string $ipAddress, string $type): string
     {
-        return 'ip_attempts_' . hashForCache($ipAddress, 'ip_attempts_key');
+        return 'rate_limit:' . $type . ':ip:' . hashForCache($ipAddress, $type . '_ip_rate_limit');
     }
 
     /**
-     * Checks if mobile number is rate limited for OTP sending and increments attempt count.
+     * Checks and increments the OTP send attempts for a given mobile number.
      *
      * @param string $mobileNumber
-     * @return bool True if not rate limited, false otherwise.
+     * @return bool True if allowed, false if rate limit exceeded.
      */
     public function checkAndIncrementSendAttempts(string $mobileNumber): bool
     {
-        $attemptsCacheKey = $this->getSmsAttemptsCacheKey($mobileNumber); // Using hashed key
-        $attempts = Cache::get($attemptsCacheKey, 0);
+        $key = $this->getMobileCacheKey($mobileNumber, 'send');
+        $attempts = Cache::get($key, 0);
 
-        if ($attempts >= $this->sendMaxAttempts) {
-            Log::warning('Too many OTP send attempts for mobile number (RateLimitService).', [
-                'mobile_hash' => hashForCache($mobileNumber, 'log_mobile_hash'), // Using hashForCache for log
-                'attempts' => $attempts,
-                'mobile_masked' => maskForLog($mobileNumber, 'phone') // Using maskForLog
-            ]);
-            return false; // Rate limited
+        if ($attempts >= self::OTP_SEND_ATTEMPTS_LIMIT) {
+            Log::warning('RateLimitService: Mobile send rate limit exceeded for: ' . maskForLog($mobileNumber, 'phone'));
+            return false;
         }
 
-        if ($attempts === 0) {
-            Cache::put($attemptsCacheKey, 1, now()->addMinutes($this->sendCooldownMinutes));
-        } else {
-            Cache::increment($attemptsCacheKey);
-        }
+        Cache::put($key, $attempts + 1, now()->addMinutes(self::OTP_SEND_WINDOW_MINUTES));
         Log::info('OTP send attempt count updated (RateLimitService).', [
-            'mobile_hash' => hashForCache($mobileNumber, 'log_mobile_hash'), // Using hashForCache for log
+            'mobile_hash' => hashForCache($mobileNumber, 'send_mobile_rate_limit'),
             'new_attempts' => $attempts + 1,
-            'mobile_masked' => maskForLog($mobileNumber, 'phone') // Using maskForLog
+            'mobile_masked' => maskForLog($mobileNumber, 'phone')
         ]);
-        return true; // Not rate limited, attempt recorded
+        return true;
     }
 
     /**
-     * Checks if mobile number is rate limited for OTP verification and increments attempt count.
+     * Gets the current OTP send attempts for a given mobile number.
      *
      * @param string $mobileNumber
-     * @return bool True if not rate limited, false otherwise.
+     * @return int
      */
-    public function checkAndIncrementVerifyAttempts(string $mobileNumber): bool
+    public function getSendAttempts(string $mobileNumber): int
     {
-        $verifyAttemptsCacheKey = $this->getVerifyAttemptsCacheKey($mobileNumber); // Using hashed key
-        $verifyAttempts = Cache::get($verifyAttemptsCacheKey, 0);
-
-        if ($verifyAttempts >= $this->verifyMaxAttempts) {
-            Log::warning('Too many OTP verification attempts for mobile number (RateLimitService).', [
-                'mobile_hash' => hashForCache($mobileNumber, 'log_mobile_hash'), // Using hashForCache for log
-                'attempts' => $verifyAttempts,
-                'mobile_masked' => maskForLog($mobileNumber, 'phone') // Using maskForLog
-            ]);
-            return false; // Rate limited
-        }
-
-        if ($verifyAttempts === 0) {
-            Cache::put($verifyAttemptsCacheKey, 1, now()->addMinutes($this->verifyCooldownMinutes));
-        } else {
-            Cache::increment($verifyAttemptsCacheKey);
-        }
-        Log::info('OTP verification attempt count updated (RateLimitService).', [
-            'mobile_hash' => hashForCache($mobileNumber, 'log_mobile_hash'), // Using hashForCache for log
-            'new_attempts' => $verifyAttempts + 1,
-            'mobile_masked' => maskForLog($mobileNumber, 'phone') // Using maskForLog
-        ]);
-        return true; // Not rate limited, attempt recorded
+        $key = $this->getMobileCacheKey($mobileNumber, 'send');
+        return Cache::get($key, 0);
     }
 
     /**
-     * Checks if IP address is rate limited and increments attempt count.
+     * Checks and increments the OTP send attempts for a given IP address.
      *
      * @param string $ipAddress
-     * @return bool True if not rate limited, false otherwise.
+     * @return bool True if allowed, false if rate limit exceeded.
      */
     public function checkAndIncrementIpAttempts(string $ipAddress): bool
     {
-        $ipAttemptsCacheKey = $this->getIpAttemptsCacheKey($ipAddress); // Using hashed key
-        $ipAttempts = Cache::get($ipAttemptsCacheKey, 0);
+        $key = $this->getIpCacheKey($ipAddress, 'send');
+        $attempts = Cache::get($key, 0);
 
-        if ($ipAttempts >= $this->ipMaxAttempts) {
-            Log::warning('Too many attempts from IP (RateLimitService).', [
-                'ip_hash' => hashForCache($ipAddress, 'log_ip_hash'), // Using hashForCache for log
-                'attempts' => $ipAttempts,
-                'ip_masked' => maskForLog($ipAddress, 'ip') // Using maskForLog
-            ]);
-            return false; // Rate limited
+        if ($attempts >= self::OTP_IP_ATTEMPTS_LIMIT) {
+            Log::warning('RateLimitService: IP send rate limit exceeded for: ' . maskForLog($ipAddress, 'ip'));
+            return false;
         }
 
-        if ($ipAttempts === 0) {
-            Cache::put($ipAttemptsCacheKey, 1, now()->addMinutes($this->ipCooldownMinutes));
-        } else {
-            Cache::increment($ipAttemptsCacheKey);
-        }
+        Cache::put($key, $attempts + 1, now()->addMinutes(self::OTP_IP_WINDOW_MINUTES));
         Log::info('IP attempt count updated (RateLimitService).', [
-            'ip_hash' => hashForCache($ipAddress, 'log_ip_hash'), // Using hashForCache for log
-            'new_attempts' => $ipAttempts + 1,
-            'ip_masked' => maskForLog($ipAddress, 'ip') // Using maskForLog
+            'ip_hash' => hashForCache($ipAddress, 'send_ip_rate_limit'),
+            'new_attempts' => $attempts + 1,
+            'ip_masked' => maskForLog($ipAddress, 'ip')
         ]);
-        return true; // Not rate limited, attempt recorded
+        return true;
     }
 
     /**
-     * Resets OTP verification attempts for a given mobile number.
+     * Gets the current OTP send attempts for a given IP address.
+     *
+     * @param string $ipAddress
+     * @return int
+     */
+    public function getIpAttempts(string $ipAddress): int
+    {
+        $key = $this->getIpCacheKey($ipAddress, 'send');
+        return Cache::get($key, 0);
+    }
+
+    /**
+     * Checks and increments the OTP verification attempts for a given mobile number.
+     *
+     * @param string $mobileNumber
+     * @return bool True if allowed, false if rate limit exceeded.
+     */
+    public function checkAndIncrementVerifyAttempts(string $mobileNumber): bool
+    {
+        $key = $this->getMobileCacheKey($mobileNumber, 'verify');
+        $attempts = Cache::get($key, 0);
+
+        if ($attempts >= self::OTP_VERIFY_ATTEMPTS_LIMIT) {
+            Log::warning('RateLimitService: Mobile verification rate limit exceeded for: ' . maskForLog($mobileNumber, 'phone'));
+            return false;
+        }
+
+        Cache::put($key, $attempts + 1, now()->addMinutes(self::OTP_VERIFY_WINDOW_MINUTES));
+        Log::info('OTP verification attempt count updated (RateLimitService).', [
+            'mobile_hash' => hashForCache($mobileNumber, 'verify_mobile_rate_limit'),
+            'new_attempts' => $attempts + 1,
+            'mobile_masked' => maskForLog($mobileNumber, 'phone')
+        ]);
+        return true;
+    }
+
+    /**
+     * Gets the current OTP verification attempts for a given mobile number.
+     *
+     * @param string $mobileNumber
+     * @return int
+     */
+    public function getVerifyAttempts(string $mobileNumber): int
+    {
+        $key = $this->getMobileCacheKey($mobileNumber, 'verify');
+        return Cache::get($key, 0);
+    }
+
+    /**
+     * Checks and increments the OTP verification attempts for a given IP address.
+     *
+     * @param string $ipAddress
+     * @return bool True if allowed, false if rate limit exceeded.
+     */
+    public function checkAndIncrementIpVerifyAttempts(string $ipAddress): bool
+    {
+        $key = $this->getIpCacheKey($ipAddress, 'verify');
+        $attempts = Cache::get($key, 0);
+
+        if ($attempts >= self::OTP_IP_VERIFY_ATTEMPTS_LIMIT) {
+            Log::warning('RateLimitService: IP verification rate limit exceeded for: ' . maskForLog($ipAddress, 'ip'));
+            return false;
+        }
+
+        Cache::put($key, $attempts + 1, now()->addMinutes(self::OTP_IP_VERIFY_WINDOW_MINUTES));
+        Log::info('IP verification attempt count updated (RateLimitService).', [
+            'ip_hash' => hashForCache($ipAddress, 'verify_ip_rate_limit'),
+            'new_attempts' => $attempts + 1,
+            'ip_masked' => maskForLog($ipAddress, 'ip')
+        ]);
+        return true;
+    }
+
+    /**
+     * Gets the current OTP verification attempts for a given IP address.
+     *
+     * @param string $ipAddress
+     * @return int
+     */
+    public function getIpVerifyAttempts(string $ipAddress): int
+    {
+        $key = $this->getIpCacheKey($ipAddress, 'verify');
+        return Cache::get($key, 0);
+    }
+
+    /**
+     * Clears all rate limit attempts for a given mobile number.
      *
      * @param string $mobileNumber
      * @return void
      */
-    public function resetVerifyAttempts(string $mobileNumber): void
+    public function clearAttempts(string $mobileNumber): void
     {
-        Cache::forget($this->getVerifyAttemptsCacheKey($mobileNumber)); // Using hashed key
-        Log::info('OTP verification attempts reset (RateLimitService).', [
-            'mobile_hash' => hashForCache($mobileNumber, 'log_mobile_hash'), // Using hashForCache for log
-            'mobile_masked' => maskForLog($mobileNumber, 'phone') // Using maskForLog
-        ]);
+        Cache::forget($this->getMobileCacheKey($mobileNumber, 'send'));
+        Cache::forget($this->getMobileCacheKey($mobileNumber, 'verify'));
+        Log::info('RateLimitService: Cleared all attempts for mobile: ' . maskForLog($mobileNumber, 'phone'));
     }
 
     /**
-     * Resets IP attempts for a given IP address.
+     * Clears all IP-based rate limit attempts for a given IP address.
      *
      * @param string $ipAddress
      * @return void
      */
-    public function resetIpAttempts(string $ipAddress): void
+    public function clearIpAttempts(string $ipAddress): void
     {
-        Cache::forget($this->getIpAttemptsCacheKey($ipAddress)); // Using hashed key
-        Log::info('IP attempts reset (RateLimitService).', [
-            'ip_hash' => hashForCache($ipAddress, 'log_ip_hash'), // Using hashForCache for log
-            'ip_masked' => maskForLog($ipAddress, 'ip') // Using maskForLog
-        ]);
+        Cache::forget($this->getIpCacheKey($ipAddress, 'send'));
+        Cache::forget($this->getIpCacheKey($ipAddress, 'verify'));
+        Log::info('RateLimitService: Cleared all IP attempts for: ' . maskForLog($ipAddress, 'ip'));
     }
 }

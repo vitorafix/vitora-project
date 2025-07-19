@@ -1,7 +1,10 @@
-{{-- استفاده از لایه‌بندی اصلی برنامه که شامل هدر و فوتر است --}}
-<x-app-layout>
-    <div class="py-12 bg-gray-100 dark:bg-gray-900 min-h-screen flex items-center justify-center">
-        <div class="max-w-md w-full bg-white dark:bg-gray-800 shadow-xl rounded-lg p-8 sm:p-10 border border-gray-200 dark:border-gray-700" dir="rtl">
+@extends('layouts.app')
+
+@section('title', 'ورود / ثبت‌نام - چای ابراهیم')
+
+@section('content')
+    <section class="container mx-auto px-4 py-8 md:py-16 max-w-md">
+        <div class="w-full bg-white dark:bg-gray-800 shadow-xl rounded-lg p-8 sm:p-10 border border-gray-200 dark:border-gray-700" dir="rtl">
             <div class="text-center mb-8">
                 <h2 class="text-2xl font-extrabold text-gray-900 dark:text-white mb-2">
                     {{ __('ورود / ثبت‌نام') }}
@@ -68,33 +71,35 @@
                 </p>
             </div>
         </div>
-    </div>
+    </section>
 
     {{-- کد جاوااسکریپت برای تبدیل اعداد فارسی به انگلیسی --}}
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const mobileNumberInput = document.getElementById('mobile_number');
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const mobileNumberInput = document.getElementById('mobile_number');
 
-            if (mobileNumberInput) {
-                mobileNumberInput.addEventListener('input', function(event) {
-                    let value = event.target.value;
-                    let convertedValue = '';
+                if (mobileNumberInput) {
+                    mobileNumberInput.addEventListener('input', function(event) {
+                        let value = event.target.value;
+                        let convertedValue = '';
 
-                    const persianToEnglishMap = {
-                        '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
-                        '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
-                        '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
-                        '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
-                    };
+                        const persianToEnglishMap = {
+                            '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
+                            '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
+                            '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+                            '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
+                        };
 
-                    for (let i = 0; i < value.length; i++) {
-                        const char = value[i];
-                        convertedValue += persianToEnglishMap[char] || char;
-                    }
+                        for (let i = 0; i < value.length; i++) {
+                            const char = value[i];
+                            convertedValue += persianToEnglishMap[char] || char;
+                        }
 
-                    event.target.value = convertedValue;
-                });
-            }
-        });
-    </script>
-</x-app-layout>
+                        event.target.value = convertedValue;
+                    });
+                }
+            });
+        </script>
+    @endpush
+@endsection

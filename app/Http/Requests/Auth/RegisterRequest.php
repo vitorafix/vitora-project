@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Http\Requests\Auth; // Changed: Updated namespace to match the expected folder structure (app/Http/Requests/Auth)
+namespace App\Http\Requests\Auth; 
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule; // Import the Rule class for unique validation
+use Illuminate\Validation\Rule; 
+// Removed: use function App\Helpers\convertPersianDigitsToEnglish; // Helper functions are global
 
 class RegisterRequest extends FormRequest
 {
@@ -16,12 +17,9 @@ class RegisterRequest extends FormRequest
      * @var array
      */
     private const INVALID_MOBILE_PATTERNS = [
-        '/^(.)\1{10}$/', // Prevents repetition of a single digit throughout the number (e.g., 09111111111)
-        // جلوگیری از تکرار یک رقم در کل شماره (مثال: 09111111111)
-        '/^09(123456789|987654321|012345678|876543210)$/', // Common sequential patterns (e.g., 09123456789)
-        // الگوهای ترتیبی رایج (مثال: 09123456789)
-        '/^09([0-9])\1{9}$/', // Prevents repetition of the second digit throughout the number (e.g., 09111111111) - improved for clarity
-        // جلوگیری از تکرار رقم دوم در کل شماره (مثال: 09111111111) - بهبود یافته برای وضوح بیشتر
+        '/^(.)\1{10}$/', 
+        '/^09(123456789|987654321|012345678|876543210)$/', 
+        '/^09([0-9])\1{9}$/', 
     ];
 
     /**
@@ -34,12 +32,9 @@ class RegisterRequest extends FormRequest
     {
         // Only guest users (not logged in) can register.
         // Uncomment the line below to enable this restriction.
-        // فقط کاربران مهمان (غیر وارد شده) می‌توانند ثبت‌نام کنند.
-        // برای فعال‌سازی این محدودیت، خط زیر را از حالت کامنت خارج کنید.
         return auth()->guest();
 
         // Currently, it allows all access.
-        // در حال حاضر، به همه اجازه دسترسی می‌دهد.
         // return true;
     }
 
@@ -56,14 +51,10 @@ class RegisterRequest extends FormRequest
         // This ensures that even if malicious HTML/JS is submitted, it's removed.
         // Trim 'mobile_number' to remove any leading/trailing whitespace.
         // Convert Persian/Arabic digits to English digits before validation.
-        // نام و نام خانوادگی را با حذف تگ‌های HTML برای جلوگیری از XSS پاکسازی می‌کند.
-        // این تضمین می‌کند که حتی اگر HTML/JS مخرب ارسال شود، حذف می‌شود.
-        // 'mobile_number' را برای حذف هرگونه فضای خالی ابتدایی/انتهایی Trim می‌کند.
-        // ارقام فارسی/عربی را قبل از اعتبارسنجی به ارقام انگلیسی تبدیل می‌کند.
         $this->merge([
             'name' => strip_tags($this->input('name')),
             'lastname' => strip_tags($this->input('lastname')),
-            'mobile_number' => $this->convertPersianDigitsToEnglish(trim($this->input('mobile_number'))),
+            'mobile_number' => convertPersianDigitsToEnglish(trim($this->input('mobile_number'))), // Use the global helper function
         ]);
     }
 
@@ -79,41 +70,28 @@ class RegisterRequest extends FormRequest
             'name' => [
                 'required',
                 'string',
-                'min:2', // Minimum 2 characters
-                // حداقل 2 کاراکتر
+                'min:2', 
                 'max:255',
-                // Allows only letters (including Persian letters), spaces, and hyphens
-                // فقط حروف (شامل حروف فارسی)، فاصله و خط تیره را مجاز می‌کند
                 'regex:/^[\pL\s\-]+$/u'
             ],
             'lastname' => [
                 'nullable',
                 'string',
                 'max:255',
-                // Applies the same regex as name for lastname
-                // همان regex نام را برای نام خانوادگی نیز اعمال می‌کند
                 'regex:/^[\pL\s\-]+$/u'
             ],
             'mobile_number' => [
                 'required',
                 'string',
-                'regex:/^09[0-9]{9}$/', // Ensures correct format 09xxxxxxxxx
-                // اطمینان از فرمت صحیح 09xxxxxxxxx
-                'size:11', // Ensures it's exactly 11 characters
-                // اطمینان از اینکه دقیقاً 11 کاراکتر است
-                // Ensures uniqueness of mobile number in the 'users' table
-                // اطمینان از یکتا بودن شماره موبایل در جدول 'users'
+                'regex:/^09[0-9]{9}$/', 
+                'size:11', 
                 Rule::unique('users', 'mobile_number'),
-                // Uses a helper method to check for invalid patterns
-                // استفاده از متد کمکی برای بررسی الگوهای نامعتبر
                 function ($attribute, $value, $fail) {
                     if (!$this->isValidMobilePattern($value)) {
                         $fail('شماره موبایل وارد شده معتبر نیست. لطفاً شماره موبایل واقعی خود را وارد کنید.');
                     }
                 },
             ],
-            // Add other validation rules as needed (e.g., password if used)
-            // سایر قوانین اعتبارسنجی را در صورت نیاز اضافه کنید (مثلاً رمز عبور در صورت استفاده)
         ];
     }
 
@@ -132,27 +110,6 @@ class RegisterRequest extends FormRequest
             }
         }
         return true;
-    }
-
-    /**
-     * Converts Persian/Arabic digits in a string to English digits.
-     * ارقام فارسی/عربی را در یک رشته به ارقام انگلیسی تبدیل می‌کند.
-     *
-     * @param string $input The string containing digits.
-     * @return string The string with converted digits.
-     */
-    private function convertPersianDigitsToEnglish(string $input): string
-    {
-        $persianDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
-        $englishDigits = ['0','1','2','3','4','5','6','7','8','9'];
-        // Also include Arabic digits if necessary, as they are often used interchangeably
-        // در صورت لزوم، ارقام عربی را نیز اضافه کنید، زیرا اغلب به جای یکدیگر استفاده می‌شوند.
-        $arabicDigits = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
-
-        $input = str_replace($persianDigits, $englishDigits, $input);
-        $input = str_replace($arabicDigits, $englishDigits, $input);
-
-        return $input;
     }
 
     /**

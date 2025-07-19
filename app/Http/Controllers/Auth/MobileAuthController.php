@@ -12,13 +12,13 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Log; // Added for logging
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Validator;
-use Throwable; // Added to handle Throwable in custom exception
+use Throwable;
 
 // Import new service classes and interfaces
 use App\Contracts\Services\OtpServiceInterface;
@@ -26,10 +26,10 @@ use App\Contracts\Services\RateLimitServiceInterface;
 use App\Contracts\Services\AuditServiceInterface;
 use App\Http\Requests\SendOtpRequest;
 use App\Http\Requests\VerifyOtpRequest;
-use App\Http\Requests\Auth\RegisterRequest; // Changed: Updated namespace for RegisterRequest
+use App\Http\Requests\Auth\RegisterRequest;
 
-// Make sure the helper file is loaded (e.g., via composer.json "files" autoload)
-// require_once app_path('Helpers/SecurityHelper.php'); // Not strictly necessary if autoloaded by composer
+// Add Spatie's Role class
+use Spatie\Permission\Models\Role; // Add this line
 
 /**
  * Custom Exception to carry generated OTP on failure.
@@ -100,7 +100,8 @@ class MobileAuthController extends Controller
         if (Auth::check()) {
             return redirect()->intended(route('dashboard'));
         }
-        return view('login'); // فرض بر این است که 'resources/views/login.blade.php' وجود دارد.
+        // مسیر ویو به 'auth.login' تغییر داده شد تا با ساختار 'resources/views/auth/login.blade.php' مطابقت داشته باشد.
+        return view('auth.login');
     }
 
     /**
@@ -153,7 +154,10 @@ class MobileAuthController extends Controller
         $mobileNumber = $request->mobile_number;
         $ipAddress = $request->ip();
 
+        Log::debug('MobileAuthController: Starting sendOtp process for mobile: ' . maskForLog($mobileNumber, 'phone')); // Added debug log
         try {
+            Log::debug('MobileAuthController: Calling otpService->sendOtpForMobile for mobile: ' . maskForLog($mobileNumber, 'phone')); // Added debug log
+
             // کنترلر منطق اصلی ارسال OTP را به OtpService واگذار می‌کند.
             // RateLimitService و یک auditLogger قابل فراخوانی را به سرویس ارسال کنید.
             $this->otpService->sendOtpForMobile(
@@ -178,6 +182,8 @@ class MobileAuthController extends Controller
                 }
             );
 
+            Log::debug('MobileAuthController: otpService->sendOtpForMobile completed successfully for mobile: ' . maskForLog($mobileNumber, 'phone')); // Added debug log
+
             // اگر فراخوانی سرویس موفقیت آمیز بود، پاسخ را بر اساس نوع درخواست تعیین کنید.
             // اگر درخواست از نوع AJAX/JSON باشد، پاسخ JSON برگردانده می‌شود.
             if ($request->expectsJson()) {
@@ -188,6 +194,7 @@ class MobileAuthController extends Controller
             return redirect()->route('auth.verify-otp-form')->with('status', 'کد تأیید با موفقیت ارسال شد.');
 
         } catch (OtpSendException $e) { // Catch the custom exception
+            Log::error('MobileAuthController: OtpSendException caught for mobile: ' . maskForLog($mobileNumber, 'phone') . '. Error: ' . $e->getMessage()); // Added debug log
             $generatedOtp = $e->getGeneratedOtp(); // Get the generated OTP from the exception
             $this->auditService->log(
                 'otp_send_failed_exception',
@@ -211,6 +218,7 @@ class MobileAuthController extends Controller
                 'mobile_number'
             );
         } catch (\Exception $e) { // Catch any other generic exceptions
+            Log::error('MobileAuthController: Generic Exception caught for mobile: ' . maskForLog($mobileNumber, 'phone') . '. Error: ' . $e->getMessage()); // Added debug log
             // کنترلر استثنائات را از سرویس دریافت کرده و به طور مناسب پاسخ می‌دهد.
             // خطای حیاتی را از طریق AuditService ثبت کنید.
             // در اینجا، extra را از OtpService دریافت نمی‌کنیم، بنابراین فقط اطلاعات کنترلر را ارسال می‌کنیم.
@@ -260,6 +268,40 @@ class MobileAuthController extends Controller
                 // برای سیستم‌های مبتنی بر OTP، رمز عبور ممکن است در هنگام ثبت نام لازم نباشد.
                 // 'password' => Hash::make(Str::random(10)), // مثال: تولید یک رمز عبور تصادفی
             ]);
+
+            // Assign the 'user' role to the newly registered user
+            // انتساب نقش 'user' به کاربر تازه ثبت نام شده
+            $userRole = Role::where('name', 'user')->first();
+            if ($userRole) {
+                $user->assignRole($userRole);
+                $this->auditService->log(
+                    'role_assigned_on_registration',
+                    'Role "user" assigned to new user: ' . maskForLog($user->mobile_number, 'phone'),
+                    $request,
+                    [
+                        'user_id' => $user->id,
+                        'mobile_number_masked' => maskForLog($user->mobile_number, 'phone'),
+                        'role' => 'user'
+                    ],
+                    hashForCache($user->mobile_number, 'audit_mobile_hash'),
+                    $user->id, 'User', $user->id, 'info'
+                );
+            } else {
+                Log::warning('Role "user" not found when registering user: ' . maskForLog($user->mobile_number, 'phone'));
+                $this->auditService->log(
+                    'role_not_found_on_registration',
+                    'Attempted to assign "user" role but role not found for user: ' . maskForLog($user->mobile_number, 'phone'),
+                    $request,
+                    [
+                        'user_id' => $user->id,
+                        'mobile_number_masked' => maskForLog($user->mobile_number, 'phone'),
+                        'missing_role' => 'user'
+                    ],
+                    hashForCache($user->mobile_number, 'audit_mobile_hash'),
+                    $user->id, 'User', $user->id, 'warning'
+                );
+            }
+
 
             // ثبت رویداد ثبت نام
             $this->auditService->log(
@@ -330,7 +372,10 @@ class MobileAuthController extends Controller
         $otp = $request->otp;
         $ipAddress = $request->ip();
 
+        Log::debug('MobileAuthController: Starting verifyOtp process for mobile: ' . maskForLog($mobileNumber, 'phone')); // Added debug log
         try {
+            Log::debug('MobileAuthController: Calling otpService->verifyOtpForMobile for mobile: ' . maskForLog($mobileNumber, 'phone')); // Added debug log
+
             // کنترلر منطق تایید را به OtpService واگذار می‌کند.
             // RateLimitService و یک auditLogger قابل فراخوانی را به سرویس ارسال کنید.
             $user = $this->otpService->verifyOtpForMobile(
@@ -355,6 +400,8 @@ class MobileAuthController extends Controller
                     );
                 }
             );
+
+            Log::debug('MobileAuthController: otpService->verifyOtpForMobile completed successfully for mobile: ' . maskForLog($mobileNumber, 'phone')); // Added debug log
 
             // اگر تایید موفقیت آمیز بود، کاربر را وارد کنید.
             Auth::login($user, $request->boolean('remember'));
@@ -385,6 +432,7 @@ class MobileAuthController extends Controller
             return redirect()->intended(route('dashboard'));
 
         } catch (\Exception $e) {
+            Log::error('MobileAuthController: Exception caught during verifyOtp for mobile: ' . maskForLog($mobileNumber, 'phone') . '. Error: ' . $e->getMessage()); // Added debug log
             // کنترلر استثنائات را از سرویس دریافت کرده و به طور مناسب پاسخ می‌دهد.
             // در اینجا، extra را از OtpService دریافت نمی‌کنیم، بنابراین فقط اطلاعات کنترلر را ارسال می‌کنیم.
             // OtpService خودش generated_otp را در لاگ خطای خود ثبت می‌کند.
@@ -441,7 +489,10 @@ class MobileAuthController extends Controller
         $newMobileNumber = $this->normalizeMobileNumber($request->input('new_mobile_number'));
         $ipAddress = $request->ip();
 
+        Log::debug('MobileAuthController: Starting changeMobileNumber process for new mobile: ' . maskForLog($newMobileNumber, 'phone')); // Added debug log
         try {
+            Log::debug('MobileAuthController: Calling otpService->sendOtpForMobile for new mobile: ' . maskForLog($newMobileNumber, 'phone')); // Added debug log
+
             // 2. Send a new OTP to the new mobile number
             // ارسال OTP جدید به شماره موبایل جدید
             // استفاده مجدد از منطق موجود sendOtp که محدودیت نرخ و حسابرسی را مدیریت می‌کند.
@@ -466,6 +517,8 @@ class MobileAuthController extends Controller
                 }
             );
 
+            Log::debug('MobileAuthController: otpService->sendOtpForMobile completed successfully for new mobile: ' . maskForLog($newMobileNumber, 'phone')); // Added debug log
+
             // 3. If successful, respond with success message
             // در صورت موفقیت، پاسخ با پیام موفقیت
             // اگر درخواست از نوع AJAX/JSON باشد، پاسخ JSON برگردانده می‌شود.
@@ -477,6 +530,7 @@ class MobileAuthController extends Controller
             return response()->json(['message' => 'شماره موبایل با موفقیت تغییر یافت و کد جدید ارسال شد.']); // Fallback JSON response
 
         } catch (OtpSendException $e) { // Catch the custom exception
+            Log::error('MobileAuthController: OtpSendException caught during changeMobileNumber for new mobile: ' . maskForLog($newMobileNumber, 'phone') . '. Error: ' . $e->getMessage()); // Added debug log
             $generatedOtp = $e->getGeneratedOtp(); // Get the generated OTP from the exception
             $this->auditService->log(
                 'change_mobile_number_failed_exception',
@@ -495,6 +549,7 @@ class MobileAuthController extends Controller
             // پاسخ با پیام خطا
             return response()->json(['message' => $e->getMessage()], $e->getCode() ?: 500);
         } catch (\Exception $e) { // Catch any other generic exceptions
+            Log::error('MobileAuthController: Generic Exception caught during changeMobileNumber for new mobile: ' . maskForLog($newMobileNumber, 'phone') . '. Error: ' . $e->getMessage()); // Added debug log
             // ثبت خطا
             // در اینجا، extra را از OtpService دریافت نمی‌کنیم، بنابراین فقط اطلاعات کنترلر را ارسال می‌کنیم.
             // OtpService خودش generated_otp را در لاگ خطای خود ثبت می‌کند.
