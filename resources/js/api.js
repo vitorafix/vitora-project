@@ -13,7 +13,12 @@ const commonHeaders = {
     'X-Requested-With': 'XMLHttpRequest'
 };
 
-// تابع کمکی برای ساخت گزینه‌های fetch با CSRF و Credentials
+/**
+ * تابع کمکی برای ساخت گزینه‌های fetch با CSRF، Credentials و Guest UUID.
+ * @param {string} method - متد HTTP (مثلاً 'GET', 'POST').
+ * @param {Object|null} body - بدنه درخواست برای متدهای POST/PUT.
+ * @returns {Object} گزینه‌های fetch.
+ */
 function getFetchOptions(method, body = null) {
     const csrfToken = getCsrfToken();
     if (!csrfToken) {
@@ -21,12 +26,26 @@ function getFetchOptions(method, body = null) {
         throw new Error('CSRF token is missing.');
     }
 
+    // دریافت guest_uuid از window.guest_uuid که در app.js تنظیم شده است
+    const guestUuid = window.guest_uuid || null;
+
+    // --- DEBUG LOG: بررسی مقدار guestUuid قبل از ارسال ---
+    console.log('getFetchOptions: guestUuid being sent:', guestUuid);
+    // --- پایان DEBUG LOG ---
+
+    const headers = {
+        ...commonHeaders,
+        'X-CSRF-TOKEN': csrfToken, // اضافه کردن هدر CSRF
+    };
+
+    // اضافه کردن Guest UUID به هدرها در صورت وجود
+    if (guestUuid) {
+        headers['X-Guest-UUID'] = guestUuid;
+    }
+
     const options = {
         method: method,
-        headers: {
-            ...commonHeaders,
-            'X-CSRF-TOKEN': csrfToken, // اضافه کردن هدر CSRF
-        },
+        headers: headers,
         credentials: 'include' // این خط برای ارسال کوکی‌ها در درخواست‌های Cross-Origin حیاتی است
     };
 
@@ -88,7 +107,7 @@ export async function removeCartItem(cartItemId) {
         const response = await fetch(`/api/cart/remove-item/${cartItemId}`, getFetchOptions('POST')); // POST برای حذف
         const data = await response.json();
         if (!response.ok) {
-            throw new new Error(data.message || `HTTP error! status: ${response.status}`);
+            throw new Error(data.message || `HTTP error! status: ${response.status}`);
         }
         return data;
     } catch (error) {
@@ -109,7 +128,7 @@ export async function fetchCartContents() {
             throw new Error(data.message || `HTTP error! status: ${response.status}`);
         }
         // اطمینان حاصل کنید که 'items' همیشه یک آرایه است
-        if (data && !Array.isArray(data.data.items)) {
+        if (data && data.data && !Array.isArray(data.data.items)) {
             console.warn("API response for cart contents did not contain 'items' as an array. Defaulting to empty array.");
             data.data.items = [];
         }

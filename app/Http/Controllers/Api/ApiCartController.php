@@ -50,12 +50,13 @@ class ApiCartController extends Controller
         try {
             $user = Auth::user();
             $sessionId = Session::getId();
+            $guestUuid = $request->header('X-Guest-UUID'); // دریافت guest_uuid از هدر
 
-            // DEBUG LOG: Check Auth::user() and Session::getId() before calling getOrCreateCart
-            Log::debug('ApiCartController::getContents: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+            // DEBUG LOG: Check Auth::user() and Session::getId() and guestUuid before calling getOrCreateCart
+            Log::debug('ApiCartController::getContents: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId . ', Guest UUID: ' . ($guestUuid ?? 'NULL'));
 
-            // Pass both user and sessionId to getOrCreateCart
-            $cart = $this->cartService->getOrCreateCart($user, $sessionId);
+            // Pass user, sessionId, and guestUuid to getOrCreateCart
+            $cart = $this->cartService->getOrCreateCart($user, $sessionId, $guestUuid);
 
             $cartContentsResponse = $this->cartService->getCartContents($cart);
 
@@ -99,11 +100,13 @@ class ApiCartController extends Controller
 
             $user = Auth::user();
             $sessionId = Session::getId();
-            // DEBUG LOG: Check Auth::user() and Session::getId() before calling getOrCreateCart
-            Log::debug('ApiCartController::add: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+            $guestUuid = $request->header('X-Guest-UUID'); // دریافت guest_uuid از هدر
 
-            // Pass both Auth::user() and Session::getId()
-            $currentCart = $this->cartService->getOrCreateCart($user, $sessionId);
+            // DEBUG LOG: Check Auth::user() and Session::getId() and guestUuid before calling getOrCreateCart
+            Log::debug('ApiCartController::add: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId . ', Guest UUID: ' . ($guestUuid ?? 'NULL'));
+
+            // Pass user, sessionId, and guestUuid
+            $currentCart = $this->cartService->getOrCreateCart($user, $sessionId, $guestUuid);
 
             $response = $this->cartService->addOrUpdateCartItem(
                 $currentCart,
@@ -174,11 +177,12 @@ class ApiCartController extends Controller
         try {
             $user = Auth::user();
             $sessionId = Session::getId();
+            $guestUuid = $request->header('X-Guest-UUID'); // دریافت guest_uuid از هدر
 
-            // DEBUG LOG: Check Auth::user() and Session::getId() before calling userOwnsCartItem
-            Log::debug('ApiCartController::updateQuantity: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+            // DEBUG LOG: Check Auth::user() and Session::getId() and guestUuid before calling userOwnsCartItem
+            Log::debug('ApiCartController::updateQuantity: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId . ', Guest UUID: ' . ($guestUuid ?? 'NULL'));
 
-            if (!$this->cartService->userOwnsCartItem($cartItem, $user, $sessionId)) {
+            if (!$this->cartService->userOwnsCartItem($cartItem, $user, $sessionId, $guestUuid)) { // پاس دادن guestUuid
                 throw new UnauthorizedCartAccessException('You do not have permission to access this cart item.');
             }
 
@@ -188,10 +192,10 @@ class ApiCartController extends Controller
 
             $newQuantity = $request->input('quantity');
 
-            $response = $this->cartService->updateCartItemQuantity($cartItem, $newQuantity, $user, $sessionId);
+            $response = $this->cartService->updateCartItemQuantity($cartItem, $newQuantity, $user, $sessionId, $guestUuid); // پاس دادن guestUuid
 
             if ($response->isSuccess()) {
-                $cart = $this->cartService->getCartById($cartItem->cart_id, $user, $sessionId);
+                $cart = $this->cartService->getCartById($cartItem->cart_id, $user, $sessionId, $guestUuid); // پاس دادن guestUuid
                 if (!$cart) {
                     throw new CartOperationException('Cart associated with item not found.', 404);
                 }
@@ -253,15 +257,16 @@ class ApiCartController extends Controller
         try {
             $user = Auth::user();
             $sessionId = Session::getId();
+            $guestUuid = $request->header('X-Guest-UUID'); // دریافت guest_uuid از هدر
 
-            // DEBUG LOG: Check Auth::user() and Session::getId() before calling userOwnsCartItem
-            Log::debug('ApiCartController::removeCartItem: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+            // DEBUG LOG: Check Auth::user() and Session::getId() and guestUuid before calling userOwnsCartItem
+            Log::debug('ApiCartController::removeCartItem: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId . ', Guest UUID: ' . ($guestUuid ?? 'NULL'));
 
-            if (!$this->cartService->userOwnsCartItem($cartItem, $user, $sessionId)) {
+            if (!$this->cartService->userOwnsCartItem($cartItem, $user, $sessionId, $guestUuid)) { // پاس دادن guestUuid
                 throw new UnauthorizedCartAccessException('You do not have permission to access this cart item.');
             }
 
-            $response = $this->cartService->removeCartItem($cartItem, $user, $sessionId);
+            $response = $this->cartService->removeCartItem($cartItem, $user, $sessionId, $guestUuid); // پاس دادن guestUuid
 
             if ($response->isSuccess()) {
                 $updatedCart = $cartItem->cart->fresh();
@@ -308,12 +313,13 @@ class ApiCartController extends Controller
     {
         $user = Auth::user();
         $sessionId = Session::getId();
+        $guestUuid = $request->header('X-Guest-UUID'); // دریافت guest_uuid از هدر
 
-        // DEBUG LOG: Check Auth::user() and Session::getId() before calling getOrCreateCart
-        Log::debug('ApiCartController::clearCart: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+        // DEBUG LOG: Check Auth::user() and Session::getId() and guestUuid before calling getOrCreateCart
+        Log::debug('ApiCartController::clearCart: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId . ', Guest UUID: ' . ($guestUuid ?? 'NULL'));
 
         try {
-            $cart = $this->cartService->getOrCreateCart($user, $sessionId);
+            $cart = $this->cartService->getOrCreateCart($user, $sessionId, $guestUuid); // پاس دادن guestUuid
             $response = $this->cartService->clearCart($cart);
 
             if ($response->isSuccess()) {
@@ -354,11 +360,13 @@ class ApiCartController extends Controller
 
             $user = Auth::user();
             $sessionId = Session::getId();
-            // DEBUG LOG: Check Auth::user() and Session::getId() before calling getOrCreateCart
-            Log::debug('ApiCartController::applyCoupon: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+            $guestUuid = $request->header('X-Guest-UUID'); // دریافت guest_uuid از هدر
 
-            // Pass both user and sessionId
-            $cart = $this->cartService->getOrCreateCart($user, $sessionId);
+            // DEBUG LOG: Check Auth::user() and Session::getId() and guestUuid before calling getOrCreateCart
+            Log::debug('ApiCartController::applyCoupon: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId . ', Guest UUID: ' . ($guestUuid ?? 'NULL'));
+
+            // Pass user, sessionId, and guestUuid
+            $cart = $this->cartService->getOrCreateCart($user, $sessionId, $guestUuid);
 
             $couponCode = $request->input('coupon_code');
             $response = $this->cartService->applyCoupon($cart, $couponCode);
@@ -404,13 +412,14 @@ class ApiCartController extends Controller
         try {
             $user = Auth::user();
             $sessionId = Session::getId();
+            $guestUuid = $request->header('X-Guest-UUID'); // دریافت guest_uuid از هدر
 
-            // DEBUG LOG: Check Auth::user() and Session::getId() before calling getOrCreateCart
-            Log::debug('ApiCartController::removeCoupon: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+            // DEBUG LOG: Check Auth::user() and Session::getId() and guestUuid before calling getOrCreateCart
+            Log::debug('ApiCartController::removeCoupon: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId . ', Guest UUID: ' . ($guestUuid ?? 'NULL'));
 
             try {
-                // Pass both user and sessionId
-                $cart = $this->cartService->getOrCreateCart($user, $sessionId);
+                // Pass user, sessionId, and guestUuid
+                $cart = $this->cartService->getOrCreateCart($user, $sessionId, $guestUuid);
                 $response = $this->cartService->removeCoupon($cart);
 
                 if ($response->isSuccess()) {
@@ -431,8 +440,8 @@ class ApiCartController extends Controller
                     ], $response->getStatusCode());
                 }
             } catch (\Throwable $e) {
-                Log::error('Web remove coupon error: ' . $e->getMessage(), ['exception' => $e]);
-                return back()->with('error', 'Error removing coupon.');
+                Log::error('API remove coupon error: ' . $e->getMessage(), ['exception' => $e]);
+                return response()->json(['success' => false, 'message' => 'Error removing coupon.'], 500); // Changed to JSON response
             }
         } catch (\Throwable $e) {
             Log::error('Error removing coupon: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);

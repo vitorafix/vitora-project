@@ -42,12 +42,13 @@ class CartController extends Controller
         try {
             $user = Auth::user();
             $sessionId = Session::getId();
+            $guestUuid = $request->cookie('guest_uuid'); // دریافت guest_uuid از کوکی
 
-            // DEBUG LOG: Check Auth::user() and Session::getId() before calling getOrCreateCart
-            Log::debug('CartController::index: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+            // DEBUG LOG: Check Auth::user(), Session::getId(), and guestUuid before calling getOrCreateCart
+            Log::debug('CartController::index: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId . ', Guest UUID: ' . ($guestUuid ?? 'NULL'));
 
-            // Pass both user and sessionId to getOrCreateCart
-            $cart = $this->cartService->getOrCreateCart($user, $sessionId);
+            // Pass user, sessionId, and guestUuid to getOrCreateCart
+            $cart = $this->cartService->getOrCreateCart($user, $sessionId, $guestUuid);
             $cartContents = $this->cartService->getCartContents($cart);
 
             return view('cart.index', [
@@ -80,11 +81,13 @@ class CartController extends Controller
         try {
             $user = Auth::user();
             $sessionId = Session::getId();
-            // DEBUG LOG: Check Auth::user() and Session::getId() before calling getOrCreateCart
-            Log::debug('CartController::add: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+            $guestUuid = $request->cookie('guest_uuid'); // دریافت guest_uuid از کوکی
 
-            // Pass both Auth::user() and Session::getId()
-            $cart = $this->cartService->getOrCreateCart($user, $sessionId);
+            // DEBUG LOG: Check Auth::user(), Session::getId(), and guestUuid before calling getOrCreateCart
+            Log::debug('CartController::add: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId . ', Guest UUID: ' . ($guestUuid ?? 'NULL'));
+
+            // Pass user, sessionId, and guestUuid
+            $cart = $this->cartService->getOrCreateCart($user, $sessionId, $guestUuid);
             $response = $this->cartService->addOrUpdateCartItem($cart, $product->id, $quantity);
 
             if ($response->isSuccess()) {
@@ -119,17 +122,18 @@ class CartController extends Controller
 
         $user = Auth::user();
         $sessionId = Session::getId();
+        $guestUuid = $request->cookie('guest_uuid'); // دریافت guest_uuid از کوکی
         $quantity = $request->input('quantity');
 
-        // DEBUG LOG: Check Auth::user() and Session::getId() before calling userOwnsCartItem
-        Log::debug('CartController::update: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+        // DEBUG LOG: Check Auth::user(), Session::getId(), and guestUuid before calling userOwnsCartItem
+        Log::debug('CartController::update: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId . ', Guest UUID: ' . ($guestUuid ?? 'NULL'));
 
         try {
-            if (!$this->cartService->userOwnsCartItem($cartItem, $user, $sessionId)) {
+            if (!$this->cartService->userOwnsCartItem($cartItem, $user, $sessionId, $guestUuid)) { // پاس دادن guestUuid
                 throw new UnauthorizedCartAccessException('You do not have permission to access this cart item.');
             }
 
-            $response = $this->cartService->updateCartItemQuantity($cartItem, $quantity, $user, $sessionId);
+            $response = $this->cartService->updateCartItemQuantity($cartItem, $quantity, $user, $sessionId, $guestUuid); // پاس دادن guestUuid
 
             if ($response->isSuccess()) {
                 return redirect()->route('cart.index')->with('success', 'Item quantity updated.');
@@ -159,16 +163,17 @@ class CartController extends Controller
     {
         $user = Auth::user();
         $sessionId = Session::getId();
+        $guestUuid = $request->cookie('guest_uuid'); // دریافت guest_uuid از کوکی
 
-        // DEBUG LOG: Check Auth::user() and Session::getId() before calling userOwnsCartItem
-        Log::debug('CartController::remove: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+        // DEBUG LOG: Check Auth::user(), Session::getId(), and guestUuid before calling userOwnsCartItem
+        Log::debug('CartController::remove: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId . ', Guest UUID: ' . ($guestUuid ?? 'NULL'));
 
         try {
-            if (!$this->cartService->userOwnsCartItem($cartItem, $user, $sessionId)) {
+            if (!$this->cartService->userOwnsCartItem($cartItem, $user, $sessionId, $guestUuid)) { // پاس دادن guestUuid
                 throw new UnauthorizedCartAccessException('You do not have permission to access this cart item.');
             }
 
-            $response = $this->cartService->removeCartItem($cartItem, $user, $sessionId);
+            $response = $this->cartService->removeCartItem($cartItem, $user, $sessionId, $guestUuid); // پاس دادن guestUuid
 
             if ($response->isSuccess()) {
                 return redirect()->route('cart.index')->with('success', 'Item successfully removed.');
@@ -195,12 +200,13 @@ class CartController extends Controller
     {
         $user = Auth::user();
         $sessionId = Session::getId();
+        $guestUuid = $request->cookie('guest_uuid'); // دریافت guest_uuid از کوکی
 
-        // DEBUG LOG: Check Auth::user() and Session::getId() before calling getOrCreateCart
-        Log::debug('CartController::clear: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+        // DEBUG LOG: Check Auth::user(), Session::getId(), and guestUuid before calling getOrCreateCart
+        Log::debug('CartController::clear: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId . ', Guest UUID: ' . ($guestUuid ?? 'NULL'));
 
         try {
-            $cart = $this->cartService->getOrCreateCart($user, $sessionId);
+            $cart = $this->cartService->getOrCreateCart($user, $sessionId, $guestUuid); // پاس دادن guestUuid
             $response = $this->cartService->clearCart($cart);
 
             if ($response->isSuccess()) {
@@ -228,11 +234,13 @@ class CartController extends Controller
 
         $user = Auth::user();
         $sessionId = Session::getId();
-        // DEBUG LOG: Check Auth::user() and Session::getId() before calling getOrCreateCart
-        Log::debug('CartController::applyCoupon: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+        $guestUuid = $request->cookie('guest_uuid'); // دریافت guest_uuid از کوکی
 
-        // Pass both user and sessionId
-        $cart = $this->cartService->getOrCreateCart($user, $sessionId);
+        // DEBUG LOG: Check Auth::user(), Session::getId(), and guestUuid before calling getOrCreateCart
+        Log::debug('CartController::applyCoupon: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId . ', Guest UUID: ' . ($guestUuid ?? 'NULL'));
+
+        // Pass user, sessionId, and guestUuid
+        $cart = $this->cartService->getOrCreateCart($user, $sessionId, $guestUuid);
         $couponCode = $request->input('coupon_code');
 
         try {
@@ -259,13 +267,14 @@ class CartController extends Controller
     {
         $user = Auth::user();
         $sessionId = Session::getId();
+        $guestUuid = $request->cookie('guest_uuid'); // دریافت guest_uuid از کوکی
 
-        // DEBUG LOG: Check Auth::user() and Session::getId() before calling getOrCreateCart
-        Log::debug('CartController::removeCoupon: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+        // DEBUG LOG: Check Auth::user(), Session::getId(), and guestUuid before calling getOrCreateCart
+        Log::debug('CartController::removeCoupon: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId . ', Guest UUID: ' . ($guestUuid ?? 'NULL'));
 
         try {
-            // Pass both user and sessionId
-            $cart = $this->cartService->getOrCreateCart($user, $sessionId);
+            // Pass user, sessionId, and guestUuid
+            $cart = $this->cartService->getOrCreateCart($user, $sessionId, $guestUuid);
             $response = $this->cartService->removeCoupon($cart);
 
             if ($response->isSuccess()) {

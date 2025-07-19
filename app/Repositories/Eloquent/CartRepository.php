@@ -37,6 +37,18 @@ class CartRepository implements CartRepositoryInterface
     }
 
     /**
+     * Find a cart by guest UUID.
+     * سبد خرید را بر اساس شناسه یکتای مهمان (guest UUID) پیدا می‌کند.
+     *
+     * @param string $guestUuid
+     * @return Cart|null
+     */
+    public function findByGuestUuid(string $guestUuid): ?Cart
+    {
+        return Cart::where('guest_uuid', $guestUuid)->first();
+    }
+
+    /**
      * Find a cart by user or session ID.
      * سبد خرید را بر اساس شناسه کاربر یا شناسه سشن پیدا می‌کند.
      *
@@ -78,6 +90,23 @@ class CartRepository implements CartRepositoryInterface
      */
     public function save(Cart $cart): bool
     {
+        return $cart->save();
+    }
+
+    /**
+     * Assigns a cart to a user.
+     * یک سبد خرید را به یک کاربر اختصاص می‌دهد.
+     *
+     * @param Cart $cart
+     * @param User $user
+     * @return bool
+     */
+    public function assignCartToUser(Cart $cart, User $user): bool
+    {
+        $cart->user_id = $user->id;
+        $cart->session_id = null; // Clear session ID as it's now owned by a user
+        // اگر guest_uuid وجود دارد، آن را حفظ می‌کنیم. در غیر این صورت، آن را null می‌کنیم.
+        $cart->guest_uuid = $cart->guest_uuid ?? null; 
         return $cart->save();
     }
 
@@ -213,30 +242,15 @@ class CartRepository implements CartRepositoryInterface
     }
 
     /**
-     * Assigns a guest cart to a user.
-     * سبد خرید مهمان را به یک کاربر اختصاص می‌دهد.
-     *
-     * @param Cart $guestCart
-     * @param User $user
-     * @return void
-     */
-    public function assignCartToUser(Cart $guestCart, User $user): void
-    {
-        $guestCart->user_id = $user->id;
-        $guestCart->session_id = null; // Clear session ID as it's now owned by a user
-        $guestCart->save();
-    }
-
-    /**
      * Clear all items from a cart.
      * تمام آیتم‌ها را از یک سبد خرید پاک می‌کند.
      *
      * @param Cart $cart
-     * @return void
+     * @return bool
      */
-    public function clearCart(Cart $cart): void
+    public function clearCart(Cart $cart): bool
     {
-        $cart->items()->delete();
+        return $cart->items()->delete();
     }
 
     /**

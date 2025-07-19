@@ -18,6 +18,7 @@ class Cart extends Model
     protected $fillable = [
         'user_id',
         'session_id', // برای سبد خرید مهمان
+        'guest_uuid', // New: To store the unique guest identifier
         'coupon_id', // New: To store the ID of the applied coupon
         'discount_amount', // New: To store the discount amount applied by the coupon
         'subtotal', // New: To store the subtotal before discount/shipping/tax
@@ -33,6 +34,7 @@ class Cart extends Model
         'discount_amount' => 'decimal:2',
         'subtotal' => 'decimal:2',
         'total' => 'decimal:2',
+        // 'guest_uuid' => 'string', // Optional: You can cast UUID to string if needed, but not strictly required
     ];
 
     /**

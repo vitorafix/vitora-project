@@ -28,6 +28,15 @@ interface CartRepositoryInterface
     public function findBySessionId(string $sessionId): ?Cart;
 
     /**
+     * Find a cart by guest UUID.
+     * سبد خرید را بر اساس شناسه یکتای مهمان (guest UUID) پیدا می‌کند.
+     *
+     * @param string $guestUuid
+     * @return Cart|null
+     */
+    public function findByGuestUuid(string $guestUuid): ?Cart;
+
+    /**
      * Create a new cart.
      * یک سبد خرید جدید ایجاد می‌کند.
      *
@@ -44,6 +53,16 @@ interface CartRepositoryInterface
      * @return bool
      */
     public function save(Cart $cart): bool;
+
+    /**
+     * Assigns a cart to a user.
+     * یک سبد خرید را به یک کاربر اختصاص می‌دهد.
+     *
+     * @param Cart $cart
+     * @param User $user
+     * @return bool
+     */
+    public function assignCartToUser(Cart $cart, User $user): bool;
 
     /**
      * Delete a cart.
@@ -139,4 +158,13 @@ interface CartRepositoryInterface
      * @return Cart|null
      */
     public function findCartWithItems(int $cartId): ?Cart;
+
+    /**
+     * Clear all items from a cart.
+     * تمام آیتم‌ها را از یک سبد خرید پاک می‌کند.
+     *
+     * @param Cart $cart
+     * @return bool
+     */
+    public function clearCart(Cart $cart): bool;
 }

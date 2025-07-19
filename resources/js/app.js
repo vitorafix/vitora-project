@@ -119,9 +119,61 @@ window.logAdminAction = function(username, action, details) {
     // after an action to update the UI.
 };
 
+/**
+ * Generates a UUID (Universally Unique Identifier) v4.
+ * تولید یک UUID نسخه 4.
+ * @returns {string} A UUID string.
+ */
+function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0,
+            v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+/**
+ * Sets a cookie with the given name, value, and expiry.
+ * یک کوکی با نام، مقدار و تاریخ انقضای مشخص تنظیم می‌کند.
+ * @param {string} name - نام کوکی.
+ * @param {string} value - مقدار کوکی.
+ * @param {number} days - تعداد روزهایی که کوکی معتبر است.
+ */
+function setCookie(name, value, days) {
+    let expires = "";
+    if (days) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+}
+
+/**
+ * Initializes or retrieves the guest_uuid from localStorage and sets it as a cookie.
+ * مقداردهی اولیه یا بازیابی guest_uuid از localStorage و تنظیم آن به عنوان کوکی.
+ * @returns {string} The guest UUID.
+ */
+function initializeGuestUUID() {
+    let guestUUID = localStorage.getItem('guest_uuid');
+    if (!guestUUID) {
+        guestUUID = generateUUID();
+        localStorage.setItem('guest_uuid', guestUUID);
+        console.log('New guest_uuid generated and stored:', guestUUID);
+    } else {
+        console.log('Existing guest_uuid retrieved:', guestUUID);
+    }
+    // Always set/refresh the cookie to ensure it's sent with every request
+    setCookie('guest_uuid', guestUUID, 365); // Set for 1 year
+    return guestUUID;
+}
+
 
 // --- Initial Setup and Event Listeners ---
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize guest UUID and make it globally available
+    window.guest_uuid = initializeGuestUUID();
+
     // Setup general export buttons (if any are outside admin panel)
     setupExportButtons();
 

@@ -24,6 +24,7 @@ use Throwable;
 use App\Contracts\Services\OtpServiceInterface;
 use App\Contracts\Services\RateLimitServiceInterface;
 use App\Contracts\Services\AuditServiceInterface;
+use App\Services\Contracts\CartServiceInterface; // Add this line to import CartServiceInterface
 use App\Http\Requests\SendOtpRequest;
 use App\Http\Requests\VerifyOtpRequest;
 use App\Http\Requests\Auth\RegisterRequest;
@@ -76,15 +77,18 @@ class MobileAuthController extends Controller
     protected OtpServiceInterface $otpService;
     protected RateLimitServiceInterface $rateLimitService;
     protected AuditServiceInterface $auditService;
+    protected CartServiceInterface $cartService; // Add this line to declare CartServiceInterface
 
     public function __construct(
         OtpServiceInterface $otpService,
         RateLimitServiceInterface $rateLimitService,
-        AuditServiceInterface $auditService
+        AuditServiceInterface $auditService,
+        CartServiceInterface $cartService // Add this line to inject CartServiceInterface
     ) {
         $this->otpService = $otpService;
         $this->rateLimitService = $rateLimitService;
         $this->auditService = $auditService;
+        $this->cartService = $cartService; // Assign the injected CartService
     }
 
     /**
@@ -420,7 +424,8 @@ class MobileAuthController extends Controller
             // NEW: Merge any existing guest cart with the newly logged-in user's cart
             // این اطمینان می‌دهد که سبد خرید مهمان به کاربر لاگین شده اختصاص یابد.
             $currentSessionId = Session::getId(); // گرفتن Session ID فعلی
-            $this->otpService->assignGuestCartToUser($user, $currentSessionId); // فراخوانی متد ادغام
+            // Corrected: Call assignGuestCartToUser from CartService, not OtpService
+            $this->cartService->assignGuestCartToUser($user, $currentSessionId); // فراخوانی متد ادغام از CartService
 
             // ثبت ورود کاربر از طریق سرویس حسابرسی.
             $this->auditService->log(
