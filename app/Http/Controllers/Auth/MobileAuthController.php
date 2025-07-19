@@ -190,8 +190,19 @@ class MobileAuthController extends Controller
                 return response()->json(['message' => 'کد تأیید با موفقیت ارسال شد.']);
             }
 
-            // در غیر این صورت، به صفحه تایید OTP هدایت می‌شود.
-            return redirect()->route('auth.verify-otp-form')->with('status', 'کد تأیید با موفقیت ارسال شد.');
+            // NEW: Check if this is a new user registration flow
+            if ($request->session()->has(self::SESSION_MOBILE_FOR_REGISTRATION)) {
+                // Clear the registration session flag after checking
+                $request->session()->forget(self::SESSION_MOBILE_FOR_REGISTRATION);
+                Log::info('MobileAuthController: Redirecting new user to registration form.');
+                return redirect()->route('auth.register-form', ['mobile_number' => $mobileNumber])
+                                 ->with('status', 'شماره موبایل شما یافت نشد. لطفاً برای ادامه ثبت‌نام کنید.');
+            } else {
+                // Existing user or regular login flow, redirect to OTP verification
+                Log::info('MobileAuthController: Redirecting existing user to OTP verification form.');
+                return redirect()->route('auth.verify-otp-form')->with('status', 'کد تأیید با موفقیت ارسال شد.');
+            }
+
 
         } catch (OtpSendException $e) { // Catch the custom exception
             Log::error('MobileAuthController: OtpSendException caught for mobile: ' . maskForLog($mobileNumber, 'phone') . '. Error: ' . $e->getMessage()); // Added debug log
@@ -428,8 +439,8 @@ class MobileAuthController extends Controller
                 return response()->json(['message' => 'ورود با موفقیت انجام شد.']);
             }
 
-            // هدایت به URL مورد نظر یا داشبورد.
-            return redirect()->intended(route('dashboard'));
+            // هدایت به URL مورد نظر یا صفحه اصلی (root URL).
+            return redirect()->intended('/');
 
         } catch (\Exception $e) {
             Log::error('MobileAuthController: Exception caught during verifyOtp for mobile: ' . maskForLog($mobileNumber, 'phone') . '. Error: ' . $e->getMessage()); // Added debug log

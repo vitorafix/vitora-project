@@ -109,9 +109,6 @@ class OtpService implements OtpServiceInterface
             'timestamp' => time(), // Optional, for expiry check
             'mobile_hash' => $mobileHashForData // Using helper for mobile_hash within data
         ];
-        Log::debug('OTPService: generateAndStoreOtp - Mobile hash for data: ' . $mobileHashForData);
-
-        // Log OTP data before encryption
         Log::debug('OTPService: OTP data before encryption: ' . json_encode($otpData));
 
         // Encrypt the OTP data before storing it in the cache
@@ -303,7 +300,11 @@ class OtpService implements OtpServiceInterface
         $user = User::where('mobile_number', $mobileNumber)->first();
 
         // Check if there's pending registration data in cache (for new users)
-        $pendingRegistrationData = Cache::get($this->getPendingRegistrationCacheKey($mobileNumber));
+        $pendingRegistrationCacheKey = $this->getPendingRegistrationCacheKey($mobileNumber);
+        Log::debug('OTPService: Attempting to retrieve pending registration data from cache with key: ' . $pendingRegistrationCacheKey);
+        $pendingRegistrationData = Cache::get($pendingRegistrationCacheKey);
+        Log::debug('OTPService: Pending registration data retrieved: ' . ($pendingRegistrationData ? 'Found' : 'Not Found'));
+
 
         if (!$user) {
             // New user registration flow
@@ -321,7 +322,7 @@ class OtpService implements OtpServiceInterface
                         'name' => $userData['name'] ?? 'کاربر جدید', // Default name if not provided
                         'lastname' => $userData['lastname'] ?? null,
                         'mobile_number' => $mobileNumber,
-                        'password' => Hash::make(Str::random(24)), // Generate a random, strong password
+                        // Removed 'password' as it's not present in the database table based on the error.
                         'email_verified_at' => now(), // Assume mobile verification implies email verification for now
                     ]);
 
@@ -340,7 +341,7 @@ class OtpService implements OtpServiceInterface
                     $auditLogger('کاربر جدید از طریق OTP برای موبایل ثبت نام شد: ' . $this->maskMobile($mobileNumber), 'info', $user->id, 'User', $user->id);
 
                     // Clear pending registration data from cache
-                    Cache::forget($this->getPendingRegistrationCacheKey($mobileNumber));
+                    Cache::forget($pendingRegistrationCacheKey);
                     Log::debug('OTPService: Cleared pending registration data from cache for mobile: ' . $this->maskMobile($mobileNumber));
 
                 } catch (QueryException $e) {
@@ -426,8 +427,21 @@ class OtpService implements OtpServiceInterface
                 $session->put(self::SESSION_MOBILE_FOR_REGISTRATION, $encryptedMobileNumber);
                 Log::debug('OTPService: Mobile number encrypted and stored in session for registration: ' . $this->maskMobile($mobileNumber));
                 $auditLogger('OTP برای ثبت نام جدید ارسال شد: ' . $this->maskMobile($mobileNumber), 'info');
+
+                // NEW: Store initial pending registration data in cache for new users
+                // This data will be retrieved by verifyOtpForMobile to create the user
+                $pendingRegistrationData = [
+                    'mobile_number' => $mobileNumber,
+                    'name' => 'کاربر جدید', // Default name for initial registration via OTP flow
+                    'lastname' => null, // Default lastname
+                ];
+                $pendingRegistrationCacheKey = $this->getPendingRegistrationCacheKey($mobileNumber);
+                Cache::put($pendingRegistrationCacheKey, json_encode($pendingRegistrationData), now()->addMinutes(self::PENDING_REGISTRATION_CACHE_TTL_MINUTES));
+                Log::debug('OTPService: Stored initial pending registration data in cache with key: ' . $pendingRegistrationCacheKey . ' for mobile: ' . $this->maskMobile($mobileNumber));
+
+
             } catch (\Exception $e) {
-                Log::error('Failed to encrypt mobile number for registration session: ' . $e->getMessage());
+                Log::error('Failed to encrypt mobile number for registration session or store pending data: ' . $e->getMessage());
                 throw new \Exception('خطا در آماده‌سازی ثبت‌نام. لطفاً دوباره تلاش کنید.', 500);
             }
         } else {

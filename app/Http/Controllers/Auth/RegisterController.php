@@ -3,51 +3,125 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Auth\RegisterRequest;
-use App\Services\MelipayamakSmsService;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Crypt;
-use Illuminate\View\View;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+use Illuminate\Support\Str;
+use App\Services\MelipayamakSmsService; // ایمپورت کردن سرویس پیامک
+use Illuminate\Support\Facades\Crypt; // اضافه شده: ایمپورت کردن کلاس Crypt برای رمزگذاری
+use Illuminate\Support\Facades\Log; // اضافه شده برای لاگ
+use App\Http\Requests\Auth\RegisterRequest; // ایمپورت کردن RegisterRequest
+
+// Fallback helper functions - ensure these are available globally or defined here
+if (!function_exists('hashForCache')) {
+    function hashForCache(string $value, string $salt = ''): string
+    {
+        return hash('sha256', $value . $salt);
+    }
+}
+if (!function_exists('maskForLog')) {
+    function maskForLog(string $value, string $type = 'generic'): string
+    {
+        if ($type === 'phone' && strlen($value) === 11) {
+            return substr($value, 0, 4) . '***' . substr($value, -4);
+        }
+        if ($type === 'ip') {
+            return '***.***.***.' . implode('.', array_slice(explode('.', $value), -1));
+        }
+        return '***'; // Fallback
+    }
+}
 
 class RegisterController extends Controller
 {
+    // Constants for Session & Cache Keys (consistent with OtpService)
+    const CACHE_PENDING_REGISTRATION_PREFIX = 'pending_registration_';
+    const PENDING_REGISTRATION_CACHE_TTL_MINUTES = 10;
+    const OTP_EXPIRY_MINUTES = 2; // Consistent with OtpService
+
+    // اگر سرویس‌ها را در اینجا تزریق می‌کنید، مطمئن شوید که در constructor انجام شود.
+    // protected $otpService;
+    // protected $auditService;
+    // public function __construct(OtpServiceInterface $otpService, AuditServiceInterface $auditService)
+    // {
+    //     $this->otpService = $otpService;
+    //     $this->auditService = $auditService;
+    // }
+
     /**
      * نمایش فرم ثبت‌نام (نام، نام خانوادگی، شماره موبایل).
+     * این فرم هم برای کاربران جدیدی که مستقیماً به صفحه ثبت‌نام می‌آیند
+     * و هم برای کاربرانی که از MobileAuthController هدایت می‌شوند (شماره موبایل در سشن است) نمایش داده می‌شود.
      *
-     * @param \Illuminate\Http\Request $request
-     * @return View
+     * @param Request $request
+     * @return \Illuminate\View\View
      */
-    public function showRegistrationForm(\Illuminate\Http\Request $request): View
+    public function showRegistrationForm(Request $request): View
     {
-        $mobileNumber = $request->session()->get('user_not_found_mobile') ?? $request->query('mobile_number');
+        // تلاش برای دریافت شماره موبایل از فلش سشن (اگر از MobileAuthController هدایت شده باشد)
+        $mobileNumber = $request->session()->get('user_not_found_mobile');
+        
+        // اگر شماره موبایل از سشن نیامده بود، تلاش می‌کنیم از پارامتر URL بگیریم (برای لینک مستقیم ثبت‌نام از mobile-login)
+        if (empty($mobileNumber)) {
+            $mobileNumber = $request->query('mobile_number');
+        }
+
+        // شماره موبایل را به ویو ارسال می‌کنیم.
         return view('auth.register', compact('mobileNumber'));
     }
 
     /**
-     * ثبت‌نام کاربر جدید و ارسال کد OTP.
+     * ثبت‌نام کاربر جدید با نام، نام خانوادگی و شماره موبایل و ارسال OTP.
      *
-     * @param RegisterRequest $request
-     * @return JsonResponse|RedirectResponse
+     * @param  \App\Http\Requests\Auth\RegisterRequest  $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     * @throws \Illuminate\Validation\ValidationException
      */
     public function register(RegisterRequest $request)
     {
-        $mobileNumber = $request->mobile_number;
+        // داده‌ها قبلاً توسط RegisterRequest اعتبارسنجی و پاکسازی شده‌اند.
+        $validatedData = $request->validated();
 
-        // ذخیره موقت اطلاعات ثبت‌نام در کش
+        $mobileNumber = $validatedData['mobile_number'];
+
+        // تولید کلید کش برای اطلاعات ثبت‌نام در حال انتظار (با استفاده از هش)
+        $pendingRegistrationCacheKey = self::CACHE_PENDING_REGISTRATION_PREFIX . hashForCache($mobileNumber, 'pending_reg_cache_key');
+        
+        // ذخیره موقت اطلاعات ثبت‌نام در کش قبل از ارسال OTP
+        // این اطلاعات پس از تایید OTP در MobileAuthController@verifyOtp استفاده خواهند شد.
         $registrationData = [
-            'name' => $request->name,
-            'lastname' => $request->lastname,
+            'name' => $validatedData['name'],
+            'lastname' => $validatedData['lastname'] ?? null,
             'mobile_number' => $mobileNumber,
         ];
-        Cache::put('pending_registration_' . $mobileNumber, $registrationData, now()->addMinutes(5));
+        // ذخیره با کلید هش شده
+        Cache::put($pendingRegistrationCacheKey, json_encode($registrationData), now()->addMinutes(self::PENDING_REGISTRATION_CACHE_TTL_MINUTES));
+        Log::debug('RegisterController: Stored pending registration data in cache with key: ' . $pendingRegistrationCacheKey . ' and data: ' . json_encode($registrationData));
 
-        // تولید و ذخیره OTP
-        $otp = random_int(100000, 999999);
-        Cache::put('otp_' . $mobileNumber, $otp, now()->addMinutes(config('auth.otp.expiry_minutes', 2)));
 
-        // ارسال پیامک
+        $otp = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT); // تولید یک کد 6 رقمی
+        // کلید کش OTP باید با OtpService سازگار باشد
+        $otpCacheKey = 'otp_' . preg_replace('/[^0-9]/', '', $mobileNumber); // کلید ساده برای OTP
+        
+        // ذخیره OTP در کش به مدت 2 دقیقه
+        // توجه: این بخش باید با منطق OtpService::generateAndStoreOtp هماهنگ باشد.
+        // در حالت ایده‌آل، ارسال OTP باید از طریق OtpService انجام شود تا منطق تکراری نباشد.
+        // برای فعلاً، ما این را با فرض اینکه OtpService از این کلید استفاده می‌کند، هماهنگ می‌کنیم.
+        $otpData = [
+            'otp' => $otp,
+            'timestamp' => time(),
+            'mobile_hash' => hashForCache($mobileNumber, 'otp_data_hash')
+        ];
+        Cache::put($otpCacheKey, Crypt::encryptString(json_encode($otpData)), now()->addMinutes(self::OTP_EXPIRY_MINUTES));
+        Log::debug('RegisterController: Stored OTP in cache with key: ' . $otpCacheKey . ' and encrypted data.');
+
+
+        // استفاده از سرویس MelipayamakSmsService برای ارسال پیامک
         $smsService = new MelipayamakSmsService();
         $patternCode = config('services.melipayamak.pattern_code');
 
@@ -55,33 +129,33 @@ class RegisterController extends Controller
             if ($patternCode) {
                 $smsService->sendByPattern($mobileNumber, $patternCode, ['verification-code' => $otp]);
             } else {
-                $smsService->send($mobileNumber, "کد تایید شما: {$otp}\nفروشگاه چای");
+                $smsService->send($mobileNumber, "کد تایید شما: " . $otp . "\nفروشگاه چای");
             }
+            Log::info("RegisterController: SMS sent to {$mobileNumber} with OTP: {$otp}");
         } catch (\Exception $e) {
-            \Log::error('Error sending OTP during registration: ' . $e->getMessage(), [
-                'mobile_number' => $mobileNumber,
-                'exception' => $e,
+            // لاگ کردن خطا برای اشکال‌زدایی
+            Log::error('Error sending OTP during registration: ' . $e->getMessage(), [
+                'mobile_number' => maskForLog($mobileNumber, 'phone'),
+                'exception' => $e->getTraceAsString()
             ]);
 
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'خطا در ارسال کد تایید. لطفاً دوباره تلاش کنید.'], 500);
             }
-
-            return back()->withErrors([
-                'mobile_number' => 'خطا در ارسال کد تایید. لطفاً دوباره تلاش کنید.',
-            ])->withInput();
+            return back()->withErrors(['mobile_number' => 'خطا در ارسال کد تایید. لطفاً دوباره تلاش کنید.'])->withInput();
         }
 
-        // ذخیره شماره موبایل به‌صورت رمزگذاری‌شده در سشن
-        $request->session()->put('mobile_number_for_otp', Crypt::encryptString($mobileNumber));
-
-        // پاسخ
         if ($request->expectsJson()) {
             return response()->json(['message' => 'کد تایید به شماره شما ارسال شد.'], 200);
         }
 
-        return redirect()
-            ->route('auth.verify-otp-form', ['mobile_number' => $mobileNumber])
-            ->with('status', 'کد تایید به شماره شما ارسال شد. لطفاً آن را وارد کنید.');
+        // تغییر مهم: ذخیره شماره موبایل به صورت رمزگذاری شده در سشن
+        $request->session()->put(MobileAuthController::SESSION_MOBILE_FOR_OTP, Crypt::encryptString($mobileNumber));
+        // همچنین نشان می‌دهیم که این یک جریان ثبت نام است
+        $request->session()->put(MobileAuthController::SESSION_MOBILE_FOR_REGISTRATION, true);
+        
+        // هدایت کاربر به صفحه تأیید OTP
+        return redirect()->route('auth.verify-otp-form', ['mobile_number' => $mobileNumber])
+                         ->with('status', 'کد تایید به شماره شما ارسال شد. لطفاً آن را وارد کنید.');
     }
 }
