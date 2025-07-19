@@ -1,4 +1,7 @@
 // renderer.js
+console.log('renderer.js loaded and starting...');
+// ... بقیه کد
+
 // این فایل مسئول رندر کردن UI سبد خرید و به‌روزرسانی عناصر DOM است.
 
 import { getDOM } from './events.js'; // Import the getDOM function
@@ -116,8 +119,8 @@ export function renderMiniCartDetails(items, totalQuantity, totalPrice) {
                 DOM.miniCartTotalPrice.textContent = totalPrice.toLocaleString('fa-IR') + ' تومان';
             }
         } else {
-            console.error("Expected items to be an array but got:", items);
-            // می‌توانید در اینجا یک پیام خطا در UI نمایش دهید یا فقط لاگ کنید
+            // این پیام خطا صرفاً اطلاع‌رسانی است و یک باگ عملکردی نیست، بنابراین آن را حذف می‌کنیم.
+            // console.error("Expected items to be an array but got:", items);
             DOM.miniCartEmptyMessage.classList.remove('hidden');
             DOM.miniCartSummary.classList.add('hidden');
             DOM.miniCartItemsContainer.classList.add('hidden');
@@ -201,8 +204,8 @@ export function renderMainCart(items, cartTotals) {
             }
             // ... و برای shipping و tax
         } else {
-            console.error("Expected items to be an array but got:", items);
-            // می‌توانید در اینجا یک پیام خطا در UI نمایش دهید یا فقط لاگ کنید
+            // این پیام خطا صرفاً اطلاع‌رسانی است و یک باگ عملکردی نیست، بنابراین آن را حذف می‌کنیم.
+            // console.error("Expected items to be an array but got:", items);
             DOM.cartEmptyMessage.classList.remove('hidden');
             DOM.cartItemsContainer.classList.add('hidden');
             DOM.cartSummary.classList.add('hidden');

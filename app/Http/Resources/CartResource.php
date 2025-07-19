@@ -53,10 +53,8 @@ class CartResource extends JsonResource
         $isMobile = self::isMobileRequest();
 
         return [
-            'items' => $this->formatItems($isMobile),
+            'items' => $this->formatItems($isMobile), // استفاده از متد formatItems
             'summary' => $this->formatSummary($isMobile),
-            // 'cartTotals' => $this->resource->cartTotals->toArray(), // cartTotals در summary گنجانده شده است
-            // metadata فقط در صورتی اضافه می‌شود که includeMetadata true باشد
             'metadata' => $this->when($this->includeMetadata && !$isMobile, $this->formatMetadata()),
         ];
     }
@@ -69,7 +67,6 @@ class CartResource extends JsonResource
      */
     protected static function isMobileRequest(): bool
     {
-        // این یک پیاده‌سازی ساده است. در محیط واقعی، ممکن است نیاز به بررسی User-Agent دقیق‌تر باشد.
         return request()->hasHeader('X-Mobile-Optimized') && request()->header('X-Mobile-Optimized') === 'true';
     }
 
@@ -196,9 +193,6 @@ class CartResource extends JsonResource
      */
     public function with(Request $request): array
     {
-        // این متد اکنون فقط برای افزودن داده‌های اضافی که در toArray() نیستند استفاده می‌شود.
-        // فیلدهای 'success', 'message', 'timestamp' از اینجا حذف شدند
-        // و باید از طریق ->additional() در کنترلر اضافه شوند.
         return [];
     }
 }

@@ -1,4 +1,7 @@
 // cart.js
+console.log('cart.js loaded and starting...');
+// ... بقیه کد
+
 // این فایل شامل کلاس CartManager است که مسئول مدیریت کلی سبد خرید،
 // هماهنگی بین ماژول‌های API، Renderer و Events، و نگهداری وضعیت کلی است.
 

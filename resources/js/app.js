@@ -168,12 +168,15 @@ function initializeGuestUUID() {
     return guestUUID;
 }
 
-
 // --- Initial Setup and Event Listeners ---
-document.addEventListener('DOMContentLoaded', () => {
-    // Initialize guest UUID and make it globally available
-    window.guest_uuid = initializeGuestUUID();
 
+// IMPORTANT: Initialize guest UUID immediately when the script is parsed,
+// NOT inside DOMContentLoaded, to ensure it's available for other modules (like api.js)
+// که ممکن است زودتر فراخوانی شوند.
+window.guest_uuid = initializeGuestUUID();
+
+
+document.addEventListener('DOMContentLoaded', () => {
     // Setup general export buttons (if any are outside admin panel)
     setupExportButtons();
 
@@ -191,13 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Note: The hero-carousel logic was previously in app.blade.php for direct JS,
-// but it's generally better practice to move complex JS to dedicated files if needed.
-// However, since it's already functional within app.blade.php for this setup,
-// we don't need to import a separate hero-carousel.js unless its logic grows complex.
-// خط زیر برای hero-carousel دیگر نیاز نیست زیرا منطق آن در app.blade.php مدیریت شده است.
-// Also, cart and search imports are left here as they might be for the public-facing site.
-// ایمپورت کردن منطق سبد خرید. این فایل تمامی تعاملات AJAX برای سبد خرید را مدیریت خواهد کرد.
-import './cart';
-// ایمپورت کردن منطق جستجوی لایو. این فایل قابلیت جستجو را مدیریت خواهد کرد.
-import './search';
+// خطوط زیر برای hero-carousel دیگر نیاز نیست زیرا منطق آن در app.blade.php مدیریت شده است.
+// همچنین، ایمپورت‌های سبد خرید و جستجو از اینجا حذف شدند و باید مستقیماً در app.blade.php بارگذاری شوند.
+// import './cart'; // این خط حذف شد
+// import './search'; // این خط حذف شد

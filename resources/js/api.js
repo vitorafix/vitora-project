@@ -1,4 +1,7 @@
 // api.js
+console.log('api.js loaded and starting...');
+// ... بقیه کد
+
 // این فایل مسئول برقراری ارتباط با API بک‌اند است.
 
 // تابع کمکی برای دریافت توکن CSRF از تگ meta
