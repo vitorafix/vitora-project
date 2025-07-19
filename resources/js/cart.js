@@ -90,8 +90,8 @@ class CartManager {
         console.log('CartManager initializing...');
         initializeDOMCache(); // اطمینان از کش شدن DOM
         setupMiniCartToggle();
-        this.setupEventListeners();
-        this.loadAndRenderCart(); // بارگذاری اولیه محتویات سبد خرید
+        this.setupEventListeners(); // ابتدا Event Listenerها را تنظیم کنید
+        this.loadAndRenderCart(); // سپس محتویات سبد خرید را بارگذاری کنید
         console.log('CartManager init completed.'); // اضافه شده برای دیباگ
     }
 
@@ -246,9 +246,11 @@ class CartManager {
                 const cartContents = response.data;
                 // فقط در صورتی renderMainCart را فراخوانی کنید که DOM.cartItemsContainer وجود داشته باشد
                 if (this.dom.cartItemsContainer) {
-                    renderMainCart(cartContents.items, cartContents.cartTotals); // ارسال items و cartTotals جداگانه
+                    // تغییر در اینجا: ارسال cartContents.summary به عنوان cartTotals
+                    renderMainCart(cartContents.items, cartContents.summary); 
                 }
-                renderMiniCartDetails(cartContents.items, cartContents.total_quantity, cartContents.total_price); // ارسال items, total_quantity, total_price جداگانه
+                // تغییر در اینجا: ارسال cartContents.summary.totalQuantity و cartContents.summary.totalPrice
+                renderMiniCartDetails(cartContents.items, cartContents.summary.totalQuantity, cartContents.summary.totalPrice); 
                 console.log('Cart contents loaded and rendered successfully.');
             } else {
                 window.showMessage(response.message, 'error');
