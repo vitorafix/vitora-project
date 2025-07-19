@@ -12,7 +12,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
     
-    <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css', 'resources/js/app.js']); ?>
+    
+    <?php echo app('Illuminate\Foundation\Vite')([
+        'resources/css/app.css', 
+        'resources/js/app.js',
+        'resources/js/cart.js',    
+        'resources/js/search.js',  
+    ]); ?>
 
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -289,7 +295,7 @@
                 indicatorsContainer.innerHTML = ''; // Clear previous indicators
                 slides.forEach((_, i) => {
                     const indicator = document.createElement('div');
-                    indicator.classList.add('w-3', 'h-3', 'rounded-full', 'bg-gray-300', 'bg-opacity-50', 'cursor-pointer', 'transition-all', 'duration-300');
+                    indicator.classList.add('w-3', 'h-3', 'rounded-full', 'bg-gray-300', 'bg-opacity-50', 'cursor-pointer', 'mx-1', 'transition-all', 'duration-300');
                     indicator.addEventListener('click', () => {
                         stopSlideShow();
                         showSlide(i);
@@ -351,6 +357,15 @@
             }
         });
     </script>
+
+    
+    
+    
+
+    
+    
+    
+
 </body>
 </html>
 <?php /**PATH C:\xampp\htdocs\myshop\resources\views/layouts/app.blade.php ENDPATH**/ ?>

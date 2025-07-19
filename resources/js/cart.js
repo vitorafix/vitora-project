@@ -79,6 +79,7 @@ class CartManager {
         this.debouncedLoadAndRenderCart = debounce(this.loadAndRenderCart.bind(this), 300); // Debounce برای لود و رندر
         this.debouncedUpdateCartItemQuantity = debounce(this.updateItemQuantity.bind(this), 500); // Debounce برای آپدیت تعداد
         isInitialized = true;
+        console.log('CartManager instance created.'); // اضافه شده برای دیباگ
     }
 
     /**
@@ -91,21 +92,27 @@ class CartManager {
         setupMiniCartToggle();
         this.setupEventListeners();
         this.loadAndRenderCart(); // بارگذاری اولیه محتویات سبد خرید
+        console.log('CartManager init completed.'); // اضافه شده برای دیباگ
     }
 
     /**
      * تنظیم Event Listenerهای اصلی برای تعاملات سبد خرید.
      */
     setupEventListeners() {
+        console.log('Setting up event listeners...'); // اضافه شده برای دیباگ
         // Event Listener برای دکمه‌های افزودن به سبد خرید (در صفحات محصول)
-        document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+        const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
+        console.log('Found add-to-cart buttons:', addToCartButtons.length); // اضافه شده برای دیباگ
+        addToCartButtons.forEach(button => {
             button.addEventListener('click', this.handleAddToCartClick.bind(this));
+            console.log('Attached click listener to:', button); // اضافه شده برای دیباگ
         });
 
         // Event Listener برای دکمه‌های +/- و حذف در سبد خرید اصلی
         // این بخش فقط در صورتی اجرا می‌شود که DOM.cartItemsContainer وجود داشته باشد
         if (this.dom.cartItemsContainer) {
             this.dom.cartItemsContainer.addEventListener('click', this.handleCartItemAction.bind(this));
+            console.log('Attached click listener to main cart container.'); // اضافه شده برای دیباگ
         }
 
         // Event Listener برای دکمه‌های اعمال/حذف کوپن
@@ -122,12 +129,14 @@ class CartManager {
                     window.showMessage('لطفاً کد تخفیف را وارد کنید.', 'warning');
                 }
             });
+            console.log('Attached click listener to apply coupon button.'); // اضافه شده برای دیباگ
         }
 
         if (removeCouponBtn) {
             removeCouponBtn.addEventListener('click', async () => {
                 await this.removeCoupon();
             });
+            console.log('Attached click listener to remove coupon button.'); // اضافه شده برای دیباگ
         }
 
         // Event Listener برای دکمه پاکسازی سبد خرید
@@ -135,10 +144,11 @@ class CartManager {
         if (clearCartBtn) {
             clearCartBtn.addEventListener('click', async () => {
                 // استفاده از showMessage به جای confirm برای جلوگیری از مشکلات iFrame
-                window.showMessage('آیا مطمئن هستید که می‌خواهید سبد خرید خود را پاک کنید؟', 'confirm', () => {
+                window.showConfirmationModal('پاک کردن سبد خرید', 'آیا مطمئن هستید که می‌خواهید سبد خرید خود را پاک کنید؟', () => {
                     this.clearCart();
                 });
             });
+            console.log('Attached click listener to clear cart button.'); // اضافه شده برای دیباگ
         }
     }
 
@@ -147,6 +157,7 @@ class CartManager {
      * @param {Event} event
      */
     async handleAddToCartClick(event) {
+        console.log('Add to cart button clicked!'); // اضافه شده برای دیباگ
         event.preventDefault();
         const button = event.currentTarget;
         const productId = button.dataset.productId;
@@ -154,6 +165,7 @@ class CartManager {
         const productVariantId = button.dataset.productVariantId || null;
 
         if (productId) {
+            console.log(`Adding product ${productId} with quantity ${quantity} to cart.`); // اضافه شده برای دیباگ
             await this.addItem(productId, quantity, productVariantId);
         } else {
             console.error('Product ID not found for add to cart button.');
@@ -191,7 +203,7 @@ class CartManager {
             // اگر تعداد به صفر رسید، آیتم را حذف می‌کنیم
             if (newQuantity <= 0) {
                 // استفاده از showMessage به جای confirm برای جلوگیری از مشکلات iFrame
-                window.showMessage('آیا مطمئن هستید که می‌خواهید این محصول را از سبد خرید حذف کنید؟', 'confirm', () => {
+                window.showConfirmationModal('حذف محصول', 'آیا مطمئن هستید که می‌خواهید این محصول را از سبد خرید حذف کنید؟', () => {
                     this.removeItem(cartItemId);
                 });
                 return;
@@ -215,7 +227,7 @@ class CartManager {
             if (cartItemId) {
                 console.log('Remove button clicked for item:', cartItemId);
                 // استفاده از showMessage به جای confirm برای جلوگیری از مشکلات iFrame
-                window.showMessage('آیا مطمئن هستید که می‌خواهید این محصول را از سبد خرید حذف کنید؟', 'confirm', () => {
+                window.showConfirmationModal('حذف محصول', 'آیا مطمئن هستید که می‌خواهید این محصول را از سبد خرید حذف کنید؟', () => {
                     this.removeItem(cartItemId);
                 });
             }
@@ -234,9 +246,9 @@ class CartManager {
                 const cartContents = response.data;
                 // فقط در صورتی renderMainCart را فراخوانی کنید که DOM.cartItemsContainer وجود داشته باشد
                 if (this.dom.cartItemsContainer) {
-                    renderMainCart(cartContents);
+                    renderMainCart(cartContents.items, cartContents.cartTotals); // ارسال items و cartTotals جداگانه
                 }
-                renderMiniCartDetails(cartContents);
+                renderMiniCartDetails(cartContents.items, cartContents.total_quantity, cartContents.total_price); // ارسال items, total_quantity, total_price جداگانه
                 console.log('Cart contents loaded and rendered successfully.');
             } else {
                 window.showMessage(response.message, 'error');

@@ -12,7 +12,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
     {{-- Vite Assets for CSS and JS --}}
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {{-- تغییر کلیدی: اضافه کردن cart.js و search.js به دستور @vite --}}
+    @vite([
+        'resources/css/app.css', 
+        'resources/js/app.js',
+        'resources/js/cart.js',    {{-- اضافه شده --}}
+        'resources/js/search.js',  {{-- اضافه شده --}}
+    ])
 
     {{-- CDN for Chart.js (used in dashboard) --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -289,7 +295,7 @@
                 indicatorsContainer.innerHTML = ''; // Clear previous indicators
                 slides.forEach((_, i) => {
                     const indicator = document.createElement('div');
-                    indicator.classList.add('w-3', 'h-3', 'rounded-full', 'bg-gray-300', 'bg-opacity-50', 'cursor-pointer', 'transition-all', 'duration-300');
+                    indicator.classList.add('w-3', 'h-3', 'rounded-full', 'bg-gray-300', 'bg-opacity-50', 'cursor-pointer', 'mx-1', 'transition-all', 'duration-300');
                     indicator.addEventListener('click', () => {
                         stopSlideShow();
                         showSlide(i);
@@ -351,5 +357,14 @@
             }
         });
     </script>
+
+    {{-- Script for Live Search --}}
+    {{-- این خط دیگر نیازی نیست زیرا search.js به @vite اضافه شده است --}}
+    {{-- <script src="{{ asset('js/search.js') }}"></script> --}}
+
+    {{-- Script for Cart Management --}}
+    {{-- این خط دیگر نیازی نیست زیرا cart.js به @vite اضافه شده است --}}
+    {{-- <script src="{{ asset('js/cart.js') }}"></script> --}}
+
 </body>
 </html>
