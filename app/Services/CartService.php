@@ -88,11 +88,33 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
     public function getOrCreateCart(?User $user = null, ?string $sessionId = null): Cart
     {
         $startTime = microtime(true);
-        $cart = $this->cartRepository->findByUserOrSession($user, $sessionId);
+        $cart = null;
 
+        // 1. Try to find cart by user ID if user is authenticated
+        if ($user) {
+            $cart = $this->cartRepository->findByUserId($user->id);
+            if ($cart) {
+                Log::info('Existing cart found by user ID.', ['cart_id' => $cart->id, 'user_id' => $user->id]);
+            }
+        }
+
+        // 2. If no user cart found, try to find by session ID
+        if (!$cart && $sessionId) {
+            $cart = $this->cartRepository->findBySessionId($sessionId);
+            if ($cart) {
+                Log::info('Existing cart found by session ID.', ['cart_id' => $cart->id, 'session_id' => $sessionId]);
+                // If a guest cart is found and user is now logged in, assign it to the user
+                if ($user && !$cart->user_id) {
+                    $this->assignGuestCartToUser($user, $sessionId);
+                    $cart->refresh(); // Refresh the cart to get updated user_id
+                    Log::info('Guest cart assigned to logged-in user during getOrCreateCart.', ['cart_id' => $cart->id, 'user_id' => $user->id, 'session_id' => $sessionId]);
+                }
+            }
+        }
+        
+        // 3. If no cart found by user or session, create a new one
         if (!$cart) {
-            // لاگ‌گیری دقیق‌تر قبل از ایجاد سبد جدید
-            Log::info('Attempting to create new cart.', [
+            Log::info('No existing cart found. Attempting to create new cart.', [
                 'user_id_passed' => $user ? $user->id : 'null',
                 'session_id_passed' => $sessionId ?? 'null',
                 'current_session_id_from_laravel' => Session::getId()
@@ -101,16 +123,21 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             $data = [];
             if ($user) {
                 $data['user_id'] = $user->id;
-            } elseif ($sessionId) {
-                $data['session_id'] = $sessionId;
+                $data['session_id'] = null; // Clear session_id for authenticated users
             } else {
-                $data['session_id'] = Session::getId();
+                $data['session_id'] = $sessionId ?? Session::getId();
             }
             $cart = $this->cartRepository->create($data);
-            Log::info('New cart created', ['cart_id' => $cart->id, 'user_id' => $user->id ?? 'guest', 'session_id' => $sessionId]);
+            Log::info('New cart created.', ['cart_id' => $cart->id, 'user_id' => $user->id ?? 'guest', 'session_id' => $sessionId ?? Session::getId()]);
         } else {
-            Log::info('Existing cart retrieved', ['cart_id' => $cart->id, 'user_id' => $user->id ?? 'guest', 'session_id' => $sessionId]);
+            // Ensure the cart has the correct user_id if it was a guest cart and user logged in
+            if ($user && !$cart->user_id) {
+                $this->cartRepository->assignCartToUser($cart, $user);
+                $cart->refresh();
+                Log::info('Existing guest cart updated with user ID.', ['cart_id' => $cart->id, 'user_id' => $user->id, 'session_id' => $sessionId]);
+            }
         }
+
         $this->metricsManager->recordMetric('getOrCreateCart_duration', microtime(true) - $startTime, ['user_id' => $user ? $user->id : null, 'session_id' => $sessionId ?? session()->getId()]);
         return $cart;
     }
@@ -826,6 +853,12 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
 
             if ($guestCart) {
                 if ($userCart) {
+                    Log::info('CartService: Attempting to merge guest cart into existing user cart.', [
+                        'user_id' => $user->id,
+                        'user_cart_id' => $userCart->id,
+                        'guest_cart_id' => $guestCart->id,
+                        'guest_session_id' => $sessionId,
+                    ]);
                     foreach ($guestCart->items as $guestItem) {
                         // Use the new findByIdWithLock method
                         // از متد جدید findByIdWithLock استفاده کنید.
@@ -867,20 +900,35 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                                     $this->stockManager->releaseStock($product, abs($quantityDifference));
                                 }
                             }
+                            Log::info('CartService: Merged item updated in user cart.', [
+                                'user_id' => $user->id,
+                                'user_cart_item_id' => $existingUserItem->id,
+                                'product_id' => $product->id,
+                                'old_quantity' => $oldUserQuantity,
+                                'new_quantity' => $finalNewQuantity,
+                            ]);
                         } else {
                             $guestItem->cart_id = $userCart->id;
                             $guestItem->save();
                             if ($this->stockManager) {
                                 $this->stockManager->reserveStock($product, $guestItem->quantity);
                             }
+                            Log::info('CartService: Guest item moved to user cart.', [
+                                'user_id' => $user->id,
+                                'guest_cart_item_id' => $guestItem->id,
+                                'product_id' => $product->id,
+                                'quantity' => $guestItem->quantity,
+                            ]);
                         }
                     }
                     $this->cartRepository->delete($guestCart);
-                    Log::info('Guest cart merged with user cart', ['guest_cart_id' => $guestCart->id, 'user_cart_id' => $userCart->id, 'user_id' => $user->id]);
+                    Log::info('CartService: Guest cart merged with user cart successfully.', ['guest_cart_id' => $guestCart->id, 'user_cart_id' => $userCart->id, 'user_id' => $user->id]);
                 } else {
                     $this->cartRepository->assignCartToUser($guestCart, $user);
-                    Log::info('Guest cart assigned to user', ['cart_id' => $guestCart->id, 'user_id' => $user->id]);
+                    Log::info('CartService: Guest cart assigned to user successfully (no existing user cart).', ['cart_id' => $guestCart->id, 'user_id' => $user->id, 'guest_session_id' => $sessionId]);
                 }
+            } else {
+                Log::info('CartService: No guest cart found for session to assign/merge.', ['user_id' => $user->id, 'guest_session_id' => $sessionId]);
             }
             DB::commit();
             $this->cacheManager->clearCache($user, $sessionId);

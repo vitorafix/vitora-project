@@ -42,6 +42,7 @@ class CartController extends Controller
         try {
             $user = Auth::user();
             $sessionId = Session::getId();
+            // Pass both user and sessionId to getOrCreateCart
             $cart = $this->cartService->getOrCreateCart($user, $sessionId);
             $cartContents = $this->cartService->getCartContents($cart);
 
@@ -73,6 +74,7 @@ class CartController extends Controller
         $quantity = $request->input('quantity', 1);
 
         try {
+            // Pass both Auth::user() and Session::getId()
             $cart = $this->cartService->getOrCreateCart(Auth::user(), Session::getId());
             $response = $this->cartService->addOrUpdateCartItem($cart, $product->id, $quantity);
 
@@ -208,10 +210,11 @@ class CartController extends Controller
 
         $user = Auth::user();
         $sessionId = Session::getId();
+        // Pass both user and sessionId
+        $cart = $this->cartService->getOrCreateCart($user, $sessionId);
         $couponCode = $request->input('coupon_code');
 
         try {
-            $cart = $this->cartService->getOrCreateCart($user, $sessionId);
             $response = $this->cartService->applyCoupon($cart, $couponCode);
 
             if ($response->isSuccess()) {
@@ -237,6 +240,7 @@ class CartController extends Controller
         $sessionId = Session::getId();
 
         try {
+            // Pass both user and sessionId
             $cart = $this->cartService->getOrCreateCart($user, $sessionId);
             $response = $this->cartService->removeCoupon($cart);
 

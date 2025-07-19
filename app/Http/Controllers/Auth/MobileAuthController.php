@@ -96,7 +96,7 @@ class MobileAuthController extends Controller
     public function showMobileLoginForm(): View
     {
         // مسئولیت کنترلر: رندر کردن ویو برای ورود با موبایل.
-        // اگر کاربر از قبل احراز هویت شده است، او را به داشبورد هدایت کنید.
+        // اگر کاربر از قبل احراز هویت شده است، او را به داشبورد هدیت کنید.
         if (Auth::check()) {
             return redirect()->intended(route('dashboard'));
         }
@@ -416,6 +416,11 @@ class MobileAuthController extends Controller
 
             // اگر تایید موفقیت آمیز بود، کاربر را وارد کنید.
             Auth::login($user, $request->boolean('remember'));
+
+            // NEW: Merge any existing guest cart with the newly logged-in user's cart
+            // این اطمینان می‌دهد که سبد خرید مهمان به کاربر لاگین شده اختصاص یابد.
+            $currentSessionId = Session::getId(); // گرفتن Session ID فعلی
+            $this->otpService->assignGuestCartToUser($user, $currentSessionId); // فراخوانی متد ادغام
 
             // ثبت ورود کاربر از طریق سرویس حسابرسی.
             $this->auditService->log(

@@ -50,6 +50,7 @@ class ApiCartController extends Controller
         try {
             $user = Auth::user();
             $sessionId = Session::getId();
+            // Pass both user and sessionId to getOrCreateCart
             $cart = $this->cartService->getOrCreateCart($user, $sessionId);
 
             $cartContentsResponse = $this->cartService->getCartContents($cart);
@@ -92,6 +93,7 @@ class ApiCartController extends Controller
 
             $quantity = $request->input('quantity', 1);
 
+            // Pass both Auth::user() and Session::getId()
             $currentCart = $this->cartService->getOrCreateCart(Auth::user(), Session::getId());
 
             $response = $this->cartService->addOrUpdateCartItem(
@@ -334,6 +336,7 @@ class ApiCartController extends Controller
 
             $user = Auth::user();
             $sessionId = Session::getId();
+            // Pass both user and sessionId
             $cart = $this->cartService->getOrCreateCart($user, $sessionId);
 
             $couponCode = $request->input('coupon_code');
@@ -380,6 +383,7 @@ class ApiCartController extends Controller
         try {
             $user = Auth::user();
             $sessionId = Session::getId();
+            // Pass both user and sessionId
             $cart = $this->cartService->getOrCreateCart($user, $sessionId);
 
             $response = $this->cartService->removeCoupon($cart);
