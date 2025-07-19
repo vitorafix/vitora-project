@@ -19,7 +19,7 @@ class DatabaseSeeder extends Seeder
             'mobile_number' => '09123456789',
             'national_id' => '1234567890',
             'birth_date' => '1990-01-01',
-            'phone' => '02112345678',
+            'fixed_phone' => '02112345678',
             'profile_completed' => true,
         ]);
 

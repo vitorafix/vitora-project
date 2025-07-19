@@ -42,6 +42,10 @@ class CartController extends Controller
         try {
             $user = Auth::user();
             $sessionId = Session::getId();
+
+            // DEBUG LOG: Check Auth::user() and Session::getId() before calling getOrCreateCart
+            Log::debug('CartController::index: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+
             // Pass both user and sessionId to getOrCreateCart
             $cart = $this->cartService->getOrCreateCart($user, $sessionId);
             $cartContents = $this->cartService->getCartContents($cart);
@@ -74,8 +78,13 @@ class CartController extends Controller
         $quantity = $request->input('quantity', 1);
 
         try {
+            $user = Auth::user();
+            $sessionId = Session::getId();
+            // DEBUG LOG: Check Auth::user() and Session::getId() before calling getOrCreateCart
+            Log::debug('CartController::add: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+
             // Pass both Auth::user() and Session::getId()
-            $cart = $this->cartService->getOrCreateCart(Auth::user(), Session::getId());
+            $cart = $this->cartService->getOrCreateCart($user, $sessionId);
             $response = $this->cartService->addOrUpdateCartItem($cart, $product->id, $quantity);
 
             if ($response->isSuccess()) {
@@ -111,6 +120,9 @@ class CartController extends Controller
         $user = Auth::user();
         $sessionId = Session::getId();
         $quantity = $request->input('quantity');
+
+        // DEBUG LOG: Check Auth::user() and Session::getId() before calling userOwnsCartItem
+        Log::debug('CartController::update: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
 
         try {
             if (!$this->cartService->userOwnsCartItem($cartItem, $user, $sessionId)) {
@@ -148,6 +160,9 @@ class CartController extends Controller
         $user = Auth::user();
         $sessionId = Session::getId();
 
+        // DEBUG LOG: Check Auth::user() and Session::getId() before calling userOwnsCartItem
+        Log::debug('CartController::remove: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+
         try {
             if (!$this->cartService->userOwnsCartItem($cartItem, $user, $sessionId)) {
                 throw new UnauthorizedCartAccessException('You do not have permission to access this cart item.');
@@ -181,6 +196,9 @@ class CartController extends Controller
         $user = Auth::user();
         $sessionId = Session::getId();
 
+        // DEBUG LOG: Check Auth::user() and Session::getId() before calling getOrCreateCart
+        Log::debug('CartController::clear: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+
         try {
             $cart = $this->cartService->getOrCreateCart($user, $sessionId);
             $response = $this->cartService->clearCart($cart);
@@ -210,6 +228,9 @@ class CartController extends Controller
 
         $user = Auth::user();
         $sessionId = Session::getId();
+        // DEBUG LOG: Check Auth::user() and Session::getId() before calling getOrCreateCart
+        Log::debug('CartController::applyCoupon: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+
         // Pass both user and sessionId
         $cart = $this->cartService->getOrCreateCart($user, $sessionId);
         $couponCode = $request->input('coupon_code');
@@ -238,6 +259,9 @@ class CartController extends Controller
     {
         $user = Auth::user();
         $sessionId = Session::getId();
+
+        // DEBUG LOG: Check Auth::user() and Session::getId() before calling getOrCreateCart
+        Log::debug('CartController::removeCoupon: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
 
         try {
             // Pass both user and sessionId

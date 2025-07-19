@@ -50,6 +50,10 @@ class ApiCartController extends Controller
         try {
             $user = Auth::user();
             $sessionId = Session::getId();
+
+            // DEBUG LOG: Check Auth::user() and Session::getId() before calling getOrCreateCart
+            Log::debug('ApiCartController::getContents: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+
             // Pass both user and sessionId to getOrCreateCart
             $cart = $this->cartService->getOrCreateCart($user, $sessionId);
 
@@ -93,8 +97,13 @@ class ApiCartController extends Controller
 
             $quantity = $request->input('quantity', 1);
 
+            $user = Auth::user();
+            $sessionId = Session::getId();
+            // DEBUG LOG: Check Auth::user() and Session::getId() before calling getOrCreateCart
+            Log::debug('ApiCartController::add: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+
             // Pass both Auth::user() and Session::getId()
-            $currentCart = $this->cartService->getOrCreateCart(Auth::user(), Session::getId());
+            $currentCart = $this->cartService->getOrCreateCart($user, $sessionId);
 
             $response = $this->cartService->addOrUpdateCartItem(
                 $currentCart,
@@ -165,6 +174,9 @@ class ApiCartController extends Controller
         try {
             $user = Auth::user();
             $sessionId = Session::getId();
+
+            // DEBUG LOG: Check Auth::user() and Session::getId() before calling userOwnsCartItem
+            Log::debug('ApiCartController::updateQuantity: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
 
             if (!$this->cartService->userOwnsCartItem($cartItem, $user, $sessionId)) {
                 throw new UnauthorizedCartAccessException('You do not have permission to access this cart item.');
@@ -242,6 +254,9 @@ class ApiCartController extends Controller
             $user = Auth::user();
             $sessionId = Session::getId();
 
+            // DEBUG LOG: Check Auth::user() and Session::getId() before calling userOwnsCartItem
+            Log::debug('ApiCartController::removeCartItem: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+
             if (!$this->cartService->userOwnsCartItem($cartItem, $user, $sessionId)) {
                 throw new UnauthorizedCartAccessException('You do not have permission to access this cart item.');
             }
@@ -294,6 +309,9 @@ class ApiCartController extends Controller
         $user = Auth::user();
         $sessionId = Session::getId();
 
+        // DEBUG LOG: Check Auth::user() and Session::getId() before calling getOrCreateCart
+        Log::debug('ApiCartController::clearCart: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+
         try {
             $cart = $this->cartService->getOrCreateCart($user, $sessionId);
             $response = $this->cartService->clearCart($cart);
@@ -336,6 +354,9 @@ class ApiCartController extends Controller
 
             $user = Auth::user();
             $sessionId = Session::getId();
+            // DEBUG LOG: Check Auth::user() and Session::getId() before calling getOrCreateCart
+            Log::debug('ApiCartController::applyCoupon: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
+
             // Pass both user and sessionId
             $cart = $this->cartService->getOrCreateCart($user, $sessionId);
 
@@ -383,27 +404,35 @@ class ApiCartController extends Controller
         try {
             $user = Auth::user();
             $sessionId = Session::getId();
-            // Pass both user and sessionId
-            $cart = $this->cartService->getOrCreateCart($user, $sessionId);
 
-            $response = $this->cartService->removeCoupon($cart);
+            // DEBUG LOG: Check Auth::user() and Session::getId() before calling getOrCreateCart
+            Log::debug('ApiCartController::removeCoupon: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId);
 
-            if ($response->isSuccess()) {
-                $updatedCart = $cart->fresh();
-                $cartContentsResponse = $this->cartService->getCartContents($updatedCart);
+            try {
+                // Pass both user and sessionId
+                $cart = $this->cartService->getOrCreateCart($user, $sessionId);
+                $response = $this->cartService->removeCoupon($cart);
 
-                return (new CartResource($cartContentsResponse))
-                    ->additional([
-                        'success' => true,
-                        'message' => 'Coupon successfully removed.',
-                    ])
-                    ->response()
-                    ->setStatusCode(200);
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => $response->getMessage(),
-                ], $response->getStatusCode());
+                if ($response->isSuccess()) {
+                    $updatedCart = $cart->fresh();
+                    $cartContentsResponse = $this->cartService->getCartContents($updatedCart);
+
+                    return (new CartResource($cartContentsResponse))
+                        ->additional([
+                            'success' => true,
+                            'message' => 'Coupon successfully removed.',
+                        ])
+                        ->response()
+                        ->setStatusCode(200);
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $response->getMessage(),
+                    ], $response->getStatusCode());
+                }
+            } catch (\Throwable $e) {
+                Log::error('Web remove coupon error: ' . $e->getMessage(), ['exception' => $e]);
+                return back()->with('error', 'Error removing coupon.');
             }
         } catch (\Throwable $e) {
             Log::error('Error removing coupon: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);

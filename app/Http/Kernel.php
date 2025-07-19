@@ -39,7 +39,12 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
-            // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class, // اگر از Sanctum استفاده می‌کنید
+            // اگر API شما نیاز به احراز هویت مبتنی بر سشن برای SPA دارد، این خط را فعال کنید
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            // این میدل‌ویرها برای فعال کردن Auth::user() بر اساس سشن در API ضروری هستند
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class, // معمولا برای API نیاز نیست ولی برای سازگاری با session-based auth در web group اضافه شد
+            \Illuminate\Auth\Middleware\AuthenticateSession::class, // این خط کاربر را از سشن احراز هویت می‌کند
             'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
