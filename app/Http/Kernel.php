@@ -36,6 +36,7 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\GuestUuidMiddleware::class, // اضافه شدن: برای مدیریت guest_uuid در کوکی
             // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class, // اگر از Sanctum استفاده می‌کنید
         ],
 
@@ -95,3 +96,4 @@ class Kernel extends HttpKernel
         \App\Http\Middleware\EnsureProfileIsCompleted::class, // اضافه شدن به اولویت
     ];
 }
+

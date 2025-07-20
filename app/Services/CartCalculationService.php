@@ -110,9 +110,13 @@ class CartCalculationService
     {
         $subtotal = 0.0;
         $cart->loadMissing('items');
+        Log::debug('CartCalculationService::calculateSubtotal - Starting calculation for cart: ' . $cart->id);
         foreach ($cart->items as $item) {
-            $subtotal += (float) $item->price * (int) $item->quantity;
+            $itemSubtotal = (float) $item->price * (int) $item->quantity;
+            $subtotal += $itemSubtotal;
+            Log::debug('CartCalculationService::calculateSubtotal - Item: ' . $item->id . ', Product: ' . ($item->product->name ?? 'N/A') . ', Price: ' . $item->price . ', Quantity: ' . $item->quantity . ', Item Subtotal: ' . $itemSubtotal);
         }
+        Log::debug('CartCalculationService::calculateSubtotal - Final Subtotal: ' . $subtotal);
         return (float) $subtotal;
     }
 
@@ -211,12 +215,24 @@ class CartCalculationService
      */
     private function performCalculations(Cart $cart): CartTotalsDTO
     {
+        Log::debug('CartCalculationService::performCalculations - Starting calculations for cart: ' . $cart->id);
         $subtotal = $this->calculateSubtotal($cart);
-        $discount = (float) $cart->discount_amount ?? $this->calculateCouponDiscount($cart); // Use stored discount or calculate
-        $tax = $this->calculateTax($cart);
-        $shipping = $this->calculateShippingCost($cart);
+        Log::debug('CartCalculationService::performCalculations - Calculated Subtotal: ' . $subtotal);
 
-        $total = $this->calculateDiscountedTotal($cart, $discount) + $tax + $shipping;
+        $discount = (float) $cart->discount_amount ?? $this->calculateCouponDiscount($cart);
+        Log::debug('CartCalculationService::performCalculations - Calculated Discount: ' . $discount);
+
+        $tax = $this->calculateTax($cart);
+        Log::debug('CartCalculationService::performCalculations - Calculated Tax: ' . $tax);
+
+        $shipping = $this->calculateShippingCost($cart);
+        Log::debug('CartCalculationService::performCalculations - Calculated Shipping: ' . $shipping);
+
+        $discountedSubtotal = $this->calculateDiscountedTotal($cart, $discount);
+        Log::debug('CartCalculationService::performCalculations - Discounted Subtotal (after discount): ' . $discountedSubtotal);
+
+        $total = $discountedSubtotal + $tax + $shipping;
+        Log::debug('CartCalculationService::performCalculations - Raw Total: ' . $total);
 
         return new CartTotalsDTO(
             subtotal: (float) round($subtotal, 2),

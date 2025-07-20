@@ -31,7 +31,7 @@ class CartTotalsDTO
             'discount' => $this->discount,
             'shipping' => $this->shipping,
             'tax' => $this->tax,
-            'total' => $this->total,
+            'totalPrice' => $this->total, // اصلاح کلید اینجا به totalPrice
         ];
     }
 }
