@@ -52,6 +52,14 @@ class CartItem extends Model
     ];
 
     /**
+     * The relationships that should be touched.
+     * روابطی که باید 'touch' شوند (updated_at مدل والد را به‌روز کنند).
+     *
+     * @var array
+     */
+    protected $touches = ['cart'];
+
+    /**
      * Get the cart that owns the cart item.
      *
      * یک آیتم سبد خرید متعلق به یک سبد خرید است (Many-to-One relationship).

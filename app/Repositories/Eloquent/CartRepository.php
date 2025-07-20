@@ -146,6 +146,7 @@ class CartRepository implements CartRepositoryInterface
      */
     public function createCartItem(array $data): CartItem
     {
+        // The parent cart will be touched automatically by the CartItem model's $touches property.
         return CartItem::create($data);
     }
 
@@ -159,6 +160,7 @@ class CartRepository implements CartRepositoryInterface
      */
     public function updateCartItem(CartItem $cartItem, array $data): bool
     {
+        // The parent cart will be touched automatically by the CartItem model's $touches property.
         return $cartItem->update($data);
     }
 
@@ -171,6 +173,7 @@ class CartRepository implements CartRepositoryInterface
      */
     public function deleteCartItem(CartItem $cartItem): bool
     {
+        // The parent cart will be touched automatically by the CartItem model's $touches property.
         return $cartItem->delete();
     }
 
@@ -196,7 +199,10 @@ class CartRepository implements CartRepositoryInterface
      */
     public function deleteCartItemsByProductIds(Cart $cart, array $productIds): int
     {
-        return $cart->items()->whereIn('product_id', $productIds)->delete();
+        $deletedCount = $cart->items()->whereIn('product_id', $productIds)->delete();
+        // The parent cart will be touched automatically by the CartItem model's $touches property
+        // for each deleted item.
+        return $deletedCount;
     }
 
     /**
@@ -210,7 +216,16 @@ class CartRepository implements CartRepositoryInterface
      */
     public function upsertCartItems(array $itemsData, array $uniqueBy, array $update): int
     {
-        return CartItem::upsert($itemsData, $uniqueBy, $update);
+        $affectedRows = CartItem::upsert($itemsData, $uniqueBy, $update);
+        // If items were upserted, and assuming they belong to a single cart,
+        // the parent cart's 'updated_at' will be touched by the CartItem model's $touches property.
+        // However, for bulk upserts, explicit touching might be needed if $touches doesn't cover all scenarios
+        // or if items belong to multiple carts. For simplicity, we rely on $touches here.
+        // اگر آیتم‌ها upsert شده‌اند و فرض بر این است که به یک سبد خرید تعلق دارند،
+        // updated_at سبد خرید والد به صورت خودکار توسط ویژگی $touches مدل CartItem به‌روز می‌شود.
+        // با این حال، برای upsert های انبوه، اگر $touches همه سناریوها را پوشش ندهد یا آیتم‌ها به چندین سبد خرید تعلق داشته باشند،
+        // ممکن است نیاز به touch صریح باشد. برای سادگی، در اینجا به $touches تکیه می‌کنیم.
+        return $affectedRows;
     }
 
     /**
@@ -250,7 +265,10 @@ class CartRepository implements CartRepositoryInterface
      */
     public function clearCart(Cart $cart): bool
     {
-        return $cart->items()->delete();
+        $deleted = $cart->items()->delete();
+        // The parent cart will be touched automatically by the CartItem model's $touches property
+        // for each deleted item.
+        return $deleted;
     }
 
     /**
@@ -275,16 +293,38 @@ class CartRepository implements CartRepositoryInterface
     public function bulkUpdateCartItems(array $updates): int
     {
         $affectedRows = 0;
+        // Collect cart IDs that need to be touched.
+        // This is still necessary for bulk operations as $touches might not cover all scenarios
+        // when items are updated directly via query builder or in a loop like this.
+        $cartIdsToTouch = []; 
+
         foreach ($updates as $update) {
             if (isset($update['id']) && is_array($update)) {
                 $id = $update['id'];
                 unset($update['id']); // Remove ID from update data
-                $affectedRows += CartItem::where('id', $id)->update($update);
+                
+                // Get the cart item before updating to retrieve its cart_id
+                $cartItem = CartItem::find($id);
+                if ($cartItem) {
+                    $affectedRows += CartItem::where('id', $id)->update($update);
+                    // Add the cart_id to the list if it's not already there
+                    if (!in_array($cartItem->cart_id, $cartIdsToTouch)) {
+                        $cartIdsToTouch[] = $cartItem->cart_id;
+                    }
+                }
             }
         }
+
+        // Explicitly touch all affected carts after the bulk operation.
+        // This ensures the parent cart's 'updated_at' is updated,
+        // as individual item updates in a loop might not trigger $touches reliably for the parent.
+        foreach ($cartIdsToTouch as $cartId) {
+            $cart = Cart::find($cartId);
+            if ($cart) {
+                $cart->touch();
+            }
+        }
+
         return $affectedRows;
-        // A more optimized bulk update might use a single query if all updates are for the same column,
-        // but for varying columns or complex conditions, iterating is simpler.
-        // برای به‌روزرسانی‌های پیچیده‌تر، ممکن است به یک کوئری واحد نیاز باشد، اما برای سادگی، از حلقه استفاده می‌شود.
     }
 }

@@ -237,6 +237,23 @@
     {{-- Stack for custom scripts pushed from child views --}}
     @stack('scripts')
 
+    {{-- Confirmation Modal HTML (moved to just before closing </body> for better practice) --}}
+    {{-- این مدال برای نمایش پیام‌های تایید به کاربر استفاده می‌شود --}}
+    <div id="confirm-modal-overlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50 custom-modal-overlay">
+        <div class="bg-white p-8 rounded-lg shadow-xl max-w-sm w-full text-center custom-modal-content">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4" id="modal-title"></h3>
+            <p class="text-gray-600 mb-6" id="confirm-message"></p>
+            <div class="flex justify-center space-x-4">
+                <button id="confirm-yes" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-300">
+                    تایید
+                </button>
+                <button id="confirm-no" class="px-6 py-3 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition duration-300">
+                    لغو
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Calculate and set navbar height for CSS
