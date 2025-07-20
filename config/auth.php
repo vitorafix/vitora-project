@@ -40,6 +40,18 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'api' => [ // Added for JWT authentication
+            'driver' => 'jwt',
+            'provider' => 'users',
+        ],
+        'admin' => [ // Added for admin users
+            'driver' => 'session',
+            'provider' => 'admins',
+        ],
+        'editor' => [ // Added for editor users
+            'driver' => 'session',
+            'provider' => 'editors',
+        ],
     ],
 
     /*
@@ -63,6 +75,14 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', App\Models\User::class),
+        ],
+        'admins' => [ // Added for admin users
+            'driver' => 'eloquent',
+            'model' => App\Models\Admin::class, // Assuming Admin model exists
+        ],
+        'editors' => [ // Added for editor users
+            'driver' => 'eloquent',
+            'model' => App\Models\Editor::class, // Assuming Editor model exists
         ],
 
         // 'users' => [
@@ -138,3 +158,4 @@ return [
     ],
 
 ];
+
