@@ -10,8 +10,9 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\Permission\Traits\HasRoles; // اضافه کردن این خط برای استفاده از قابلیت های Spatie
+use Tymon\JWTAuth\Contracts\JWTSubject; // اضافه کردن اینترفیس JWTSubject
 
-class User extends Authenticatable
+class User extends Authenticatable implements JWTSubject // پیاده‌سازی اینترفیس JWTSubject
 {
     use HasApiTokens, HasFactory, Notifiable, HasRoles; // اضافه کردن HasRoles به لیست Trait ها
 
@@ -92,5 +93,27 @@ class User extends Authenticatable
     public function isProfileCompleted(): bool
     {
         return (bool) $this->profile_completed;
+    }
+
+    /**
+     * Get the identifier that will be stored in the subject claim of the JWT.
+     * دریافت شناسه‌ای که در ادعای موضوع JWT ذخیره خواهد شد.
+     *
+     * @return mixed
+     */
+    public function getJWTIdentifier()
+    {
+        return $this->getKey(); // معمولاً ID کاربر
+    }
+
+    /**
+     * Return a key value array, containing any custom claims to be added to the JWT.
+     * یک آرایه کلید-مقدار حاوی هر گونه ادعای سفارشی برای اضافه شدن به JWT را برمی‌گرداند.
+     *
+     * @return array
+     */
+    public function getJWTCustomClaims()
+    {
+        return []; // می‌توانید ادعاهای سفارشی مانند نقش کاربر را اینجا اضافه کنید
     }
 }

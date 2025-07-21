@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const convertAndFilterDigits = (value) => {
         const persianToEnglishMap = {
             '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
-            '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
+            '۵': '5', '۶': '۶', '۷': '7', '۸': '8', '۹': '9',
             '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
             '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
         };
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const registerButton = document.getElementById('register-button');
 
     if (registerNameInput && registerMobileNumberInput && registerButton) {
-        console.log('Register elements found. Initializing register logic.');
+        console.log('Auth.js: Register elements found. Initializing register logic.');
 
         const registerButtonOriginalText = registerButton.innerHTML; // Store original text
 
@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (error) {
                 const errorMessage = error.response?.data?.message || 'خطا در ثبت‌نام. لطفاً دوباره تلاش کنید.';
                 window.showMessage(errorMessage, 'error');
-                console.error('Error during registration:', error);
+                console.error('Auth.js: Error during registration:', error);
             } finally {
                 // Hide loading state
                 registerButton.disabled = false;
@@ -155,6 +155,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 registerButton.innerHTML = registerButtonOriginalText;
             }
         });
+    } else {
+        console.log('Auth.js: Register elements NOT found. Skipping register logic.');
+        console.log('Auth.js: registerNameInput:', registerNameInput);
+        console.log('Auth.js: registerMobileNumberInput:', registerMobileNumberInput);
+        console.log('Auth.js: registerButton:', registerButton);
     }
 
     // --- منطق برای صفحه ورود (login.blade.php) ---
@@ -162,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const sendOtpButton = document.getElementById('send-otp-button');
 
     if (loginMobileNumberInput && sendOtpButton) {
-        console.log('Login elements found. Initializing login logic.');
+        console.log('Auth.js: Login elements found. Initializing login logic.');
 
         const sendOtpButtonOriginalText = sendOtpButton.innerHTML; // Store original text
 
@@ -200,7 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (error) {
                 const errorMessage = error.response?.data?.message || 'خطا در ارسال کد تأیید. لطفاً دوباره تلاش کنید.';
                 window.showMessage(errorMessage, 'error');
-                console.error('Error sending OTP:', error);
+                console.error('Auth.js: Error sending OTP:', error);
             } finally {
                 // Hide loading state
                 sendOtpButton.disabled = false;
@@ -208,6 +213,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 sendOtpButton.innerHTML = sendOtpButtonOriginalText;
             }
         });
+    } else {
+        console.log('Auth.js: Login elements NOT found. Skipping login logic.');
+        console.log('Auth.js: loginMobileNumberInput:', loginMobileNumberInput);
+        console.log('Auth.js: sendOtpButton:', sendOtpButton);
     }
 
     // --- منطق برای صفحه تأیید OTP (verify-otp.blade.php) ---
@@ -230,7 +239,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Only initialize OTP verification logic if elements are present
     if (countdownTimerElement && resendButton && otpDigitInputs.length > 0 && hiddenMobileNumberInput) {
-        console.log('OTP verification elements found. Initializing OTP logic.');
+        console.log('Auth.js: OTP verification elements found. Initializing OTP logic.');
 
         const resendButtonOriginalText = resendButton.innerHTML; // Store original text
         const sendNewOtpButtonOriginalText = sendNewOtpButton ? sendNewOtpButton.innerHTML : ''; // Store original text
@@ -318,9 +327,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // --- Event Listeners for OTP verification page ---
         const verifyOtpAjaxButton = document.getElementById('verify-otp-ajax-button');
         if (verifyOtpAjaxButton) {
+            console.log('Auth.js: "ثبت و ورود" button (verify-otp-ajax-button) found!'); // Debug log
             verifyOtpAjaxButton.addEventListener('click', async function() {
+                console.log('Auth.js: "ثبت و ورود" button clicked!'); // Debug log
                 const mobileNumber = hiddenMobileNumberInput.value;
                 const otp = getCombinedOtp();
+                console.log('Auth.js: Mobile Number for verification:', mobileNumber); // Debug log
+                console.log('Auth.js: Combined OTP:', otp); // Debug log
+
 
                 // Show loading state
                 verifyOtpAjaxButton.disabled = true;
@@ -330,15 +344,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 try {
                     const data = await verifyOtpAndLogin(mobileNumber, otp);
                     window.showMessage(data.message || 'ورود با موفقیت انجام شد.', 'success');
-                    console.log('User data after login:', data.user);
-                    console.log('JWT Token:', data.token);
+                    console.log('Auth.js: User data after login:', data.user);
+                    console.log('Auth.js: JWT Token:', data.token);
 
                     // Redirect to dashboard or home page after successful login
                     window.location.href = '/'; // Or your dashboard route
                 } catch (error) {
                     const errorMessage = error.response?.data?.message || 'خطا در ورود. لطفاً دوباره تلاش کنید.';
                     window.showMessage(errorMessage, 'error');
-                    console.error('Error during OTP verification and login:', error);
+                    console.error('Auth.js: Error during OTP verification and login:', error);
                     clearOtpFields(); // Clear OTP fields on error
                 } finally {
                     // Hide loading state
@@ -347,7 +361,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     verifyOtpAjaxButton.innerHTML = 'ثبت و ورود <i class="fas fa-sign-in-alt mr-2"></i>';
                 }
             });
+        } else {
+            console.log('Auth.js: "ثبت و ورود" button (verify-otp-ajax-button) NOT found!'); // Debug log
         }
+
 
         if (resendButton) {
             resendButton.addEventListener('click', async function() {
@@ -372,7 +389,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } catch (error) {
                     const errorMessage = error.response?.data?.message || 'خطا در ارسال مجدد کد.';
                     window.showMessage(errorMessage, 'error');
-                    console.error('Error resending OTP:', error);
+                    console.error('Auth.js: Error resending OTP:', error);
                     clearOtpFields();
                 } finally {
                     resendButton.disabled = false;
@@ -429,7 +446,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     modalErrorMessage.classList.remove('hidden');
                     modalErrorMessage.classList.add('animate-pulse');
                     setTimeout(() => modalErrorMessage.classList.remove('animate-pulse'), 2000);
-                    console.error('Error changing mobile number:', error);
+                    console.error('Auth.js: Error changing mobile number:', error);
                     clearOtpFields();
                 } finally {
                     sendNewOtpButton.disabled = false;
@@ -447,5 +464,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (errorContainer && !errorContainer.classList.contains('hidden')) {
             clearOtpFields();
         }
+    } else {
+        console.log('Auth.js: OTP verification elements NOT found. Skipping OTP logic.');
+        console.log('Auth.js: countdownTimerElement:', countdownTimerElement);
+        console.log('Auth.js: resendButton:', resendButton);
+        console.log('Auth.js: otpDigitInputs.length:', otpDigitInputs.length);
+        console.log('Auth.js: hiddenMobileNumberInput:', hiddenMobileNumberInput);
     }
 });

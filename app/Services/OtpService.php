@@ -10,12 +10,12 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Session\Store as SessionStore;
+// use Illuminate\Session\Store as SessionStore; // REMOVED: No longer using SessionStore
 use Illuminate\Contracts\Encryption\DecryptException;
 use App\Http\Controllers\Auth\OtpSendException;
-use Illuminate\Support\Str; // Added for Str::random()
-use Illuminate\Support\Facades\Hash; // Added for Hash::make()
-use Spatie\Permission\Models\Role; // Added for Role model
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 // Make sure SecurityHelper.php is properly autoloaded, e.g., by adding it to composer.json
 // or by using a global helper file in Laravel.
@@ -42,10 +42,9 @@ if (!function_exists('maskForLog')) {
 
 class OtpService implements OtpServiceInterface
 {
-    // Constants for Session & Cache Keys
-    const SESSION_MOBILE_FOR_OTP = 'mobile_number_for_otp';
-    const SESSION_MOBILE_FOR_REGISTRATION = 'mobile_number_for_registration';
-    // Changed: CACHE_PENDING_REGISTRATION_PREFIX is now just a prefix, the mobile number will be hashed.
+    // REMOVED: Constants for Session Keys are no longer needed
+    // const SESSION_MOBILE_FOR_OTP = 'mobile_number_for_otp';
+    // const SESSION_MOBILE_FOR_REGISTRATION = 'mobile_number_for_registration';
     const CACHE_PENDING_REGISTRATION_PREFIX = 'pending_registration_';
     const PENDING_REGISTRATION_CACHE_TTL_MINUTES = 10;
 
@@ -196,7 +195,7 @@ class OtpService implements OtpServiceInterface
             $otpDataJson = Crypt::decryptString($encryptedOtp);
             // Log the JSON string after decryption
             Log::debug('OTPService: Decrypted OTP JSON string: ' . $otpDataJson);
-            
+
             // Decode the JSON string back into an array
             $otpData = json_decode($otpDataJson, true);
             // Log the OTP data array after decoding
@@ -257,7 +256,6 @@ class OtpService implements OtpServiceInterface
      * @param string $mobileNumber The mobile number to verify.
      * @param string $otp The OTP provided by the user.
      * @param string $ipAddress The IP address of the request for rate limiting.
-     * @param SessionStore $session The current session instance.
      * @param RateLimitServiceInterface $rateLimitService The rate limit service instance.
      * @param callable $auditLogger A callable function for logging audit events.
      * @return User The authenticated user object.
@@ -267,7 +265,6 @@ class OtpService implements OtpServiceInterface
         string $mobileNumber,
         string $otp,
         string $ipAddress,
-        SessionStore $session,
         RateLimitServiceInterface $rateLimitService,
         callable $auditLogger
     ): User {
@@ -322,7 +319,6 @@ class OtpService implements OtpServiceInterface
                         'name' => $userData['name'] ?? 'کاربر جدید', // Default name if not provided
                         'lastname' => $userData['lastname'] ?? null,
                         'mobile_number' => $mobileNumber,
-                        // Removed 'password' as it's not present in the database table based on the error.
                         'email_verified_at' => now(), // Assume mobile verification implies email verification for now
                     ]);
 
@@ -386,7 +382,6 @@ class OtpService implements OtpServiceInterface
      *
      * @param string $mobileNumber The mobile number to send OTP to.
      * @param string $ipAddress The IP address of the request for rate limiting.
-     * @param SessionStore $session The current session instance.
      * @param RateLimitServiceInterface $rateLimitService The rate limit service instance.
      * @param callable $auditLogger A callable function for logging audit events.
      * @throws \Exception If OTP sending fails due to rate limits, internal errors, etc.
@@ -394,16 +389,14 @@ class OtpService implements OtpServiceInterface
     public function sendOtpForMobile(
         string $mobileNumber,
         string $ipAddress,
-        SessionStore $session,
-        RateLimitServiceInterface $rateLimitService,
+        RateLimitServiceInterface $rateLimitService, // REMOVED: SessionStore $session
         callable $auditLogger
     ): void {
         Log::debug('OTPService: sendOtpForMobile called for mobile: ' . $this->maskMobile($mobileNumber) . ', IP: ' . $this->maskIp($ipAddress));
-        Log::info('OTPService: Starting OTP sending process for mobile: ' . $this->maskMobile($mobileNumber)); // New log at the beginning of the function
+        Log::info('OTPService: Starting OTP sending process for mobile: ' . $this->maskMobile($mobileNumber));
 
         // Service's responsibility: Apply rate limits.
         $ipRateLimitCheck = $rateLimitService->checkAndIncrementIpAttempts($ipAddress);
-        // The following log is now active because the getIpAttempts method exists in RateLimitService.
         Log::debug('OTPService: IP rate limit check result: ' . ($ipRateLimitCheck ? 'Passed' : 'Failed') . '. Current attempts for IP: ' . $rateLimitService->getIpAttempts($ipAddress));
         if (!$ipRateLimitCheck) {
             $auditLogger('تعداد تلاش‌های ارسال OTP از این IP بیش از حد مجاز است: ' . $this->maskIp($ipAddress), 'warning');
@@ -411,7 +404,6 @@ class OtpService implements OtpServiceInterface
         }
 
         $mobileRateLimitCheck = $rateLimitService->checkAndIncrementSendAttempts($mobileNumber);
-        // The following log is now active because the getSendAttempts method exists in RateLimitService.
         Log::debug('OTPService: Mobile send rate limit check result: ' . ($mobileRateLimitCheck ? 'Passed' : 'Failed') . '. Current attempts for mobile: ' . $rateLimitService->getSendAttempts($mobileNumber));
         if (!$mobileRateLimitCheck) {
             $auditLogger('تعداد تلاش‌های ارسال OTP برای شماره موبایل بیش از حد مجاز است: ' . $this->maskMobile($mobileNumber), 'warning');
@@ -423,9 +415,10 @@ class OtpService implements OtpServiceInterface
         if (!$user) {
             Log::info('OTPService: Mobile number ' . $this->maskMobile($mobileNumber) . ' not found in users table. Assuming new registration.');
             try {
-                $encryptedMobileNumber = Crypt::encryptString($mobileNumber);
-                $session->put(self::SESSION_MOBILE_FOR_REGISTRATION, $encryptedMobileNumber);
-                Log::debug('OTPService: Mobile number encrypted and stored in session for registration: ' . $this->maskMobile($mobileNumber));
+                // REMOVED: Session usage for registration flow
+                // $encryptedMobileNumber = Crypt::encryptString($mobileNumber);
+                // $session->put(self::SESSION_MOBILE_FOR_REGISTRATION, $encryptedMobileNumber);
+                // Log::debug('OTPService: Mobile number encrypted and stored in session for registration: ' . $this->maskMobile($mobileNumber));
                 $auditLogger('OTP برای ثبت نام جدید ارسال شد: ' . $this->maskMobile($mobileNumber), 'info');
 
                 // NEW: Store initial pending registration data in cache for new users
@@ -441,7 +434,7 @@ class OtpService implements OtpServiceInterface
 
 
             } catch (\Exception $e) {
-                Log::error('Failed to encrypt mobile number for registration session or store pending data: ' . $e->getMessage());
+                Log::error('Failed to store pending registration data in cache: ' . $e->getMessage());
                 throw new \Exception('خطا در آماده‌سازی ثبت‌نام. لطفاً دوباره تلاش کنید.', 500);
             }
         } else {
@@ -458,14 +451,15 @@ class OtpService implements OtpServiceInterface
         try {
             Log::info("SIMULATED SMS: To: {$mobileNumber}, Text: کد تایید شما: {$otp}\nفروشگاه چای");
 
-            try {
-                $encryptedMobileNumber = Crypt::encryptString($mobileNumber);
-                $session->put(self::SESSION_MOBILE_FOR_OTP, $encryptedMobileNumber);
-                Log::debug('OTPService: Mobile number encrypted and stored in session for OTP verification: ' . $this->maskMobile($mobileNumber));
-            } catch (\Exception $e) {
-                Log::error('Failed to encrypt mobile number for OTP verification session: ' . $e->getMessage());
-                throw new \Exception('خطا در آماده‌سازی تأیید کد. لطفاً دوباره تلاش کنید.', 500);
-            }
+            // REMOVED: Session usage for OTP verification
+            // try {
+            //     $encryptedMobileNumber = Crypt::encryptString($mobileNumber);
+            //     $session->put(self::SESSION_MOBILE_FOR_OTP, $encryptedMobileNumber);
+            //     Log::debug('OTPService: Mobile number encrypted and stored in session for OTP verification: ' . $this->maskMobile($mobileNumber));
+            // } catch (\Exception $e) {
+            //     Log::error('Failed to encrypt mobile number for OTP verification session: ' . $e->getMessage());
+            //     throw new \Exception('خطا در آماده‌سازی تأیید کد. لطفاً دوباره تلاش کنید.', 500);
+            // }
 
             // Assumes maskForLog function is available.
             $auditLogger(

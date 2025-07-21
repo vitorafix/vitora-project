@@ -2,7 +2,7 @@
 
 namespace App\Contracts\Services;
 
-use Illuminate\Session\Store as SessionStore; // For type hinting Laravel's session store
+// use Illuminate\Session\Store as SessionStore; // REMOVED: No longer needed for JWT stateless operations
 
 interface OtpServiceInterface
 {
@@ -12,12 +12,11 @@ interface OtpServiceInterface
      *
      * @param string $mobileNumber The mobile number to send OTP to.
      * @param string $ipAddress The IP address of the request for rate limiting.
-     * @param SessionStore $session The current session instance.
      * @param RateLimitServiceInterface $rateLimitService The rate limit service instance.
      * @param callable $auditLogger A callable function for logging audit events.
      * @throws \Exception If OTP sending fails due to rate limits, internal errors, etc.
      */
-    public function sendOtpForMobile(string $mobileNumber, string $ipAddress, SessionStore $session, RateLimitServiceInterface $rateLimitService, callable $auditLogger): void;
+    public function sendOtpForMobile(string $mobileNumber, string $ipAddress, RateLimitServiceInterface $rateLimitService, callable $auditLogger): void;
 
     /**
      * Verifies the provided OTP for a given mobile number.
@@ -26,13 +25,12 @@ interface OtpServiceInterface
      * @param string $mobileNumber The mobile number for verification.
      * @param string $otp The OTP provided by the user.
      * @param string $ipAddress The IP address of the request for rate limiting.
-     * @param SessionStore $session The current session instance.
      * @param RateLimitServiceInterface $rateLimitService The rate limit service instance.
      * @param callable $auditLogger A callable function for logging audit events.
      * @return \App\Models\User The authenticated user model.
      * @throws \Exception If OTP verification fails (invalid OTP, rate limit, etc.).
      */
-    public function verifyOtpForMobile(string $mobileNumber, string $otp, string $ipAddress, SessionStore $session, RateLimitServiceInterface $rateLimitService, callable $auditLogger): \App\Models\User;
+    public function verifyOtpForMobile(string $mobileNumber, string $otp, string $ipAddress, RateLimitServiceInterface $rateLimitService, callable $auditLogger): \App\Models\User;
 
     /**
      * Generates and stores an OTP for a given mobile number.
