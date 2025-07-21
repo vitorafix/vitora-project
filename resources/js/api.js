@@ -1,11 +1,9 @@
 // resources/js/api.js
-
-// وارد کردن Axios (مطمئن شوید که Axios را نصب کرده‌اید: npm install axios)
 import axios from 'axios';
 
-// --- پیکربندی عمومی ---
-// آدرس پایه برای API شما. اگر فرانت‌اند و بک‌اند روی دامنه‌های متفاوتی هستند، این را تنظیم کنید.
-const API_BASE_URL = '/api'; // فرض بر این است که API شما در مسیر /api نسبت به فرانت‌اند قرار دارد.
+// URL پایه برای API شما.
+// این باید با پیشوند مسیرهای API شما در Laravel مطابقت داشته باشد (معمولاً /api).
+const API_BASE_URL = '/api'; 
 
 // تابع کمکی برای دریافت توکن CSRF از تگ meta
 function getCsrfToken() {
@@ -34,29 +32,34 @@ axios.defaults.withCredentials = true;
  * توکن JWT را در localStorage ذخیره می‌کند.
  * @param {string} token - توکن JWT برای ذخیره.
  */
-function storeJwtToken(token) {
-    localStorage.setItem('jwt_token', token);
-    // هدر Authorization را برای تمام درخواست‌های آتی Axios تنظیم می‌کند.
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    console.log('JWT Token stored and set in Axios headers.');
-}
+export const storeJwtToken = (token) => { // Changed to named export
+    if (token) {
+        localStorage.setItem('jwt_token', token);
+        // هدر Authorization را برای تمام درخواست‌های آتی Axios تنظیم می‌کند.
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        console.log('API: JWT Token stored and Axios header set.');
+    } else {
+        console.warn('API: Attempted to store an empty or null JWT token.');
+    }
+};
 
 /**
  * توکن JWT را از localStorage بازیابی می‌کند.
  * @returns {string|null} توکن JWT یا null اگر یافت نشود.
  */
-function getJwtToken() {
+export const getJwtToken = () => { // Changed to named export
     return localStorage.getItem('jwt_token');
-}
+};
 
 /**
  * توکن JWT را از localStorage حذف می‌کند.
  */
-function removeJwtToken() {
+export const clearJwtToken = () => { // Changed to named export
     localStorage.removeItem('jwt_token');
     delete axios.defaults.headers.common['Authorization'];
-    console.log('JWT Token removed from localStorage and Axios headers.');
-}
+    console.log('API: JWT Token removed from localStorage and Axios headers.');
+};
+
 
 // Axios را با توکن موجود (اگر در بارگذاری صفحه موجود باشد) مقداردهی اولیه می‌کند.
 const initialToken = getJwtToken();
@@ -74,7 +77,7 @@ if (initialToken) {
  * @param {string} otp - کد OTP وارد شده توسط کاربر.
  * @returns {Promise<Object>} یک Promise که با داده‌های پاسخ API حل می‌شود.
  */
-async function verifyOtpAndLogin(mobileNumber, otp) {
+export async function verifyOtpAndLogin(mobileNumber, otp) { // Changed to named export
     try {
         const response = await axios.post(`${API_BASE_URL}/auth/verify-otp`, {
             mobile_number: mobileNumber,
@@ -91,7 +94,7 @@ async function verifyOtpAndLogin(mobileNumber, otp) {
         return response.data;
     } catch (error) {
         console.error('Error during OTP verification and login:', error.response ? error.response.data : error.message);
-        removeJwtToken(); // اطمینان از پاک شدن توکن در صورت شکست لاگین
+        clearJwtToken(); // اطمینان از پاک شدن توکن در صورت شکست لاگین
         throw error; // برای اینکه کامپوننت فراخواننده بتواند خطا را مدیریت کند.
     }
 }
@@ -102,7 +105,7 @@ async function verifyOtpAndLogin(mobileNumber, otp) {
  * @param {object} [extraData={}] - داده‌های اضافی مانند نام و نام خانوادگی برای ثبت‌نام.
  * @returns {Promise<Object>} یک Promise که با داده‌های پاسخ API حل می‌شود.
  */
-async function sendOtp(mobileNumber, extraData = {}) {
+export async function sendOtp(mobileNumber, extraData = {}) { // Changed to named export
     try {
         const payload = {
             mobile_number: mobileNumber,
@@ -123,7 +126,7 @@ async function sendOtp(mobileNumber, extraData = {}) {
  * این درخواست به طور خودکار توکن JWT (اگر موجود باشد) و کوکی guest_uuid را شامل می‌شود.
  * @returns {Promise<Object>} یک Promise که با داده‌های سبد خرید حل می‌شود.
  */
-async function fetchCartContents() {
+export async function fetchCartContents() { // Changed to named export
     try {
         const response = await axios.get(`${API_BASE_URL}/cart/contents`);
         console.log('Cart contents fetched:', response.data);
@@ -146,7 +149,7 @@ async function fetchCartContents() {
  * @param {number} quantity - تعداد برای اضافه کردن.
  * @returns {Promise<Object>} یک Promise که با داده‌های به‌روز شده سبد خرید حل می‌شود.
  */
-async function addItem(productId, quantity = 1) { // تغییر نام از addProductToCart به addItem
+export async function addItem(productId, quantity = 1) { // Changed to named export
     try {
         const response = await axios.post(`${API_BASE_URL}/cart/add/${productId}`, {
             quantity: quantity
@@ -166,7 +169,7 @@ async function addItem(productId, quantity = 1) { // تغییر نام از addP
  * @param {number} quantity - تعداد جدید محصول.
  * @returns {Promise<Object>} یک Promise که با پاسخ از سرور حل می‌شود.
  */
-async function updateCartItemQuantity(cartItemId, quantity) {
+export async function updateCartItemQuantity(cartItemId, quantity) { // Changed to named export
     try {
         const response = await axios.post(`${API_BASE_URL}/cart/update-quantity/${cartItemId}`, { quantity: quantity });
         console.log('Cart item quantity updated:', response.data);
@@ -183,7 +186,7 @@ async function updateCartItemQuantity(cartItemId, quantity) {
  * @param {string} cartItemId - شناسه آیتم سبد خرید برای حذف.
  * @returns {Promise<Object>} یک Promise که با پاسخ از سرور حل می‌شود.
  */
-async function removeCartItem(cartItemId) {
+export async function removeCartItem(cartItemId) { // Changed to named export
     try {
         const response = await axios.post(`${API_BASE_URL}/cart/remove-item/${cartItemId}`); // POST برای حذف
         console.log('Cart item removed:', response.data);
@@ -199,7 +202,7 @@ async function removeCartItem(cartItemId) {
  * این درخواست به طور خودکار توکن JWT (اگر موجود باشد) و کوکی guest_uuid را شامل می‌شود.
  * @returns {Promise<Object>} یک Promise که با پاسخ از سرور حل می‌شود.
  */
-async function clearCart() {
+export async function clearCart() { // Changed to named export
     try {
         const response = await axios.post(`${API_BASE_URL}/cart/clear`);
         console.log('Cart cleared:', response.data);
@@ -216,7 +219,7 @@ async function clearCart() {
  * @param {string} couponCode - کد کوپن برای اعمال.
  * @returns {Promise<Object>} یک Promise که با داده‌های به‌روز شده سبد خرید حل می‌شود.
  */
-async function applyCouponToCart(couponCode) {
+export async function applyCouponToCart(couponCode) { // Changed to named export
     try {
         const response = await axios.post(`${API_BASE_URL}/cart/apply-coupon`, {
             coupon_code: couponCode
@@ -233,7 +236,7 @@ async function applyCouponToCart(couponCode) {
  * کوپن تخفیف را از سبد خرید حذف می‌کند. نیاز به احراز هویت دارد.
  * @returns {Promise<Object>} یک Promise که با پاسخ از سرور حل می‌شود.
  */
-async function removeCouponFromCart() { // تغییر نام داده شد تا از تداخل جلوگیری شود
+export async function removeCouponFromCart() { // Changed to named export
     try {
         const response = await axios.post(`${API_BASE_URL}/cart/remove-coupon`);
         console.log('Coupon removed:', response.data);
@@ -248,33 +251,36 @@ async function removeCouponFromCart() { // تغییر نام داده شد تا 
  * کاربر را از سیستم خارج می‌کند (توکن JWT را باطل می‌کند).
  * @returns {Promise<Object>} یک Promise که با پیام خروج حل می‌شود.
  */
-async function logoutUser() {
+export async function logoutUser() { // Changed to named export
     try {
         const response = await axios.post(`${API_BASE_URL}/auth/logout`);
-        removeJwtToken(); // توکن را از سمت کلاینت در صورت خروج موفق پاک می‌کند.
+        clearJwtToken(); // توکن را از سمت کلاینت در صورت خروج موفق پاک می‌کند.
         console.log('Logout successful:', response.data);
         return response.data;
     } catch (error) {
         console.error('Error during logout:', error.response ? error.response.data : error.message);
+        // حتی در صورت خطا در API logout، توکن را از کلاینت حذف کنید تا کاربر بتواند دوباره وارد شود.
+        clearJwtToken();
         throw error;
     }
 }
 
 // توابع اصلی را برای استفاده در سایر بخش‌های برنامه فرانت‌اند شما export می‌کند.
-export {
-    verifyOtpAndLogin,
-    sendOtp, // sendOtp نیز برای استفاده در login و register blade ها export شد
-    fetchCartContents,
-    addItem,
-    updateCartItemQuantity,
-    removeCartItem,
-    clearCart,
-    applyCouponToCart,
-    removeCouponFromCart,
-    logoutUser,
-    getJwtToken,
-    removeJwtToken,
-};
+// این بخش نیازی به تغییر ندارد زیرا توابع اکنون به صورت مستقیم export شده‌اند.
+// export {
+//     verifyOtpAndLogin,
+//     sendOtp,
+//     fetchCartContents,
+//     addItem,
+//     updateCartItemQuantity,
+//     removeCartItem,
+//     clearCart,
+//     applyCouponToCart,
+//     removeCouponFromCart,
+//     logoutUser,
+//     getJwtToken,
+//     clearJwtToken, // clearJwtToken is now directly exported
+// };
 
 // export aliases به صورت جداگانه برای سازگاری بهتر با Vite و خوانایی.
 export const addProductToCart = addItem;

@@ -25,8 +25,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     {{-- Vite Assets for Admin Panel --}}
-    {{-- ما فرض می‌کنیم که admin.css و admin.js فایل‌های ورودی جداگانه‌ای در vite.config.js هستند --}}
-    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/admin.js'])
+    {{-- app.js خودش admin.js را ایمپورت می‌کند، بنابراین admin.js نباید اینجا دوباره اضافه شود --}}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
         /* این استایل برای جلوگیری از نمایش لحظه‌ای المنت‌های x-cloak قبل از بارگذاری Alpine.js ضروری است */

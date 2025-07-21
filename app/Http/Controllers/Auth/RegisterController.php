@@ -64,12 +64,12 @@ class RegisterController extends Controller
     public function showRegistrationForm(Request $request): View
     {
         // تلاش برای دریافت شماره موبایل از فلش سشن (اگر از MobileAuthController هدایت شده باشد)
-        $mobileNumber = $request->session()->get('user_not_found_mobile');
-        
+        // REMOVED: No longer relying on session for mobile number in registration flow
+        // $mobileNumber = $request->session()->get('user_not_found_mobile');
+
         // اگر شماره موبایل از سشن نیامده بود، تلاش می‌کنیم از پارامتر URL بگیریم (برای لینک مستقیم ثبت‌نام از mobile-login)
-        if (empty($mobileNumber)) {
-            $mobileNumber = $request->query('mobile_number');
-        }
+        // UPDATED: Always try to get from query parameter first
+        $mobileNumber = $request->query('mobile_number');
 
         // شماره موبایل را به ویو ارسال می‌کنیم.
         return view('auth.register', compact('mobileNumber'));
@@ -91,9 +91,9 @@ class RegisterController extends Controller
 
         // تولید کلید کش برای اطلاعات ثبت‌نام در حال انتظار (با استفاده از هش)
         $pendingRegistrationCacheKey = self::CACHE_PENDING_REGISTRATION_PREFIX . hashForCache($mobileNumber, 'pending_reg_cache_key');
-        
+
         // ذخیره موقت اطلاعات ثبت‌نام در کش قبل از ارسال OTP
-        // این اطلاعات پس از تایید OTP در MobileAuthController@verifyOtp استفاده خواهند شد.
+        // این اطلاعات پس از تایید OTP در MobileAuthController@verifyOtpAndLogin استفاده خواهند شد.
         $registrationData = [
             'name' => $validatedData['name'],
             'lastname' => $validatedData['lastname'] ?? null,
@@ -107,7 +107,7 @@ class RegisterController extends Controller
         $otp = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT); // تولید یک کد 6 رقمی
         // کلید کش OTP باید با OtpService سازگار باشد
         $otpCacheKey = 'otp_' . preg_replace('/[^0-9]/', '', $mobileNumber); // کلید ساده برای OTP
-        
+
         // ذخیره OTP در کش به مدت 2 دقیقه
         // توجه: این بخش باید با منطق OtpService::generateAndStoreOtp هماهنگ باشد.
         // در حالت ایده‌آل، ارسال OTP باید از طریق OtpService انجام شود تا منطق تکراری نباشد.
@@ -149,12 +149,13 @@ class RegisterController extends Controller
             return response()->json(['message' => 'کد تایید به شماره شما ارسال شد.'], 200);
         }
 
-        // تغییر مهم: ذخیره شماره موبایل به صورت رمزگذاری شده در سشن
-        $request->session()->put(MobileAuthController::SESSION_MOBILE_FOR_OTP, Crypt::encryptString($mobileNumber));
-        // همچنین نشان می‌دهیم که این یک جریان ثبت نام است
-        $request->session()->put(MobileAuthController::SESSION_MOBILE_FOR_REGISTRATION, true);
-        
+        // REMOVED: Session-based storage for mobile number and registration flag
+        // این خطوط حذف شدند زیرا ما دیگر از سشن برای این منظور استفاده نمی‌کنیم.
+        // $request->session()->put(MobileAuthController::SESSION_MOBILE_FOR_OTP, Crypt::encryptString($mobileNumber));
+        // $request->session()->put(MobileAuthController::SESSION_MOBILE_FOR_REGISTRATION, true);
+
         // هدایت کاربر به صفحه تأیید OTP
+        // شماره موبایل از طریق query parameter ارسال می‌شود.
         return redirect()->route('auth.verify-otp-form', ['mobile_number' => $mobileNumber])
                          ->with('status', 'کد تایید به شماره شما ارسال شد. لطفاً آن را وارد کنید.');
     }

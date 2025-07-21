@@ -13,8 +13,9 @@
     <!-- Font Awesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
-    {{-- Vite CSS - Replace CDN --}}
-    @vite('resources/css/app.css')
+    {{-- Vite CSS and JS --}}
+    {{-- app.js مسئول ایمپورت کردن سایر ماژول‌ها (مانند cart.js, search.js, auth.js, navbar_new.js) است --}}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
         /* تنظیم فونت Vazirmatn برای کل بدنه */
@@ -72,10 +73,28 @@
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 min-h-screen flex items-center justify-center">
+
+    {{-- Navbar (Example - You might have your actual navbar here) --}}
+    {{-- اگر ناوبری اصلی سایت را در اینجا include می‌کنید، مطمئن شوید که خودش تگ <script> اضافی ندارد --}}
+    @include('layouts.navigation') {{-- فرض بر این است که navigation.blade.php شامل ناوبری است --}}
+
     {{-- محتوای اصلی صفحه در اینجا قرار می‌گیرد --}}
     @yield('content')
 
     {{-- اسکریپت‌های سفارشی که از ویوهای فرزند push می‌شوند (اگر نیازی باشد) --}}
     @stack('scripts')
+
+    {{-- Confirmation Modal structure (اگر قبلاً در app.blade.php تعریف نشده است) --}}
+    {{-- این مدال برای نمایش پیام‌های تایید به کاربر استفاده می‌شود --}}
+    <div id="confirm-modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-sm text-center">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4"></h3>
+            <p id="confirm-message" class="text-gray-600 dark:text-gray-400 mb-6"></p>
+            <div class="flex justify-center space-x-4 rtl:space-x-reverse">
+                <button id="confirm-yes" class="btn-primary px-6 py-2">بله</button>
+                <button id="confirm-no" class="btn-secondary px-6 py-2">خیر</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

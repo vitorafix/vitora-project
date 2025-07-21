@@ -135,38 +135,33 @@
         </div>
     @endsection
 
-    {{-- Add this section at the end of your Blade file, or in your main layout if it's included there --}}
-    @push('scripts')
-        {{-- A simple global message display function, if not already defined --}}
-        <script>
-            window.showMessage = function(message, type = 'info') {
-                const container = document.createElement('div');
-                container.className = `fixed bottom-4 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg text-white text-center z-[1000] transition-all duration-300 ease-out transform opacity-0 scale-95`;
+    {{-- Remove this entire @push('scripts') block --}}
+    {{-- <script>
+        window.showMessage = function(message, type = 'info') {
+            const container = document.createElement('div');
+            container.className = `fixed bottom-4 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg shadow-lg text-white text-center z-[1000] transition-all duration-300 ease-out transform opacity-0 scale-95`;
 
-                if (type === 'success') {
-                    container.classList.add('bg-green-500');
-                } else if (type === 'error') {
-                    container.classList.add('bg-red-500');
-                } else {
-                    container.classList.add('bg-blue-500');
-                }
+            if (type === 'success') {
+                container.classList.add('bg-green-500');
+            } else if (type === 'error') {
+                container.classList.add('bg-red-500');
+            } else {
+                container.classList.add('bg-blue-500');
+            }
 
-                container.textContent = message;
-                document.body.appendChild(container);
+            container.textContent = message;
+            document.body.appendChild(container);
 
-                setTimeout(() => {
-                    container.classList.add('opacity-100', 'scale-100', 'translate-y-0');
-                }, 100);
+            setTimeout(() => {
+                container.classList.add('opacity-100', 'scale-100', 'translate-y-0');
+            }, 100);
 
-                setTimeout(() => {
-                    container.classList.remove('opacity-100', 'scale-100', 'translate-y-0');
-                    container.classList.add('opacity-0', 'scale-95');
-                    container.addEventListener('transitionend', () => container.remove(), { once: true });
-                }, 3000);
-            };
-        </script>
-        {{-- IMPORTANT: Use @vite for JS assets if you are using Laravel Vite Plugin --}}
-        {{-- Remove asset() and use @vite() for your JS entry points --}}
-        @vite(['resources/js/api.js', 'resources/js/auth.js'])
-    @endpush
-    
+            setTimeout(() => {
+                container.classList.remove('opacity-100', 'scale-100', 'translate-y-0');
+                container.classList.add('opacity-0', 'scale-95');
+                container.addEventListener('transitionend', () => container.remove(), { once: true });
+            }, 3000);
+        };
+    </script>
+    @vite(['resources/js/api.js', 'resources/js/auth.js']) --}}
+    {{-- End of block to remove --}}

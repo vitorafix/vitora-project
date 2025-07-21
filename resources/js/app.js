@@ -7,7 +7,7 @@ window.Alpine = Alpine;
 Alpine.start();
 
 // Import global utilities and setup functions
-import { setupExportButtons } from './export.js'; // Export functions are general purpose
+import { setupExportButtons } from './export.js';
 import * as jalaali from 'jalaali-js';
 window.jalaali = jalaali;
 
@@ -20,8 +20,24 @@ import {
     clearCart,
     applyCouponToCart,
     removeCouponFromCart,
-    getJwtToken // برای بررسی وضعیت لاگین کاربر
-} from './api.js'; // مسیر را بر اساس مکان فایل api.js خود تنظیم کنید
+    getJwtToken
+} from './api.js';
+
+// --- Import other modules ---
+// اطمینان حاصل کنید که نام فایل‌ها دقیقاً با فایل‌های موجود در پوشه resources/js مطابقت دارد.
+import './cart.js';
+import './search.js';
+import './auth.js';
+// NEW: ایمپورت کردن تابع initializeNavbarAndCart از navbar_new.js
+import { initializeNavbarAndCart } from './navbar_new.js'; // مسیر صحیح
+
+// فعال کردن ایمپورت فایل‌های دیگر که در پوشه شما موجود هستند و ممکن است نیاز باشند:
+import './admin.js';
+import './charts.js';
+import './checkout.js';
+import './events.js';
+import './hero.js';
+import './renderer.js';
 
 
 // --- Global Data and Functions ---
@@ -229,7 +245,6 @@ function setupProductEditListeners() {
 
 // IMPORTANT: Initialize guest UUID immediately when the script is parsed,
 // NOT inside DOMContentLoaded, to ensure it's available for other modules (like api.js)
-// که ممکن است زودتر فراخوانی شوند.
 window.guest_uuid = initializeGuestUUID();
 
 
@@ -238,11 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupExportButtons();
 
     // Call the main admin panel setup function ONLY if on an admin page
-    // This function now contains the path check internally as well, but this outer check
-    // prevents unnecessary execution for public pages.
     if (window.location.pathname.startsWith('/admin/')) {
-        // setupAdminPanelListeners از admin.js ایمپورت نشده است، بلکه مستقیماً فراخوانی می‌شود
-        // مطمئن شوید که admin.js به درستی در HTML بارگذاری شده است تا این تابع در دسترس باشد.
         if (typeof setupAdminPanelListeners === 'function') {
             setupAdminPanelListeners();
         } else {
@@ -251,7 +262,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Cart Page Specific Logic ---
-    // این بخش فقط در صورتی اجرا می‌شود که کاربر در صفحه سبد خرید باشد.
     if (window.location.pathname === '/cart') {
         const cartItemsContainer = document.getElementById('cart-items-container');
         const cartEmptyMessage = document.getElementById('cart-empty-message');
@@ -262,9 +272,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const cartTaxPrice = document.getElementById('cart-tax-price');
         const cartTotalPrice = document.getElementById('cart-total-price');
 
-        // تابع برای رندر کردن آیتم‌های سبد خرید
         function renderCart(cartData) {
-            cartItemsContainer.innerHTML = ''; // پاک کردن آیتم‌های قبلی
+            cartItemsContainer.innerHTML = '';
 
             if (!cartData || !cartData.data || !cartData.data.items || cartData.data.items.length === 0) {
                 cartEmptyMessage.classList.remove('hidden');
@@ -305,17 +314,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 cartItemsContainer.appendChild(itemElement);
             });
 
-            // به‌روزرسانی خلاصه‌ی سبد خرید
             cartSubtotalPrice.textContent = `${cartData.data.subtotal.toLocaleString('fa-IR')} تومان`;
             cartDiscountPrice.textContent = `${cartData.data.discount_amount.toLocaleString('fa-IR')} تومان`;
-            cartShippingPrice.textContent = `${cartData.data.shipping_cost.toLocaleString('fa-IR')} تومان`; // فرض بر وجود shipping_cost
-            cartTaxPrice.textContent = `${cartData.data.tax_amount.toLocaleString('fa-IR')} تومان`; // فرض بر وجود tax_amount
+            cartShippingPrice.textContent = `${cartData.data.shipping_cost.toLocaleString('fa-IR')} تومان`;
+            cartTaxPrice.textContent = `${cartData.data.tax_amount.toLocaleString('fa-IR')} تومان`;
             cartTotalPrice.textContent = `${cartData.data.total.toLocaleString('fa-IR')} تومان`;
 
-            attachEventListeners(); // دوباره event listenerها را متصل کنید
+            attachEventListeners();
         }
 
-        // تابع برای واکشی و رندر کردن سبد خرید
         async function loadCart() {
             try {
                 const cart = await fetchCartContents();
@@ -324,11 +331,10 @@ document.addEventListener('DOMContentLoaded', () => {
             catch (error) {
                 console.error('Failed to load cart contents:', error);
                 window.showMessage('خطا در بارگذاری سبد خرید.', 'error');
-                renderCart(null); // نمایش سبد خرید خالی در صورت خطا
+                renderCart(null);
             }
         }
 
-        // تابع برای اتصال event listenerها به دکمه‌ها
         function attachEventListeners() {
             document.querySelectorAll('.quantity-btn').forEach(button => {
                 button.onclick = async (event) => {
@@ -343,7 +349,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     if (currentQuantity <= 0) {
-                        // اگر تعداد به 0 رسید، آیتم را حذف کن
                         window.showConfirmationModal(
                             'حذف محصول',
                             'آیا مطمئن هستید که می‌خواهید این محصول را از سبد خرید حذف کنید؟',
@@ -355,7 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         try {
                             await updateCartItemQuantity(cartItemId, currentQuantity);
                             window.showMessage('تعداد آیتم به‌روزرسانی شد.', 'success');
-                            await loadCart(); // دوباره سبد خرید را بارگذاری کن
+                            await loadCart();
                         } catch (error) {
                             console.error('Error updating quantity:', error);
                             window.showMessage('خطا در به‌روزرسانی تعداد آیتم.', 'error');
@@ -378,27 +383,21 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // تابع کمکی برای حذف آیتم
         async function removeCartItemHandler(cartItemId) {
             try {
                 await removeCartItem(cartItemId);
                 window.showMessage('آیتم از سبد خرید حذف شد.', 'success');
-                await loadCart(); // دوباره سبد خرید را بارگذاری کن
+                await loadCart();
             } catch (error) {
                 console.error('Error removing item:', error);
                 window.showMessage('خطا در حذف آیتم از سبد خرید.', 'error');
             }
         }
 
-        // بارگذاری اولیه سبد خرید هنگام بارگذاری صفحه
-        loadCart(); // Changed to not await here to avoid blocking DOMContentLoaded
+        loadCart();
     }
 
-    // Call the product edit listeners setup function
     setupProductEditListeners();
+    // NEW: فراخوانی تابع راه‌اندازی نوار ناوبری و سبد خرید کوچک
+    initializeNavbarAndCart();
 });
-
-// خطوط زیر برای hero-carousel دیگر نیاز نیست زیرا منطق آن در app.blade.php مدیریت شده است.
-// همچنین، ایمپورت‌های سبد خرید و جستجو از اینجا حذف شدند و باید مستقیماً در app.blade.php بارگذاری شوند.
-// import './cart'; // این خط حذف شد
-// import './search'; // این خط حذف شد

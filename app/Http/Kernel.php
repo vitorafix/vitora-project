@@ -36,22 +36,14 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            \App\Http\Middleware\GuestUuidMiddleware::class, // اضافه شدن: برای مدیریت guest_uuid در کوکی
-            // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class, // اگر از Sanctum استفاده می‌کنید (برای session-based SPA)
+            \App\Http\Middleware\GuestUuidMiddleware::class, // اضافه شدن: برای مدیریت UUID مهمان
         ],
 
         'api' => [
-            // 'throttle:api', // این را می‌توان به صورت جداگانه در مسیرها اعمال کرد
+            // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class, // اگر از Sanctum استفاده نمی‌کنید، این را حذف کنید یا کامنت کنید
+            'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            // Sanctum و Session-based auth را برای APIهای JWT غیرفعال می‌کنیم
-            // اگر API شما کاملاً Stateless است و فقط از JWT استفاده می‌کنید، این خطوط باید کامنت شده باشند.
-            // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-            // \Illuminate\Session\Middleware\StartSession::class,
-            // \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-            // \Illuminate\Auth\Middleware\AuthenticateSession::class,
-
-            // افزودن میدل‌ویر JWTAuth برای احراز هویت API
-            \Tymon\JWTAuth\Http\Middleware\Authenticate::class,
+            // توجه: Middleware JWT به صورت جداگانه در routeMiddleware تعریف می‌شود
         ],
     ];
 
@@ -65,7 +57,7 @@ class Kernel extends HttpKernel
     protected $routeMiddleware = [
         'auth' => \App\Http\Middleware\Authenticate::class,
         'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
-        'bindings' => \Illuminate\Routing\Middleware\SubstituteBindings::class, // اطمینان از وجود این خط
+        'bindings' => \Illuminate\Routing\Middleware\SubstituteBindings::class,
         'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
         'can' => \Illuminate\Auth\Middleware\Authorize::class,
         'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
@@ -79,6 +71,11 @@ class Kernel extends HttpKernel
         'permission' => \Spatie\Permission\Middlewares\PermissionMiddleware::class,
         'role_or_permission' => \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class,
         // --- پایان اضافه کردن میدل‌ورهای Spatie ---
+
+        // --- اضافه کردن میدل‌ورهای JWT (Tymon/JWT-Auth) ---
+        'jwt.auth' => \Tymon\JWTAuth\Http\Middleware\Authenticate::class, // این خط را بررسی کنید
+        'jwt.refresh' => \Tymon\JWTAuth\Http\Middleware\RefreshToken::class, // این خط را بررسی کنید
+        // --- پایان اضافه کردن میدل‌ورهای JWT ---
     ];
 
     /**
@@ -97,5 +94,7 @@ class Kernel extends HttpKernel
         \Illuminate\Routing\Middleware\SubstituteBindings::class,
         \Illuminate\Auth\Middleware\Authorize::class, // اضافه شدن به اولویت
         \App\Http\Middleware\EnsureProfileIsCompleted::class, // اضافه شدن به اولویت
+        \App\Http\Middleware\OptimizeResourceForMobile::class, // اضافه شدن به اولویت
+        \App\Http\Middleware\GuestUuidMiddleware::class, // اضافه شدن به اولویت
     ];
 }

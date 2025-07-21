@@ -12,15 +12,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
     {{-- Vite Assets for CSS and JS --}}
-    {{-- تغییر کلیدی: اضافه کردن cart.js, search.js و auth.js به دستور @vite --}}
-    
+    {{-- فقط app.js به عنوان نقطه ورودی جاوااسکریپت اصلی را بارگذاری کنید. --}}
+    {{-- app.js خودش مسئول ایمپورت کردن سایر ماژول‌ها (cart.js, search.js, auth.js, navbar_new.js و غیره) است. --}}
     @vite([
         'resources/css/app.css',
-        'resources/js/app.js',
-        // 'resources/js/api.js',    {{-- حذف شد، زیرا باید توسط سایر ماژول‌ها import شود --}}
-        'resources/js/cart.js',    
-        'resources/js/search.js',  
-        'resources/js/auth.js',    {{-- اضافه شده برای منطق ثبت‌نام و احراز هویت --}}
+        'resources/js/app.js', 
     ])
 
     {{-- CDN for Chart.js (used in dashboard) --}}
@@ -62,7 +58,7 @@
             padding: 3rem; /* Increased padding */
             border-radius: 1rem; /* More rounded corners */
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2); /* shadow-xl */
-            max-width: 5-0px; /* Max width for better readability */
+            max-width: 500px; /* Max width for better readability */
             width: 90%;
             text-align: center;
             transform: translateY(-20px); /* برای انیمیشن ورودی */

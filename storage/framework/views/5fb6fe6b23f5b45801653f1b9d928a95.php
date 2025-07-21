@@ -16,11 +16,7 @@
     
     <?php echo app('Illuminate\Foundation\Vite')([
         'resources/css/app.css',
-        'resources/js/app.js',
-        // 'resources/js/api.js',    
-        'resources/js/cart.js',    
-        'resources/js/search.js',  
-        'resources/js/auth.js',    
+        'resources/js/app.js', 
     ]); ?>
 
     
@@ -62,7 +58,7 @@
             padding: 3rem; /* Increased padding */
             border-radius: 1rem; /* More rounded corners */
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2); /* shadow-xl */
-            max-width: 5-0px; /* Max width for better readability */
+            max-width: 500px; /* Max width for better readability */
             width: 90%;
             text-align: center;
             transform: translateY(-20px); /* برای انیمیشن ورودی */

@@ -19,14 +19,21 @@ class EnsureProfileIsCompleted
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // بررسی می‌کنیم که آیا کاربر احراز هویت شده است یا خیر.
-        // Auth::guard('api')->check() برای اطمینان از بررسی گارد JWT
+        // بررسی می‌کنیم که آیا کاربر از طریق گارد API (JWT) احراز هویت شده است.
         if (Auth::guard('api')->check()) { // فرض می‌کنیم گارد API شما برای JWT است
             $user = Auth::guard('api')->user(); // دریافت کاربر احراز هویت شده توسط JWT
 
             // اگر کاربر وجود دارد و پروفایلش تکمیل نشده است
             if ($user && !$user->isProfileCompleted()) {
                 Log::info('EnsureProfileIsCompleted: User profile not completed for user ID: ' . $user->id);
+
+                // **NEW LOGIC: Exclude the profile completion form itself**
+                // اگر درخواست فعلی به مسیر تکمیل پروفایل است، اجازه می‌دهیم ادامه یابد
+                // تا کاربر بتواند پروفایل خود را تکمیل کند و در حلقه ریدایرکت گیر نکند.
+                if ($request->route()->getName() === 'profile.completion.form') {
+                    Log::debug('EnsureProfileIsCompleted: Currently on profile completion form. Allowing access.');
+                    return $next($request);
+                }
 
                 // اگر درخواست AJAX یا درخواست با انتظار JSON باشد، پاسخ JSON می‌دهیم.
                 // این برای APIها مناسب است.
@@ -35,9 +42,7 @@ class EnsureProfileIsCompleted
                 }
 
                 // برای درخواست‌های وب (اگر هنوز دارید و نیاز به ریدایرکت دارند)
-                // توجه: در یک سیستم کاملاً JWT، ریدایرکت‌ها معمولاً توسط فرانت‌اند مدیریت می‌شوند.
-                // این بخش ممکن است در آینده حذف شود اگر وب‌سایت نیز کاملاً SPA و JWT محور شود.
-                Log::warning('EnsureProfileIsCompleted: Web request for user ' . $user->id . ' needs profile completion. Redirecting.');
+                Log::warning('EnsureProfileIsCompleted: Web request for user ' . $user->id . ' needs profile completion. Redirecting to profile completion form.');
                 return redirect()->route('profile.completion.form')->with('status', 'لطفاً ابتدا پروفایل خود را تکمیل کنید.');
             }
         } else {

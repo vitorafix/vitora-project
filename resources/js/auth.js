@@ -1,19 +1,23 @@
 // resources/js/auth.js
 console.log('auth.js loaded and starting...');
 
-// ایمپورت کردن توابع مورد نیاز از api.js
-import { sendOtp, verifyOtpAndLogin, logoutUser } from './api.js'; // verifyOtpAndLogin و logoutUser اضافه شدند
+// Import necessary API functions
+// storeJwtToken and clearJwtToken are also imported from api.js
+import { sendOtp, verifyOtpAndLogin, logoutUser, storeJwtToken, clearJwtToken } from './api.js'; 
+// NEW: Removed the import of updateNavbarUserStatus from navbar_new.js.
+// This function is now called via initializeNavbarAndCart in app.js.
+// import { updateNavbarUserStatus } from './navbar_new.js'; // This line has been removed
 
 document.addEventListener('DOMContentLoaded', function() {
 
     // Function to convert Persian/Arabic digits to English and remove non-digits
-    // این تابع برای هر سه فرم ثبت‌نام، ورود و تأیید OTP استفاده می‌شود.
+    // This function is used for all three registration, login, and OTP verification forms.
     const convertAndFilterDigits = (value) => {
         const persianToEnglishMap = {
             '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
-            '۵': '5', '۶': '۶', '۷': '7', '۸': '8', '۹': '9',
+            '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
             '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
-            '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
+            '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9' 
         };
         let convertedValue = '';
         for (let i = 0; i < value.length; i++) {
@@ -24,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return convertedValue.replace(/\D/g, '');
     };
 
-    // Class to manage countdown timers (از verify-otp.blade.php منتقل شد)
+    // Class to manage countdown timers (moved from verify-otp.blade.php)
     class CountdownTimer {
         constructor(element, initialSeconds, onCompleteCallback) {
             this.element = element;
@@ -64,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Function to clear OTP input fields and focus on the first one (از verify-otp.blade.php منتقل شد)
+    // Function to clear OTP input fields and focus on the first one (moved from verify-otp.blade.php)
     const clearOtpFields = () => {
         const otpDigitInputs = document.querySelectorAll('.otp-digit-input');
         otpDigitInputs.forEach(input => {
@@ -75,7 +79,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // Function to get the combined OTP string from individual inputs (از verify-otp.blade.php منتقل شد)
+    // Function to get the combined OTP string from individual inputs (moved from verify-otp.blade.php)
     const getCombinedOtp = () => {
         const otpDigitInputs = document.querySelectorAll('.otp-digit-input');
         let otp = '';
@@ -86,10 +90,10 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
 
-    // --- منطق برای صفحه ثبت‌نام (register.blade.php) ---
+    // --- Logic for the registration page (register.blade.php) ---
     const registerNameInput = document.getElementById('name');
     const registerLastnameInput = document.getElementById('lastname');
-    const registerMobileNumberInput = document.getElementById('mobile_number'); // این ID در هر دو صفحه مشترک است
+    const registerMobileNumberInput = document.getElementById('mobile_number'); // This ID is common to both pages
     const registerButton = document.getElementById('register-button');
 
     if (registerNameInput && registerMobileNumberInput && registerButton) {
@@ -135,6 +139,7 @@ document.addEventListener('DOMContentLoaded', function() {
             registerButton.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال ثبت‌نام...';
 
             try {
+                // Pass name and lastname in the userData object
                 const response = await sendOtp(mobileNumber, {
                     name: name,
                     lastname: lastname,
@@ -162,8 +167,8 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Auth.js: registerButton:', registerButton);
     }
 
-    // --- منطق برای صفحه ورود (login.blade.php) ---
-    const loginMobileNumberInput = document.getElementById('mobile_number'); // این ID در هر دو صفحه مشترک است
+    // --- Logic for the login page (login.blade.php) ---
+    const loginMobileNumberInput = document.getElementById('mobile_number'); // This ID is common to both pages
     const sendOtpButton = document.getElementById('send-otp-button');
 
     if (loginMobileNumberInput && sendOtpButton) {
@@ -196,11 +201,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.showMessage(response.message || 'کد تأیید با موفقیت ارسال شد.', 'success');
 
                 // Redirect to OTP verification page, passing the mobile number
-                if (response.show_register_link) { // Check for the flag from backend
-                    window.location.href = `${window.location.origin}/auth/register-form?mobile_number=${mobileNumber}`;
-                } else {
-                    window.location.href = `${window.location.origin}/auth/verify-otp-form?mobile_number=${mobileNumber}`;
-                }
+                // This logic defaults to redirecting to verify-otp-form.
+                // MobileAuthController in the backend is responsible for redirecting to register-form if needed.
+                window.location.href = `${window.location.origin}/auth/verify-otp-form?mobile_number=${mobileNumber}`;
 
             } catch (error) {
                 const errorMessage = error.response?.data?.message || 'خطا در ارسال کد تأیید. لطفاً دوباره تلاش کنید.';
@@ -219,7 +222,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Auth.js: sendOtpButton:', sendOtpButton);
     }
 
-    // --- منطق برای صفحه تأیید OTP (verify-otp.blade.php) ---
+    // --- Logic for the OTP verification page (verify-otp.blade.php) ---
     const countdownTimerElement = document.getElementById('countdown-timer');
     const resendButton = document.getElementById('resend-otp-button');
     const resendTimerElement = resendButton ? resendButton.querySelector('#resend-timer') : null; // Select the span inside the button
@@ -346,6 +349,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.showMessage(data.message || 'ورود با موفقیت انجام شد.', 'success');
                     console.log('Auth.js: User data after login:', data.user);
                     console.log('Auth.js: JWT Token:', data.token);
+
+                    // NEW: Update navbar user status immediately
+                    // This line has been removed because initializeNavbarAndCart is called in app.js
+                    // if (typeof updateNavbarUserStatus === 'function') {
+                    //     await updateNavbarUserStatus(); 
+                    // } else {
+                    //     console.warn('updateNavbarUserStatus function not found in global scope.');
+                    // }
 
                     // Redirect to dashboard or home page after successful login
                     window.location.href = '/'; // Or your dashboard route
