@@ -1,6 +1,5 @@
 // cart.js
 console.log('cart.js loaded and starting...');
-// ... بقیه کد
 
 // این فایل شامل کلاس CartManager است که مسئول مدیریت کلی سبد خرید،
 // هماهنگی بین ماژول‌های API، Renderer و Events، و نگهداری وضعیت کلی است.
@@ -104,6 +103,8 @@ class CartManager {
         const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
         console.log('Found add-to-cart buttons:', addToCartButtons.length); // اضافه شده برای دیباگ
         addToCartButtons.forEach(button => {
+            // ذخیره متن اصلی دکمه برای بازگرداندن پس از عملیات
+            button.dataset.originalText = button.innerHTML;
             button.addEventListener('click', this.handleAddToCartClick.bind(this));
             console.log('Attached click listener to:', button); // اضافه شده برای دیباگ
         });
@@ -163,10 +164,28 @@ class CartManager {
         const productId = button.dataset.productId;
         const quantity = parseInt(button.dataset.quantity || 1); // مقدار پیش‌فرض 1
         const productVariantId = button.dataset.productVariantId || null;
+        const originalButtonText = button.dataset.originalText; // بازیابی متن اصلی دکمه
 
         if (productId) {
+            // نمایش وضعیت بارگذاری
+            button.disabled = true;
+            button.classList.add('opacity-50', 'cursor-not-allowed');
+            button.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال افزودن...';
+
             console.log(`Adding product ${productId} with quantity ${quantity} to cart.`); // اضافه شده برای دیباگ
-            await this.addItem(productId, quantity, productVariantId);
+            try {
+                const response = await this.addItem(productId, quantity, productVariantId);
+                window.showMessage(response.message || 'محصول با موفقیت به سبد خرید اضافه شد.', 'success');
+            } catch (error) {
+                const errorMessage = error.response?.data?.message || 'خطا در افزودن محصول به سبد خرید. لطفاً دوباره تلاش کنید.';
+                window.showMessage(errorMessage, 'error');
+                console.error('Error adding product to cart:', error);
+            } finally {
+                // مخفی کردن وضعیت بارگذاری
+                button.disabled = false;
+                button.classList.remove('opacity-50', 'cursor-not-allowed');
+                button.innerHTML = originalButtonText; // بازگرداندن متن اصلی دکمه
+            }
         } else {
             console.error('Product ID not found for add to cart button.');
             window.showMessage('خطا: شناسه محصول یافت نشد.', 'error');
@@ -258,6 +277,8 @@ class CartManager {
         } catch (error) {
             console.error('Error loading cart contents:', error);
             window.showMessage('خطا در بارگذاری سبد خرید. لطفاً دوباره تلاش کنید.', 'error');
+            renderMainCart([], {}); // نمایش سبد خرید خالی در صورت خطا
+            renderMiniCartDetails([], 0, 0);
         } finally {
             setCartLoadingState(false);
         }
@@ -274,14 +295,19 @@ class CartManager {
         try {
             const response = await addItem(productId, quantity, productVariantId);
             if (response.success) {
-                window.showMessage(response.message, 'success');
+                // پیام موفقیت از اینجا نمایش داده می‌شود
+                // window.showMessage(response.message || 'محصول با موفقیت به سبد خرید اضافه شد.', 'success');
                 await this.loadAndRenderCart(); // Reload cart contents after adding
             } else {
-                window.showMessage(response.message, 'error');
+                // پیام خطا از اینجا نمایش داده می‌شود
+                // window.showMessage(response.message, 'error');
             }
+            return response; // برای استفاده در handleAddToCartClick
         } catch (error) {
-            console.error('Error adding item to cart:', error);
-            window.showMessage('خطا در افزودن محصول به سبد خرید.', 'error');
+            // خطا از اینجا مدیریت می‌شود
+            // console.error('Error adding item to cart:', error);
+            // window.showMessage('خطا در افزودن محصول به سبد خرید.', 'error');
+            throw error; // برای اینکه handleAddToCartClick بتواند خطا را بگیرد
         } finally {
             setCartLoadingState(false);
         }

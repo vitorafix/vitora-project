@@ -75,7 +75,7 @@ window.showMessage = function(message, type = 'info', duration = 3000) {
  * @param {string} title - Title of the confirmation.
  * @param {string} message - Message of the confirmation.
  * @param {function} onConfirm - Callback function to execute on confirmation.
- * @param {function} onCancel - Callback function to execute on cancellation.
+ * @param {function} [onCancel] - Optional callback function to execute on cancellation.
  */
 window.showConfirmationModal = function(title, message, onConfirm, onCancel) {
     const modalOverlay = document.getElementById('confirm-modal-overlay');
@@ -85,9 +85,16 @@ window.showConfirmationModal = function(title, message, onConfirm, onCancel) {
     const cancelBtn = modalOverlay.querySelector('#confirm-no');
 
     if (!modalOverlay) {
-        console.error("Confirmation modal overlay not found.");
+        console.error("Confirmation modal overlay not found. Ensure 'confirm-modal-overlay' element exists in your layout.");
         return;
     }
+
+    // Reset event listeners to prevent multiple bindings
+    confirmBtn.replaceWith(confirmBtn.cloneNode(true));
+    cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+    const newConfirmBtn = modalOverlay.querySelector('#confirm-yes');
+    const newCancelBtn = modalOverlay.querySelector('#confirm-no');
+
 
     modalTitle.textContent = title;
     modalMessage.textContent = message;
@@ -98,20 +105,18 @@ window.showConfirmationModal = function(title, message, onConfirm, onCancel) {
         onConfirm();
         modalOverlay.classList.add('hidden');
         modalOverlay.classList.remove('active');
-        confirmBtn.removeEventListener('click', handleConfirm);
-        cancelBtn.removeEventListener('click', handleCancel);
+        // No need to remove listeners here if using replaceWith
     };
 
     const handleCancel = () => {
         if (onCancel) onCancel();
         modalOverlay.classList.add('hidden');
         modalOverlay.classList.remove('active');
-        confirmBtn.removeEventListener('click', handleConfirm);
-        cancelBtn.removeEventListener('click', handleCancel);
+        // No need to remove listeners here if using replaceWith
     };
 
-    confirmBtn.addEventListener('click', handleConfirm);
-    cancelBtn.addEventListener('click', handleCancel);
+    newConfirmBtn.addEventListener('click', handleConfirm);
+    newCancelBtn.addEventListener('click', handleCancel);
 };
 
 /**
@@ -180,6 +185,45 @@ function initializeGuestUUID() {
     setCookie('guest_uuid', guestUUID, 365); // Set for 1 year
     return guestUUID;
 }
+
+/**
+ * Sets up event listeners specific to the product edit page.
+ * این تابع برای مدیریت حذف تصاویر گالری در صفحه ویرایش محصول استفاده می‌شود.
+ */
+function setupProductEditListeners() {
+    const currentGalleryImagesContainer = document.getElementById('current-gallery-images');
+
+    if (currentGalleryImagesContainer) {
+        console.log('Product edit page detected. Setting up gallery image listeners.');
+        currentGalleryImagesContainer.addEventListener('click', function(event) {
+            if (event.target.closest('.remove-gallery-image-btn')) {
+                const button = event.target.closest('.remove-gallery-image-btn');
+                const imageId = button.dataset.imageId;
+                const imageContainer = button.closest('.relative.group'); // The parent div for the image
+
+                window.showConfirmationModal(
+                    'حذف تصویر',
+                    'آیا مطمئن هستید که می‌خواهید این تصویر را حذف کنید؟',
+                    () => {
+                        // Logic to execute if user confirms
+                        const hiddenInput = imageContainer.querySelector('.remove-image-input');
+                        if (hiddenInput) {
+                            hiddenInput.value = imageId; // Set the ID to be removed
+                            // Hide the image visually
+                            imageContainer.style.display = 'none';
+                            window.showMessage('تصویر برای حذف علامت‌گذاری شد.', 'success');
+                        }
+                    },
+                    () => {
+                        // Optional: Logic to execute if user cancels
+                        window.showMessage('عملیات حذف تصویر لغو شد.', 'info');
+                    }
+                );
+            }
+        });
+    }
+}
+
 
 // --- Initial Setup and Event Listeners ---
 
@@ -276,7 +320,8 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const cart = await fetchCartContents();
                 renderCart(cart);
-            } catch (error) {
+            }
+            catch (error) {
                 console.error('Failed to load cart contents:', error);
                 window.showMessage('خطا در بارگذاری سبد خرید.', 'error');
                 renderCart(null); // نمایش سبد خرید خالی در صورت خطا
@@ -299,7 +344,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (currentQuantity <= 0) {
                         // اگر تعداد به 0 رسید، آیتم را حذف کن
-                        await removeCartItemHandler(cartItemId);
+                        window.showConfirmationModal(
+                            'حذف محصول',
+                            'آیا مطمئن هستید که می‌خواهید این محصول را از سبد خرید حذف کنید؟',
+                            () => {
+                                removeCartItemHandler(cartItemId);
+                            }
+                        );
                     } else {
                         try {
                             await updateCartItemQuantity(cartItemId, currentQuantity);
@@ -316,7 +367,13 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.remove-item-btn').forEach(button => {
                 button.onclick = async (event) => {
                     const cartItemId = event.currentTarget.dataset.cartItemId;
-                    await removeCartItemHandler(cartItemId);
+                    window.showConfirmationModal(
+                        'حذف محصول',
+                        'آیا مطمئن هستید که می‌خواهید این محصول را از سبد خرید حذف کنید؟',
+                        () => {
+                            removeCartItemHandler(cartItemId);
+                        }
+                    );
                 };
             });
         }
@@ -336,6 +393,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // بارگذاری اولیه سبد خرید هنگام بارگذاری صفحه
         loadCart(); // Changed to not await here to avoid blocking DOMContentLoaded
     }
+
+    // Call the product edit listeners setup function
+    setupProductEditListeners();
 });
 
 // خطوط زیر برای hero-carousel دیگر نیاز نیست زیرا منطق آن در app.blade.php مدیریت شده است.

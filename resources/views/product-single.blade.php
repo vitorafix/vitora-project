@@ -67,7 +67,8 @@
                                 class="bg-green-800 text-white px-8 py-3 rounded-xl text-xl font-semibold hover:bg-green-700 transition-all duration-300 shadow-lg w-full mt-6 flex items-center justify-center"
                                 data-product-id="{{ $product->id }}"
                                 data-product-title="{{ $product->title }}"
-                                data-product-price="{{ $product->price }}">
+                                data-product-price="{{ $product->price }}"
+                                data-product-stock="{{ $product->stock }}"> {{-- Add product stock for client-side validation --}}
                             <i class="fas fa-shopping-basket ml-3"></i> افزودن به سبد
                         </button>
                     @else
@@ -125,69 +126,4 @@
             </div>
         </div>
     </section>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const mainImage = document.getElementById('product-detail-main-image');
-            const thumbnailsContainer = document.getElementById('product-thumbnails');
-
-            if (mainImage && thumbnailsContainer) {
-                // Set initial active thumbnail
-                const initialActiveThumbnail = thumbnailsContainer.querySelector('.thumbnail-image.active-thumbnail');
-                if (initialActiveThumbnail) {
-                    mainImage.src = initialActiveThumbnail.dataset.mainImageSrc;
-                }
-
-                thumbnailsContainer.addEventListener('click', function(event) {
-                    if (event.target.classList.contains('thumbnail-image')) {
-                        // Remove active class from all thumbnails
-                        document.querySelectorAll('.thumbnail-image').forEach(thumb => {
-                            thumb.classList.remove('active-thumbnail', 'border-green-800');
-                        });
-
-                        // Add active class to clicked thumbnail
-                        event.target.classList.add('active-thumbnail', 'border-green-800');
-
-                        // Change main image source
-                        mainImage.src = event.target.dataset.mainImageSrc;
-                    }
-                });
-            }
-
-            // Quantity controls (existing logic, ensure IDs match)
-            const decreaseQuantityBtn = document.getElementById('decrease-quantity');
-            const increaseQuantityBtn = document.getElementById('increase-quantity');
-            const productQuantityInput = document.getElementById('product-quantity');
-            const addToCartBtn = document.getElementById('add-to-cart-detail-page');
-
-            if (decreaseQuantityBtn && increaseQuantityBtn && productQuantityInput) {
-                decreaseQuantityBtn.addEventListener('click', function() {
-                    let currentQuantity = parseInt(productQuantityInput.value);
-                    if (currentQuantity > 1) {
-                        productQuantityInput.value = currentQuantity - 1;
-                    }
-                });
-
-                increaseQuantityBtn.addEventListener('click', function() {
-                    let currentQuantity = parseInt(productQuantityInput.value);
-                    productQuantityInput.value = currentQuantity + 1;
-                });
-            }
-
-            // Add to cart button (example, integrate with your actual cart logic)
-            if (addToCartBtn) {
-                addToCartBtn.addEventListener('click', function() {
-                    const productId = this.dataset.productId;
-                    const productTitle = this.dataset.productTitle;
-                    const productPrice = this.dataset.productPrice;
-                    const quantity = productQuantityInput.value;
-
-                    // Example: Send data to a cart endpoint
-                    console.log(`Product Added to Cart: ID - ${productId}, Title - ${productTitle}, Price - ${productPrice}, Quantity - ${quantity}`);
-                    // You would typically make an AJAX request here to add to cart
-                    alert(`محصول "${productTitle}" به تعداد ${quantity} به سبد خرید اضافه شد.`);
-                });
-            }
-        });
-    </script>
 @endsection

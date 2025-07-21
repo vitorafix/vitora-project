@@ -17,8 +17,10 @@
     <?php echo app('Illuminate\Foundation\Vite')([
         'resources/css/app.css',
         'resources/js/app.js',
+        // 'resources/js/api.js',    
         'resources/js/cart.js',    
         'resources/js/search.js',  
+        'resources/js/auth.js',    
     ]); ?>
 
     
@@ -228,6 +230,49 @@
         
         <main>
             <?php echo $__env->yieldContent('content'); ?>
+            
+            
+            <div id="cart-page-container" class="container mx-auto px-4 py-8 hidden">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">سبد خرید شما</h2>
+                <div id="cart-items-container" class="space-y-6">
+                    
+                </div>
+                <div id="cart-empty-message" class="text-center py-10 hidden">
+                    <p class="text-gray-600 text-lg">سبد خرید شما خالی است.</p>
+                    <a href="<?php echo e(route('products.index')); ?>" class="btn-primary mt-4">شروع خرید</a>
+                </div>
+                <div id="cart-summary" class="mt-8 pt-8 border-t-2 border-green-700 hidden">
+                    <div class="flex justify-between items-center text-xl font-semibold text-gray-800 mb-4">
+                        <span>مجموع فرعی:</span>
+                        <span id="cart-subtotal-price">0 تومان</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xl font-semibold text-gray-800 mb-4">
+                        <span>تخفیف:</span>
+                        <span id="cart-discount-price">0 تومان</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xl font-semibold text-gray-800 mb-4">
+                        <span>هزینه ارسال:</span>
+                        <span id="cart-shipping-price">0 تومان</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xl font-semibold text-gray-800 mb-4">
+                        <span>مالیات:</span>
+                        <span id="cart-tax-price">0 تومان</span>
+                    </div>
+                    <div class="flex justify-between items-center text-2xl font-bold text-green-700 mb-4">
+                        <span>مجموع کل:</span>
+                        <span id="cart-total-price">0 تومان</span>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-4 mt-6">
+                        <button id="clear-cart-btn" class="btn-secondary">
+                            پاک کردن سبد خرید
+                        </button>
+                        <a href="<?php echo e(route('checkout.index')); ?>" class="btn-primary">
+                            تکمیل سفارش <i class="fas fa-arrow-left mr-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
         </main>
 
         
@@ -385,4 +430,5 @@
     
 
 </body>
-</html><?php /**PATH C:\xampp\htdocs\myshop\resources\views/layouts/app.blade.php ENDPATH**/ ?>
+</html>
+<?php /**PATH C:\xampp\htdocs\myshop\resources\views/layouts/app.blade.php ENDPATH**/ ?>

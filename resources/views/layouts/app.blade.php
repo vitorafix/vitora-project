@@ -12,13 +12,15 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
     {{-- Vite Assets for CSS and JS --}}
-    {{-- تغییر کلیدی: اضافه کردن cart.js و search.js به دستور @vite --}}
+    {{-- تغییر کلیدی: اضافه کردن cart.js, search.js و auth.js به دستور @vite --}}
     
     @vite([
         'resources/css/app.css',
         'resources/js/app.js',
-        'resources/js/cart.js',    {{-- این خط اضافه شد --}}
-        'resources/js/search.js',  {{-- این خط اضافه شد --}}
+        // 'resources/js/api.js',    {{-- حذف شد، زیرا باید توسط سایر ماژول‌ها import شود --}}
+        'resources/js/cart.js',    
+        'resources/js/search.js',  
+        'resources/js/auth.js',    {{-- اضافه شده برای منطق ثبت‌نام و احراز هویت --}}
     ])
 
     {{-- CDN for Chart.js (used in dashboard) --}}
@@ -228,6 +230,49 @@
         {{-- این yield برای محتوای اصلی بدنه است --}}
         <main>
             @yield('content')
+            {{-- اینها المنت‌های اصلی سبد خرید هستند که cart.js و renderer.js به آن‌ها نیاز دارند --}}
+            {{-- این بخش تنها در صورتی نمایش داده می‌شود که مسیر فعلی /cart باشد (در cart.js مدیریت می‌شود) --}}
+            <div id="cart-page-container" class="container mx-auto px-4 py-8 hidden">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">سبد خرید شما</h2>
+                <div id="cart-items-container" class="space-y-6">
+                    {{-- آیتم‌های سبد خرید اینجا رندر می‌شوند --}}
+                </div>
+                <div id="cart-empty-message" class="text-center py-10 hidden">
+                    <p class="text-gray-600 text-lg">سبد خرید شما خالی است.</p>
+                    <a href="{{ route('products.index') }}" class="btn-primary mt-4">شروع خرید</a>
+                </div>
+                <div id="cart-summary" class="mt-8 pt-8 border-t-2 border-green-700 hidden">
+                    <div class="flex justify-between items-center text-xl font-semibold text-gray-800 mb-4">
+                        <span>مجموع فرعی:</span>
+                        <span id="cart-subtotal-price">0 تومان</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xl font-semibold text-gray-800 mb-4">
+                        <span>تخفیف:</span>
+                        <span id="cart-discount-price">0 تومان</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xl font-semibold text-gray-800 mb-4">
+                        <span>هزینه ارسال:</span>
+                        <span id="cart-shipping-price">0 تومان</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xl font-semibold text-gray-800 mb-4">
+                        <span>مالیات:</span>
+                        <span id="cart-tax-price">0 تومان</span>
+                    </div>
+                    <div class="flex justify-between items-center text-2xl font-bold text-green-700 mb-4">
+                        <span>مجموع کل:</span>
+                        <span id="cart-total-price">0 تومان</span>
+                    </div>
+                    {{-- دکمه‌های ادامه خرید و تسویه حساب --}}
+                    <div class="flex justify-end space-x-4 mt-6">
+                        <button id="clear-cart-btn" class="btn-secondary">
+                            پاک کردن سبد خرید
+                        </button>
+                        <a href="{{ route('checkout.index') }}" class="btn-primary">
+                            تکمیل سفارش <i class="fas fa-arrow-left mr-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
         </main>
 
         {{-- در اینجا فوتر سایت را include می‌کنیم --}}

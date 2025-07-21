@@ -174,30 +174,4 @@
             </form>
         </div>
     </section>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const currentGalleryImagesContainer = document.getElementById('current-gallery-images');
-
-            if (currentGalleryImagesContainer) {
-                currentGalleryImagesContainer.addEventListener('click', function(event) {
-                    if (event.target.closest('.remove-gallery-image-btn')) {
-                        const button = event.target.closest('.remove-gallery-image-btn');
-                        const imageId = button.dataset.imageId;
-                        const imageContainer = button.closest('.relative.group'); // The parent div for the image
-
-                        if (confirm('آیا مطمئن هستید که می‌خواهید این تصویر را حذف کنید؟')) {
-                            // Find the hidden input within this image's container
-                            const hiddenInput = imageContainer.querySelector('.remove-image-input');
-                            if (hiddenInput) {
-                                hiddenInput.value = imageId; // Set the ID to be removed
-                                // Hide the image visually
-                                imageContainer.style.display = 'none';
-                            }
-                        }
-                    }
-                });
-            }
-        });
-    </script>
 @endsection
