@@ -4,7 +4,7 @@
 
 @section('hero_section')
     <section id="hero-carousel" class="relative overflow-hidden flex flex-col items-center justify-center text-center text-white p-8" style="height: calc(100vh - var(--nav-height, 0px));">
-        {{-- اسلاید 1 --}}
+        {{-- Slide 1 --}}
         <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-100" style="background-image: url('{{ asset('uploads/hero-banner.jpg') }}');">
             <div class="absolute inset-0 bg-brown-900 opacity-60"></div>
             <div class="relative z-10 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center h-full">
@@ -19,7 +19,7 @@
                 </a>
             </div>
         </div>
-        {{-- اسلاید 2 --}}
+        {{-- Slide 2 --}}
         <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-0" style="background-image: url('{{ asset('uploads/hero-banner2.jpg') }}');">
             <div class="absolute inset-0 bg-green-900 opacity-60"></div>
             <div class="relative z-10 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center h-full">
@@ -34,7 +34,7 @@
                 </a>
             </div>
         </div>
-        {{-- اسلاید 3 --}}
+        {{-- Slide 3 --}}
         <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-0" style="background-image: url('{{ asset('uploads/hero-banner3.jpg') }}');">
             <div class="absolute inset-0 bg-blue-900 opacity-60"></div>
             <div class="relative z-10 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center h-full">
@@ -49,7 +49,7 @@
                 </a>
             </div>
         </div>
-        {{-- دکمه‌ها و نشانگرها --}}
+        {{-- Buttons and indicators --}}
         <button id="hero-prev-btn" class="absolute top-1/2 right-4 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full z-20 hover:bg-opacity-75 transition-colors duration-300">
             <i class="fas fa-chevron-right text-xl"></i>
         </button>
@@ -61,7 +61,7 @@
 @endsection
 
 @section('content')
-    {{-- جدیدترین محصولات --}}
+    {{-- Latest Products --}}
     <section class="container mx-auto px-4 py-8 md:py-16">
         <h2 class="text-4xl font-extrabold text-brown-900 mb-10 text-center">
             <i class="fas fa-star text-yellow-500 ml-3"></i>
@@ -104,7 +104,7 @@
         </div>
     </section>
 
-    {{-- محصولات پرفروش --}}
+    {{-- Bestselling Products --}}
     <section class="container mx-auto px-4 py-16 text-center">
         <h2 class="text-4xl font-extrabold text-brown-900 mb-12">
             <i class="fas fa-fire text-orange-500 ml-3"></i>
@@ -145,7 +145,7 @@
         </div>
     </section>
 
-    {{-- نظرات مشتریان --}}
+    {{-- Customer Reviews --}}
     <section class="bg-green-100 py-16 px-4">
         <div class="container mx-auto text-center">
             <h2 class="text-4xl font-extrabold text-brown-900 mb-12">
@@ -178,7 +178,7 @@
         </div>
     </section>
 
-    {{-- مقالات اخیر --}}
+    {{-- Recent Articles --}}
     <section class="container mx-auto px-4 py-16 text-center">
         <h2 class="text-4xl font-extrabold text-brown-900 mb-12">
             <i class="fas fa-newspaper text-red-500 ml-3"></i>
@@ -215,7 +215,7 @@
         </div>
     </section>
 
-    {{-- تماس با ما --}}
+    {{-- Contact Us --}}
     <section class="my-16 p-8 bg-brown-900 text-white rounded-2xl shadow-lg mx-auto max-w-6xl text-center">
         <h2 class="text-3xl md:text-4xl font-bold mb-6">همین امروز با ما تماس بگیرید!</h2>
         <p class="text-lg mb-8 max-w-2xl mx-auto">
@@ -227,3 +227,43 @@
         </a>
     </section>
 @endsection
+
+@push('scripts')
+    <script type="module">
+        // Import API functions from api.js
+        import { addProductToCart } from '{{ asset('js/api.js') }}'; // Adjust path if needed
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
+
+            addToCartButtons.forEach(button => {
+                const originalButtonText = button.innerHTML; // Store original text for each button
+
+                button.addEventListener('click', async function() {
+                    const productId = this.dataset.productId;
+                    const quantity = 1; // Default quantity for home page buttons
+
+                    // Show loading state
+                    this.disabled = true;
+                    this.classList.add('opacity-50', 'cursor-not-allowed');
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال افزودن...';
+
+                    try {
+                        const response = await addProductToCart(productId, quantity);
+                        window.showMessage(response.message || 'محصول با موفقیت به سبد خرید اضافه شد.', 'success');
+                        // Optionally, update cart icon count in navigation here if needed
+                    } catch (error) {
+                        const errorMessage = error.response?.data?.message || 'خطا در افزودن محصول به سبد خرید. لطفاً دوباره تلاش کنید.';
+                        window.showMessage(errorMessage, 'error');
+                        console.error('Error adding product to cart:', error);
+                    } finally {
+                        // Hide loading state
+                        this.disabled = false;
+                        this.classList.remove('opacity-50', 'cursor-not-allowed');
+                        this.innerHTML = originalButtonText;
+                    }
+                });
+            });
+        });
+    </script>
+@endpush

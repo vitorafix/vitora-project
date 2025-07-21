@@ -55,7 +55,8 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('auth.verify-otp') }}" class="space-y-6">
+            {{-- Form for OTP verification (now handled by AJAX) --}}
+            <form id="otp-verify-form" class="space-y-6"> {{-- Removed method="POST" action="..." --}}
                 @csrf
 
                 <input type="hidden" name="mobile_number" id="hidden-mobile-number" value="{{ $mobileNumber ?? old('mobile_number') }}">
@@ -69,7 +70,7 @@
                     <div dir="ltr" class="flex justify-center space-x-2">
                         <input id="otp-digit-1" class="otp-digit-input w-12 h-12 text-center text-2xl font-bold rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out" type="text" maxlength="1" inputmode="numeric">
                         <input id="otp-digit-2" class="otp-digit-input w-12 h-12 text-center text-2xl font-bold rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out" type="text" maxlength="1" inputmode="numeric">
-                        <input id="otp-digit-3" class="otp-digit-input w-12 h-12 text-center text-2xl font-bold rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out" type="text" maxlength="1" inputmode="numeric">
+                        <input id="otp-digit-3" class="otp-12 h-12 text-center text-2xl font-bold rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out" type="text" maxlength="1" inputmode="numeric">
                         <input id="otp-digit-4" class="otp-digit-input w-12 h-12 text-center text-2xl font-bold rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out" type="text" maxlength="1" inputmode="numeric">
                         <input id="otp-digit-5" class="otp-digit-input w-12 h-12 text-center text-2xl font-bold rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out" type="text" maxlength="1" inputmode="numeric">
                         <input id="otp-digit-6" class="otp-digit-input w-12 h-12 text-center text-2xl font-bold rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out" type="text" maxlength="1" inputmode="numeric">
@@ -79,7 +80,7 @@
                 </div>
 
                 <div class="flex items-center justify-center mt-6">
-                    <button type="submit"
+                    <button type="button" id="verify-otp-ajax-button" {{-- Changed type to button and added ID --}}
                             class="btn-primary w-full flex items-center justify-center">
                         ثبت و ورود
                         <i class="fas fa-sign-in-alt mr-2"></i> {{-- Icon for login --}}
@@ -128,14 +129,17 @@
 
     {{-- Hidden div to pass routes to JavaScript --}}
     <div id="app-routes"
-         data-send-otp-route="{{ route('auth.send-otp') }}" {{-- Changed to use the correct web route --}}
-         data-change-mobile-number-route="{{ route('auth.change-mobile-number') }}"
-         data-verify-otp-route="{{ route('auth.verify-otp') }}">
+         data-send-otp-route="{{ route('api.auth.send-otp') }}" {{-- Changed to use the API route --}}
+         data-change-mobile-number-route="{{ route('api.auth.send-otp') }}" {{-- Changed to use the API route --}}
+         data-verify-otp-route="{{ route('api.auth.verify-otp') }}"> {{-- Changed to use the API route --}}
     </div>
 @endsection
 
 @push('scripts')
-    <script>
+    <script type="module">
+        // Import API functions from api.js
+        import { verifyOtpAndLogin, sendOtp, logoutUser } from '{{ asset('js/api.js') }}'; // Adjust path if needed
+
         // Read routes from the hidden div
         const appRoutesElement = document.getElementById('app-routes');
         // Debugging: Check if the element is found and its dataset
@@ -148,9 +152,13 @@
         }
 
         // Assign route URLs to JavaScript variables
+        // Note: For API calls, we will use the base URL from api.js,
+        // so these specific route URLs might not be strictly necessary if api.js handles them.
+        // However, keeping them for consistency with original structure.
         const sendOtpRoute = appRoutesElement.dataset.sendOtpRoute;
         const authChangeMobileNumberRoute = appRoutesElement.dataset.changeMobileNumberRoute;
         const authVerifyOtpRoute = appRoutesElement.dataset.verifyOtpRoute;
+
 
         // Utility function for debouncing
         const debounce = (func, delay) => {
@@ -227,7 +235,7 @@
                     '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
                     '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
                     '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
-                    '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9' // Corrected this line
+                    '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
                 };
                 let convertedValue = '';
                 for (let i = 0; i < value.length; i++) {
@@ -344,9 +352,44 @@
             }
 
             // --- Event Listeners ---
+            // Event listener for OTP verification button
+            const verifyOtpAjaxButton = document.getElementById('verify-otp-ajax-button');
+            if (verifyOtpAjaxButton) {
+                verifyOtpAjaxButton.addEventListener('click', async function() {
+                    const mobileNumber = hiddenMobileNumberInput.value;
+                    const otp = getCombinedOtp();
+
+                    // Show loading state
+                    verifyOtpAjaxButton.disabled = true;
+                    verifyOtpAjaxButton.classList.add('opacity-50', 'cursor-not-allowed');
+                    verifyOtpAjaxButton.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال بررسی...';
+
+                    try {
+                        const data = await verifyOtpAndLogin(mobileNumber, otp);
+                        window.showMessage(data.message || 'ورود با موفقیت انجام شد.', 'success');
+                        console.log('User data after login:', data.user);
+                        console.log('JWT Token:', data.token);
+
+                        // Redirect to dashboard or home page after successful login
+                        window.location.href = '/'; // Or your dashboard route
+                    } catch (error) {
+                        const errorMessage = error.response?.data?.message || 'خطا در ورود. لطفاً دوباره تلاش کنید.';
+                        window.showMessage(errorMessage, 'error');
+                        console.error('Error during OTP verification and login:', error);
+                        clearOtpFields(); // Clear OTP fields on error
+                    } finally {
+                        // Hide loading state
+                        verifyOtpAjaxButton.disabled = false;
+                        verifyOtpAjaxButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                        verifyOtpAjaxButton.innerHTML = 'ثبت و ورود <i class="fas fa-sign-in-alt mr-2"></i>';
+                    }
+                });
+            }
+
+
             if (resendButton) {
                 resendButton.addEventListener('click', async function() {
-                    const mobileNumber = this.dataset.mobileNumber; // Problematic line
+                    const mobileNumber = this.dataset.mobileNumber;
                     if (!mobileNumber) {
                         window.showMessage('شماره موبایل یافت نشد.', 'error');
                         return;
@@ -358,38 +401,17 @@
                     resendButton.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال ارسال...'; // Loading spinner and text
 
                     try {
-                        // Use the dynamically retrieved route URL
-                        const response = await fetch(sendOtpRoute, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') // CSRF token is required for this route
-                            },
-                            body: JSON.stringify({ mobile_number: mobileNumber })
-                        });
+                        const response = await sendOtp(mobileNumber); // Use the imported sendOtp function
 
-                        const data = await response.json();
-
-                        if (response.ok) {
-                            window.showMessage(data.message || 'کد تأیید مجدداً ارسال شد.', 'success');
-                            clearOtpFields(); // Clear OTP fields after successful resend
-                            startCountdown(); // Restart main countdown
-                            startResendCooldown(); // Start resend cooldown
-                        } else {
-                            // Display validation errors from server if any
-                            if (data.errors) {
-                                const errorMessages = Object.values(data.errors).flat().join('\n');
-                                window.showMessage(errorMessages || 'خطا در ارسال مجدد کد.', 'error');
-                            } else {
-                                window.showMessage(data.message || 'خطا در ارسال مجدد کد.', 'error');
-                            }
-                            clearOtpFields(); // Clear OTP fields after unsuccessful resend
-                        }
+                        window.showMessage(response.message || 'کد تأیید مجدداً ارسال شد.', 'success');
+                        clearOtpFields(); // Clear OTP fields after successful resend
+                        startCountdown(); // Restart main countdown
+                        startResendCooldown(); // Start resend cooldown
                     } catch (error) {
+                        const errorMessage = error.response?.data?.message || 'خطا در ارسال مجدد کد.';
+                        window.showMessage(errorMessage, 'error');
                         console.error('Error resending OTP:', error);
-                        window.showMessage('خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.', 'error');
-                        clearOtpFields(); // Clear OTP fields on network error
+                        clearOtpFields(); // Clear OTP fields after unsuccessful resend
                     } finally {
                         // Hide loading state
                         resendButton.disabled = false;
@@ -410,6 +432,12 @@
                 });
             }
 
+            if (closeModalButton) {
+                closeModalButton.addEventListener('click', function() {
+                    changeMobileModal.classList.remove('active');
+                });
+            }
+
             if (sendNewOtpButton) {
                 sendNewOtpButton.addEventListener('click', async function() {
                     const newMobileNumber = newMobileInput.value;
@@ -420,49 +448,23 @@
                     sendNewOtpButton.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال ارسال...'; // Loading spinner and text
 
                     try {
-                        // Use the dynamically retrieved route URL
-                        const response = await fetch(authChangeMobileNumberRoute, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') // CSRF token is required for this route
-                            },
-                            body: JSON.stringify({ new_mobile_number: newMobileNumber })
-                        });
+                        // Use the imported sendOtp function for changing mobile number
+                        const response = await sendOtp(newMobileNumber);
 
-                        const data = await response.json();
-
-                        if (response.ok) {
-                            window.showMessage(data.message || 'شماره موبایل با موفقیت تغییر یافت. کد جدید ارسال شد.', 'success');
-                            hiddenMobileNumberInput.value = newMobileNumber; // Update hidden input
-                            currentMobileNumberSpan.textContent = newMobileNumber; // Update displayed number
-                            changeMobileModal.classList.remove('active'); // Close modal
-                            clearOtpFields(); // Clear OTP fields after successful change and new OTP sent
-                            startCountdown(); // Restart countdown for the new OTP
-                            startResendCooldown(); // Start resend cooldown for the new OTP
-                        } else {
-                            // Display validation errors from server if any
-                            if (data.errors) {
-                                const errorMessages = Object.values(data.errors).flat().join('\n');
-                                modalErrorMessage.textContent = errorMessages;
-                                modalErrorMessage.classList.remove('hidden');
-                                modalErrorMessage.classList.add('animate-pulse');
-                                setTimeout(() => modalErrorMessage.classList.remove('animate-pulse'), 2000);
-                            } else {
-                                modalErrorMessage.textContent = data.message || 'خطا در تغییر شماره موبایل.';
-                                modalErrorMessage.classList.remove('hidden');
-                                modalErrorMessage.classList.add('animate-pulse'); // Add pulse animation for error
-                                setTimeout(() => modalErrorMessage.classList.remove('animate-pulse'), 2000); // Remove pulse after 2 seconds
-                            }
-                            clearOtpFields(); // Clear OTP fields after unsuccessful change
-                        }
+                        window.showMessage(response.message || 'شماره موبایل با موفقیت تغییر یافت. کد جدید ارسال شد.', 'success');
+                        hiddenMobileNumberInput.value = newMobileNumber; // Update hidden input
+                        currentMobileNumberSpan.textContent = newMobileNumber; // Update displayed number
+                        changeMobileModal.classList.remove('active'); // Close modal
+                        clearOtpFields(); // Clear OTP fields after successful change and new OTP sent
+                        startCountdown(); // Restart countdown for the new OTP
+                        startResendCooldown(); // Start resend cooldown for the new OTP
                     } catch (error) {
-                        console.error('Error changing mobile number:', error);
-                        window.showMessage('خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.', 'error');
-                        modalErrorMessage.textContent = 'خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.';
+                        const errorMessage = error.response?.data?.message || 'خطا در تغییر شماره موبایل.';
+                        modalErrorMessage.textContent = errorMessage;
                         modalErrorMessage.classList.remove('hidden');
-                        modalErrorMessage.classList.add('animate-pulse'); // Add pulse animation for error
-                        setTimeout(() => modalErrorMessage.classList.remove('animate-pulse'), 2000); // Remove pulse after 2 seconds
+                        modalErrorMessage.classList.add('animate-pulse');
+                        setTimeout(() => modalErrorMessage.classList.remove('animate-pulse'), 2000);
+                        console.error('Error changing mobile number:', error);
                         clearOtpFields(); // Clear OTP fields on network error
                     } finally {
                         // Hide loading state
@@ -470,22 +472,6 @@
                         sendNewOtpButton.classList.remove('opacity-50', 'cursor-not-allowed');
                         sendNewOtpButton.innerHTML = sendNewOtpButtonOriginalText; // Restore original text
                     }
-                });
-            }
-
-            // Modify form submission to use combined OTP from multi-digit inputs
-            const otpForm = document.querySelector(`form[action="${authVerifyOtpRoute}"]`);
-            if (otpForm) {
-                otpForm.addEventListener('submit', function(event) {
-                    // Create a hidden input for the combined OTP value
-                    let combinedOtpInput = document.createElement('input');
-                    combinedOtpInput.type = 'hidden';
-                    combinedOtpInput.name = 'otp'; // Ensure the name matches what Laravel expects
-                    combinedOtpInput.value = getCombinedOtp();
-                    otpForm.appendChild(combinedOtpInput);
-
-                    // If the original 'otp' input (if it existed) had a name, you might need to disable it
-                    // to prevent duplicate form fields, but since we replaced it, this is fine.
                 });
             }
 
@@ -499,16 +485,10 @@
             }
         });
 
-        /**
-         * Displays a temporary message box (toast notification) on the screen.
-         * تابع سراسری برای نمایش پیام‌ها (مثل پیام‌های موفقیت، خطا یا اطلاعاتی).
-         * This function should be defined globally in app.js or similar.
-         * If not defined, a simple alert will be used as a fallback.
-         *
-         * @param {string} message - The message to display.
-         * @param {string} [type='info'] - The type of message ('success', 'error', 'info'). Affects background color.
-         * @param {number} [duration=3000] - The duration (in milliseconds) for which the message is displayed.
-         */
+        // This function is now defined globally in app.js and should not be duplicated here.
+        // If it's still needed here, ensure it's not causing conflicts.
+        // For now, it's commented out assuming app.js handles it.
+        /*
         if (typeof window.showMessage !== 'function') {
             window.showMessage = function(message, type = 'info', duration = 3000) {
                 const existingMessageBox = document.querySelector('.message-box');
@@ -536,5 +516,6 @@
                 }, duration);
             };
         }
+        */
     </script>
 @endpush

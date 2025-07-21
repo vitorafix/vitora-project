@@ -11,6 +11,19 @@ import { setupExportButtons } from './export.js'; // Export functions are genera
 import * as jalaali from 'jalaali-js';
 window.jalaali = jalaali;
 
+// Import cart-related API functions from api.js
+import {
+    fetchCartContents,
+    addProductToCart,
+    updateCartItemQuantity,
+    removeCartItem,
+    clearCart,
+    applyCouponToCart,
+    removeCouponFromCart,
+    getJwtToken // برای بررسی وضعیت لاگین کاربر
+} from './api.js'; // مسیر را بر اساس مکان فایل api.js خود تنظیم کنید
+
+
 // --- Global Data and Functions ---
 // این‌ها توابع و داده‌های سراسری هستند که در سراسر برنامه قابل دسترسی خواهند بود.
 // Mock Data for admin activity log (can be moved to a shared data file if needed elsewhere)
@@ -191,6 +204,137 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             console.error("setupAdminPanelListeners function not found. Ensure admin.js is loaded.");
         }
+    }
+
+    // --- Cart Page Specific Logic ---
+    // این بخش فقط در صورتی اجرا می‌شود که کاربر در صفحه سبد خرید باشد.
+    if (window.location.pathname === '/cart') {
+        const cartItemsContainer = document.getElementById('cart-items-container');
+        const cartEmptyMessage = document.getElementById('cart-empty-message');
+        const cartSummary = document.getElementById('cart-summary');
+        const cartSubtotalPrice = document.getElementById('cart-subtotal-price');
+        const cartDiscountPrice = document.getElementById('cart-discount-price');
+        const cartShippingPrice = document.getElementById('cart-shipping-price');
+        const cartTaxPrice = document.getElementById('cart-tax-price');
+        const cartTotalPrice = document.getElementById('cart-total-price');
+
+        // تابع برای رندر کردن آیتم‌های سبد خرید
+        function renderCart(cartData) {
+            cartItemsContainer.innerHTML = ''; // پاک کردن آیتم‌های قبلی
+
+            if (!cartData || !cartData.data || !cartData.data.items || cartData.data.items.length === 0) {
+                cartEmptyMessage.classList.remove('hidden');
+                cartSummary.classList.add('hidden');
+                return;
+            }
+
+            cartEmptyMessage.classList.add('hidden');
+            cartSummary.classList.remove('hidden');
+
+            cartData.data.items.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'flex items-center justify-between border-b border-gray-100 py-4 last:border-b-0';
+                itemElement.innerHTML = `
+                    <div class="flex items-center space-x-4 rtl:space-x-reverse">
+                        <img src="${item.product.image_url || 'https://placehold.co/80x80/E2E8F0/64748B?text=Product'}" alt="${item.product.name}" class="w-20 h-20 rounded-lg object-cover shadow-sm">
+                        <div>
+                            <h3 class="font-semibold text-gray-800 dark:text-gray-200">${item.product.name}</h3>
+                            <p class="text-gray-600 dark:text-gray-400 text-sm">${item.product_variant ? item.product_variant.name : 'بدون واریانت'}</p>
+                            <p class="font-bold text-green-700 mt-1">${item.price.toLocaleString('fa-IR')} تومان</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4 rtl:space-x-reverse">
+                        <div class="flex items-center border border-gray-300 rounded-lg">
+                            <button class="quantity-btn p-2 text-gray-600 hover:bg-gray-100 rounded-l-lg" data-action="decrease" data-cart-item-id="${item.id}" data-quantity="${item.quantity}">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <input type="text" value="${item.quantity}" class="w-12 text-center border-x border-gray-300 py-2 focus:outline-none bg-white dark:bg-gray-700 dark:text-white" readonly>
+                            <button class="quantity-btn p-2 text-gray-600 hover:bg-gray-100 rounded-r-lg" data-action="increase" data-cart-item-id="${item.id}" data-quantity="${item.quantity}">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <button class="remove-item-btn text-red-600 hover:text-red-800 p-2" data-cart-item-id="${item.id}">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                `;
+                cartItemsContainer.appendChild(itemElement);
+            });
+
+            // به‌روزرسانی خلاصه‌ی سبد خرید
+            cartSubtotalPrice.textContent = `${cartData.data.subtotal.toLocaleString('fa-IR')} تومان`;
+            cartDiscountPrice.textContent = `${cartData.data.discount_amount.toLocaleString('fa-IR')} تومان`;
+            cartShippingPrice.textContent = `${cartData.data.shipping_cost.toLocaleString('fa-IR')} تومان`; // فرض بر وجود shipping_cost
+            cartTaxPrice.textContent = `${cartData.data.tax_amount.toLocaleString('fa-IR')} تومان`; // فرض بر وجود tax_amount
+            cartTotalPrice.textContent = `${cartData.data.total.toLocaleString('fa-IR')} تومان`;
+
+            attachEventListeners(); // دوباره event listenerها را متصل کنید
+        }
+
+        // تابع برای واکشی و رندر کردن سبد خرید
+        async function loadCart() {
+            try {
+                const cart = await fetchCartContents();
+                renderCart(cart);
+            } catch (error) {
+                console.error('Failed to load cart contents:', error);
+                window.showMessage('خطا در بارگذاری سبد خرید.', 'error');
+                renderCart(null); // نمایش سبد خرید خالی در صورت خطا
+            }
+        }
+
+        // تابع برای اتصال event listenerها به دکمه‌ها
+        function attachEventListeners() {
+            document.querySelectorAll('.quantity-btn').forEach(button => {
+                button.onclick = async (event) => {
+                    const cartItemId = event.currentTarget.dataset.cartItemId;
+                    let currentQuantity = parseInt(event.currentTarget.dataset.quantity);
+                    const action = event.currentTarget.dataset.action;
+
+                    if (action === 'increase') {
+                        currentQuantity++;
+                    } else if (action === 'decrease') {
+                        currentQuantity--;
+                    }
+
+                    if (currentQuantity <= 0) {
+                        // اگر تعداد به 0 رسید، آیتم را حذف کن
+                        await removeCartItemHandler(cartItemId);
+                    } else {
+                        try {
+                            await updateCartItemQuantity(cartItemId, currentQuantity);
+                            window.showMessage('تعداد آیتم به‌روزرسانی شد.', 'success');
+                            await loadCart(); // دوباره سبد خرید را بارگذاری کن
+                        } catch (error) {
+                            console.error('Error updating quantity:', error);
+                            window.showMessage('خطا در به‌روزرسانی تعداد آیتم.', 'error');
+                        }
+                    }
+                };
+            });
+
+            document.querySelectorAll('.remove-item-btn').forEach(button => {
+                button.onclick = async (event) => {
+                    const cartItemId = event.currentTarget.dataset.cartItemId;
+                    await removeCartItemHandler(cartItemId);
+                };
+            });
+        }
+
+        // تابع کمکی برای حذف آیتم
+        async function removeCartItemHandler(cartItemId) {
+            try {
+                await removeCartItem(cartItemId);
+                window.showMessage('آیتم از سبد خرید حذف شد.', 'success');
+                await loadCart(); // دوباره سبد خرید را بارگذاری کن
+            } catch (error) {
+                console.error('Error removing item:', error);
+                window.showMessage('خطا در حذف آیتم از سبد خرید.', 'error');
+            }
+        }
+
+        // بارگذاری اولیه سبد خرید هنگام بارگذاری صفحه
+        loadCart(); // Changed to not await here to avoid blocking DOMContentLoaded
     }
 });
 

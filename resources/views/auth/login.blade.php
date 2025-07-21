@@ -33,7 +33,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('auth.send-otp') }}" class="space-y-6">
+            <form id="send-otp-form" class="space-y-6"> {{-- Removed method="POST" action="..." --}}
                 @csrf
 
                 <!-- Mobile Number -->
@@ -53,7 +53,7 @@
                 </div>
 
                 <div class="flex items-center justify-center mt-6">
-                    <button type="submit" 
+                    <button type="button" id="send-otp-button" {{-- Changed type to button and added ID --}}
                             class="inline-flex items-center justify-center px-6 py-3 text-lg font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 ease-in-out min-w-[180px]">
                         {{ __('ارسال کد تأیید') }}
                         <i class="fas fa-paper-plane mr-2"></i> {{-- آیکون ارسال --}}
@@ -75,28 +75,78 @@
 
     {{-- کد جاوااسکریپت برای تبدیل اعداد فارسی به انگلیسی --}}
     @push('scripts')
-        <script>
+        <script type="module">
+            // Import API functions from api.js
+            import { sendOtp } from '{{ asset('js/api.js') }}'; // Adjust path if needed
+
             document.addEventListener('DOMContentLoaded', function() {
                 const mobileNumberInput = document.getElementById('mobile_number');
+                const sendOtpButton = document.getElementById('send-otp-button');
+                const sendOtpButtonOriginalText = sendOtpButton.innerHTML; // Store original text
+
+                // Function to convert Persian/Arabic digits to English and remove non-digits
+                const convertAndFilterDigits = (value) => {
+                    const persianToEnglishMap = {
+                        '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
+                        '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
+                        '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+                        '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
+                    };
+                    let convertedValue = '';
+                    for (let i = 0; i < value.length; i++) {
+                        const char = value[i];
+                        convertedValue += persianToEnglishMap[char] || char;
+                    }
+                    // Remove any non-digit characters after conversion
+                    return convertedValue.replace(/\D/g, '');
+                };
 
                 if (mobileNumberInput) {
                     mobileNumberInput.addEventListener('input', function(event) {
-                        let value = event.target.value;
-                        let convertedValue = '';
+                        event.target.value = convertAndFilterDigits(event.target.value);
+                    });
+                }
 
-                        const persianToEnglishMap = {
-                            '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
-                            '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
-                            '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
-                            '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
-                        };
+                if (sendOtpButton) {
+                    sendOtpButton.addEventListener('click', async function() {
+                        const mobileNumber = mobileNumberInput.value;
 
-                        for (let i = 0; i < value.length; i++) {
-                            const char = value[i];
-                            convertedValue += persianToEnglishMap[char] || char;
+                        // Basic client-side validation for mobile number format
+                        if (!mobileNumber || !/^09\d{9}$/.test(mobileNumber)) {
+                            window.showMessage('لطفاً یک شماره موبایل معتبر وارد کنید (مثال: 09123456789).', 'error');
+                            return;
                         }
 
-                        event.target.value = convertedValue;
+                        // Show loading state
+                        sendOtpButton.disabled = true;
+                        sendOtpButton.classList.add('opacity-50', 'cursor-not-allowed');
+                        sendOtpButton.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال ارسال...';
+
+                        try {
+                            const response = await sendOtp(mobileNumber); // Use the imported sendOtp function
+
+                            window.showMessage(response.message || 'کد تأیید با موفقیت ارسال شد.', 'success');
+
+                            // Redirect to OTP verification page, passing the mobile number
+                            // The mobile number will be retrieved from session in MobileAuthController@showOtpVerifyForm
+                            if (response.show_register_link) { // Check for the flag from backend
+                                window.location.href = `{{ route('auth.register-form') }}?mobile_number=${mobileNumber}`;
+                            } else {
+                                window.location.href = `{{ route('auth.verify-otp-form') }}?mobile_number=${mobileNumber}`;
+                            }
+
+                        } catch (error) {
+                            const errorMessage = error.response?.data?.message || 'خطا در ارسال کد تأیید. لطفاً دوباره تلاش کنید.';
+                            window.showMessage(errorMessage, 'error');
+                            console.error('Error sending OTP:', error);
+                            // If there's a specific error field, you might want to highlight it
+                            // For example: if (error.response?.data?.error_field === 'mobile_number') { /* highlight input */ }
+                        } finally {
+                            // Hide loading state
+                            sendOtpButton.disabled = false;
+                            sendOtpButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                            sendOtpButton.innerHTML = sendOtpButtonOriginalText;
+                        }
                     });
                 }
             });

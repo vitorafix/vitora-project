@@ -6,7 +6,10 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'], // یا مثلاً ['http://localhost:3000'] فقط برای فرانت خاص
+    // دامنه‌های مجاز را به صورت صریح مشخص کنید.
+    // اگر فرانت‌اند شما روی پورت 8080 اجرا می‌شود، حتماً آن را اضافه کنید.
+    // 'http://myshop.test' برای زمانی است که در حالت production یا بدون پورت Vite کار می‌کنید.
+    'allowed_origins' => ['http://myshop.test:8080', 'http://myshop.test'],
 
     'allowed_origins_patterns' => [],
 

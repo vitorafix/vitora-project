@@ -82,3 +82,43 @@
         </div>
     </section>
 @endsection
+
+@push('scripts')
+    <script type="module">
+        // Import API functions from api.js
+        import { addProductToCart } from '{{ asset('js/api.js') }}'; // Adjust path if needed
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
+
+            addToCartButtons.forEach(button => {
+                const originalButtonText = button.innerHTML; // Store original text for each button
+
+                button.addEventListener('click', async function() {
+                    const productId = this.dataset.productId;
+                    const quantity = 1; // Default quantity for products list page
+
+                    // Show loading state
+                    this.disabled = true;
+                    this.classList.add('opacity-50', 'cursor-not-allowed');
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال افزودن...';
+
+                    try {
+                        const response = await addProductToCart(productId, quantity);
+                        window.showMessage(response.message || 'محصول با موفقیت به سبد خرید اضافه شد.', 'success');
+                        // Optionally, update cart icon count in navigation here if needed
+                    } catch (error) {
+                        const errorMessage = error.response?.data?.message || 'خطا در افزودن محصول به سبد خرید. لطفاً دوباره تلاش کنید.';
+                        window.showMessage(errorMessage, 'error');
+                        console.error('Error adding product to cart:', error);
+                    } finally {
+                        // Hide loading state
+                        this.disabled = false;
+                        this.classList.remove('opacity-50', 'cursor-not-allowed');
+                        this.innerHTML = originalButtonText;
+                    }
+                });
+            });
+        });
+    </script>
+@endpush

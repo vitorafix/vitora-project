@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Validator;
 use Throwable;
+use Tymon\JWTAuth\Facades\JWTAuth; // Added: Import JWTAuth facade
 
 // Import new service classes and interfaces
 use App\Contracts\Services\OtpServiceInterface;
@@ -386,6 +387,7 @@ class MobileAuthController extends Controller
         $mobileNumber = $request->mobile_number;
         $otp = $request->otp;
         $ipAddress = $request->ip();
+        $guestUuid = $request->cookie('guest_uuid'); // Added: Get guest_uuid from the cookie
 
         Log::debug('MobileAuthController: Starting verifyOtp process for mobile: ' . maskForLog($mobileNumber, 'phone')); // Added debug log
         try {
@@ -423,9 +425,15 @@ class MobileAuthController extends Controller
 
             // NEW: Merge any existing guest cart with the newly logged-in user's cart
             // این اطمینان می‌دهد که سبد خرید مهمان به کاربر لاگین شده اختصاص یابد.
-            $currentSessionId = Session::getId(); // گرفتن Session ID فعلی
-            // Corrected: Call assignGuestCartToUser from CartService, not OtpService
-            $this->cartService->assignGuestCartToUser($user, $currentSessionId); // فراخوانی متد ادغام از CartService
+            // Check if guestUuid exists before attempting to merge
+            if ($guestUuid) {
+                Log::info('MobileAuthController: Guest UUID found (' . $guestUuid . ') for user login. Attempting cart merge.');
+                $this->cartService->assignGuestCartToUser($user, $guestUuid); // Pass guestUuid directly
+                Log::info('MobileAuthController: Cart merge initiated for user ' . $user->id . ' with guest UUID ' . $guestUuid);
+            } else {
+                Log::info('MobileAuthController: No guest_uuid found in cookie for user login, skipping cart merge.');
+            }
+
 
             // ثبت ورود کاربر از طریق سرویس حسابرسی.
             $this->auditService->log(
@@ -446,7 +454,17 @@ class MobileAuthController extends Controller
 
             // اگر درخواست از نوع AJAX/JSON باشد، پاسخ JSON برگردانده می‌شود.
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'ورود با موفقیت انجام شد.']);
+                // Generate JWT token for API clients
+                $token = JWTAuth::fromUser($user);
+                Log::info('MobileAuthController: JWT token generated for user ' . $user->id);
+
+                return response()->json([
+                    'message' => 'ورود با موفقیت انجام شد.',
+                    'user' => $user,
+                    'token' => $token,
+                    'token_type' => 'bearer',
+                    'expires_in' => JWTAuth::factory()->getTTL() * 60 // TTL in seconds
+                ]);
             }
 
             // هدایت به URL مورد نظر یا صفحه اصلی (root URL).
@@ -605,6 +623,24 @@ class MobileAuthController extends Controller
         $userId = Auth::id();
         $mobileNumber = Auth::user() ? Auth::user()->mobile_number : null;
 
+        // Check if the request is for API logout (JWT)
+        if ($request->expectsJson()) {
+            try {
+                // Invalidate JWT token if it exists
+                if (JWTAuth::getToken()) {
+                    JWTAuth::invalidate(JWTAuth::getToken());
+                    Log::info('MobileAuthController: JWT token invalidated for user ' . $userId);
+                }
+            } catch (Throwable $e) {
+                // Log error if token invalidation fails (e.g., token already invalid)
+                Log::warning('MobileAuthController: Failed to invalidate JWT token during API logout for user ' . $userId . ': ' . $e->getMessage());
+            }
+            // For API logout, no session invalidation is strictly needed for the server side
+            // The client is responsible for removing the token.
+            return response()->json(['message' => 'خروج با موفقیت انجام شد.']);
+        }
+
+        // For web logout (session-based)
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
@@ -710,3 +746,4 @@ class MobileAuthController extends Controller
         return $redirect;
     }
 }
+

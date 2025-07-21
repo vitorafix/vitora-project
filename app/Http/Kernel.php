@@ -37,18 +37,21 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\GuestUuidMiddleware::class, // اضافه شدن: برای مدیریت guest_uuid در کوکی
-            // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class, // اگر از Sanctum استفاده می‌کنید
+            // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class, // اگر از Sanctum استفاده می‌کنید (برای session-based SPA)
         ],
 
         'api' => [
-            // اگر API شما نیاز به احراز هویت مبتنی بر سشن برای SPA دارد، این خط را فعال کنید
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-            // این میدل‌ویرها برای فعال کردن Auth::user() بر اساس سشن در API ضروری هستند
-            \Illuminate\Session\Middleware\StartSession::class,
-            \Illuminate\View\Middleware\ShareErrorsFromSession::class, // معمولا برای API نیاز نیست ولی برای سازگاری با session-based auth در web group اضافه شد
-            \Illuminate\Auth\Middleware\AuthenticateSession::class, // این خط کاربر را از سشن احراز هویت می‌کند
-            'throttle:api',
+            // 'throttle:api', // این را می‌توان به صورت جداگانه در مسیرها اعمال کرد
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            // Sanctum و Session-based auth را برای APIهای JWT غیرفعال می‌کنیم
+            // اگر API شما کاملاً Stateless است و فقط از JWT استفاده می‌کنید، این خطوط باید کامنت شده باشند.
+            // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            // \Illuminate\Session\Middleware\StartSession::class,
+            // \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            // \Illuminate\Auth\Middleware\AuthenticateSession::class,
+
+            // افزودن میدل‌ویر JWTAuth برای احراز هویت API
+            \Tymon\JWTAuth\Http\Middleware\Authenticate::class,
         ],
     ];
 
@@ -96,4 +99,3 @@ class Kernel extends HttpKernel
         \App\Http\Middleware\EnsureProfileIsCompleted::class, // اضافه شدن به اولویت
     ];
 }
-

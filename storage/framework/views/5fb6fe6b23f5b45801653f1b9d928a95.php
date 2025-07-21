@@ -3,31 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', config('app.name', 'چای ابراهیم - عطر و طعم اصیل ایرانی'))</title>
+    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
+    <title><?php echo $__env->yieldContent('title', config('app.name', 'چای ابراهیم - عطر و طعم اصیل ایرانی')); ?></title>
 
-    {{-- Vazirmatn Font --}}
+    
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    {{-- Font Awesome CDN --}}
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
-    {{-- Vite Assets for CSS and JS --}}
-    {{-- تغییر کلیدی: اضافه کردن cart.js و search.js به دستور @vite --}}
     
-    @vite([
+    
+    
+    <?php echo app('Illuminate\Foundation\Vite')([
         'resources/css/app.css',
         'resources/js/app.js',
-        'resources/js/cart.js',    {{-- این خط اضافه شد --}}
-        'resources/js/search.js',  {{-- این خط اضافه شد --}}
-    ])
+        'resources/js/cart.js',    
+        'resources/js/search.js',  
+    ]); ?>
 
-    {{-- CDN for Chart.js (used in dashboard) --}}
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    {{-- CDN for SheetJS (Excel export) --}}
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    {{-- CDN for jsPDF (PDF export) --}}
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    {{-- CDN for html2canvas (for PDF from HTML) --}}
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
@@ -219,27 +219,27 @@
     </style>
 </head>
 <body>
-    {{-- در اینجا ناوبری اصلی سایت (که شامل مینی‌سبد خرید است) را include می‌کنیم --}}
-    {{-- فرض بر این است که فایل ناوبری شما در resources/views/layouts/navigation.blade.php قرار دارد --}}
-    @include('layouts.navigation')
+    
+    
+    <?php echo $__env->make('layouts.navigation', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
 
-    {{-- این div برای محتوای اصلی و فوتر است تا با Flexbox به درستی چیده شوند --}}
+    
     <div class="main-content-wrapper">
-        {{-- این yield برای محتوای اصلی بدنه است --}}
+        
         <main>
-            @yield('content')
+            <?php echo $__env->yieldContent('content'); ?>
         </main>
 
-        {{-- در اینجا فوتر سایت را include می‌کنیم --}}
-        {{-- فرض بر این است که فایل فوتر شما در resources/views/layouts/footer.blade.php قرار دارد --}}
-        @include('layouts.footer')
+        
+        
+        <?php echo $__env->make('layouts.footer', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
     </div>
 
-    {{-- Stack for custom scripts pushed from child views --}}
-    @stack('scripts')
+    
+    <?php echo $__env->yieldPushContent('scripts'); ?>
 
-    {{-- Confirmation Modal HTML (moved to just before closing </body> for better practice) --}}
-    {{-- این مدال برای نمایش پیام‌های تایید به کاربر استفاده می‌شود --}}
+    
+    
     <div id="confirm-modal-overlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50 custom-modal-overlay">
         <div class="bg-white p-8 rounded-lg shadow-xl max-w-sm w-full text-center custom-modal-content">
             <h3 class="text-2xl font-bold text-gray-800 mb-4" id="modal-title"></h3>
@@ -376,13 +376,13 @@
         });
     </script>
 
-    {{-- Script for Live Search --}}
-    {{-- این خط دیگر نیازی نیست زیرا search.js به @vite اضافه شده است --}}
-    {{-- <script src="{{ asset('js/search.js') }}"></script> --}}
+    
+    
+    
 
-    {{-- Script for Cart Management --}}
-    {{-- این خط دیگر نیازی نیست زیرا cart.js به @vite اضافه شده است --}}
-    {{-- <script src="{{ asset('js/cart.js') }}"></script> --}}
+    
+    
+    
 
 </body>
-</html>
+</html><?php /**PATH C:\xampp\htdocs\myshop\resources\views/layouts/app.blade.php ENDPATH**/ ?>

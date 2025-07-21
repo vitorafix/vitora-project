@@ -5,12 +5,12 @@
 @section('content')
 <section class="container mx-auto px-4 py-8 md:py-16">
     <div class="bg-white rounded-xl shadow-lg overflow-hidden md:flex md:items-center">
-        {{-- بخش تصویر محصول --}}
+        {{-- Product Image Section --}}
         <div class="md:w-1/2 p-6 md:p-8 flex justify-center items-center">
             <img src="{{ $product->image ?: 'https://placehold.co/600x600/E5E7EB/4B5563?text=Product' }}" alt="{{ $product->title }}" class="w-full max-w-md h-auto rounded-lg shadow-md object-cover transition-transform duration-300 hover:scale-105">
         </div>
 
-        {{-- بخش جزئیات محصول --}}
+        {{-- Product Details Section --}}
         <div class="md:w-1/2 p-6 md:p-8 text-right flex flex-col justify-center">
             <h1 class="text-4xl font-extrabold text-brown-900 mb-4">{{ $product->title }}</h1>
             <p class="text-green-700 text-2xl font-bold mb-6">{{ number_format($product->price) }} تومان</p>
@@ -31,7 +31,7 @@
                 </p>
             </div>
 
-            {{-- بخش افزودن به سبد خرید --}}
+            {{-- Add to Cart Section --}}
             <div class="flex items-center justify-end space-x-4 space-x-reverse mt-6">
                 <input type="number" id="product-quantity" value="1" min="1" max="{{ $product->stock }}" class="w-20 p-2 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-green-700">
                 <button class="btn-primary add-to-cart-btn flex items-center"
@@ -44,20 +44,12 @@
                 </button>
             </div>
 
-            {{-- نمایش پیام در صورت ناموجود بودن --}}
+            {{-- Display message if out of stock --}}
             @if ($product->stock <= 0)
-                <p class="text-red-500 text-sm mt-4 text-right">این محصول در حال حاضر ناموجود است.</p>
-                <script>
-                    document.addEventListener('DOMContentLoaded', function() {
-                        const quantityInput = document.getElementById('product-quantity');
-                        const addToCartBtn = document.querySelector('.add-to-cart-btn');
-                        if (quantityInput) quantityInput.disabled = true;
-                        if (addToCartBtn) addToCartBtn.disabled = true;
-                    });
-                </script>
+                <p class="text-red-500 text-sm mt-4 text-right" id="out-of-stock-message">این محصول در حال حاضر ناموجود است.</p>
             @endif
 
-            {{-- دکمه بازگشت --}}
+            {{-- Back button --}}
             <div class="mt-8 text-right">
                 <a href="{{ url('/products') }}" class="text-green-800 hover:underline flex items-center justify-end">
                     <i class="fas fa-arrow-right ml-2"></i>
@@ -68,3 +60,77 @@
     </div>
 </section>
 @endsection
+
+@push('scripts')
+    <script type="module">
+        // Import API functions from api.js
+        import { addProductToCart } from '{{ asset('js/api.js') }}'; // Adjust path if needed
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const quantityInput = document.getElementById('product-quantity');
+            const addToCartBtn = document.querySelector('.add-to-cart-btn');
+            const addToCartBtnOriginalText = addToCartBtn ? addToCartBtn.innerHTML : ''; // Store original text
+
+            // Handle out of stock scenario
+            const productStock = {{ $product->stock }};
+            if (productStock <= 0) {
+                if (quantityInput) quantityInput.disabled = true;
+                if (addToCartBtn) {
+                    addToCartBtn.disabled = true;
+                    addToCartBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            } else {
+                // Ensure quantity input max is set correctly
+                if (quantityInput) {
+                    quantityInput.setAttribute('max', productStock);
+                    // Add event listener to prevent quantity exceeding stock
+                    quantityInput.addEventListener('input', function() {
+                        let value = parseInt(this.value);
+                        if (isNaN(value) || value < 1) {
+                            this.value = 1;
+                        } else if (value > productStock) {
+                            this.value = productStock;
+                        }
+                    });
+                }
+            }
+
+            if (addToCartBtn) {
+                addToCartBtn.addEventListener('click', async function() {
+                    const productId = this.dataset.productId;
+                    const quantity = parseInt(quantityInput.value);
+
+                    // Client-side validation for quantity
+                    if (isNaN(quantity) || quantity < 1) {
+                        window.showMessage('لطفاً تعداد معتبری را وارد کنید.', 'error');
+                        return;
+                    }
+                    if (quantity > productStock) {
+                        window.showMessage(`تعداد درخواستی بیشتر از موجودی است. حداکثر ${productStock} عدد می‌توانید اضافه کنید.`, 'error');
+                        return;
+                    }
+
+                    // Show loading state
+                    addToCartBtn.disabled = true;
+                    addToCartBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    addToCartBtn.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال افزودن...';
+
+                    try {
+                        const response = await addProductToCart(productId, quantity);
+                        window.showMessage(response.message || 'محصول با موفقیت به سبد خرید اضافه شد.', 'success');
+                        // Optionally, update cart icon count or redirect
+                    } catch (error) {
+                        const errorMessage = error.response?.data?.message || 'خطا در افزودن محصول به سبد خرید. لطفاً دوباره تلاش کنید.';
+                        window.showMessage(errorMessage, 'error');
+                        console.error('Error adding product to cart:', error);
+                    } finally {
+                        // Hide loading state
+                        addToCartBtn.disabled = false;
+                        addToCartBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        addToCartBtn.innerHTML = addToCartBtnOriginalText;
+                    }
+                });
+            }
+        });
+    </script>
+@endpush

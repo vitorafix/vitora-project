@@ -4,122 +4,197 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Default Authentication Guard
+    | JWT Authentication Secret
     |--------------------------------------------------------------------------
     |
-    | This option defines the default authentication guard for your application.
-    | You may change this default to utilize a different guard
-    | to handle the authentication of your users.
+    | این کلید برای امضای JWT (در الگوریتم‌های HMAC) استفاده می‌شود و باید یک رشته امن و طولانی باشد.
+    | می‌توانید آن را با دستور زیر تولید کنید:
+    | php artisan jwt:secret
     |
     */
+    'secret' => env('JWT_SECRET'),
 
-    'defaults' => [
-        'guard' => 'web', // Default guard for web-based authentication (session)
-        'passwords' => 'users',
+    /*
+    |--------------------------------------------------------------------------
+    | JWT Authentication Keys
+    |--------------------------------------------------------------------------
+    |
+    | برای الگوریتم‌های RSA/ECDSA (امضای نامتقارن)، کلیدهای عمومی و خصوصی مورد نیاز است.
+    | کلید عمومی برای تأیید توکن و کلید خصوصی برای امضای توکن استفاده می‌شود.
+    | 'passphrase' در صورت وجود رمز عبور برای کلید خصوصی استفاده می‌شود.
+    |
+    */
+    'keys' => [
+        'public' => env('JWT_PUBLIC_KEY'),
+        'private' => env('JWT_PRIVATE_KEY'),
+        'passphrase' => env('JWT_PASSPHRASE'),
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Authentication Guards
+    | JWT time to live
     |--------------------------------------------------------------------------
     |
-    | Each authentication guard defines how your users are authenticated.
-    | You may configure guards to handle authentication via sessions,
-    | API tokens, or even JWT.
+    | مدت زمان اعتبار توکن به دقیقه. پس از این مدت، توکن منقضی شده و نیاز به تجدید دارد.
+    | توصیه می‌شود برای امنیت بیشتر در محیط Production، این زمان را کوتاه نگه دارید.
+    |
+    | - Production: 15-30 دقیقه (امنیت بیشتر)
+    | - Development: 60 دقیقه (برای راحتی توسعه)
     |
     */
+    'ttl' => env('JWT_TTL', 60),
 
-    'guards' => [
-        'web' => [ // Default guard for web-based authentication (session)
-            'driver' => 'session',
-            'provider' => 'users',
-        ],
+    /*
+    |--------------------------------------------------------------------------
+    | Refresh time to live
+    |--------------------------------------------------------------------------
+    |
+    | مدت زمانی که توکن می‌تواند تجدید شود (مثلاً 1 هفته).
+    | این زمان معمولاً طولانی‌تر از 'ttl' است تا کاربر نیاز به ورود مجدد مکرر نداشته باشد.
+    | توصیه: حداکثر 7 روز (10080 دقیقه) برای محیط Production
+    |
+    */
+    'refresh_ttl' => env('JWT_REFRESH_TTL', 10080), // 7 روز
 
-        'api' => [ // Default API guard (can be used for simple tokens)
-            'driver' => 'token',
-            'provider' => 'users',
-            'hash' => false,
-        ],
+    /*
+    |--------------------------------------------------------------------------
+    | JWT hashing algorithm
+    |--------------------------------------------------------------------------
+    |
+    | الگوریتم هشینگ مورد استفاده برای امضای JWT.
+    |
+    | الگوریتم‌های پشتیبانی شده:
+    | - HS256, HS384, HS512 (HMAC - نیاز به 'secret' مشترک)
+    | - RS256, RS384, RS512 (RSA - نیاز به کلیدهای عمومی و خصوصی)
+    | - ES256, ES384, ES512 (ECDSA - نیاز به کلیدهای عمومی و خصوصی)
+    |
+    */
+    'algo' => env('JWT_ALGO', 'HS256'),
 
-        'jwt' => [ // New guard for JWT-based authentication
-            'driver' => 'jwt', // This driver will be implemented later with the JWT package
-            'provider' => 'users', // This can be adjusted based on how JWT handles multi-user types
-        ],
-
-        'admin' => [ // New guard for admin users (session-based)
-            'driver' => 'session',
-            'provider' => 'admins',
-        ],
-
-        'editor' => [ // New guard for editor users (session-based)
-            'driver' => 'session',
-            'provider' => 'editors',
-        ],
+    /*
+    |--------------------------------------------------------------------------
+    | Required Claims
+    |--------------------------------------------------------------------------
+    |
+    | ادعاهای الزامی (Claims) که باید در JWT وجود داشته باشند.
+    | اگر هر یک از این ادعاها در توکن موجود نباشد، توکن نامعتبر تلقی می‌شود.
+    |
+    | - iss: صادرکننده توکن (Issuer)
+    | - iat: زمان صدور توکن (Issued At)
+    | - exp: زمان انقضای توکن (Expiration Time)
+    | - nbf: زمان معتبر نبودن توکن قبل از (Not Before)
+    | - sub: موضوع توکن (Subject - معمولاً شناسه کاربر)
+    | - jti: شناسه منحصر به فرد توکن (JWT ID)
+    |
+    */
+    'required_claims' => [
+        'iss',
+        'iat',
+        'exp',
+        'nbf',
+        'sub',
+        'jti',
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | User Providers
+    | Persistent Claims
     |--------------------------------------------------------------------------
     |
-    | User providers define how your users are retrieved from your database.
-    | You may configure multiple providers to retrieve users from different
-    | sources such as Eloquent or your database.
+    | ادعاهایی که باید در طول فرآیند تجدید توکن (refresh) حفظ شوند و به توکن جدید منتقل گردند.
+    | می‌توانید ادعاهای سفارشی خود را در اینجا اضافه کنید.
     |
     */
+    'persistent_claims' => [
+        // 'foo',
+        // 'bar',
+    ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Lock Subject
+    |--------------------------------------------------------------------------
+    |
+    | قفل کردن 'subject' (موضوع) توکن برای جلوگیری از تغییر آن در هنگام تجدید (refresh).
+    | این یک لایه امنیتی اضافی برای اطمینان از اینکه 'subject' توکن پس از تجدید ثابت می‌ماند، فراهم می‌کند.
+    |
+    */
+    'lock_subject' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Leeway
+    |--------------------------------------------------------------------------
+    |
+    | مهلت زمانی (به ثانیه) برای جبران اختلاف ساعت بین سرورها.
+    | این مقدار به زمان‌های 'iat', 'exp', 'nbf' اضافه یا از آن‌ها کم می‌شود تا خطاهای ناشی از عدم همگام‌سازی ساعت‌ها کاهش یابد.
+    |
+    */
+    'leeway' => env('JWT_LEEWAY', 0),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Blacklist Enabled
+    |--------------------------------------------------------------------------
+    |
+    | فعال یا غیرفعال کردن لیست سیاه توکن‌ها.
+    | اگر فعال باشد، توکن‌های باطل شده (مثلاً پس از خروج کاربر یا تغییر رمز عبور) در یک لیست سیاه ذخیره می‌شوند
+    | و دیگر قابل استفاده نخواهند بود.
+    | توصیه: همیشه در محیط Production فعال باشد.
+    |
+    */
+    'blacklist_enabled' => env('JWT_BLACKLIST_ENABLED', true),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Blacklist grace period
+    |--------------------------------------------------------------------------
+    |
+    | مدت زمان مهلت (به ثانیه) پس از افزودن توکن به لیست سیاه.
+    | این مهلت زمانی برای مدیریت شرایط رقابتی (Race Conditions) است،
+    | به طوری که اگر توکنی بلافاصله پس از ابطال توسط یک درخواست دیگر استفاده شود، خطا ندهد.
+    |
+    */
+    'blacklist_grace_period' => env('JWT_BLACKLIST_GRACE_PERIOD', 0),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Show blacklisted token option
+    |--------------------------------------------------------------------------
+    |
+    | نمایش پیام خطای مشخص برای توکن‌هایی که در لیست سیاه قرار دارند.
+    | اگر 'false' باشد، خطای عمومی‌تری نمایش داده می‌شود.
+    |
+    */
+    'show_black_list_exception' => env('JWT_SHOW_BLACKLIST_EXCEPTION', true),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cookies encryption
+    |--------------------------------------------------------------------------
+    |
+    | فعال یا غیرفعال کردن رمزگذاری کوکی‌ها.
+    | اگر توکن‌ها در کوکی‌ها ذخیره می‌شوند و نیاز به رمزگذاری دارند، این گزینه را فعال کنید.
+    |
+    */
+    'decrypt_cookies' => false,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Providers
+    |--------------------------------------------------------------------------
+    |
+    | تنظیمات Providerهای مورد استفاده توسط پکیج JWT.
+    | این‌ها کلاس‌هایی هستند که مسئولیت‌های مختلفی مانند ایجاد/تأیید JWT، احراز هویت کاربر و ذخیره‌سازی را بر عهده دارند.
+    |
+    | - 'jwt': Provider اصلی برای کار با JWT (توصیه می‌شود Lcobucci که به‌روزتر است).
+    | - 'auth': Provider برای احراز هویت کاربر (معمولاً Illuminate).
+    | - 'storage': Provider برای ذخیره‌سازی اطلاعات (مانند لیست سیاه).
+    |
+    */
     'providers' => [
-        'users' => [ // Default provider for the User model
-            'driver' => 'eloquent',
-            'model' => App\Models\User::class,
-        ],
-
-        'admins' => [ // New provider for the Admin model
-            'driver' => 'eloquent',
-            'model' => App\Models\Admin::class,
-        ],
-
-        'editors' => [ // New provider for the Editor model
-            'driver' => 'eloquent',
-            'model' => App\Models\Editor::class,
-        ],
-
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
+        'jwt' => Tymon\JWTAuth\Providers\JWT\Lcobucci::class, // Lcobucci به طور کلی بهتر و به‌روزتر است
+        'auth' => Tymon\JWTAuth\Providers\Auth\Illuminate::class,
+        'storage' => Tymon\JWTAuth\Providers\Storage\Illuminate::class,
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Resetting Passwords
-    |--------------------------------------------------------------------------
-    |
-    | You may specify multiple password reset configurations based on your
-    | needs for various users or user types.
-    |
-    */
-
-    'passwords' => [
-        'users' => [
-            'provider' => 'users',
-            'table' => 'password_reset_tokens',
-            'expire' => 60,
-            'throttle' => 60,
-        ],
-        // You might want to add separate password reset configurations for admins/editors if needed
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Password Confirmation Timeout
-    |--------------------------------------------------------------------------
-    |
-    | The number of seconds before the password confirmation times out and
-    | the user is prompted to re-enter their password.
-    |
-    */
-
-    'password_timeout' => 10800, // 3 hours
 ];
-

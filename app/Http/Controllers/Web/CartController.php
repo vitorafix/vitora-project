@@ -42,7 +42,8 @@ class CartController extends Controller
         try {
             $user = Auth::user();
             $sessionId = Session::getId();
-            $guestUuid = $request->cookie('guest_uuid'); // دریافت guest_uuid از کوکی
+            // دریافت guest_uuid از Request attributes (که توسط GuestUuidMiddleware تنظیم شده است)
+            $guestUuid = $request->attributes->get('guest_uuid');
 
             // DEBUG LOG: Check Auth::user(), Session::getId(), and guestUuid before calling getOrCreateCart
             Log::debug('CartController::index: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId . ', Guest UUID: ' . ($guestUuid ?? 'NULL'));
@@ -81,7 +82,8 @@ class CartController extends Controller
         try {
             $user = Auth::user();
             $sessionId = Session::getId();
-            $guestUuid = $request->cookie('guest_uuid'); // دریافت guest_uuid از کوکی
+            // دریافت guest_uuid از Request attributes (که توسط GuestUuidMiddleware تنظیم شده است)
+            $guestUuid = $request->attributes->get('guest_uuid');
 
             // DEBUG LOG: Check Auth::user(), Session::getId(), and guestUuid before calling getOrCreateCart
             Log::debug('CartController::add: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId . ', Guest UUID: ' . ($guestUuid ?? 'NULL'));
@@ -122,7 +124,8 @@ class CartController extends Controller
 
         $user = Auth::user();
         $sessionId = Session::getId();
-        $guestUuid = $request->cookie('guest_uuid'); // دریافت guest_uuid از کوکی
+        // دریافت guest_uuid از Request attributes (که توسط GuestUuidMiddleware تنظیم شده است)
+        $guestUuid = $request->attributes->get('guest_uuid');
         $quantity = $request->input('quantity');
 
         // DEBUG LOG: Check Auth::user(), Session::getId(), and guestUuid before calling userOwnsCartItem
@@ -163,7 +166,8 @@ class CartController extends Controller
     {
         $user = Auth::user();
         $sessionId = Session::getId();
-        $guestUuid = $request->cookie('guest_uuid'); // دریافت guest_uuid از کوکی
+        // دریافت guest_uuid از Request attributes (که توسط GuestUuidMiddleware تنظیم شده است)
+        $guestUuid = $request->attributes->get('guest_uuid');
 
         // DEBUG LOG: Check Auth::user(), Session::getId(), and guestUuid before calling userOwnsCartItem
         Log::debug('CartController::remove: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId . ', Guest UUID: ' . ($guestUuid ?? 'NULL'));
@@ -200,7 +204,8 @@ class CartController extends Controller
     {
         $user = Auth::user();
         $sessionId = Session::getId();
-        $guestUuid = $request->cookie('guest_uuid'); // دریافت guest_uuid از کوکی
+        // دریافت guest_uuid از Request attributes (که توسط GuestUuidMiddleware تنظیم شده است)
+        $guestUuid = $request->attributes->get('guest_uuid');
 
         // DEBUG LOG: Check Auth::user(), Session::getId(), and guestUuid before calling getOrCreateCart
         Log::debug('CartController::clear: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId . ', Guest UUID: ' . ($guestUuid ?? 'NULL'));
@@ -234,7 +239,8 @@ class CartController extends Controller
 
         $user = Auth::user();
         $sessionId = Session::getId();
-        $guestUuid = $request->cookie('guest_uuid'); // دریافت guest_uuid از کوکی
+        // دریافت guest_uuid از Request attributes (که توسط GuestUuidMiddleware تنظیم شده است)
+        $guestUuid = $request->attributes->get('guest_uuid');
 
         // DEBUG LOG: Check Auth::user(), Session::getId(), and guestUuid before calling getOrCreateCart
         Log::debug('CartController::applyCoupon: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId . ', Guest UUID: ' . ($guestUuid ?? 'NULL'));
@@ -267,7 +273,8 @@ class CartController extends Controller
     {
         $user = Auth::user();
         $sessionId = Session::getId();
-        $guestUuid = $request->cookie('guest_uuid'); // دریافت guest_uuid از کوکی
+        // دریافت guest_uuid از Request attributes (که توسط GuestUuidMiddleware تنظیم شده است)
+        $guestUuid = $request->attributes->get('guest_uuid');
 
         // DEBUG LOG: Check Auth::user(), Session::getId(), and guestUuid before calling getOrCreateCart
         Log::debug('CartController::removeCoupon: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId . ', Guest UUID: ' . ($guestUuid ?? 'NULL'));
