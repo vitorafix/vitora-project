@@ -91,7 +91,7 @@ async function renderMiniCart() {
 // === User Status Logic Function ===
 export async function updateNavbarUserStatus() {
     const jwtToken = getJwtToken();
-    const userStatusText = document.getElementById('user-status-text'); // New element for "سلام، [نام]"
+    const desktopUserStatusDisplay = document.getElementById('desktop-user-status-display'); // NEW: Element for desktop user status text
     const userStatusGuestDiv = document.getElementById('user-status-guest'); // Desktop guest div
     const userStatusLoggedInDiv = document.getElementById('user-status-logged-in'); // Desktop logged-in div
     const loggedInUserNameDesktop = document.getElementById('logged-in-user-name'); // Desktop name display
@@ -111,8 +111,8 @@ export async function updateNavbarUserStatus() {
             const user = await fetchUserData(); 
             
             // Desktop Navbar Updates
-            if (userStatusText) {
-                userStatusText.textContent = `سلام، ${user.name || user.mobile_number}`;
+            if (desktopUserStatusDisplay) { // Update the main display text
+                desktopUserStatusDisplay.textContent = `سلام، ${user.name || user.mobile_number}`;
             }
             if (userStatusGuestDiv) userStatusGuestDiv.classList.add('hidden');
             if (userStatusLoggedInDiv) {
@@ -145,7 +145,7 @@ export async function updateNavbarUserStatus() {
                 console.log('JWT token cleared due to 401 Unauthorized.');
             }
             // Revert to guest state
-            if (userStatusText) userStatusText.textContent = 'کاربر مهمان'; // Default text for main status
+            if (desktopUserStatusDisplay) desktopUserStatusDisplay.textContent = 'کاربر مهمان'; // Default text for main status
             if (userStatusLoggedInDiv) userStatusLoggedInDiv.classList.add('hidden');
             if (userStatusGuestDiv) userStatusGuestDiv.classList.remove('hidden');
             if (loginRegisterLink) loginRegisterLink.classList.remove('hidden');
@@ -159,7 +159,7 @@ export async function updateNavbarUserStatus() {
         }
     } else {
         // No JWT token, ensure guest state is displayed
-        if (userStatusText) userStatusText.textContent = 'کاربر مهمان'; // Default text for main status
+        if (desktopUserStatusDisplay) desktopUserStatusDisplay.textContent = 'کاربر مهمان'; // Default text for main status
         if (userStatusLoggedInDiv) userStatusLoggedInDiv.classList.add('hidden');
         if (userStatusGuestDiv) userStatusGuestDiv.classList.remove('hidden');
         if (loginRegisterLink) loginRegisterLink.classList.remove('hidden');

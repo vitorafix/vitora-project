@@ -172,7 +172,9 @@
                 <div class="relative ml-4 group hidden lg:block">
                     <a href="#" class="nav-link flex items-center text-amber-200 hover:text-white transition-colors duration-200" onclick="return false;">
                         <i class="fas fa-user-circle text-xl ml-2"></i>
-                        <span id="user-status-text"></span> 
+                        
+                        
+                        <span id="desktop-user-status-display"></span>
                     </a>
                     <div class="absolute top-full right-0 mt-3 w-48 bg-white rounded-xl shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50 p-4">
                         
