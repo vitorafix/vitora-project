@@ -60,11 +60,12 @@ window.showSection = function(sectionId) {
     }
 };
 
-window.logoutUser = function() {
-    // showMessage اکنون به طور مستقیم در دسترس است.
-    window.showMessage('شما از سیستم خارج شدید.', 'info');
-    console.log('User logged out.');
-};
+// !!! این تابع window.logoutUser حذف شد تا با تابع logoutUser در api.js تداخل نداشته باشد !!!
+// window.logoutUser = function() {
+//     // showMessage اکنون به طور مستقیم در دسترس است.
+//     window.showMessage('شما از سیستم خارج شدید.', 'info');
+//     console.log('User logged out.');
+// };
 
 let currentPage = 1;
 let itemsPerPage = 5;
@@ -356,7 +357,7 @@ window.showUserModal = function(userId = null) {
         } else {
             console.error('passwordConfirmationInput element not found');
         }
-
+        
         if (passwordRequired) {
             console.log('passwordRequired element found. Showing it.');
             passwordRequired.classList.remove('hidden');

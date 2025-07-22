@@ -2,7 +2,7 @@
 console.log('navbar_new.js loaded and starting...');
 
 // Import necessary API functions
-import { getJwtToken, logoutUser, fetchCartContents, removeCartItem, fetchUserData, clearJwtToken } from './api.js'; 
+import { getJwtToken, logoutUser, fetchCartContents, removeCartItem, fetchUserData, clearJwtToken } from './api.js';
 
 // === Mini Cart Logic Functions ===
 /**
@@ -21,15 +21,15 @@ async function renderMiniCart() {
         const currentJwtToken = localStorage.getItem('jwt_token');
         console.log('DEBUG: renderMiniCart - JWT Token in localStorage before fetchCartContents:', currentJwtToken ? 'Found' : 'Not Found', currentJwtToken);
 
-        const response = await fetchCartContents(); 
-        const data = response.data; 
+        const response = await fetchCartContents();
+        const data = response.data;
 
         const cartItems = data.items || [];
-        const totalPrice = data.summary ? data.summary.totalPrice : 0; 
-        const totalItemsInCart = data.summary ? data.summary.totalQuantity : 0; 
+        const totalPrice = data.summary ? data.summary.totalPrice : 0;
+        const totalItemsInCart = data.summary ? data.summary.totalQuantity : 0;
 
         if (miniCartContent) {
-            miniCartContent.innerHTML = ''; 
+            miniCartContent.innerHTML = '';
         }
 
         if (cartItems.length === 0) {
@@ -91,25 +91,26 @@ async function renderMiniCart() {
 // === User Status Logic Function ===
 export async function updateNavbarUserStatus() {
     const jwtToken = getJwtToken();
-    const desktopUserStatusDisplay = document.getElementById('desktop-user-status-display'); // NEW: Element for desktop user status text
+    const desktopUserStatusDisplay = document.getElementById('desktop-user-status-display'); // Element for desktop user status text
     const userStatusGuestDiv = document.getElementById('user-status-guest'); // Desktop guest div
     const userStatusLoggedInDiv = document.getElementById('user-status-logged-in'); // Desktop logged-in div
-    const loggedInUserNameDesktop = document.getElementById('logged-in-user-name'); // Desktop name display
+    const loggedInUserFullNameDesktop = document.getElementById('logged-in-user-full-name'); // Desktop full name display
     const loginRegisterLink = document.getElementById('login-register-link'); // Desktop login/register link
-    const logoutLinkDesktop = document.getElementById('logout-link'); // Desktop logout button
+    // const logoutLinkDesktop = document.getElementById('logout-link'); // Desktop logout button - REMOVED: using class selector now
 
     const mobileUserStatusGuestDiv = document.getElementById('mobile-user-status-guest'); // Mobile guest div
     const mobileUserStatusLoggedInDiv = document.getElementById('mobile-user-status-logged-in'); // Mobile logged-in div
     const mobileLoggedInUserName = document.getElementById('mobile-logged-in-user-name'); // Mobile name display
     const mobileLoggedInUserMobile = document.getElementById('mobile-logged-in-user-mobile'); // Mobile mobile display
-    const logoutLinkMobile = document.getElementById('logout-link-mobile'); // Mobile logout button
+    // const logoutLinkMobile = document.getElementById('logout-link-mobile'); // Mobile logout button - REMOVED: using class selector now
 
     console.log('DEBUG: updateNavbarUserStatus - JWT Token in localStorage before fetchUserData:', jwtToken ? 'Found' : 'Not Found', jwtToken);
 
     if (jwtToken) {
         try {
-            const user = await fetchUserData(); 
-            
+            const user = await fetchUserData();
+            const fullName = `${user.name || ''} ${user.lastname || ''}`.trim();
+
             // Desktop Navbar Updates
             if (desktopUserStatusDisplay) { // Update the main display text
                 desktopUserStatusDisplay.textContent = `سلام، ${user.name || user.mobile_number}`;
@@ -117,21 +118,27 @@ export async function updateNavbarUserStatus() {
             if (userStatusGuestDiv) userStatusGuestDiv.classList.add('hidden');
             if (userStatusLoggedInDiv) {
                 userStatusLoggedInDiv.classList.remove('hidden');
-                if (loggedInUserNameDesktop) loggedInUserNameDesktop.textContent = user.name || user.mobile_number;
+                if (loggedInUserFullNameDesktop) loggedInUserFullNameDesktop.textContent = fullName; // Set full name
             }
             if (loginRegisterLink) loginRegisterLink.classList.add('hidden');
-            if (logoutLinkDesktop) logoutLinkDesktop.classList.remove('hidden');
+            // if (logoutLinkDesktop) logoutLinkDesktop.classList.remove('hidden'); // Handled by generic logout button logic
 
             // Mobile Navbar Updates
             if (mobileUserStatusGuestDiv) mobileUserStatusGuestDiv.classList.add('hidden');
             if (mobileUserStatusLoggedInDiv) {
                 mobileUserStatusLoggedInDiv.classList.remove('hidden');
-                if (mobileLoggedInUserName) mobileLoggedInUserName.textContent = user.name || user.mobile_number;
+                if (mobileLoggedInUserName) mobileLoggedInUserName.textContent = fullName; // Set full name
                 if (mobileLoggedInUserMobile) mobileLoggedInUserMobile.textContent = user.mobile_number;
             }
-            if (logoutLinkMobile) logoutLinkMobile.classList.remove('hidden');
+            // if (logoutLinkMobile) logoutLinkMobile.classList.remove('hidden'); // Handled by generic logout button logic
 
-            console.log('Navbar user status updated: Logged in as', user.name || user.mobile_number);
+            // Show all logout buttons if user is logged in
+            document.querySelectorAll('.nav-link-dropdown-compact.text-red-500').forEach(button => {
+                button.classList.remove('hidden');
+            });
+
+
+            console.log('Navbar user status updated: Logged in as', fullName || user.mobile_number);
             // NEW DEBUG LOGS: Check computed style after updates
             if (userStatusGuestDiv) console.log('DEBUG: userStatusGuestDiv computed style display after update:', window.getComputedStyle(userStatusGuestDiv).display);
             if (userStatusLoggedInDiv) console.log('DEBUG: userStatusLoggedInDiv computed style display after update:', window.getComputedStyle(userStatusLoggedInDiv).display);
@@ -141,7 +148,7 @@ export async function updateNavbarUserStatus() {
         } catch (error) {
             console.error('Error fetching user data with JWT. Treating as guest:', error);
             if (error.response && error.response.status === 401) {
-                clearJwtToken(); 
+                clearJwtToken();
                 console.log('JWT token cleared due to 401 Unauthorized.');
             }
             // Revert to guest state
@@ -149,11 +156,16 @@ export async function updateNavbarUserStatus() {
             if (userStatusLoggedInDiv) userStatusLoggedInDiv.classList.add('hidden');
             if (userStatusGuestDiv) userStatusGuestDiv.classList.remove('hidden');
             if (loginRegisterLink) loginRegisterLink.classList.remove('hidden');
-            if (logoutLinkDesktop) logoutLinkDesktop.classList.add('hidden');
+            // if (logoutLinkDesktop) logoutLinkDesktop.classList.add('hidden'); // Handled by generic logout button logic
 
             if (mobileUserStatusLoggedInDiv) mobileUserStatusLoggedInDiv.classList.add('hidden');
             if (mobileUserStatusGuestDiv) mobileUserStatusGuestDiv.classList.remove('hidden');
-            if (logoutLinkMobile) logoutLinkMobile.classList.add('hidden');
+            // if (logoutLinkMobile) logoutLinkMobile.classList.add('hidden'); // Handled by generic logout button logic
+
+            // Hide all logout buttons if user is guest
+            document.querySelectorAll('.nav-link-dropdown-compact.text-red-500').forEach(button => {
+                button.classList.add('hidden');
+            });
 
             console.log('Navbar user status updated: Guest user.');
         }
@@ -163,11 +175,16 @@ export async function updateNavbarUserStatus() {
         if (userStatusLoggedInDiv) userStatusLoggedInDiv.classList.add('hidden');
         if (userStatusGuestDiv) userStatusGuestDiv.classList.remove('hidden');
         if (loginRegisterLink) loginRegisterLink.classList.remove('hidden');
-        if (logoutLinkDesktop) logoutLinkDesktop.classList.add('hidden');
+        // if (logoutLinkDesktop) logoutLinkDesktop.classList.add('hidden'); // Handled by generic logout button logic
 
         if (mobileUserStatusLoggedInDiv) mobileUserStatusLoggedInDiv.classList.add('hidden');
         if (mobileUserStatusGuestDiv) mobileUserStatusGuestDiv.classList.remove('hidden');
-        if (logoutLinkMobile) logoutLinkMobile.classList.add('hidden');
+        // if (logoutLinkMobile) logoutLinkMobile.classList.add('hidden'); // Handled by generic logout button logic
+
+        // Hide all logout buttons if no JWT token
+        document.querySelectorAll('.nav-link-dropdown-compact.text-red-500').forEach(button => {
+            button.classList.add('hidden');
+        });
 
         console.log('Navbar user status updated: Guest user.');
     }
@@ -175,87 +192,81 @@ export async function updateNavbarUserStatus() {
 
 // === Main Initialization Function for Navbar and Mini-Cart ===
 export function initializeNavbarAndCart() {
-    renderMiniCart(); 
-    updateNavbarUserStatus(); 
+    renderMiniCart();
+    updateNavbarUserStatus();
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const miniCartContent = document.getElementById('mini-cart-content');
-        const logoutLinkDesktop = document.getElementById('logout-link'); // Desktop logout
-        const logoutLinkMobile = document.getElementById('logout-link-mobile'); // Mobile logout
-        const addCartButtons = document.querySelectorAll('.add-to-cart-btn'); 
+    // Attach event listeners directly, assuming this function is called after DOMContentLoaded
+    // or when the relevant elements are guaranteed to be in the DOM.
 
-        if (miniCartContent) {
-            miniCartContent.addEventListener('click', async function(event) {
-                const removeButton = event.target.closest('.remove-item-btn');
-                if (removeButton) {
-                    const itemId = removeButton.dataset.id;
-                    window.showConfirmationModal(
-                        'حذف محصول',
-                        'آیا مطمئن هستید که می‌خواهید این محصول را حذف کنید؟',
-                        async () => {
-                            try {
-                                const response = await removeCartItem(itemId); 
-                                if (response.success) { 
-                                    window.showMessage(response.message || 'آیتم از سبد خرید حذف شد.', 'success');
-                                    await renderMiniCart(); 
-                                    if (window.location.pathname === '/cart' && typeof window.loadCart === 'function') {
-                                        window.loadCart(); 
-                                    }
-                                } else {
-                                    window.showMessage(response.message || 'خطا در حذف محصول.', 'error');
+    const miniCartContent = document.getElementById('mini-cart-content');
+    // Select logout buttons using the class found by the debug script
+    const logoutButtons = document.querySelectorAll('.nav-link-dropdown-compact.text-red-500'); // Targeted selector
+
+    const addCartButtons = document.querySelectorAll('.add-to-cart-btn');
+
+    if (miniCartContent) {
+        miniCartContent.addEventListener('click', async function(event) {
+            const removeButton = event.target.closest('.remove-item-btn');
+            if (removeButton) {
+                const itemId = removeButton.dataset.id;
+                window.showConfirmationModal(
+                    'حذف محصول',
+                    'آیا مطمئن هستید که می‌خواهید این محصول را حذف کنید؟',
+                    async () => {
+                        try {
+                            const response = await removeCartItem(itemId);
+                            if (response.success) {
+                                window.showMessage(response.message || 'آیتم از سبد خرید حذف شد.', 'success');
+                                await renderMiniCart();
+                                if (window.location.pathname === '/cart' && typeof window.loadCart === 'function') {
+                                    window.loadCart();
                                 }
-                            } catch (error) {
-                                console.error('Error removing cart item from mini cart:', error);
-                                window.showMessage('خطا در ارتباط با سرور.', 'error');
+                            } else {
+                                window.showMessage(response.message || 'خطا در حذف محصول.', 'error');
                             }
+                        } catch (error) {
+                            console.error('Error removing cart item from mini cart:', error);
+                            window.showMessage('خطا در ارتباط با سرور.', 'error');
                         }
-                    );
-                }
-            });
-        }
-
-        // Add Event Listener for Desktop Logout Link
-        if (logoutLinkDesktop) {
-            logoutLinkDesktop.addEventListener('click', async function(event) {
-                event.preventDefault();
-                try {
-                    await logoutUser(); 
-                    window.showMessage('با موفقیت از حساب کاربری خود خارج شدید.', 'success');
-                    window.location.href = '/'; 
-                } catch (error) {
-                    console.error('Error during desktop logout:', error);
-                    window.showMessage('خطا در خروج از حساب کاربری.', 'error');
-                }
-            });
-        }
-
-        // Add Event Listener for Mobile Logout Link
-        if (logoutLinkMobile) {
-            logoutLinkMobile.addEventListener('click', async function(event) {
-                event.preventDefault();
-                try {
-                    await logoutUser(); 
-                    window.showMessage('با موفقیت از حساب کاربری خود خارج شدید.', 'success');
-                    window.location.href = '/'; 
-                } catch (error) {
-                    console.error('Error during mobile logout:', error);
-                    window.showMessage('خطا در خروج از حساب کاربری.', 'error');
-                }
-            });
-        }
-
-        addCartButtons.forEach(button => {
-            button.addEventListener('click', async function() {
-                renderMiniCart();
-            });
+                    }
+                );
+            }
         });
+    }
 
-        if (window.renderMainCart) {
-            const originalRenderMainCart = window.renderMainCart;
-            window.renderMainCart = async function() {
-                await originalRenderMainCart();
-                renderMiniCart(); 
-            };
-        }
+    // Add Event Listener for all identified logout buttons
+    if (logoutButtons.length > 0) {
+        logoutButtons.forEach(button => {
+            button.addEventListener('click', async function(event) {
+                event.preventDefault();
+                try {
+                    console.log('Attempting logout via attached listener in navbar_new.js...'); // Add debug log
+                    await logoutUser(); // logoutUser handles token clearing and redirection
+                    console.log('Logout initiated. Redirection expected from api.js.'); // Add debug log
+                    // No need to call updateNavbarUserStatus here as logoutUser redirects
+                } catch (error) {
+                    console.error('Error during logout in navbar_new.js:', error);
+                    window.showMessage('خطا در خروج از حساب کاربری.', 'error');
+                }
+            });
+            console.log('Attached logout listener to:', button);
+        });
+    } else {
+        console.warn('No logout buttons found with selector ".nav-link-dropdown-compact.text-red-500" during navbar initialization.');
+    }
+
+
+    addCartButtons.forEach(button => {
+        button.addEventListener('click', async function() {
+            renderMiniCart();
+        });
     });
+
+    if (window.renderMainCart) {
+        const originalRenderMainCart = window.renderMainCart;
+        window.renderMainCart = async function() {
+            await originalRenderMainCart();
+            renderMiniCart();
+        };
+    }
 }

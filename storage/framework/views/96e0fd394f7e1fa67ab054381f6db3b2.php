@@ -172,37 +172,49 @@
                 <div class="relative ml-4 group hidden lg:block">
                     <a href="#" class="nav-link flex items-center text-amber-200 hover:text-white transition-colors duration-200" onclick="return false;">
                         <i class="fas fa-user-circle text-xl ml-2"></i>
-                        
-                        
                         <span id="desktop-user-status-display"></span>
                     </a>
-                    <div class="absolute top-full right-0 mt-3 w-48 bg-white rounded-xl shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50 p-4">
+                    <div class="absolute top-full right-0 mt-3 w-48 bg-white rounded-xl shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50 p-4" dir="rtl" style="right: -50%;"> 
                         
                         <div id="user-status-guest" class="space-y-2 hidden"> 
                             <div class="text-center text-gray-500 mb-2">کاربر مهمان</div>
                             <a href="<?php echo e(route('auth.mobile-login-form')); ?>" class="nav-link-dropdown" id="login-register-link">
-                                <i class="fas fa-sign-in-alt ml-2"></i>
+                                <i class="fas fa-sign-in-alt mr-2"></i>
                                 <span>ورود / ثبت‌نام</span>
                             </a>
                         </div>
 
                         <div id="user-status-logged-in" class="space-y-2 hidden"> 
-                            <div class="text-center text-gray-800 font-semibold mb-2" id="logged-in-user-name"></div> 
-                            <a href="<?php echo e(route('profile.edit')); ?>" class="nav-link-dropdown">
-                                <i class="fas fa-user-cog ml-2"></i>
-                                <span>ویرایش پروفایل</span>
+                            
+                            <div class="user-profile-header flex items-center justify-end">
+                                <span class="user-full-name text-right" id="logged-in-user-full-name"></span>
+                                <i class="fas fa-user-circle user-icon mr-2"></i> 
+                                <i class="fas fa-chevron-down text-gray-500 text-xs mr-auto"></i>
+                            </div>
+
+                            <a href="<?php echo e(route('profile.edit')); ?>" class="nav-link-dropdown-compact flex items-center justify-end">
+                                <span class="ml-auto">ویرایش پروفایل</span> 
+                                <i class="fas fa-user-cog mr-2"></i> 
                             </a>
-                            <a href="<?php echo e(route('orders.index')); ?>" class="nav-link-dropdown">
-                                <i class="fas fa-box-seam ml-2"></i>
-                                <span>سفارشات من</span>
+                            <a href="<?php echo e(route('orders.index')); ?>" class="nav-link-dropdown-compact flex items-center justify-end">
+                                <span class="ml-auto">سفارشات من</span> 
+                                <i class="fas fa-box-seam mr-2"></i> 
                             </a>
-                            <a href="<?php echo e(route('addresses.index')); ?>" class="nav-link-dropdown">
-                                <i class="fas fa-map-marker-alt ml-2"></i>
-                                <span>آدرس‌ها</span>
+                            <a href="<?php echo e(route('addresses.index')); ?>" class="nav-link-dropdown-compact flex items-center justify-end">
+                                <span class="ml-auto">آدرس‌ها</span> 
+                                <i class="fas fa-map-marker-alt mr-2"></i> 
                             </a>
-                            <button type="button" id="logout-link" class="nav-link-dropdown w-full text-right text-red-500 hover:bg-red-100">
-                                <i class="fas fa-sign-out-alt ml-2"></i>
-                                <span>خروج از حساب</span>
+                            <a href="#" class="nav-link-dropdown-compact flex items-center justify-end">
+                                <span class="ml-auto">لیست‌ها</span> 
+                                <i class="fas fa-list mr-2"></i> 
+                            </a>
+                            <a href="#" class="nav-link-dropdown-compact flex items-center justify-end">
+                                <span class="ml-auto">دیدگاه‌ها و پرسش‌ها</span> 
+                                <i class="fas fa-comments mr-2"></i> 
+                            </a>
+                            <button type="button" id="logout-link" class="nav-link-dropdown-compact w-full text-right text-red-500 hover:bg-red-100 flex items-center justify-end">
+                                <span class="ml-auto">خروج از حساب</span>
+                                <i class="fas fa-sign-out-alt mr-2"></i>
                             </button>
                         </div>
                     </div>
@@ -377,41 +389,50 @@
             
             <div id="mobile-user-status-guest" class="space-y-2 px-4 hidden"> 
                 <a href="<?php echo e(route('auth.mobile-login-form')); ?>" class="mobile-nav-link">
-                    <i class="fas fa-sign-in-alt ml-2"></i>
+                    <i class="fas fa-sign-in-alt mr-2"></i>
                     <span>ورود به حساب</span>
                 </a>
                 <a href="<?php echo e(route('auth.register-form')); ?>" class="mobile-nav-link">
-                    <i class="fas fa-user-plus ml-2"></i>
+                    <i class="fas fa-user-plus mr-2"></i>
                     <span>ثبت‌نام</span>
                 </a>
             </div>
 
             <div id="mobile-user-status-logged-in" class="space-y-2 px-4 hidden"> 
-                <div class="flex items-center px-4">
-                    <div class="shrink-0 ml-3">
+                <div class="flex items-center"> 
+                    <div class="shrink-0 mr-3">
                         <i class="fas fa-user-circle text-2xl text-amber-300"></i>
                     </div>
-                    <div>
-                        <div class="font-medium text-base text-white text-right" id="mobile-logged-in-user-name"></div> 
-                        <div class="font-medium text-sm text-amber-200 text-right" id="mobile-logged-in-user-mobile"></div> 
+                    <div class="text-right">
+                        <div class="font-medium text-base text-white" id="mobile-logged-in-user-name"></div>
+                        <div class="font-medium text-sm text-amber-200" id="mobile-logged-in-user-mobile"></div>
                     </div>
                 </div>
 
                 <div class="space-y-2">
-                    <a href="<?php echo e(route('profile.edit')); ?>" class="mobile-nav-link">
-                        <i class="fas fa-user-cog ml-2"></i>
+                    <a href="<?php echo e(route('profile.edit')); ?>" class="mobile-nav-link"> 
+                        <i class="fas fa-user-cog mr-2"></i>
                         <span>ویرایش پروفایل</span>
                     </a>
-                    <a href="<?php echo e(route('orders.index')); ?>" class="mobile-nav-link">
-                        <i class="fas fa-box-seam ml-2"></i>
+                    <a href="<?php echo e(route('orders.index')); ?>" class="mobile-nav-link"> 
+                        <i class="fas fa-box-seam mr-2"></i>
                         <span>سفارشات من</span>
                     </a>
-                    <a href="<?php echo e(route('addresses.index')); ?>" class="mobile-nav-link">
-                        <i class="fas fa-map-marker-alt ml-2"></i>
+                    <a href="<?php echo e(route('addresses.index')); ?>" class="mobile-nav-link"> 
+                        <i class="fas fa-map-marker-alt mr-2"></i>
                         <span>آدرس‌ها</span>
                     </a>
+                    
+                    <a href="#" class="mobile-nav-link"> 
+                        <i class="fas fa-list mr-2"></i>
+                        <span>لیست‌ها</span>
+                    </a>
+                    <a href="#" class="mobile-nav-link"> 
+                        <i class="fas fa-comments mr-2"></i>
+                        <span>دیدگاه‌ها و پرسش‌ها</span>
+                    </a>
                     <button type="button" id="logout-link-mobile" class="mobile-nav-link w-full text-right text-red-300 hover:bg-red-800/20">
-                        <i class="fas fa-sign-out-alt ml-2"></i>
+                        <i class="fas fa-sign-out-alt mr-2"></i>
                         <span>خروج از حساب</span>
                     </button>
                 </div>

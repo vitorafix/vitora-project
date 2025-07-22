@@ -24,14 +24,17 @@
 
     /* Navigation Link Styles */
     .nav-link {
-        @apply flex items-center px-4 py-3 text-white text-sm font-medium rounded-lg relative overflow-hidden
+        @apply flex items-center px-3 py-2 text-white text-sm font-medium rounded-lg relative overflow-hidden
                transition-all duration-300 ease-in-out
-               hover:bg-white/10 hover:text-amber-200
-               hover:border-b-2 hover:border-amber-400; /* NEW: Added hover border-bottom */
+               hover:text-amber-200 /* متن زرد در هاور */
+               border-b-2 border-transparent /* حاشیه شفاف پیش‌فرض */
+               hover:border-amber-400; /* حاشیه زرد در هاور */
     }
 
     .nav-link.active {
-        @apply bg-amber-400 text-green-800 font-bold shadow-lg border-b-2 border-amber-400; /* NEW: Ensure active state also has border */
+        @apply text-amber-400 font-bold /* متن زرد برای لینک فعال */
+               border-b-2 border-amber-400; /* حاشیه زرد برای لینک فعال */
+        border-radius: 0; /* حذف گوشه‌های گرد برای خط زیرین صاف */
     }
 
     /* Dropdown Styles */
@@ -46,19 +49,40 @@
 
     /* Mobile Navigation Styles */
     .mobile-nav-link {
-        @apply flex items-center space-x-3 space-x-reverse px-4 py-3 text-white text-sm hover:bg-white/10 rounded-lg
+        @apply flex items-center space-x-3 space-x-reverse px-3 py-2 text-white text-sm rounded-lg
                transition-all duration-300 ease-in-out
-               hover:border-b-2 hover:border-amber-400; /* NEW: Added hover border-bottom for mobile links */
+               hover:text-amber-200
+               border-b-2 border-transparent
+               hover:border-amber-400;
     }
 
     .mobile-nav-link.active {
-        @apply bg-amber-400 text-green-800 font-bold border-b-2 border-amber-400; /* NEW: Ensure active state also has border for mobile */
+        @apply text-amber-400 font-bold
+               border-b-2 border-amber-400;
+        border-radius: 0;
     }
 
-    /* NEW: Ensure nav-link-dropdown uses flex for proper alignment */
+    /* Ensure nav-link-dropdown uses flex for proper alignment */
     .nav-link-dropdown {
         @apply flex items-center px-4 py-2 text-gray-700 text-sm hover:bg-gray-100 rounded-md transition-colors duration-200;
     }
+
+    /* NEW: Styles for the user profile header in the dropdown */
+    .user-profile-header {
+        @apply flex items-center justify-between pb-3 mb-3 border-b border-gray-200; /* Changed to justify-between */
+    }
+    .user-profile-header .user-icon {
+        @apply text-3xl text-green-600 ml-2; /* Adjusted size and margin */
+    }
+    .user-profile-header .user-full-name {
+        @apply font-semibold text-gray-800;
+    }
+
+    /* NEW: Styles for compact dropdown items */
+    .nav-link-dropdown-compact {
+        @apply flex items-center px-3 py-1.5 text-gray-700 text-sm hover:bg-gray-100 rounded-md transition-colors duration-200; /* Smaller padding */
+    }
+
 
     /* Message Box Styles (from app.js, converted to @apply where possible) */
     .message-box {

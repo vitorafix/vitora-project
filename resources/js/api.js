@@ -89,10 +89,18 @@ export const verifyOtpAndLogin = async (mobileNumber, otp) => {
  */
 export const logoutUser = async () => {
     try {
-        const response = await axios.post('/api/auth/logout');
+        // Send API request to server to invalidate token/session
+        await axios.post('/api/auth/logout', {}, {
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('jwt_token')
+            }
+        });
+
         clearJwtToken(); // Clear JWT token from localStorage on logout
-        console.log('API: User logged out successfully:', response.data);
-        return response.data;
+        console.log('API: User logged out successfully.'); // Log message after clearing token
+
+        // Redirect to login page or home page after successful logout
+        window.location.href = '/'; // CHANGED: Redirect to the home page
     } catch (error) {
         console.error('API: Error logging out:', error.response?.data || error.message);
         throw error;

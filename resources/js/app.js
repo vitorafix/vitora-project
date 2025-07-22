@@ -20,7 +20,8 @@ import {
     clearCart,
     applyCoupon, // تغییر یافته از applyCouponToCart
     removeCoupon, // تغییر یافته از removeCouponFromCart
-    getJwtToken
+    getJwtToken,
+    logoutUser // NEW: ایمپورت کردن logoutUser از api.js
 } from './api.js';
 
 // --- Import other modules ---
@@ -29,7 +30,16 @@ import './cart.js';
 import './search.js';
 import './auth.js';
 // NEW: ایمپورت کردن تابع initializeNavbarAndCart از navbar_new.js
-import { initializeNavbarAndCart } from './navbar_new.js'; // مسیر صحیح
+import { initializeNavbarAndCart, updateNavbarUserStatus } from './navbar_new.js'; // مسیر صحیح و اضافه کردن updateNavbarUserStatus
+
+// --- برای اهداف دیباگ: توابع را به صورت گلوبال در دسترس قرار دهید ---
+// این کار به شما امکان می‌دهد این توابع را مستقیماً از کنسول فراخوانی کنید.
+// در محیط پروداکشن، این خطوط را حذف کنید.
+window.initializeNavbarAndCart = initializeNavbarAndCart;
+window.updateNavbarUserStatus = updateNavbarUserStatus;
+window.logoutUser = logoutUser; // NEW: تابع logoutUser را نیز گلوبال کنید
+// --- پایان بخش دیباگ ---
+
 
 // فعال کردن ایمپورت فایل‌های دیگر که در پوشه شما موجود هستند و ممکن است نیاز باشند:
 import './admin.js';

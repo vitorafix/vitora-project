@@ -555,11 +555,13 @@ class MobileAuthController extends Controller
             Log::warning('MobileAuthController: Failed to invalidate JWT token during logout for user ' . ($userId ?? 'N/A') . ': ' . $e->getMessage());
         }
 
-        // همچنین کاربر را از سشن وب لاراول نیز خارج کنید
-        Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-        Log::info('MobileAuthController: User logged out from web session.');
+        // این خطوط مربوط به سشن وب لاراول هستند و برای مسیرهای API که از JWT استفاده می‌کنند،
+        // معمولاً ضروری نیستند و می‌توانند باعث خطای "Session store not set on request." شوند.
+        // بنابراین، این خطوط را حذف یا کامنت می‌کنیم.
+        // Auth::guard('web')->logout();
+        // $request->session()->invalidate();
+        // $request->session()->regenerateToken();
+        // Log::info('MobileAuthController: User logged out from web session.');
 
 
         $this->auditService->log(

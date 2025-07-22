@@ -5,8 +5,10 @@ console.log('auth.js loaded and starting...');
 
 // ایمپورت کردن توابع مورد نیاز از ماژول‌های دیگر
 // توابع storeJwtToken و clearJwtToken از api.js ایمپورت می‌شوند.
-import { sendOtp, verifyOtpAndLogin, logoutUser, storeJwtToken, clearJwtToken, getJwtToken, registerUserAndSendOtp } from './api.js'; // اضافه شدن registerUserAndSendOtp از api.js
-import { updateNavbarUserStatus } from './navbar_new.js'; // برای به‌روزرسانی وضعیت نوار ناوبری
+import {sendOtp, verifyOtpAndLogin, logoutUser, storeJwtToken, clearJwtToken, getJwtToken, registerUserAndSendOtp} from "/resources/js/api.js";
+// اضافه شدن registerUserAndSendOtp از api.js
+import {updateNavbarUserStatus} from "/resources/js/navbar_new.js";
+// برای به‌روزرسانی وضعیت نوار ناوبری
 
 // تابع برای ذخیره guest_uuid در localStorage (این تابع مستقیماً با Axios ارتباط ندارد، پس نیازی به تغییر ندارد)
 function setGuestUuid(uuid) {
@@ -49,16 +51,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         start() {
-            this.stop(); // Ensure any existing timer is stopped
-            this.updateDisplay(); // Update immediately
-            this.interval = setInterval(() => {
+            this.stop();
+            // Ensure any existing timer is stopped
+            this.updateDisplay();
+            // Update immediately
+            this.interval = setInterval( () => {
                 this.seconds--;
                 this.updateDisplay();
                 if (this.seconds <= 0) {
                     this.stop();
-                    this.onCompleteCallback?.(); // Call callback if provided
+                    this.onCompleteCallback?.();
+                    // Call callback if provided
                 }
-            }, 1000);
+            }
+            , 1000);
         }
 
         stop() {
@@ -84,11 +90,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const otpDigitInputs = document.querySelectorAll('.otp-digit-input');
         otpDigitInputs.forEach(input => {
             input.value = '';
-        });
-        if (otpDigitInputs.length > 0) {
-            otpDigitInputs[0].focus(); // Focus on the first field for convenience
         }
-    };
+        );
+        if (otpDigitInputs.length > 0) {
+            otpDigitInputs[0].focus();
+            // Focus on the first field for convenience
+        }
+    }
+    ;
 
     // Function to get the combined OTP string from individual inputs (moved from verify-otp.blade.php)
     const getCombinedOtp = () => {
@@ -96,21 +105,24 @@ document.addEventListener('DOMContentLoaded', function() {
         let otp = '';
         otpDigitInputs.forEach(input => {
             otp += input.value;
-        });
+        }
+        );
         return otp;
-    };
-
+    }
+    ;
 
     // --- Logic for the registration page (register.blade.php) ---
     const registerNameInput = document.getElementById('name');
     const registerLastnameInput = document.getElementById('lastname');
-    const registerMobileNumberInput = document.getElementById('mobile_number'); // This ID is common to both pages
+    const registerMobileNumberInput = document.getElementById('mobile_number');
+    // This ID is common to both pages
     const registerButton = document.getElementById('register-button');
 
     if (registerNameInput && registerMobileNumberInput && registerButton) {
         console.log('Auth.js: Register elements found. Initializing register logic.');
 
-        const registerButtonOriginalText = registerButton.innerHTML; // Store original text
+        const registerButtonOriginalText = registerButton.innerHTML;
+        // Store original text
 
         // Apply digit conversion and filtering to mobile number input for register form
         registerMobileNumberInput.addEventListener('input', function(event) {
@@ -149,7 +161,8 @@ document.addEventListener('DOMContentLoaded', function() {
             registerButton.classList.add('opacity-50', 'cursor-not-allowed');
             registerButton.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال ثبت‌نام...';
 
-            console.log('Auth.js: Register button clicked!'); // Debug log
+            console.log('Auth.js: Register button clicked!');
+            // Debug log
 
             try {
                 // NEW LOGIC: Call registerUserAndSendOtp for registration flow
@@ -179,13 +192,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- Logic for the login page (login.blade.php) ---
-    const loginMobileNumberInput = document.getElementById('mobile_number'); // This ID is common to both pages
+    const loginMobileNumberInput = document.getElementById('mobile_number');
+    // This ID is common to both pages
     const sendOtpButton = document.getElementById('send-otp-button');
 
     if (loginMobileNumberInput && sendOtpButton) {
         console.log('Auth.js: Login elements found. Initializing login logic.');
 
-        const sendOtpButtonOriginalText = sendOtpButton.innerHTML; // Store original text
+        const sendOtpButtonOriginalText = sendOtpButton.innerHTML;
+        // Store original text
 
         // Apply digit conversion and filtering to mobile number input for login form
         loginMobileNumberInput.addEventListener('input', function(event) {
@@ -250,8 +265,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Logic for the OTP verification page (verify-otp.blade.php) ---
     const countdownTimerElement = document.getElementById('countdown-timer');
     const resendButton = document.getElementById('resend-otp-button');
-    const resendTimerElement = resendButton ? resendButton.querySelector('#resend-timer') : null; // Select the span inside the button
-    const otpDigitInputs = document.querySelectorAll('.otp-digit-input'); // Get all OTP digit inputs
+    const resendTimerElement = resendButton ? resendButton.querySelector('#resend-timer') : null;
+    // Select the span inside the button
+    const otpDigitInputs = document.querySelectorAll('.otp-digit-input');
+    // Get all OTP digit inputs
     const hiddenMobileNumberInput = document.getElementById('hidden-mobile-number');
     const currentMobileNumberSpan = document.getElementById('current-mobile-number');
 
@@ -269,11 +286,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (countdownTimerElement && resendButton && otpDigitInputs.length > 0 && hiddenMobileNumberInput) {
         console.log('Auth.js: OTP verification elements found. Initializing OTP logic.');
 
-        const resendButtonOriginalText = resendButton.innerHTML; // Store original text
-        const sendNewOtpButtonOriginalText = sendNewOtpButton ? sendNewOtpButton.innerHTML : ''; // Store original text
+        const resendButtonOriginalText = resendButton.innerHTML;
+        // Store original text
+        const sendNewOtpButtonOriginalText = sendNewOtpButton ? sendNewOtpButton.innerHTML : '';
+        // Store original text
 
         // Apply auto-focus/backspace/paste logic for OTP inputs
-        otpDigitInputs.forEach((input, index) => {
+        otpDigitInputs.forEach( (input, index) => {
             input.addEventListener('input', function(event) {
                 event.target.value = convertAndFilterDigits(event.target.value);
 
@@ -306,7 +325,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     otpDigitInputs[lastFilledIndex].focus();
                 }
             });
-        });
+        }
+        );
 
         // Apply digit conversion and filtering to new mobile number input in modal
         if (newMobileInput) {
@@ -316,22 +336,30 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Initialize main countdown timer
-        mainCountdownTimer = new CountdownTimer(countdownTimerElement, 120, () => {
+        mainCountdownTimer = new CountdownTimer(countdownTimerElement,120, () => {
             resendButton.disabled = false;
             resendButton.classList.remove('opacity-50', 'cursor-not-allowed');
             resendButton.removeAttribute('aria-disabled');
-            if (resendTimerElement) resendTimerElement.textContent = ''; // Clear timer text
-            resendButton.innerHTML = resendButtonOriginalText; // Restore original text
-        });
+            if (resendTimerElement)
+                resendTimerElement.textContent = '';
+            // Clear timer text
+            resendButton.innerHTML = resendButtonOriginalText;
+            // Restore original text
+        }
+        );
 
         // Initialize resend cooldown timer (initially not running)
-        resendCooldownTimer = new CountdownTimer(resendTimerElement, 120, () => {
+        resendCooldownTimer = new CountdownTimer(resendTimerElement,120, () => {
             resendButton.disabled = false;
             resendButton.classList.remove('opacity-50', 'cursor-not-allowed');
             resendButton.removeAttribute('aria-disabled');
-            if (resendTimerElement) resendTimerElement.textContent = ''; // Clear timer text
-            resendButton.innerHTML = resendButtonOriginalText; // Restore original text
-        });
+            if (resendTimerElement)
+                resendTimerElement.textContent = '';
+            // Clear timer text
+            resendButton.innerHTML = resendButtonOriginalText;
+            // Restore original text
+        }
+        );
 
         // Update startCountdown function to use the new class
         function startCountdown() {
@@ -340,7 +368,9 @@ document.addEventListener('DOMContentLoaded', function() {
             resendButton.disabled = true;
             resendButton.classList.add('opacity-50', 'cursor-not-allowed');
             resendButton.setAttribute('aria-disabled', 'true');
-            if (resendTimerElement) resendTimerElement.textContent = '02:00'; // Reset resend timer display
+            if (resendTimerElement)
+                resendTimerElement.textContent = '02:00';
+            // Reset resend timer display
         }
 
         // Update startResendCooldown function to use the new class
@@ -355,14 +385,17 @@ document.addEventListener('DOMContentLoaded', function() {
         // --- Event Listeners for OTP verification page ---
         const verifyOtpAjaxButton = document.getElementById('verify-otp-ajax-button');
         if (verifyOtpAjaxButton) {
-            console.log('Auth.js: "ثبت و ورود" button (verify-otp-ajax-button) found!'); // Debug log
+            console.log('Auth.js: "ثبت و ورود" button (verify-otp-ajax-button) found!');
+            // Debug log
             verifyOtpAjaxButton.addEventListener('click', async function() {
-                console.log('Auth.js: "ثبت و ورود" button clicked!'); // Debug log
+                console.log('Auth.js: "ثبت و ورود" button clicked!');
+                // Debug log
                 const mobileNumber = hiddenMobileNumberInput.value;
                 const otp = getCombinedOtp();
-                console.log('Auth.js: Mobile Number for verification:', mobileNumber); // Debug log
-                console.log('Auth.js: Combined OTP:', otp); // Debug log
-
+                console.log('Auth.js: Mobile Number for verification:', mobileNumber);
+                // Debug log
+                console.log('Auth.js: Combined OTP:', otp);
+                // Debug log
 
                 // Show loading state
                 verifyOtpAjaxButton.disabled = true;
@@ -374,15 +407,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.showMessage(data.message || 'ورود با موفقیت انجام شد.', 'success');
                     console.log('Auth.js: User data after login:', data.user);
                     // Correction: Token should be read from data.access_token
-                    console.log('Auth.js: JWT Token:', data.access_token); // Corrected here
+                    console.log('Auth.js: JWT Token:', data.access_token);
+                    // Corrected here
 
                     // --- تغییر کلیدی: فراخوانی jwtLogin برای لاگین در سشن وب لاراول ---
                     if (data.access_token) {
-                        localStorage.setItem('jwt_token', data.access_token); // ذخیره توکن
+                        localStorage.setItem('jwt_token', data.access_token);
+                        // ذخیره توکن
 
                         // فراخوانی API برای لاگین کردن کاربر در سشن وب لاراول
                         try {
-                            const jwtLoginResponse = await axios.post('/api/auth/jwt-login', { token: data.access_token });
+                            const jwtLoginResponse = await axios.post('/api/auth/jwt-login', {
+                                token: data.access_token
+                            });
                             console.log('Auth.js: Web session login successful:', jwtLoginResponse.data);
                         } catch (jwtLoginError) {
                             console.error('Auth.js: Error during web session login (jwt-login API call):', jwtLoginError);
@@ -396,12 +433,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     updateNavbarUserStatus();
 
                     // Redirect to dashboard or home page after successful login
-                    window.location.href = '/'; // Or your dashboard route
+                    window.location.href = '/';
+                    // Or your dashboard route
                 } catch (error) {
                     const errorMessage = error.response?.data?.message || 'خطا در ورود. لطفاً دوباره تلاش کنید.';
                     window.showMessage(errorMessage, 'error');
                     console.error('Auth.js: Error during OTP verification and login:', error);
-                    clearOtpFields(); // Clear OTP fields on error
+                    clearOtpFields();
+                    // Clear OTP fields on error
                 } finally {
                     // Hide loading state
                     verifyOtpAjaxButton.disabled = false;
@@ -410,9 +449,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         } else {
-            console.log('Auth.js: "ثبت و ورود" button (verify-otp-ajax-button) NOT found!'); // Debug log
+            console.log('Auth.js: "ثبت و ورود" button (verify-otp-ajax-button) NOT found!');
+            // Debug log
         }
-
 
         if (resendButton) {
             resendButton.addEventListener('click', async function() {
@@ -469,7 +508,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     modalErrorMessage.textContent = 'لطفاً یک شماره موبایل معتبر وارد کنید (مثال: 09123456789).';
                     modalErrorMessage.classList.remove('hidden');
                     modalErrorMessage.classList.add('animate-pulse');
-                    setTimeout(() => modalErrorMessage.classList.remove('animate-pulse'), 2000);
+                    setTimeout( () => modalErrorMessage.classList.remove('animate-pulse'), 2000);
                     return;
                 }
 
@@ -483,7 +522,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     window.showMessage(response.message || 'شماره موبایل با موفقیت تغییر یافت. کد جدید ارسال شد.', 'success');
                     hiddenMobileNumberInput.value = newMobileNumber;
-                    if (currentMobileNumberSpan) currentMobileNumberSpan.textContent = newMobileNumber;
+                    if (currentMobileNumberSpan)
+                        currentMobileNumberSpan.textContent = newMobileNumber;
                     changeMobileModal.classList.remove('active');
                     clearOtpFields();
                     startCountdown();
@@ -493,7 +533,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     modalErrorMessage.textContent = errorMessage;
                     modalErrorMessage.classList.remove('hidden');
                     modalErrorMessage.classList.add('animate-pulse');
-                    setTimeout(() => modalErrorMessage.classList.remove('animate-pulse'), 2000);
+                    setTimeout( () => modalErrorMessage.classList.remove('animate-pulse'), 2000);
                     console.error('Auth.js: Error changing mobile number:', error);
                     clearOtpFields();
                 } finally {
@@ -512,6 +552,34 @@ document.addEventListener('DOMContentLoaded', function() {
         if (errorContainer && !errorContainer.classList.contains('hidden')) {
             clearOtpFields();
         }
+
+        // --- Logout Logic for JWT ---
+        // REMOVED: Logout logic moved to navbar_new.js to avoid duplication and conflicts.
+        // const logoutButtonDesktop = document.getElementById('logout-link');
+        // if (logoutButtonDesktop) {
+        //     logoutButtonDesktop.addEventListener('click', async function(event) {
+        //         event.preventDefault();
+        //         try {
+        //             await logoutUser();
+        //         } catch (error) {
+        //             console.error('Auth.js: Error during desktop logout:', error);
+        //             window.showMessage('خطا در خروج از حساب. لطفاً دوباره تلاش کنید.', 'error');
+        //         }
+        //     });
+        // }
+
+        // const logoutButtonMobile = document.getElementById('logout-link-mobile');
+        // if (logoutButtonMobile) {
+        //     logoutButtonMobile.addEventListener('click', async function(event) {
+        //         event.preventDefault();
+        //         try {
+        //             await logoutUser();
+        //         } catch (error) {
+        //             console.error('Auth.js: Error during mobile logout:', error);
+        //             window.showMessage('خطا در خروج از حساب. لطفاً دوباره تلاش کنید.', 'error');
+        //         }
+        //     });
+        // }
     } else {
         console.log('Auth.js: OTP verification elements NOT found. Skipping OTP logic.');
         console.log('Auth.js: countdownTimerElement:', countdownTimerElement);
