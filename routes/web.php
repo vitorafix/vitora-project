@@ -28,17 +28,25 @@ Route::get('/search', [SearchController::class, 'search'])->name('search');
 
 // گروه مسیرهای احراز هویت (با middleware 'web' برای پشتیبانی از Session و CSRF)
 Route::middleware(['web'])->prefix('auth')->name('auth.')->group(function () {
-    Route::get('/login', [MobileAuthController::class, 'showMobileLoginForm'])->name('mobile-login-form');
-    // مسیر send-otp به routes/api.php منتقل شده بود، حالا به web.php برگردانده می‌شود.
-    Route::post('/send-otp', [MobileAuthController::class, 'sendOtp'])->name('send-otp'); // این خط اضافه شد.
+    // مسیر نمایش فرم ورود با موبایل
+    Route::get('/mobile-login', [MobileAuthController::class, 'showMobileLoginForm'])
+        ->name('mobile-login-form')
+        ->middleware(\App\Http\Middleware\AuthenticateOnceWithBasicAuth::class); // اضافه شدن این میدل‌ویر
 
-    Route::get('/verify-otp-form', [MobileAuthController::class, 'showOtpVerifyForm'])->name('verify-otp-form');
-    Route::post('/verify-otp', [MobileAuthController::class, 'verifyOtp'])->name('verify-otp'); // این مسیر در VerifyCsrfToken مستثنی شده است.
+    // مسیر send-otp به routes/api.php منتقل شده بود، حالا به web.php برگردانده می‌شود.
+    Route::post('/send-otp', [MobileAuthController::class, 'sendOtp'])->name('send-otp');
+
+    // مسیر نمایش فرم تأیید OTP
+    Route::get('/verify-otp-form', [MobileAuthController::class, 'showOtpVerifyForm'])
+        ->name('verify-otp-form')
+        ->middleware(\App\Http\Middleware\AuthenticateOnceWithBasicAuth::class); // اضافه شدن این میدل‌ویر
+
+    Route::post('/verify-otp', [MobileAuthController::class, 'verifyOtpAndLogin'])->name('verify-otp'); // تغییر نام متد به verifyOtpAndLogin
 
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register-form');
     Route::post('/register', [RegisterController::class, 'register'])->name('register');
     Route::post('/logout', [MobileAuthController::class, 'logout'])->name('logout');
-    Route::post('/change-mobile-number', [MobileAuthController::class, 'changeMobileNumber'])->name('change-mobile-number'); // این مسیر در VerifyCsrfToken مستثنی شده است.
+    Route::post('/change-mobile-number', [MobileAuthController::class, 'changeMobileNumber'])->name('change-mobile-number');
 });
 
 // مسیرهای سبد خرید وب (با middleware 'web' به صورت ضمنی)
@@ -63,7 +71,7 @@ Route::middleware(['auth', 'profile.completed'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/complete-profile', [ProfileCompletionController::class, 'showCompletionForm'])->name('profile.completion.form');
-    Route::post('/complete-profile', [ProfileCompletionController::class, 'completeProfile'])->name('profile.completion.store');
+    Route::post('/complete-profile', [ProfileCompletionController::class, 'storeCompletionForm'])->name('profile.completion.store');
 
     Route::prefix('checkout')->name('checkout.')->group(function () {
         Route::get('/', [CheckoutController::class, 'index'])->name('index');

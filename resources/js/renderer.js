@@ -89,9 +89,11 @@ export function renderMainCart(items, cartTotals) {
         const itemElement = document.createElement('div');
         itemElement.classList.add('flex', 'items-center', 'justify-between', 'py-4', 'border-b', 'border-gray-200', 'last:border-b-0');
         itemElement.setAttribute('data-cart-item-id', item.id);
-        itemElement.setAttribute('data-unit-price', item.unitPrice); // استفاده از unitPrice
+        // اطمینان از اینکه item.unitPrice یک عدد معتبر است
+        itemElement.setAttribute('data-unit-price', item.unitPrice && !isNaN(item.unitPrice) ? item.unitPrice : 0); // استفاده از unitPrice
 
-        const imageUrl = item.product.image || `https://placehold.co/100x100/E5E7EB/4B5563?text=No+Image`;
+        // اصلاح شده: اطمینان از وجود item.product و item.product.image
+        const imageUrl = (item.product && item.product.image) ? item.product.image : `https://placehold.co/100x100/E5E7EB/4B5563?text=No+Image`;
         const productName = item.product.name || 'نامشخص'; // استفاده از name به جای title
 
         itemElement.innerHTML = `
@@ -111,7 +113,8 @@ export function renderMainCart(items, cartTotals) {
                     <button class="quantity-btn p-2 bg-gray-100 hover:bg-gray-200" data-action="decrease" data-cart-item-id="${item.id}">
                         <i class="fas fa-minus text-gray-600"></i>
                     </button>
-                    <span class="item-quantity px-4 py-2 text-gray-700 font-medium" data-quantity="${item.quantity}">${item.quantity}</span>
+                    <!-- تغییر از span به input برای قابلیت ویرایش و خواندن مقدار -->
+                    <input type="text" value="${item.quantity}" class="w-12 text-center border-x border-gray-300 py-2 focus:outline-none bg-white dark:bg-gray-700 dark:text-white item-quantity" readonly>
                     <button class="quantity-btn p-2 bg-gray-100 hover:bg-gray-200" data-action="increase" data-cart-item-id="${item.id}">
                         <i class="fas fa-plus text-gray-600"></i>
                     </button>
@@ -180,7 +183,8 @@ export function renderMiniCartDetails(items, totalQuantity, totalPrice) {
         itemElement.classList.add('flex', 'items-center', 'py-2', 'border-b', 'border-gray-100', 'last:border-b-0');
         itemElement.setAttribute('data-cart-item-id', item.id);
 
-        const imageUrl = item.product.image || `https://placehold.co/50x50/E5E7EB/4B5563?text=No+Image`;
+        // اصلاح شده: اطمینان از وجود item.product و item.product.image
+        const imageUrl = (item.product && item.product.image) ? item.product.image : `https://placehold.co/50x50/E5E7EB/4B5563?text=No+Image`;
         const productName = item.product.name || 'نامشخص'; // استفاده از name به جای title
 
         itemElement.innerHTML = `
@@ -191,7 +195,8 @@ export function renderMiniCartDetails(items, totalQuantity, totalPrice) {
             <div class="flex-grow">
                 <p class="text-sm font-medium text-gray-800">${productName}</p>
                 ${item.product_variant ? `<p class="text-xs text-gray-500">نوع: ${item.product_variant.name}</p>` : ''}
-                <p class="text-xs text-gray-600 mini-cart-item-quantity" data-quantity="${item.quantity}">تعداد: ${item.quantity}</p>
+                <!-- تغییر در اینجا: "تعداد:" را از داخل span خارج کردیم -->
+                <p class="text-xs text-gray-600">تعداد: <span class="mini-cart-item-quantity" data-quantity="${item.quantity}">${item.quantity}</span></p>
             </div>
             <p class="text-sm font-bold text-green-700 mini-cart-item-subtotal" data-subtotal="${item.totalPrice}">${new Intl.NumberFormat('fa-IR').format(item.totalPrice)} تومان</p>
         `;

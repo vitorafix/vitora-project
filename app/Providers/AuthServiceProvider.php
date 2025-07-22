@@ -4,7 +4,9 @@ namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
-use App\Models\User; // Ensure User model is imported if you're using it for Gates
+use App\Models\User;
+// use Illuminate\Auth\AuthManager; // این خط دیگر نیازی نیست
+// use Tymon\JWTAuth\Facades\JWTAuth; // این خط دیگر نیازی نیست اگر فقط برای extend استفاده می شد
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -29,6 +31,10 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('manage-products', function (User $user) {
             return $user->is_admin ?? false; // Assuming 'is_admin' is a boolean column on your User model
         });
+
+        // حذف بلوک extend('jwt', ...)
+        // پکیج tymon/jwt-auth به صورت خودکار گارد 'jwt' را ثبت می کند.
+        // تلاش برای extend کردن دستی آن باعث خطای "Class not found" می شود.
 
         // You can define other Gates here as needed.
     }

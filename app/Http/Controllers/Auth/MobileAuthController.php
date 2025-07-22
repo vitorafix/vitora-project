@@ -7,40 +7,38 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache; // Cache facade for OTP storage
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
-// use Illuminate\Support\Facades\Session; // REMOVED: No longer using Session
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\Validator;
 use Throwable;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
-// Import new service classes and interfaces - FIXED SYNTAX
+// Import new service classes and interfaces
 use App\Contracts\Services\OtpServiceInterface;
 use App\Contracts\Services\RateLimitServiceInterface;
 use App\Contracts\Services\AuditServiceInterface;
 use App\Services\Contracts\CartServiceInterface;
 use App\Http\Requests\SendOtpRequest;
 use App\Http\Requests\VerifyOtpRequest;
-use App\Http\Requests\Auth\RegisterRequest;
+// REMOVED: No longer needed here as registration is handled by RegisterController
+// use App\Http\Requests\Auth\RegisterRequest;
 
-// Add Spatie's Role class - FIXED SYNTAX
+// Add Spatie's Role class if used
 use Spatie\Permission\Models\Role;
+
+use App\Exceptions\OtpSendException; // NEW: Import OtpSendException from its new location
 
 /**
  * Custom Exception to carry generated OTP on failure.
- * Ideally, this class should be in its own file (e.g., App/Exceptions/OtpSendException.php)
- * but for demonstration purposes, it's included here.
- * استثنای سفارشی برای حمل OTP تولید شده در صورت شکست.
- * به صورت ایده‌آل، این کلاس باید در فایل خودش باشد (مثلاً App/Exceptions/OtpSendException.php)
- * اما برای اهداف نمایشی، در اینجا گنجانده شده است.
+ * REMOVED: This class definition has been moved to app/Exceptions/OtpSendException.php
  */
+/*
 class OtpSendException extends \Exception
 {
     public ?string $generatedOtp;
@@ -56,6 +54,7 @@ class OtpSendException extends \Exception
         return $this->generatedOtp;
     }
 }
+*/
 
 
 class MobileAuthController extends Controller
@@ -68,10 +67,7 @@ class MobileAuthController extends Controller
     const OTP_IP_MAX_ATTEMPTS = 10;
     const OTP_IP_COOLDOWN_MINUTES = 60;
 
-    // REMOVED: Constants for Session Keys are no longer needed
-    // const SESSION_MOBILE_FOR_OTP = 'mobile_number_for_otp';
-    // const SESSION_MOBILE_FOR_REGISTRATION = 'mobile_number_for_registration';
-    const CACHE_PENDING_REGISTRATION_PREFIX = 'pending_registration_'; // Still relevant for cache
+    const CACHE_PENDING_REGISTRATION_PREFIX = 'pending_registration_';
     const PENDING_REGISTRATION_CACHE_TTL_MINUTES = 10;
 
     // Dependency Injection for services
@@ -100,53 +96,41 @@ class MobileAuthController extends Controller
      */
     public function showMobileLoginForm(): View|RedirectResponse
     {
-        // مسئولیت کنترلر: رندر کردن ویو برای ورود با موبایل.
-        // اگر کاربر از قبل احراز هویت شده است (با JWT)، او را به داشبورد هدایت کنید.
-        // توجه: برای احراز هویت JWT در سمت سرور، باید توکن را از هدر درخواست بررسی کنید.
-        // در اینجا فرض می‌شود که این فرم برای شروع جریان ورود است و کاربر هنوز توکن ندارد.
         try {
-            if (JWTAuth::parseToken()->authenticate()) {
+            if (Auth::guard('api')->check()) {
                 return redirect()->intended(route('dashboard'));
             }
         } catch (Throwable $e) {
-            // Token is invalid or not present, proceed to login form
-            Log::debug('No valid JWT token found or token invalid, proceeding to login form: ' . $e->getMessage());
+            Log::debug('MobileAuthController: No valid JWT token found or token invalid, proceeding to login form: ' . $e->getMessage());
         }
 
-        // مسیر ویو به 'auth.login' تغییر داده شد تا با ساختار 'resources/views/auth/login.blade.php' مطابقت داشته باشد.
         return view('auth.login');
     }
 
     /**
      * Show the OTP verification form.
-     * نمایش فرم تایید OTP.
-     * این متد پس از ارسال OTP یا هنگام هدایت به صفحه تایید فراخوانی می‌شود.
+     * نمایش فرم تأیید OTP.
      *
      * @param Request $request
      * @return View|RedirectResponse
      */
     public function showOtpVerifyForm(Request $request): View|RedirectResponse
     {
-        // مسئولیت کنترلر: دریافت شماره موبایل از کوئری پارامتر (به جای سشن).
-        // این فرض می‌کند که کلاینت پس از sendOtp، شماره موبایل را به این مسیر ارسال می‌کند.
         $mobileNumber = $request->query('mobile_number');
 
-        if (!$mobileNumber) {
+        if (empty($mobileNumber)) {
             return redirect()->route('auth.mobile-login-form')->withErrors(['mobile_number' => 'شماره موبایل برای تأیید کد یافت نشد. لطفاً دوباره وارد شوید.']);
         }
 
-        // نیازی به decrypt کردن نیست، زیرا شماره مستقیماً از کوئری می‌آید.
-        // $attemptCount دیگر از سشن گرفته نمی‌شود، زیرا RateLimitService مسئول آن است.
-        $attemptCount = 0; // می‌توانید این را از RateLimitService دریافت کنید اگر نیاز دارید نمایش دهید.
+        $attemptCount = 0;
 
-        // رندر کردن ویو تایید OTP.
         return view('auth.verify-otp', compact('mobileNumber', 'attemptCount'));
     }
 
 
     /**
      * Send OTP to the provided mobile number.
-     * ارسال OTP به شماره موبایل ارائه شده.
+     * ارسال کد OTP به شماره موبایل.
      *
      * @param SendOtpRequest $request
      * @return RedirectResponse|\Illuminate\Http\JsonResponse
@@ -158,11 +142,24 @@ class MobileAuthController extends Controller
         $ipAddress = $request->ip();
 
         Log::debug('MobileAuthController: Starting sendOtp process for mobile: ' . maskForLog($mobileNumber, 'phone'));
+
         try {
+            // NEW LOGIC: Check if the user exists before attempting to send OTP
+            $user = User::where('mobile_number', $mobileNumber)->first();
+
+            if (!$user) {
+                // User does not exist, return a JSON response indicating registration is required
+                // This is specifically for AJAX calls from the login page.
+                Log::info('MobileAuthController: Mobile number ' . maskForLog($mobileNumber, 'phone') . ' not found. Responding with requires_registration.');
+                return response()->json([
+                    'message' => 'این شماره در سیستم ثبت نشده است. لطفاً ابتدا ثبت‌نام کنید.',
+                    'requires_registration' => true
+                ], 404); // Using 404 Not Found as per user's suggestion for non-existent user
+            }
+
+            // User exists, proceed with sending OTP for login
             Log::debug('MobileAuthController: Calling otpService->sendOtpForMobile for mobile: ' . maskForLog($mobileNumber, 'phone'));
 
-            // OtpService دیگر شیء سشن را دریافت نمی‌کند.
-            // OtpService باید از Cache (مثل Redis) برای ذخیره OTP استفاده کند.
             $this->otpService->sendOtpForMobile(
                 $mobileNumber,
                 $ipAddress,
@@ -184,21 +181,11 @@ class MobileAuthController extends Controller
 
             Log::debug('MobileAuthController: otpService->sendOtpForMobile completed successfully for mobile: ' . maskForLog($mobileNumber, 'phone'));
 
-            if ($request->expectsJson()) {
-                return response()->json(['message' => 'کد تأیید با موفقیت ارسال شد.']);
-            }
-
-            // NEW: Check if this is a new user registration flow based on user existence
-            $userExists = User::where('mobile_number', $mobileNumber)->exists();
-
-            if (!$userExists) {
-                Log::info('MobileAuthController: Redirecting new user to registration form.');
-                return redirect()->route('auth.register-form', ['mobile_number' => $mobileNumber])
-                                 ->with('status', 'شماره موبایل شما یافت نشد. لطفاً برای ادامه ثبت‌نام کنید.');
-            } else {
-                Log::info('MobileAuthController: Redirecting existing user to OTP verification form.');
-                return redirect()->route('auth.verify-otp-form', ['mobile_number' => $mobileNumber])->with('status', 'کد تأیید با موفقیت ارسال شد.');
-            }
+            // OTP sent successfully for an existing user
+            return response()->json([
+                'message' => 'کد تأیید با موفقیت ارسال شد.',
+                'user_exists' => true // Indicate that user exists and OTP was sent for login
+            ]);
 
         } catch (OtpSendException $e) {
             Log::error('MobileAuthController: OtpSendException caught for mobile: ' . maskForLog($mobileNumber, 'phone') . '. Error: ' . $e->getMessage());
@@ -207,12 +194,12 @@ class MobileAuthController extends Controller
                 'otp_send_failed_exception',
                 'Failed to send OTP for mobile number: ' . maskForLog($mobileNumber, 'phone') . ' Error: ' . $e->getMessage(),
                 $request,
-                [
+                array_merge($e->getTrace(), [
                     'mobile_number_masked' => maskForLog($mobileNumber, 'phone'),
                     'ip_address_masked' => maskForLog($ipAddress, 'ip'),
                     'error' => $e->getMessage(),
                     'generated_otp' => $generatedOtp
-                ],
+                ]),
                 hashForCache($mobileNumber, 'audit_mobile_hash'),
                 null, null, null, 'error'
             );
@@ -229,18 +216,18 @@ class MobileAuthController extends Controller
                 'otp_send_failed_exception',
                 'Failed to send OTP for mobile number: ' . maskForLog($mobileNumber, 'phone') . ' Error: ' . $e->getMessage(),
                 $request,
-                [
+                array_merge($e->getTrace(), [
                     'mobile_number_masked' => maskForLog($mobileNumber, 'phone'),
                     'ip_address_masked' => maskForLog($ipAddress, 'ip'),
                     'error' => $e->getMessage()
-                ],
+                ]),
                 hashForCache($mobileNumber, 'audit_mobile_hash'),
                 null, null, null, 'error'
             );
 
             return $this->respondWithError(
-                $e->getMessage(),
-                $e->getCode() ?: 500,
+                'خطا در ارسال کد تایید. لطفاً دوباره تلاش کنید.', // Generic error message for unexpected exceptions
+                500,
                 $request,
                 'mobile_number'
             );
@@ -248,12 +235,17 @@ class MobileAuthController extends Controller
     }
 
     /**
-     * Register a new user.
-     * ثبت نام کاربر جدید.
+     * REMOVED: This method was creating users directly without OTP verification.
+     * User registration (creation) should now happen exclusively within OtpService->verifyOtpForMobile
+     * after successful OTP verification, leveraging the pending registration data.
+     *
+     * ثبت‌نام کاربر جدید.
      *
      * @param RegisterRequest $request
      * @return RedirectResponse|\Illuminate\Http\JsonResponse
+     * @throws ValidationException
      */
+    /*
     public function register(RegisterRequest $request)
     {
         $validatedData = $request->validated();
@@ -263,6 +255,8 @@ class MobileAuthController extends Controller
                 'name' => $validatedData['name'],
                 'lastname' => $validatedData['lastname'] ?? null,
                 'mobile_number' => $validatedData['mobile_number'],
+                'profile_completed' => (!empty($validatedData['name']) && !empty($validatedData['lastname'])),
+                'status' => 'active',
             ]);
 
             $userRole = Role::where('name', 'user')->first();
@@ -309,7 +303,6 @@ class MobileAuthController extends Controller
             );
 
             if ($request->expectsJson()) {
-                // Generate JWT token for API clients immediately after registration
                 $token = JWTAuth::fromUser($user);
                 Log::info('MobileAuthController: JWT token generated for newly registered user ' . $user->id);
 
@@ -318,11 +311,10 @@ class MobileAuthController extends Controller
                     'user' => $user,
                     'token' => $token,
                     'token_type' => 'bearer',
-                    'expires_in' => JWTAuth::factory()->getTTL() * 60 // TTL in seconds
+                    'expires_in' => JWTAuth::factory()->getTTL() * 60
                 ], 201);
             }
 
-            // For web flow, redirect to verify-otp-form with mobile number in query
             return redirect()->route('auth.verify-otp-form', ['mobile_number' => $user->mobile_number])->with('status', 'ثبت‌نام شما با موفقیت انجام شد. کد تأیید برای شما ارسال گردید.');
 
         } catch (QueryException $e) {
@@ -349,29 +341,35 @@ class MobileAuthController extends Controller
             );
         }
     }
+    */
 
 
     /**
      * Verify OTP and log in the user or redirect to registration.
-     * تایید OTP و ورود کاربر یا هدایت به ثبت نام.
+     * تأیید OTP و ورود کاربر یا هدایت به ثبت‌نام.
      *
      * @param VerifyOtpRequest $request
      * @return RedirectResponse|\Illuminate\Http\JsonResponse
      * @throws ValidationException
      */
-    public function verifyOtpAndLogin( // RENAMED FROM verifyOtp
+    public function verifyOtpAndLogin(
         VerifyOtpRequest $request
     ): RedirectResponse|\Illuminate\Http\JsonResponse {
         $mobileNumber = $request->mobile_number;
         $otp = $request->otp;
         $ipAddress = $request->ip();
-        $guestUuid = $request->cookie('guest_uuid');
+        $guestUuid = $request->header('X-Guest-UUID');
+
+        // NEW: Get name and lastname from the request for existing users who might complete profile
+        // توجه: این name و lastname از درخواست verifyOtpAndLogin می‌آیند، نه از کش ثبت‌نام.
+        // برای کاربران جدید، نام و نام خانوادگی باید از کش pending_registration_data در OtpService دریافت شود.
+        $name = $request->input('name');
+        $lastName = $request->input('lastname');
 
         Log::debug('MobileAuthController: Starting verifyOtpAndLogin process for mobile: ' . maskForLog($mobileNumber, 'phone'));
         try {
             Log::debug('MobileAuthController: Calling otpService->verifyOtpForMobile for mobile: ' . maskForLog($mobileNumber, 'phone'));
 
-            // OtpService دیگر شیء سشن را دریافت نمی‌کند.
             $user = $this->otpService->verifyOtpForMobile(
                 $mobileNumber,
                 $otp,
@@ -394,16 +392,34 @@ class MobileAuthController extends Controller
 
             Log::debug('MobileAuthController: otpService->verifyOtpForMobile completed successfully for mobile: ' . maskForLog($mobileNumber, 'phone'));
 
-            // REMOVED: Auth::login is no longer used for JWT flow.
-            // Auth::login($user, $request->boolean('remember'));
+            // Update user profile if name/lastname are provided and profile is not completed
+            // این بخش برای به‌روزرسانی نام و نام خانوادگی کاربرانی است که قبلاً ثبت‌نام کرده‌اند
+            // اما پروفایلشان کامل نیست و اطلاعات نام را در درخواست verifyOtpAndLogin ارسال می‌کنند.
+            // برای کاربران جدید، نام باید در OtpService هنگام ایجاد کاربر تنظیم شود.
+            $updated = false;
+            if (empty($user->name) && !empty($name)) {
+                $user->name = $name;
+                $updated = true;
+            }
+            if (empty($user->lastname) && !empty($lastName)) {
+                $user->lastname = $lastName;
+                $updated = true;
+            }
 
-            // NEW: Merge any existing guest cart with the newly logged-in user's cart
-            if ($guestUuid) {
+            // Update profile_completed based on current name and lastname status
+            $user->profile_completed = (!empty($user->name) && !empty($user->lastname));
+
+            if ($updated || $user->isDirty('profile_completed')) {
+                $user->save();
+                Log::info('MobileAuthController: User profile updated during OTP verification. User ID: ' . $user->id);
+            }
+
+            if (!empty($guestUuid)) {
                 Log::info('MobileAuthController: Guest UUID found (' . $guestUuid . ') for user login. Attempting cart merge.');
                 $this->cartService->assignGuestCartToUser($user, $guestUuid);
                 Log::info('MobileAuthController: Cart merge initiated for user ' . $user->id . ' with guest UUID ' . $guestUuid);
             } else {
-                Log::info('MobileAuthController: No guest_uuid found in cookie for user login, skipping cart merge.');
+                Log::info('MobileAuthController: No guest_uuid found in header for user login, skipping cart merge.');
             }
 
             $this->auditService->log(
@@ -418,28 +434,19 @@ class MobileAuthController extends Controller
                 $user->id, 'User', $user->id, 'info'
             );
 
-            // REMOVED: Session data is no longer used for OTP verification.
-            // $request->session()->forget(self::SESSION_MOBILE_FOR_OTP);
-            // $request->session()->forget(self::SESSION_MOBILE_FOR_REGISTRATION);
-
             if ($request->expectsJson()) {
-                // Generate JWT token for API clients
                 $token = JWTAuth::fromUser($user);
                 Log::info('MobileAuthController: JWT token generated for user ' . $user->id);
 
                 return response()->json([
                     'message' => 'ورود با موفقیت انجام شد.',
                     'user' => $user,
-                    'token' => $token,
+                    'access_token' => $token,
                     'token_type' => 'bearer',
-                    'expires_in' => JWTAuth::factory()->getTTL() * 60 // TTL in seconds
+                    'expires_in' => config('jwt.ttl') * 60
                 ]);
             }
 
-            // For web flow, redirect to intended URL or home.
-            // The client-side should handle storing the JWT token from the previous API call
-            // or perform a direct login if this is a purely web-based OTP flow (less common with JWT).
-            // For simplicity, we assume the web client will handle the token after a successful API verification.
             return redirect()->intended('/');
 
         } catch (\Exception $e) {
@@ -448,11 +455,11 @@ class MobileAuthController extends Controller
                 'otp_verify_failed_exception',
                 'Failed to verify OTP for mobile number: ' . maskForLog($mobileNumber, 'phone') . ' Error: ' . $e->getMessage(),
                 $request,
-                [
+                array_merge($e->getTrace(), [
                     'mobile_number_masked' => maskForLog($mobileNumber, 'phone'),
                     'ip_address_masked' => maskForLog($ipAddress, 'ip'),
                     'error' => $e->getMessage()
-                ],
+                ]),
                 hashForCache($mobileNumber, 'audit_mobile_hash'),
                 null, null, null, 'error'
             );
@@ -463,6 +470,57 @@ class MobileAuthController extends Controller
                 $request,
                 'otp'
             );
+        }
+    }
+
+    /**
+     * Logs in the user to the Laravel web session using a valid JWT token.
+     * این متد کاربر را با استفاده از یک توکن JWT معتبر، در سشن وب لاراول لاگین می‌کند.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function jwtLogin(Request $request)
+    {
+        // توکن را از بدنه درخواست (که توسط جاوااسکریپت ارسال می‌شود) دریافت کنید
+        $token = $request->input('token');
+
+        if (!$token) {
+            Log::warning('MobileAuthController: jwtLogin called without token.');
+            return response()->json(['message' => 'توکن یافت نشد.'], 400);
+        }
+
+        try {
+            // توکن را اعتبارسنجی کرده و کاربر مربوطه را دریافت کنید
+            // این کار JWTAuth::parseToken() و سپس authenticate() را انجام می‌دهد.
+            $user = JWTAuth::setToken($token)->authenticate();
+
+            if (!$user) {
+                Log::warning('MobileAuthController: User not found for provided JWT token.');
+                return response()->json(['message' => 'کاربر یافت نشد.'], 404);
+            }
+
+            // کاربر را در سشن وب لاراول لاگین کنید
+            Auth::login($user);
+            Log::info('MobileAuthController: User ' . $user->id . ' logged in to web session via JWT token.');
+
+            return response()->json([
+                'message' => 'ورود به سشن وب با موفقیت انجام شد.',
+                'user' => $user->only(['id', 'name', 'lastname', 'mobile_number', 'profile_completed']) // فقط اطلاعات مورد نیاز را برگردانید
+            ]);
+
+        } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
+            Log::warning('MobileAuthController: JWT token expired during jwtLogin for web session. Error: ' . $e->getMessage());
+            return response()->json(['message' => 'توکن منقضی شده است. لطفاً دوباره وارد شوید.'], 401);
+        } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
+            Log::warning('MobileAuthController: JWT token invalid during jwtLogin for web session. Error: ' . $e->getMessage());
+            return response()->json(['message' => 'توکن نامعتبر است. لطفاً دوباره وارد شوید.'], 401);
+        } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+            Log::error('MobileAuthController: JWT exception during jwtLogin for web session. Error: ' . $e->getMessage());
+            return response()->json(['message' => 'خطا در پردازش توکن احراز هویت. لطفاً دوباره تلاش کنید.'], 401);
+        } catch (\Exception $e) {
+            Log::error('MobileAuthController: Generic error during jwtLogin for web session: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
+            return response()->json(['message' => 'خطایی در ورود رخ داد. لطفاً دوباره تلاش کنید.'], 500);
         }
     }
 
@@ -479,19 +537,15 @@ class MobileAuthController extends Controller
         $mobileNumber = null;
 
         try {
-            // Attempt to get the authenticated user via JWT
-            $user = JWTAuth::parseToken()->authenticate();
+            $user = Auth::guard('api')->user();
             if ($user) {
                 $userId = $user->id;
                 $mobileNumber = $user->mobile_number;
             }
         } catch (Throwable $e) {
-            // No valid JWT token or user not authenticated via JWT
-            Log::debug('No JWT authenticated user during logout attempt: ' . $e->getMessage());
+            Log::debug('MobileAuthController: No JWT authenticated user during logout attempt: ' . $e->getMessage());
         }
 
-
-        // Invalidate JWT token if it exists
         try {
             if (JWTAuth::getToken()) {
                 JWTAuth::invalidate(JWTAuth::getToken());
@@ -501,10 +555,12 @@ class MobileAuthController extends Controller
             Log::warning('MobileAuthController: Failed to invalidate JWT token during logout for user ' . ($userId ?? 'N/A') . ': ' . $e->getMessage());
         }
 
-        // REMOVED: Session-based logout is no longer needed for JWT.
-        // Auth::guard('web')->logout();
-        // $request->session()->invalidate();
-        // $request->session()->regenerateToken();
+        // همچنین کاربر را از سشن وب لاراول نیز خارج کنید
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        Log::info('MobileAuthController: User logged out from web session.');
+
 
         $this->auditService->log(
             'user_logged_out',
@@ -518,20 +574,16 @@ class MobileAuthController extends Controller
             $userId, 'User', $userId, 'info'
         );
 
-        // Always return JSON response for API logout, or redirect for web (if applicable)
         if ($request->expectsJson()) {
             return response()->json(['message' => 'خروج با موفقیت انجام شد.']);
         }
 
-        // For web-based logout, redirect to home. The client-side should remove the JWT token.
         return redirect('/');
     }
 
     /**
      * Helper method to normalize mobile number (remove spaces, convert Persian/Arabic digits, ensure 09 prefix).
-     * This is a utility function, and can remain in the controller or be moved to a dedicated helper/utility class.
      * متد کمکی برای نرمال‌سازی شماره موبایل (حذف فواصل، تبدیل ارقام فارسی/عربی، اطمینان از پیشوند 09).
-     * این یک تابع کمکی است و می‌تواند در کنترلر باقی بماند یا به یک کلاس کمکی/ابزاری اختصاصی منتقل شود.
      *
      * @param string $mobileNumber
      * @return string
@@ -559,9 +611,7 @@ class MobileAuthController extends Controller
 
     /**
      * Helper method to normalize OTP input (remove spaces, convert Persian/Arabic digits).
-     * Similar to normalizeMobileNumber, this can be a utility function.
      * متد کمکی برای نرمال‌سازی ورودی OTP (حذف فواصل، تبدیل ارقام فارسی/عربی).
-     * مشابه normalizeMobileNumber، این می‌تواند یک تابع کمکی باشد.
      *
      * @param string $otp
      * @return string
@@ -579,9 +629,7 @@ class MobileAuthController extends Controller
 
     /**
      * Helper method to respond with error, either JSON or redirect.
-     * This method is a controller-level utility for consistent error responses.
-     * متد کمکی برای پاسخ با خطا، چه JSON و چه ریدایرکت.
-     * این متد یک ابزار در سطح کنترلر برای پاسخ‌های خطای سازگار است.
+     * متد کمکی برای پاسخ با خطا، به صورت JSON یا ریدایرکت.
      *
      * @param string $message
      * @param int    $code
@@ -602,10 +650,6 @@ class MobileAuthController extends Controller
         if ($request->expectsJson()) {
             return response()->json(['message' => $message, 'error_field' => $errorField], $code);
         }
-        // For web-based redirects, `back()->withErrors` still relies on session.
-        // If your web views are completely stateless and don't use session for errors,
-        // you might need to pass errors via query parameters or remove this part.
-        // For now, it's kept as a fallback for web, but for API, only JSON is returned.
         $redirect = back()->withErrors([$errorField => $message])->withInput();
         if ($redirectRoute) {
             $redirect = redirect()->route($redirectRoute)->with('status', $message);
@@ -614,5 +658,16 @@ class MobileAuthController extends Controller
             }
         }
         return $redirect;
+    }
+
+    // NEW: Add changeMobileNumber method if it's used
+    public function changeMobileNumber(Request $request)
+    {
+        // This method needs to be implemented based on your specific logic
+        // It would likely involve sending a new OTP to the new number,
+        // verifying it, and then updating the user's mobile_number in the database.
+        // For now, it's a placeholder to avoid "method not found" errors if called.
+        Log::warning('MobileAuthController: changeMobileNumber method called but not fully implemented.');
+        return response()->json(['message' => 'تغییر شماره موبایل در حال حاضر پشتیبانی نمی‌شود.'], 501);
     }
 }

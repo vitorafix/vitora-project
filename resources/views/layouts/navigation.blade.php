@@ -20,243 +20,108 @@
             </div>
 
             <!-- Center - Main Navigation Links (now takes available space and centers its content) -->
-            <div class="hidden lg:flex flex-1 justify-center items-center space-x-reverse space-10" dir="rtl">
-                <!-- Home -->
-                <a href="{{ route('home') }}"
-                   class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}">
-                    <i class="fas fa-home ml-2"></i>
-                    <span>صفحه اصلی</span>
-                </a>
-
-                <!-- Products with Dropdown -->
-                <div class="relative group">
-                    <a href="{{ route('products.index') }}"
-                       class="nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}">
-                        <i class="fas fa-leaf ml-2"></i>
-                        <span>محصولات</span>
-                        <i class="fas fa-chevron-down text-xs mr-1 transition-transform duration-300 group-hover:rotate-180"></i>
-                    </a>
-                    <!-- Dropdown Menu -->
-                    <div class="absolute top-full right-0 mt-3 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50">
-                        <div class="p-4">
-                            <div class="text-sm text-gray-500 mb-3 font-semibold">دسته‌بندی محصولات</div>
-                            <div class="space-y-2">
-                                <a href="{{ route('products.index') }}?category=black-tea" class="dropdown-link">
-                                    <i class="fas fa-circle text-amber-600 text-xs ml-2"></i>چای سیاه
-                                </a>
-                                <a href="{{ route('products.index') }}?category=green-tea" class="dropdown-link">
-                                    <i class="fas fa-circle text-green-600 text-xs ml-2"></i>چای سبز
-                                </a>
-                                <a href="{{ route('products.index') }}?category=herbal-tea" class="dropdown-link">
-                                    <i class="fas fa-circle text-purple-600 text-xs ml-2"></i>چای گیاهی
-                                </a>
-                                <a href="{{ route('products.index') }}?category=special" class="dropdown-link">
-                                    <i class="fas fa-star text-yellow-500 text-xs ml-2"></i>محصولات ویژه
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+            <div class="hidden lg:flex flex-1 justify-center items-center h-full">
+                <div class="flex space-x-8 rtl:space-x-reverse h-full">
+                    <x-nav-link :href="route('home')" :active="request()->routeIs('home')">
+                        صفحه اصلی
+                    </x-nav-link>
+                    <x-nav-link :href="route('products.index')" :active="request()->routeIs('products.index')">
+                        محصولات
+                    </x-nav-link>
+                    <x-nav-link :href="route('about')" :active="request()->routeIs('about')">
+                        درباره ما
+                    </x-nav-link>
+                    <x-nav-link :href="route('contact')" :active="request()->routeIs('contact')">
+                        تماس با ما
+                    </x-nav-link>
+                    <x-nav-link :href="route('blog.index')" :active="request()->routeIs('blog.index')">
+                        وبلاگ
+                    </x-nav-link>
                 </div>
-
-                <!-- Blog -->
-                <a href="{{ route('blog.index') }}"
-                   class="nav-link {{ request()->routeIs('blog.*') ? 'active' : '' }}">
-                    <i class="fas fa-newspaper ml-2"></i>
-                    <span>وبلاگ</span>
-                </a>
-
-                <!-- About Us -->
-                <a href="{{ route('about') }}"
-                   class="nav-link {{ request()->routeIs('about') ? 'active' : '' }}">
-                    <i class="fas fa-info-circle ml-2"></i>
-                    <span>درباره ما</span>
-                </a>
-
-                <!-- Contact Us -->
-                <a href="{{ route('contact') }}"
-                   class="nav-link {{ request()->routeIs('contact') ? 'active' : '' }}">
-                    <i class="fas fa-phone-alt ml-2"></i>
-                    <span>تماس با ما</span>
-                </a>
             </div>
 
-            <!-- Left Side - Search & User Menu (pushed to the left using ml-auto) -->
-            <div class="flex items-center space-x-6 ml-auto">
-                <!-- Search Bar with Live Results -->
-                <div class="hidden md:block relative z-50">
-                    <input type="text"
-                           id="live-search-input"
-                           name="q"
-                           placeholder="جستجو در محصولات..."
-                           class="w-64 px-4 py-2 pr-10 text-xs bg-white/90 backdrop-blur-sm border border-white/20 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all duration-300 placeholder-gray-500">
-                    <i class="fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-
-                    <!-- Search Results Container - Positioned absolutely below the search input -->
-                    <div id="search-results-container" class="absolute top-full left-0 w-full mt-2 bg-white rounded-lg shadow-lg z-50 border border-gray-200 overflow-hidden hidden">
-                        <!-- Results or initial message will be inserted here by JavaScript -->
-                        <p class="text-gray-500 text-center py-4 text-sm" id="initial-message">شروع به تایپ کنید تا نتایج را مشاهده کنید.</p>
-                    </div>
+            <!-- Left Side - Search, Cart, User -->
+            <div class="flex items-center ml-auto pr-4">
+                <!-- Search Icon (Desktop) -->
+                <div class="hidden lg:flex items-center ml-4">
+                    <a href="{{ route('search') }}" class="text-amber-200 hover:text-white transition-colors duration-200">
+                        <i class="fas fa-search text-xl"></i>
+                    </a>
                 </div>
 
-                <!-- Cart with Counter and Hover Dropdown -->
-                <div class="relative mini-cart-wrapper">
-                    <a href="{{ route('cart.index') }}"
-                       class="nav-link {{ request()->routeIs('cart.*') ? 'active' : '' }} relative"
-                       id="mini-cart-toggle"> <!-- Changed ID from mini-cart-btn to mini-cart-toggle for JS consistency -->
-                        <i class="fas fa-shopping-cart ml-2"></i>
-                        <span>سبد خرید</span>
-                        <!-- Cart Counter Badge -->
-                        <span id="mini-cart-total-quantity"
-                              class="absolute -top-0 -left-0 bg-red-500 text-white text-xs rounded-full min-w-[40px] h-5 flex items-center justify-center font-bold hidden z-10 px-1 leading-none"
-                              aria-label="تعداد محصولات در سبد خرید">
-                            0
-                        </span>
+                <!-- Cart Icon (Desktop) -->
+                <div class="relative ml-4 group hidden lg:block">
+                    <a href="{{ route('cart.index') }}" class="nav-link relative" id="mini-cart-toggle">
+                        <i class="fas fa-shopping-cart text-xl text-amber-200 group-hover:text-white transition-colors duration-200"></i>
+                        <span id="mini-cart-count" class="absolute -top-2 -left-2 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-bold hidden z-10 px-1 leading-none" aria-label="تعداد محصولات در سبد خرید">0</span>
                     </a>
-                    <!-- Mini-Cart Dropdown Container -->
+                    <!-- Mini Cart Dropdown -->
                     <div id="mini-cart-dropdown" class="absolute top-full right-0 mt-3 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50 p-4 hidden">
-                        <!-- Empty Cart Message (initially hidden, shown by JS if cart is empty) -->
-                        <div id="mini-cart-empty-message" class="text-center py-4">
-                            <i class="fas fa-shopping-cart text-gray-400 text-4xl mb-2"></i>
-                            <p class="text-gray-600 text-sm font-semibold">سبد خرید شما خالی است.</p>
-                        </div>
-
-                        <!-- Mini-Cart Items Container (this is where JS will render items) -->
+                        <h3 class="text-lg font-bold text-gray-800 mb-3 text-right">سبد خرید شما</h3>
                         <div id="mini-cart-items-container" class="space-y-3 hidden">
-                            {{-- Mini-cart items will be dynamically inserted here by JavaScript --}}
+                            <!-- Cart items will be rendered here by JS -->
                         </div>
-
-                        <!-- Mini-Cart Summary (Total Price and Buttons) -->
-                        <div id="mini-cart-summary" class="mt-4 pt-4 border-t border-gray-200 hidden"> <!-- Added id="mini-cart-summary" -->
-                            <div class="flex justify-between items-center mb-3">
+                        <div id="mini-cart-empty-message" class="text-center py-4">
+                            <i class="fas fa-box-open text-gray-400 text-4xl mb-2"></i>
+                            <p class="text-gray-600">سبد خرید شما خالی است.</p>
+                        </div>
+                        <div id="mini-cart-summary" class="mt-4 pt-4 border-t border-gray-200 hidden">
+                            <div class="flex justify-between items-center mb-3 text-right">
                                 <span class="text-gray-700 font-semibold">جمع کل:</span>
                                 <span id="mini-cart-total-price" class="text-green-700 font-bold text-lg">0 تومان</span>
                             </div>
-                            <div class="flex flex-col space-y-2">
-                                <a href="{{ route('cart.index') }}" id="mini-cart-view-cart-btn" class="btn-secondary w-full text-center">مشاهده سبد خرید</a> <!-- Removed hidden class -->
-                                <a href="{{ route('checkout.index') }}" id="mini-cart-checkout-btn" class="btn-primary w-full text-center">تسویه حساب</a> <!-- Removed hidden class -->
+                            <div id="mini-cart-actions" class="flex flex-col space-y-2">
+                                <a href="{{ route('cart.index') }}" class="btn-primary-outline w-full text-center">مشاهده سبد خرید</a>
+                                <a href="{{ route('checkout.index') }}" class="btn-primary w-full text-center">تسویه حساب</a>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- User Menu Dropdown -->
-                <div class="relative" x-data="{ userMenuOpen: false }">
-                    <button @click="userMenuOpen = !userMenuOpen"
-                            class="flex items-center px-4 py-2 text-white hover:bg-white/10 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-amber-400" dir="rtl">
-                        @auth
-                            <div class="w-10 h-10 bg-amber-400 rounded-full flex items-center justify-center text-green-800 font-bold text-lg ml-3">
-                                {{-- نمایش حرف اول نام کاربر --}}
-                                {{ substr(Auth::user()->name, 0, 1) }}
-                            </div>
-                            <div class="hidden sm:block text-right ml-2">
-                                {{-- نمایش نام و نام خانوادگی کاربر --}}
-                                <div class="text-xs font-semibold">{{ Auth::user()->name }} {{ Auth::user()->lastname }}</div>
-                                <div class="text-xs text-amber-200">کاربر عضو</div>
-                            </div>
-                        @else
-                            <div class="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center text-white ml-3">
-                                <i class="fas fa-user"></i>
-                            </div>
-                            <div class="hidden sm:block text-right ml-2">
-                                <div class="text-xs text-semibold">کاربر مهمان</div>
-                                <div class="text-xs text-amber-200">عضو نشده</div>
-                            </div>
-                        @endauth
-                        <i class="fas fa-chevron-down text-xs transition-transform duration-300" :class="{'rotate-180': userMenuOpen}"></i>
-                    </button>
+                <!-- User/Auth Section (Desktop) -->
+                <div class="relative ml-4 group hidden lg:block">
+                    <a href="#" class="nav-link flex items-center text-amber-200 hover:text-white transition-colors duration-200" onclick="return false;">
+                        <i class="fas fa-user-circle text-xl ml-2"></i>
+                        <span id="user-status-text"></span> {{-- Placeholder for JS to inject text --}}
+                    </a>
+                    <div class="absolute top-full right-0 mt-3 w-48 bg-white rounded-xl shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50 p-4">
+                        {{-- Both guest and logged-in states are rendered, JS will hide/show --}}
+                        <div id="user-status-guest" class="space-y-2 hidden"> {{-- Initially hidden --}}
+                            <div class="text-center text-gray-500 mb-2">کاربر مهمان</div>
+                            <a href="{{ route('auth.mobile-login-form') }}" class="nav-link-dropdown" id="login-register-link">
+                                <i class="fas fa-sign-in-alt ml-2"></i>
+                                <span>ورود / ثبت‌نام</span>
+                            </a>
+                        </div>
 
-                    <!-- User Dropdown Menu -->
-                    {{-- اضافه کردن x-cloak و hidden برای اطمینان از پنهان ماندن منو در ابتدا --}}
-                    {{-- تغییر x-show به x-transition برای مدیریت نمایش و پنهان‌سازی با انیمیشن --}}
-                    <div x-show="userMenuOpen"
-                         @click.away="userMenuOpen = false"
-                         x-transition:enter="transition ease-out duration-200"
-                         x-transition:enter-start="opacity-0 scale-95"
-                         x-transition:enter-end="opacity-100 scale-100"
-                         x-transition:leave="transition ease-in duration-150"
-                         x-transition:leave-start="opacity-100 scale-100"
-                         x-transition:leave-end="opacity-0 scale-95"
-                         class="absolute left-0 mt-3 w-72 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-50"
-                         x-cloak>
-
-                        @auth
-                            <!-- User Info Header -->
-                            <div class="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-green-50 to-amber-50">
-                                <div class="flex items-center" dir="rtl">
-                                    <div class="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg ml-3">
-                                        {{-- نمایش حرف اول نام کاربر --}}
-                                        {{ substr(Auth::user()->name, 0, 1) }}
-                                    </div>
-                                    <div>
-                                        {{-- نمایش نام و نام خانوادگی کاربر --}}
-                                        <div class="font-semibold text-gray-800">{{ Auth::user()->name }} {{ Auth::user()->lastname }}</div>
-                                        <div class="text-xs text-gray-500">{{ Auth::user()->email }}</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Menu Items -->
-                            <div class="py-2">
-                                {{-- <a href="{{ route('profile.edit') }}" class="user-dropdown-link">
-                                    <i class="fas fa-user-cog text-blue-500"></i>
-                                    <span>ویرایش پروفایل</span>
-                                    <i class="fas fa-chevron-left text-gray-400"></i>
-                                </a> --}}
-
-                                <a href="{{ route('dashboard') }}" class="user-dropdown-link">
-                                    <i class="fas fa-tachometer-alt text-green-500"></i>
-                                    <span>داشبورد</span>
-                                    <i class="fas fa-chevron-left text-gray-400"></i>
-                                </a>
-
-                                <div class="border-t border-gray-100 my-2"></div>
-
-                                <form method="POST" action="{{ route('auth.logout') }}"> {{-- Updated route --}}
-                                    @csrf
-                                    <button type="submit" class="user-dropdown-link w-full text-right text-red-600 hover:bg-red-50">
-                                        <i class="fas fa-sign-out-alt text-red-500"></i>
-                                        <span>خروج از حساب</span>
-                                        <i class="fas fa-chevron-left text-gray-400"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        @else
-                            <!-- Guest User Menu -->
-                            <div class="py-2">
-                                <a href="{{ route('auth.mobile-login-form') }}" class="user-dropdown-link"> {{-- Updated route --}}
-                                    <i class="fas fa-sign-in-alt text-green-500"></i>
-                                    <span>ورود به حساب</span>
-                                    <i class="fas fa-chevron-left text-gray-400"></i>
-                                </a>
-
-                                {{-- لینک ثبت‌نام را به مسیر مستقیم register-form تغییر می‌دهیم --}}
-                                <a href="{{ route('auth.register-form') }}" class="user-dropdown-link">
-                                    <i class="fas fa-user-plus"></i>
-                                    <span>ثبت‌نام</span>
-                                    <i class="fas fa-chevron-left text-gray-400"></i>
-                                </a>
-                            </div>
-                        @endauth
+                        <div id="user-status-logged-in" class="space-y-2 hidden"> {{-- Initially hidden --}}
+                            <div class="text-center text-gray-800 font-semibold mb-2" id="logged-in-user-name"></div> {{-- JS will set name here --}}
+                            <a href="{{ route('profile.edit') }}" class="nav-link-dropdown">
+                                <i class="fas fa-user-cog ml-2"></i>
+                                <span>ویرایش پروفایل</span>
+                            </a>
+                            <a href="{{ route('orders.index') }}" class="nav-link-dropdown">
+                                <i class="fas fa-box-seam ml-2"></i>
+                                <span>سفارشات من</span>
+                            </a>
+                            <a href="{{ route('addresses.index') }}" class="nav-link-dropdown">
+                                <i class="fas fa-map-marker-alt ml-2"></i>
+                                <span>آدرس‌ها</span>
+                            </a>
+                            <button type="button" id="logout-link" class="nav-link-dropdown w-full text-right text-red-500 hover:bg-red-100">
+                                <i class="fas fa-sign-out-alt ml-2"></i>
+                                <span>خروج از حساب</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Mobile Menu Button -->
-                <div class="lg:hidden">
-                    <button @click="mobileMenuOpen = !mobileMenuOpen"
-                            class="p-2 rounded-md text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all duration-300">
+                <!-- Mobile Menu Button (Hamburger) -->
+                <div class="lg:hidden flex items-center ml-4">
+                    <button @click="mobileMenuOpen = !mobileMenuOpen" class="inline-flex items-center justify-center p-2 rounded-md text-amber-200 hover:text-white hover:bg-green-700 focus:outline-none focus:bg-green-700 focus:text-white transition duration-150 ease-in-out">
                         <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                            <path :class="{'hidden': mobileMenuOpen, 'inline-flex': !mobileMenuOpen }"
-                                  class="inline-flex"
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                  stroke-width="2"
-                                  d="M4 6h16M4 12h16M4 18h16" />
-                            <path :class="{'hidden': !mobileMenuOpen, 'inline-flex': mobileMenuOpen }"
-                                  class="hidden"
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                  stroke-width="2"
-                                  d="M6 18L18 6M6 6l12 12" />
+                            <path :class="{'hidden': mobileMenuOpen, 'inline-flex': ! mobileMenuOpen }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            <path :class="{'hidden': ! mobileMenuOpen, 'inline-flex': mobileMenuOpen }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
@@ -264,109 +129,75 @@
         </div>
     </div>
 
-    <!-- Mobile Navigation Menu -->
-    <div :class="{'block': mobileMenuOpen, 'hidden': !mobileMenuOpen}" class="hidden lg:hidden bg-green-800/95 backdrop-blur-sm border-t border-green-600">
-        <!-- Mobile Search -->
-        <div class="px-4 py-3 border-b border-green-600">
-            <!-- Removed form here for mobile if live search is desired on mobile -->
-            <div class="relative">
-                <input type="text"
-                       id="mobile-live-search-input"
-                       name="q"
-                       placeholder="جستجو..."
-                       class="w-full px-4 py-2 pr-10 text-xs bg-white/90 border border-white/20 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-400">
-                <i class="fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                <!-- Mobile Search Results Container -->
-                <div id="mobile-search-results-container" class="absolute top-full left-0 w-full mt-2 bg-white rounded-lg shadow-lg z-50 border border-gray-200 overflow-hidden hidden">
-                    <p class="text-gray-500 text-center py-4 text-sm" id="initial-message">شروع به تایپ کنید تا نتایج را مشاهده کنید.</p>
-                </div>
+    <!-- Mobile Menu (Responsive) -->
+    <div x-show="mobileMenuOpen" x-transition:enter="duration-200 ease-out" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="duration-100 ease-in" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="lg:hidden bg-green-800 border-t border-amber-400 shadow-lg py-3">
+        <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            <x-responsive-nav-link :href="route('home')" :active="request()->routeIs('home')">
+                صفحه اصلی
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('products.index')" :active="request()->routeIs('products.index')">
+                محصولات
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('about')" :active="request()->routeIs('about')">
+                درباره ما
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('contact')" :active="request()->routeIs('contact')">
+                تماس با ما
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('blog.index')" :active="request()->routeIs('blog.index')">
+                وبلاگ
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('search')" :active="request()->routeIs('search')">
+                جستجو
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('cart.index')" :active="request()->routeIs('cart.index')">
+                سبد خرید <span id="mobile-cart-count" class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full ml-2 hidden">0</span>
+            </x-responsive-nav-link>
+        </div>
+
+        <div class="pt-4 pb-3 border-t border-green-700">
+            {{-- Mobile User Status (controlled by JS) --}}
+            <div id="mobile-user-status-guest" class="space-y-2 px-4 hidden"> {{-- Initially hidden --}}
+                <a href="{{ route('auth.mobile-login-form') }}" class="mobile-nav-link">
+                    <i class="fas fa-sign-in-alt ml-2"></i>
+                    <span>ورود به حساب</span>
+                </a>
+                <a href="{{ route('auth.register-form') }}" class="mobile-nav-link">
+                    <i class="fas fa-user-plus ml-2"></i>
+                    <span>ثبت‌نام</span>
+                </a>
             </div>
-        </div>
 
-        <!-- Mobile Navigation Links -->
-        <div class="px-4 py-3 space-y-2">
-            <a href="{{ route('home') }}"
-               class="mobile-nav-link {{ request()->routeIs('home') ? 'active' : '' }}">
-                <i class="fas fa-home"></i>
-                <span>صفحه اصلی</span>
-            </a>
-
-            <a href="{{ route('products.index') }}"
-               class="mobile-nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}">
-                <i class="fas fa-leaf"></i>
-                <span>محصولات</span>
-            </a>
-
-            <a href="{{ route('blog.index') }}"
-               class="mobile-nav-link {{ request()->routeIs('blog.*') ? 'active' : '' }}">
-                <i class="fas fa-newspaper"></i>
-                <span>وبلاگ</span>
-            </a>
-
-            <a href="{{ route('about') }}"
-               class="mobile-nav-link {{ request()->routeIs('about') ? 'active' : '' }}">
-                <i class="fas fa-info-circle"></i>
-                <span>درباره ما</span>
-            </a>
-
-            <a href="{{ route('contact') }}"
-               class="mobile-nav-link {{ request()->routeIs('contact') ? 'active' : '' }}">
-                <i class="fas fa-phone-alt"></i>
-                <span>تماس با ما</span>
-            </a>
-
-            <a href="{{ route('cart.index') }}"
-               class="mobile-nav-link {{ request()->routeIs('cart.*') ? 'active' : '' }}">
-                <i class="fas fa-shopping-cart"></i>
-                <span>سبد خرید</span>
-                {{-- Changed id to mobile-cart-item-count to avoid ID duplication with desktop mini-cart --}}
-                <span class="mr-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full hidden" id="mobile-cart-item-count">0</span>
-            </a>
-        </div>
-
-        <!-- Mobile User Section -->
-        <div class="border-t border-green-600 px-4 py-4">
-            @auth
-                <div class="flex items-center mb-4" dir="rtl">
-                    <div class="w-12 h-12 bg-amber-400 rounded-full flex items-center justify-center text-green-800 font-bold text-lg ml-3">
-                        {{-- نمایش حرف اول نام کاربر --}}
-                        {{ substr(Auth::user()->name, 0, 1) }}
+            <div id="mobile-user-status-logged-in" class="space-y-2 px-4 hidden"> {{-- Initially hidden --}}
+                <div class="flex items-center px-4">
+                    <div class="shrink-0 ml-3">
+                        <i class="fas fa-user-circle text-2xl text-amber-300"></i>
                     </div>
                     <div>
-                        {{-- نمایش نام و نام خانوادگی کاربر --}}
-                        <div class="font-semibold text-white">{{ Auth::user()->name }} {{ Auth::user()->lastname }}</div>
-                        <div class="text-xs text-amber-200">{{ Auth::user()->email }}</div>
+                        <div class="font-medium text-base text-white text-right" id="mobile-logged-in-user-name"></div> {{-- JS will set name here --}}
+                        <div class="font-medium text-sm text-amber-200 text-right" id="mobile-logged-in-user-mobile"></div> {{-- JS will set mobile here --}}
                     </div>
                 </div>
 
                 <div class="space-y-2">
-                    {{-- <a href="{{ route('profile.edit') }}" class="mobile-nav-link">
-                        <i class="fas fa-user-cog"></i>
+                    <a href="{{ route('profile.edit') }}" class="mobile-nav-link">
+                        <i class="fas fa-user-cog ml-2"></i>
                         <span>ویرایش پروفایل</span>
-                    </a> --}}
-
-                    <form method="POST" action="{{ route('auth.logout') }}"> {{-- Updated route --}}
-                        @csrf
-                        <button type="submit" class="mobile-nav-link w-full text-right text-red-300 hover:bg-red-800/20">
-                            <i class="fas fa-sign-out-alt"></i>
-                            <span>خروج از حساب</span>
-                        </button>
-                    </form>
-                </div>
-            @else
-                <div class="space-y-2">
-                    <a href="{{ route('auth.mobile-login-form') }}" class="mobile-nav-link"> {{-- Updated route --}}
-                        <i class="fas fa-sign-in-alt"></i>
-                        <span>ورود به حساب</span>
                     </a>
-
-                    {{-- لینک ثبت‌نام را به مسیر مستقیم register-form تغییر می‌دهیم --}}
-                    <a href="{{ route('auth.register-form') }}" class="mobile-nav-link">
-                        <i class="fas fa-user-plus"></i>
-                        <span>ثبت‌نام</span>
+                    <a href="{{ route('orders.index') }}" class="mobile-nav-link">
+                        <i class="fas fa-box-seam ml-2"></i>
+                        <span>سفارشات من</span>
                     </a>
+                    <a href="{{ route('addresses.index') }}" class="mobile-nav-link">
+                        <i class="fas fa-map-marker-alt ml-2"></i>
+                        <span>آدرس‌ها</span>
+                    </a>
+                    <button type="button" id="logout-link-mobile" class="mobile-nav-link w-full text-right text-red-300 hover:bg-red-800/20">
+                        <i class="fas fa-sign-out-alt ml-2"></i>
+                        <span>خروج از حساب</span>
+                    </button>
                 </div>
-            @endauth
+            </div>
         </div>
     </div>
 </nav>

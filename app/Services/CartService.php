@@ -23,21 +23,21 @@ use App\Contracts\Repositories\ProductRepositoryInterface;
 use App\Contracts\ProductServiceInterface;
 use App\Services\Contracts\CartCleanupServiceInterface;
 use App\Services\Contracts\CartItemManagementServiceInterface;
-use App\Services\Contracts\CartBulkUpdateServiceInterface; // Fixed typo
+use App\Services\Contracts\CartBulkUpdateServiceInterface;
 use App\Services\Contracts\CartClearServiceInterface;
 use App\Contracts\Services\CouponService;
 use App\Services\CartCalculationService;
 
 // Managers
 use App\Services\Managers\CartCacheManager;
-use App\Services\Managers\CartRateLimiter; // Fixed typo
+use App\Services\Managers\CartRateLimiter;
 use App\Services\Managers\CartMetricsManager;
 use App\Services\Managers\StockManager;
-use App\Services\Managers\CartValidator; // Fixed typo
+use App\Services\Managers\CartValidator;
 
 // Responses
-use App\Services\Responses\CartOperationResponse; // Fixed typo
-use App\Services\Responses\CartContentsResponse; // Fixed typo
+use App\Services\Responses\CartOperationResponse;
+use App\Services\Responses\CartContentsResponse;
 use App\Exceptions\EmptyCartException;
 use App\DTOs\CartTotalsDTO;
 
@@ -523,6 +523,10 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         try {
             // Load items and their relations
             $cart->load(['items.product', 'items.productVariant']); // بارگذاری روابط مستقیماً روی آبجکت $cart
+
+            // DEBUG LOG: Log the items collection before checking if it's empty
+            Log::debug('CartService::getCartContents - Items collection before isEmpty check:', ['cart_id' => $cart->id, 'items_count' => $cart->items->count(), 'items_data' => $cart->items->toArray()]);
+
 
             // اگر سبد خرید خالی است، یک پاسخ خالی و با مجموع‌های صفر برگردانید.
             if ($cart->items->isEmpty()) {

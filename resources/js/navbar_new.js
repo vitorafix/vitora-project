@@ -1,11 +1,10 @@
 // resources/js/navbar_new.js
+console.log('navbar_new.js loaded and starting...');
 
 // Import necessary API functions
-import { getJwtToken, logoutUser, fetchCartContents, removeCartItem } from './api.js'; // Added fetchCartContents, removeCartItem
+import { getJwtToken, logoutUser, fetchCartContents, removeCartItem, fetchUserData, clearJwtToken } from './api.js'; 
 
 // === Mini Cart Logic Functions ===
-// این توابع در بالاترین سطح تعریف شده‌اند تا بتوانند اکسپورت شوند یا از توابع اکسپورت شده فراخوانی شوند.
-
 /**
  * محتویات مینی سبد خرید را بر اساس داده‌های سبد خرید دریافت شده رندر می‌کند.
  */
@@ -19,15 +18,18 @@ async function renderMiniCart() {
     const miniCartActions = document.getElementById('mini-cart-actions');
 
     try {
-        const response = await window.axios.get('/api/cart/contents');
-        const data = response.data.data;
+        const currentJwtToken = localStorage.getItem('jwt_token');
+        console.log('DEBUG: renderMiniCart - JWT Token in localStorage before fetchCartContents:', currentJwtToken ? 'Found' : 'Not Found', currentJwtToken);
+
+        const response = await fetchCartContents(); 
+        const data = response.data; 
 
         const cartItems = data.items || [];
-        const totalPrice = data.totalPrice || 0;
-        const totalItemsInCart = data.totalQuantity || 0;
+        const totalPrice = data.summary ? data.summary.totalPrice : 0; 
+        const totalItemsInCart = data.summary ? data.summary.totalQuantity : 0; 
 
         if (miniCartContent) {
-            miniCartContent.innerHTML = ''; // پاک کردن محتوای فعلی
+            miniCartContent.innerHTML = ''; 
         }
 
         if (cartItems.length === 0) {
@@ -48,7 +50,7 @@ async function renderMiniCart() {
                     <img src="${item.product.image_url || 'https://placehold.co/50x50/E5E7EB/4B5563?text=Product'}" alt="${item.product.name}" class="w-12 h-12 object-cover rounded-md ml-3">
                     <div class="flex-1 text-right">
                         <p class="text-sm font-semibold text-gray-800">${item.product.name}</p>
-                        <p class="text-xs text-gray-500">${item.quantity} x ${Number(item.price).toLocaleString('fa-IR')} تومان</p>
+                        <p class="text-xs text-gray-500">${Number(item.price).toLocaleString('fa-IR')} تومان</p>
                     </div>
                     <button class="remove-item-btn text-red-400 hover:text-red-600 transition-colors duration-200" data-id="${item.id}">
                         <i class="fas fa-times text-sm"></i>
@@ -64,7 +66,6 @@ async function renderMiniCart() {
             }
         }
 
-        // به‌روزرسانی نشان تعداد آیتم در مینی سبد خرید (دسکتاپ)
         if (miniCartCountElement) {
             miniCartCountElement.textContent = totalItemsInCart;
             if (totalItemsInCart > 0) {
@@ -73,86 +74,116 @@ async function renderMiniCart() {
                 miniCartCountElement.classList.add('hidden');
             }
         }
-        // به‌روزرسانی نشان تعداد آیتم در موبایل
         if (mobileCartCountElement) {
             mobileCartCountElement.textContent = totalItemsInCart;
             if (totalItemsInCart > 0) {
-                mobileCartCountElement.style.display = 'block';
+                mobileCartCountElement.classList.remove('hidden'); // Use remove/add hidden for consistency
             } else {
-                mobileCartCountElement.style.display = 'none';
+                mobileCartCountElement.classList.add('hidden');
             }
         }
 
     } catch (error) {
         console.error('Error rendering mini cart:', error);
-        // window.showMessage('خطا در بارگذاری سبد خرید کوچک.', 'error'); // از نمایش پیام در هر خطای مینی سبد خرید خودداری کنید
     }
 }
 
 // === User Status Logic Function ===
-/**
- * داده‌های کاربر را از API دریافت کرده و وضعیت UI (وضعیت کاربر در نوار ناوبری) را به‌روزرسانی می‌کند.
- */
-async function updateNavbarUserStatus() {
+export async function updateNavbarUserStatus() {
     const jwtToken = getJwtToken();
-    const userStatusGuest = document.getElementById('user-status-guest');
-    const userStatusLoggedIn = document.getElementById('user-status-logged-in');
-    const loginRegisterLink = document.getElementById('login-register-link');
-    const logoutLink = document.getElementById('logout-link');
-    const mobileUserStatusGuest = document.getElementById('mobile-user-status-guest');
-    const mobileUserStatusLoggedIn = document.getElementById('mobile-user-status-logged-in');
+    const userStatusText = document.getElementById('user-status-text'); // New element for "سلام، [نام]"
+    const userStatusGuestDiv = document.getElementById('user-status-guest'); // Desktop guest div
+    const userStatusLoggedInDiv = document.getElementById('user-status-logged-in'); // Desktop logged-in div
+    const loggedInUserNameDesktop = document.getElementById('logged-in-user-name'); // Desktop name display
+    const loginRegisterLink = document.getElementById('login-register-link'); // Desktop login/register link
+    const logoutLinkDesktop = document.getElementById('logout-link'); // Desktop logout button
+
+    const mobileUserStatusGuestDiv = document.getElementById('mobile-user-status-guest'); // Mobile guest div
+    const mobileUserStatusLoggedInDiv = document.getElementById('mobile-user-status-logged-in'); // Mobile logged-in div
+    const mobileLoggedInUserName = document.getElementById('mobile-logged-in-user-name'); // Mobile name display
+    const mobileLoggedInUserMobile = document.getElementById('mobile-logged-in-user-mobile'); // Mobile mobile display
+    const logoutLinkMobile = document.getElementById('logout-link-mobile'); // Mobile logout button
+
+    console.log('DEBUG: updateNavbarUserStatus - JWT Token in localStorage before fetchUserData:', jwtToken ? 'Found' : 'Not Found', jwtToken);
 
     if (jwtToken) {
         try {
-            const response = await window.axios.get('/api/user');
-            const user = response.data;
-
-            if (userStatusLoggedIn) { // بررسی کنید که userStatusLoggedIn تعریف شده باشد
-                userStatusLoggedIn.textContent = `سلام، ${user.name || user.mobile_number}`;
-                userStatusLoggedIn.classList.remove('hidden');
+            const user = await fetchUserData(); 
+            
+            // Desktop Navbar Updates
+            if (userStatusText) {
+                userStatusText.textContent = `سلام، ${user.name || user.mobile_number}`;
             }
-            if (userStatusGuest) userStatusGuest.classList.add('hidden');
+            if (userStatusGuestDiv) userStatusGuestDiv.classList.add('hidden');
+            if (userStatusLoggedInDiv) {
+                userStatusLoggedInDiv.classList.remove('hidden');
+                if (loggedInUserNameDesktop) loggedInUserNameDesktop.textContent = user.name || user.mobile_number;
+            }
             if (loginRegisterLink) loginRegisterLink.classList.add('hidden');
-            if (logoutLink) logoutLink.classList.remove('hidden');
-            if (mobileUserStatusGuest) mobileUserStatusGuest.classList.add('hidden');
-            if (mobileUserStatusLoggedIn) mobileUserStatusLoggedIn.classList.remove('hidden');
+            if (logoutLinkDesktop) logoutLinkDesktop.classList.remove('hidden');
+
+            // Mobile Navbar Updates
+            if (mobileUserStatusGuestDiv) mobileUserStatusGuestDiv.classList.add('hidden');
+            if (mobileUserStatusLoggedInDiv) {
+                mobileUserStatusLoggedInDiv.classList.remove('hidden');
+                if (mobileLoggedInUserName) mobileLoggedInUserName.textContent = user.name || user.mobile_number;
+                if (mobileLoggedInUserMobile) mobileLoggedInUserMobile.textContent = user.mobile_number;
+            }
+            if (logoutLinkMobile) logoutLinkMobile.classList.remove('hidden');
 
             console.log('Navbar user status updated: Logged in as', user.name || user.mobile_number);
+            // NEW DEBUG LOGS: Check computed style after updates
+            if (userStatusGuestDiv) console.log('DEBUG: userStatusGuestDiv computed style display after update:', window.getComputedStyle(userStatusGuestDiv).display);
+            if (userStatusLoggedInDiv) console.log('DEBUG: userStatusLoggedInDiv computed style display after update:', window.getComputedStyle(userStatusLoggedInDiv).display);
+            if (mobileUserStatusGuestDiv) console.log('DEBUG: mobileUserStatusGuestDiv computed style display after update:', window.getComputedStyle(mobileUserStatusGuestDiv).display);
+            if (mobileUserStatusLoggedInDiv) console.log('DEBUG: mobileUserStatusLoggedInDiv computed style display after update:', window.getComputedStyle(mobileUserStatusLoggedInDiv).display);
+
         } catch (error) {
             console.error('Error fetching user data with JWT. Treating as guest:', error);
-            clearJwtToken(); // پاک کردن توکن نامعتبر
-            if (userStatusLoggedIn) userStatusLoggedIn.classList.add('hidden');
-            if (userStatusGuest) userStatusGuest.classList.remove('hidden');
+            if (error.response && error.response.status === 401) {
+                clearJwtToken(); 
+                console.log('JWT token cleared due to 401 Unauthorized.');
+            }
+            // Revert to guest state
+            if (userStatusText) userStatusText.textContent = 'کاربر مهمان'; // Default text for main status
+            if (userStatusLoggedInDiv) userStatusLoggedInDiv.classList.add('hidden');
+            if (userStatusGuestDiv) userStatusGuestDiv.classList.remove('hidden');
             if (loginRegisterLink) loginRegisterLink.classList.remove('hidden');
-            if (logoutLink) logoutLink.classList.add('hidden');
-            if (mobileUserStatusGuest) mobileUserStatusGuest.classList.remove('hidden');
-            if (mobileUserStatusLoggedIn) mobileUserStatusLoggedIn.classList.add('hidden');
+            if (logoutLinkDesktop) logoutLinkDesktop.classList.add('hidden');
+
+            if (mobileUserStatusLoggedInDiv) mobileUserStatusLoggedInDiv.classList.add('hidden');
+            if (mobileUserStatusGuestDiv) mobileUserStatusGuestDiv.classList.remove('hidden');
+            if (logoutLinkMobile) logoutLinkMobile.classList.add('hidden');
+
+            console.log('Navbar user status updated: Guest user.');
         }
     } else {
-        if (userStatusLoggedIn) userStatusLoggedIn.classList.add('hidden');
-        if (userStatusGuest) userStatusGuest.classList.remove('hidden');
+        // No JWT token, ensure guest state is displayed
+        if (userStatusText) userStatusText.textContent = 'کاربر مهمان'; // Default text for main status
+        if (userStatusLoggedInDiv) userStatusLoggedInDiv.classList.add('hidden');
+        if (userStatusGuestDiv) userStatusGuestDiv.classList.remove('hidden');
         if (loginRegisterLink) loginRegisterLink.classList.remove('hidden');
-        if (logoutLink) logoutLink.classList.add('hidden');
-        if (mobileUserStatusGuest) mobileUserStatusGuest.classList.remove('hidden');
-        if (mobileUserStatusLoggedIn) mobileUserStatusLoggedIn.classList.add('hidden');
+        if (logoutLinkDesktop) logoutLinkDesktop.classList.add('hidden');
+
+        if (mobileUserStatusLoggedInDiv) mobileUserStatusLoggedInDiv.classList.add('hidden');
+        if (mobileUserStatusGuestDiv) mobileUserStatusGuestDiv.classList.remove('hidden');
+        if (logoutLinkMobile) logoutLinkMobile.classList.add('hidden');
+
         console.log('Navbar user status updated: Guest user.');
     }
 }
 
 // === Main Initialization Function for Navbar and Mini-Cart ===
-// این تابع اکسپورت خواهد شد و از app.js فراخوانی می‌شود.
 export function initializeNavbarAndCart() {
-    // فراخوانی اولیه رندر مینی سبد خرید و وضعیت کاربر در هنگام بارگذاری صفحه
-    renderMiniCart();
-    updateNavbarUserStatus();
+    renderMiniCart(); 
+    updateNavbarUserStatus(); 
 
-    // Event listeners که به عناصر DOM وابسته هستند، پس از آماده شدن DOM اضافه می‌شوند.
     document.addEventListener('DOMContentLoaded', function() {
         const miniCartContent = document.getElementById('mini-cart-content');
-        const logoutLink = document.getElementById('logout-link');
-        const addCartButtons = document.querySelectorAll('.add-to-cart-btn'); // دکمه‌های افزودن به سبد خرید
+        const logoutLinkDesktop = document.getElementById('logout-link'); // Desktop logout
+        const logoutLinkMobile = document.getElementById('logout-link-mobile'); // Mobile logout
+        const addCartButtons = document.querySelectorAll('.add-to-cart-btn'); 
 
-        // اضافه کردن Event Listener برای حذف آیتم‌ها از مینی سبد خرید
         if (miniCartContent) {
             miniCartContent.addEventListener('click', async function(event) {
                 const removeButton = event.target.closest('.remove-item-btn');
@@ -163,16 +194,15 @@ export function initializeNavbarAndCart() {
                         'آیا مطمئن هستید که می‌خواهید این محصول را حذف کنید؟',
                         async () => {
                             try {
-                                const response = await window.axios.post(`/api/cart/remove-item/${itemId}`);
-                                if (response.status === 200) {
-                                    window.showMessage(response.data.message || 'آیتم از سبد خرید حذف شد.', 'success');
-                                    await renderMiniCart(); // رندر مجدد مینی سبد خرید
-                                    // اگر صفحه اصلی سبد خرید باز است، آن را نیز رفرش کنید
+                                const response = await removeCartItem(itemId); 
+                                if (response.success) { 
+                                    window.showMessage(response.message || 'آیتم از سبد خرید حذف شد.', 'success');
+                                    await renderMiniCart(); 
                                     if (window.location.pathname === '/cart' && typeof window.loadCart === 'function') {
-                                        window.loadCart(); // فراخوانی تابع بارگذاری سبد خرید اصلی
+                                        window.loadCart(); 
                                     }
                                 } else {
-                                    window.showMessage(response.data.message || 'خطا در حذف محصول.', 'error');
+                                    window.showMessage(response.message || 'خطا در حذف محصول.', 'error');
                                 }
                             } catch (error) {
                                 console.error('Error removing cart item from mini cart:', error);
@@ -184,44 +214,47 @@ export function initializeNavbarAndCart() {
             });
         }
 
-        // اضافه کردن Event Listener برای لینک خروج از حساب
-        if (logoutLink) {
-            logoutLink.addEventListener('click', async function(event) {
+        // Add Event Listener for Desktop Logout Link
+        if (logoutLinkDesktop) {
+            logoutLinkDesktop.addEventListener('click', async function(event) {
                 event.preventDefault();
                 try {
-                    await logoutUser(); // فراخوانی تابع خروج از حساب از api.js
+                    await logoutUser(); 
                     window.showMessage('با موفقیت از حساب کاربری خود خارج شدید.', 'success');
-                    // ریدایرکت به صفحه اصلی یا صفحه ورود پس از خروج
-                    window.location.href = '/'; // ریدایرکت به صفحه اصلی
+                    window.location.href = '/'; 
                 } catch (error) {
-                    console.error('Error during logout:', error);
+                    console.error('Error during desktop logout:', error);
                     window.showMessage('خطا در خروج از حساب کاربری.', 'error');
                 }
             });
         }
 
-        // === یکپارچه‌سازی دکمه افزودن به سبد خرید ===
-        // این بخش تضمین می‌کند که وقتی از صفحه اصلی/محصولات به سبد خرید اضافه می‌کنید،
-        // مینی سبد خرید در نوار ناوبری نیز به‌روزرسانی شود.
+        // Add Event Listener for Mobile Logout Link
+        if (logoutLinkMobile) {
+            logoutLinkMobile.addEventListener('click', async function(event) {
+                event.preventDefault();
+                try {
+                    await logoutUser(); 
+                    window.showMessage('با موفقیت از حساب کاربری خود خارج شدید.', 'success');
+                    window.location.href = '/'; 
+                } catch (error) {
+                    console.error('Error during mobile logout:', error);
+                    window.showMessage('خطا در خروج از حساب کاربری.', 'error');
+                }
+            });
+        }
+
         addCartButtons.forEach(button => {
             button.addEventListener('click', async function() {
-                // فرض بر این است که addProductToCart در جای دیگری فراخوانی می‌شود و در صورت موفقیت، renderMiniCart فراخوانی می‌شود.
-                // اگر این دکمه مستقیماً به سبد خرید اضافه می‌کند، می‌توانید addProductToCart را اینجا فراخوانی کنید.
-                // در حال حاضر، فقط پس از هر عملیات افزودن به سبد خرید، مینی سبد خرید را رندر مجدد می‌کنیم.
                 renderMiniCart();
             });
         });
 
-        // === اطمینان از به‌روزرسانی مینی سبد خرید توسط سبد خرید اصلی ===
-        // این یک راه حل موقت برای اطمینان از به‌روزرسانی مینی سبد خرید در نوار ناوبری است،
-        // زمانی که سبد خرید اصلی (cart.blade.php) تغییر می‌کند.
-        // فرض بر این است که renderMainCart سراسری است یا قابل دسترسی است.
-        // یک راه حل قوی‌تر شامل یک رویداد باس مشترک یا مدیریت وضعیت است.
         if (window.renderMainCart) {
             const originalRenderMainCart = window.renderMainCart;
             window.renderMainCart = async function() {
                 await originalRenderMainCart();
-                renderMiniCart(); // همچنین مینی سبد خرید را پس از رندر مجدد سبد خرید اصلی به‌روزرسانی کنید
+                renderMiniCart(); 
             };
         }
     });

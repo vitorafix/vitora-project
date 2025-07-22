@@ -14,12 +14,12 @@ window.jalaali = jalaali;
 // Import cart-related API functions from api.js
 import {
     fetchCartContents,
-    addProductToCart,
+    addToCart, // تغییر یافته از addProductToCart
     updateCartItemQuantity,
     removeCartItem,
     clearCart,
-    applyCouponToCart,
-    removeCouponFromCart,
+    applyCoupon, // تغییر یافته از applyCouponToCart
+    removeCoupon, // تغییر یافته از removeCouponFromCart
     getJwtToken
 } from './api.js';
 
@@ -287,13 +287,22 @@ document.addEventListener('DOMContentLoaded', () => {
             cartData.data.items.forEach(item => {
                 const itemElement = document.createElement('div');
                 itemElement.className = 'flex items-center justify-between border-b border-gray-100 py-4 last:border-b-0';
+                // NEW: Add data-cart-item-id and data-unit-price to the itemElement
+                itemElement.dataset.cartItemId = item.id;
+                const itemPrice = Number(item.price || 0);
+                itemElement.dataset.unitPrice = itemPrice;
+
+                const productName = item.product ? item.product.name : 'محصول نامشخص';
+                // اصلاح شده: اطمینان از وجود item.product و item.product.image_url
+                const productImage = (item.product && item.product.image_url) ? item.product.image_url : 'https://placehold.co/80x80/E2E8F0/64748B?text=Product';
+
                 itemElement.innerHTML = `
                     <div class="flex items-center space-x-4 rtl:space-x-reverse">
-                        <img src="${item.product.image_url || 'https://placehold.co/80x80/E2E8F0/64748B?text=Product'}" alt="${item.product.name}" class="w-20 h-20 rounded-lg object-cover shadow-sm">
+                        <img src="${productImage}" alt="${productName}" class="w-20 h-20 rounded-lg object-cover shadow-sm">
                         <div>
-                            <h3 class="font-semibold text-gray-800 dark:text-gray-200">${item.product.name}</h3>
+                            <h3 class="font-semibold text-gray-800 dark:text-gray-200">${productName}</h3>
                             <p class="text-gray-600 dark:text-gray-400 text-sm">${item.product_variant ? item.product_variant.name : 'بدون واریانت'}</p>
-                            <p class="font-bold text-green-700 mt-1">${item.price.toLocaleString('fa-IR')} تومان</p>
+                            <p class="font-bold text-green-700 mt-1">${itemPrice.toLocaleString('fa-IR')} تومان</p>
                         </div>
                     </div>
                     <div class="flex items-center space-x-4 rtl:space-x-reverse">
@@ -301,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button class="quantity-btn p-2 text-gray-600 hover:bg-gray-100 rounded-l-lg" data-action="decrease" data-cart-item-id="${item.id}" data-quantity="${item.quantity}">
                                 <i class="fas fa-minus"></i>
                             </button>
-                            <input type="text" value="${item.quantity}" class="w-12 text-center border-x border-gray-300 py-2 focus:outline-none bg-white dark:bg-gray-700 dark:text-white" readonly>
+                            <input type="text" value="${item.quantity}" class="w-12 text-center border-x border-gray-300 py-2 focus:outline-none bg-white dark:bg-gray-700 dark:text-white item-quantity" readonly>
                             <button class="quantity-btn p-2 text-gray-600 hover:bg-gray-100 rounded-r-lg" data-action="increase" data-cart-item-id="${item.id}" data-quantity="${item.quantity}">
                                 <i class="fas fa-plus"></i>
                             </button>
@@ -314,11 +323,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 cartItemsContainer.appendChild(itemElement);
             });
 
-            cartSubtotalPrice.textContent = `${cartData.data.subtotal.toLocaleString('fa-IR')} تومان`;
-            cartDiscountPrice.textContent = `${cartData.data.discount_amount.toLocaleString('fa-IR')} تومان`;
-            cartShippingPrice.textContent = `${cartData.data.shipping_cost.toLocaleString('fa-IR')} تومان`;
-            cartTaxPrice.textContent = `${cartData.data.tax_amount.toLocaleString('fa-IR')} تومان`;
-            cartTotalPrice.textContent = `${cartData.data.total.toLocaleString('fa-IR')} تومان`;
+            // Ensure these values are also numbers before calling toLocaleString
+            cartSubtotalPrice.textContent = `${Number(cartData.data.subtotal || 0).toLocaleString('fa-IR')} تومان`;
+            cartDiscountPrice.textContent = `${Number(cartData.data.discount_amount || 0).toLocaleString('fa-IR')} تومان`;
+            cartShippingPrice.textContent = `${Number(cartData.data.shipping_cost || 0).toLocaleString('fa-IR')} تومان`;
+            cartTaxPrice.textContent = `${Number(cartData.data.tax_amount || 0).toLocaleString('fa-IR')} تومان`;
+            cartTotalPrice.textContent = `${Number(cartData.data.total || 0).toLocaleString('fa-IR')} تومان`;
 
             attachEventListeners();
         }
@@ -331,7 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
             catch (error) {
                 console.error('Failed to load cart contents:', error);
                 window.showMessage('خطا در بارگذاری سبد خرید.', 'error');
-                renderCart(null);
+                renderCart(null); // Pass null to renderCart to show empty message
             }
         }
 
@@ -339,7 +349,16 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.quantity-btn').forEach(button => {
                 button.onclick = async (event) => {
                     const cartItemId = event.currentTarget.dataset.cartItemId;
+                    // اصلاح شده: اطمینان از اینکه quantity یک عدد است
                     let currentQuantity = parseInt(event.currentTarget.dataset.quantity);
+
+                    // بررسی NaN بودن یا نامعتبر بودن مقدار اولیه
+                    if (isNaN(currentQuantity)) {
+                        console.error('Initial quantity is NaN or invalid for item:', cartItemId);
+                        window.showMessage('خطا: تعداد فعلی محصول نامعتبر است.', 'error');
+                        return; // از ادامه اجرای تابع جلوگیری می‌کند
+                    }
+
                     const action = event.currentTarget.dataset.action;
 
                     if (action === 'increase') {
@@ -347,6 +366,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else if (action === 'decrease') {
                         currentQuantity--;
                     }
+
+                    // --- NEW: Immediate UI update for quantity input and buttons ---
+                    const itemElement = event.currentTarget.closest('[data-cart-item-id]');
+                    if (itemElement) {
+                        const quantityInput = itemElement.querySelector('.item-quantity');
+                        const increaseBtn = itemElement.querySelector('.quantity-btn[data-action="increase"]');
+                        const decreaseBtn = itemElement.querySelector('.quantity-btn[data-action="decrease"]');
+
+                        if (quantityInput) {
+                            quantityInput.value = currentQuantity;
+                        }
+                        if (increaseBtn) {
+                            increaseBtn.dataset.quantity = currentQuantity;
+                        }
+                        if (decreaseBtn) {
+                            decreaseBtn.dataset.quantity = currentQuantity;
+                        }
+                    }
+                    // --- END NEW ---
 
                     if (currentQuantity <= 0) {
                         window.showConfirmationModal(
@@ -358,9 +396,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         );
                     } else {
                         try {
-                            await updateCartItemQuantity(cartItemId, currentQuantity);
-                            window.showMessage('تعداد آیتم به‌روزرسانی شد.', 'success');
-                            await loadCart();
+                            // اطمینان از اینکه currentQuantity یک عدد صحیح و مثبت است
+                            if (Number.isInteger(currentQuantity) && currentQuantity > 0) {
+                                await updateCartItemQuantity(cartItemId, currentQuantity);
+                                window.showMessage('تعداد آیتم به‌روزرسانی شد.', 'success');
+                                await loadCart();
+                            } else {
+                                console.error('Invalid quantity value after operation:', currentQuantity);
+                                window.showMessage('خطا: تعداد وارد شده نامعتبر است.', 'error');
+                            }
                         } catch (error) {
                             console.error('Error updating quantity:', error);
                             window.showMessage('خطا در به‌روزرسانی تعداد آیتم.', 'error');

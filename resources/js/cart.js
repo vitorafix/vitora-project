@@ -1,4 +1,4 @@
-// cart.js
+// resources/js/cart.js
 console.log('cart.js loaded and starting...');
 
 // این فایل شامل کلاس CartManager است که مسئول مدیریت کلی سبد خرید،
@@ -6,7 +6,8 @@ console.log('cart.js loaded and starting...');
 
 // ایمپورت کردن توابع مورد نیاز از ماژول‌های دیگر
 // این توابع مسئول برقراری ارتباط با API بک‌اند هستند.
-import { fetchCartContents, addItem, updateCartItemQuantity, removeCartItem, clearCart, applyCoupon, removeCoupon } from './api.js';
+// تغییر: addItem به addToCart تغییر یافت
+import { fetchCartContents, addToCart, updateCartItemQuantity, removeCartItem, clearCart, applyCoupon, removeCoupon } from './api.js';
 // این توابع مسئول به‌روزرسانی رابط کاربری (DOM) بر اساس داده‌های سبد خرید هستند.
 import { setCartLoadingState, renderMainCart, renderMiniCartDetails } from './renderer.js';
 // این توابع مسئول کش کردن عناصر DOM و تنظیم Event Listenerها هستند.
@@ -29,37 +30,77 @@ let isInitialized = false;
  */
 function updateQuantityInUI(itemId, newQuantity, itemPrice) {
     // آپدیت main cart
-    const mainCartItem = document.querySelector(`#cart-items-container [data-cart-item-id="${itemId}"]`);
-    if (mainCartItem) {
-        const quantitySpan = mainCartItem.querySelector('.item-quantity');
-        const subtotalSpan = mainCartItem.querySelector('.item-subtotal');
-        const oldQuantity = parseInt(quantitySpan.textContent);
+    const mainCartItemContainer = document.querySelector(`#cart-items-container [data-cart-item-id="${itemId}"]`);
+    if (mainCartItemContainer) {
+        // NEW: Targeting the input element with class 'item-quantity'
+        const quantityInput = mainCartItemContainer.querySelector('.item-quantity');
+        const subtotalSpan = mainCartItemContainer.querySelector('.item-subtotal'); // Assuming .item-subtotal exists
 
-        quantitySpan.textContent = newQuantity;
-        quantitySpan.setAttribute('data-quantity', newQuantity);
+        if (quantityInput) { // Ensure quantityInput is found
+            const oldQuantity = parseInt(quantityInput.value); // Read from value property of input
 
-        // آپدیت ساب‌توتال آیتم
-        const newSubtotal = newQuantity * itemPrice;
-        subtotalSpan.textContent = newSubtotal.toLocaleString('fa-IR') + ' تومان';
-        subtotalSpan.setAttribute('data-subtotal', newSubtotal);
+            quantityInput.value = newQuantity; // Update value property of input
+            // No need to update data-quantity on input, it's read from the button's dataset.
 
-        console.log(`Main cart item ${itemId} quantity updated from ${oldQuantity} to ${newQuantity}. Subtotal updated to: ${newSubtotal}`);
+            // آپدیت ساب‌توتال آیتم
+            if (subtotalSpan) {
+                // اطمینان از اینکه newQuantity و itemPrice عدد هستند قبل از ضرب
+                const newSubtotal = (typeof newQuantity === 'number' && typeof itemPrice === 'number') ? (newQuantity * itemPrice) : NaN;
+                if (!isNaN(newSubtotal)) {
+                    subtotalSpan.textContent = newSubtotal.toLocaleString('fa-IR') + ' تومان';
+                    subtotalSpan.setAttribute('data-subtotal', newSubtotal);
+                } else {
+                    console.warn(`Cannot calculate subtotal for item ${itemId}: newQuantity=${newQuantity}, itemPrice=${itemPrice}. Subtotal set to 'خطا در محاسبه'.`);
+                    subtotalSpan.textContent = 'خطا در محاسبه';
+                }
+                // اضافه شدن هشدار برای قیمت صفر
+                if (itemPrice === 0) {
+                    console.warn(`Item ${itemId} has a unitPrice of 0. Check the 'data-unit-price' attribute on the cart item container.`);
+                }
+            }
+
+            console.log(`Main cart item ${itemId} quantity updated from ${oldQuantity} to ${newQuantity}. Subtotal updated to: ${newQuantity * itemPrice}`);
+        } else {
+            console.warn(`Could not find .item-quantity input for cart item ${itemId} in main cart. Check your HTML structure.`);
+        }
     }
 
-    // آپدیت mini cart
+    // آپدیت mini cart (این بخش به نظر می‌رسد به DOM.miniCartItemsContainer نیاز دارد)
+    // اگر mini cart شما هم از ساختار مشابهی با input برای تعداد استفاده می‌کند،
+    // باید در اینجا نیز آن را با .item-quantity یا کلاس مشابه به‌روز کنید.
+    // در غیر این صورت، اگر از span استفاده می‌کند، باید آن را به همین شکل حفظ کنید.
+    // با توجه به اینکه لاگ‌های شما فقط خطای main cart را نشان می‌دادند،
+    // فرض می‌کنم mini cart شما از ساختار متفاوتی استفاده می‌کند یا این بخش در حال حاضر فعال نیست.
+    // اگر mini cart هم نیاز به این تغییرات دارد، لطفاً HTML آن را هم ارائه دهید.
+    // فعلاً این بخش را بدون تغییر نگه می‌دارم مگر اینکه نیاز باشد.
     const miniCartItem = document.querySelector(`#mini-cart-items-container [data-cart-item-id="${itemId}"]`);
     if (miniCartItem) {
         const quantitySpan = miniCartItem.querySelector('.mini-cart-item-quantity');
         const subtotalSpan = miniCartItem.querySelector('.mini-cart-item-subtotal');
-        const oldQuantity = parseInt(quantitySpan.textContent);
+        let oldQuantity = parseInt(quantitySpan?.textContent); // اضافه شدن ?. برای ایمنی بیشتر
+
+        if (isNaN(oldQuantity)) {
+            console.warn(`Mini cart item ${itemId}: oldQuantity read from DOM is NaN. Current textContent: "${quantitySpan?.textContent}". Ensure .mini-cart-item-quantity contains a valid number.`);
+            oldQuantity = 0; // Fallback to 0 to prevent further NaN propagation
+        }
+
 
         quantitySpan.textContent = newQuantity;
         quantitySpan.setAttribute('data-quantity', newQuantity);
 
         // آپدیت ساب‌توتال آیتم
-        const newSubtotal = newQuantity * itemPrice;
-        subtotalSpan.textContent = newSubtotal.toLocaleString('fa-IR') + ' تومان';
-        subtotalSpan.setAttribute('data-subtotal', newSubtotal);
+        const newSubtotal = (typeof newQuantity === 'number' && typeof itemPrice === 'number') ? (newQuantity * itemPrice) : NaN;
+        if (!isNaN(newSubtotal)) {
+            subtotalSpan.textContent = newSubtotal.toLocaleString('fa-IR') + ' تومان';
+            subtotalSpan.setAttribute('data-subtotal', newSubtotal);
+        } else {
+            console.warn(`Cannot calculate mini cart subtotal for item ${itemId}: newQuantity=${newQuantity}, itemPrice=${itemPrice}. Subtotal set to 'خطا در محاسبه'.`);
+            subtotalSpan.textContent = 'خطا در محاسبه';
+        }
+        // اضافه شدن هشدار برای قیمت صفر
+        if (itemPrice === 0) {
+            console.warn(`Mini cart item ${itemId} has a unitPrice of 0. Check the 'data-unit-price' attribute on the cart item container or the source of itemPrice.`);
+        }
 
         console.log(`Mini cart item ${itemId} quantity updated from ${oldQuantity} to ${newQuantity}. Subtotal updated to: ${newSubtotal}`);
     }
@@ -174,7 +215,8 @@ class CartManager {
 
             console.log(`Adding product ${productId} with quantity ${quantity} to cart.`); // اضافه شده برای دیباگ
             try {
-                const response = await this.addItem(productId, quantity, productVariantId);
+                // فراخوانی addToCart از api.js
+                const response = await addToCart(productId, quantity, productVariantId);
                 window.showMessage(response.message || 'محصول با موفقیت به سبد خرید اضافه شد.', 'success');
             } catch (error) {
                 const errorMessage = error.response?.data?.message || 'خطا در افزودن محصول به سبد خرید. لطفاً دوباره تلاش کنید.';
@@ -203,16 +245,42 @@ class CartManager {
             const button = event.target.matches('.quantity-btn') ? event.target : event.target.closest('.quantity-btn');
             const action = button.dataset.action;
             const cartItemId = button.dataset.cartItemId;
-            const quantitySpan = document.querySelector(`#cart-items-container [data-cart-item-id="${cartItemId}"] .item-quantity`);
-            const itemPrice = parseFloat(document.querySelector(`#cart-items-container [data-cart-item-id="${cartItemId}"]`).dataset.unitPrice); // فرض می‌کنیم قیمت واحد در data-unit-price ذخیره شده
 
-            if (!quantitySpan || !cartItemId || isNaN(itemPrice)) {
-                console.error('Required data for quantity update not found.', { quantitySpan, cartItemId, itemPrice });
-                window.showMessage('خطا در به‌روزرسانی تعداد. اطلاعات ناقص است.', 'error');
+            // NEW: Get the parent container for the cart item and read unitPrice from its dataset
+            const mainCartItemContainer = document.querySelector(`#cart-items-container [data-cart-item-id="${cartItemId}"]`);
+            const quantityInput = mainCartItemContainer ? mainCartItemContainer.querySelector('.item-quantity') : null;
+            const itemPrice = mainCartItemContainer ? parseFloat(mainCartItemContainer.dataset.unitPrice) : NaN;
+
+            if (!mainCartItemContainer) {
+                console.error(`Cart item container not found for itemId: ${cartItemId}. Check if data-cart-item-id is correctly set.`);
+                window.showMessage('خطا در به‌روزرسانی تعداد. آیتم سبد خرید یافت نشد.', 'error');
                 return;
             }
 
-            let newQuantity = parseInt(quantitySpan.textContent);
+            if (!quantityInput) {
+                console.error(`Quantity input with class '.item-quantity' not found inside cart item ${cartItemId}. Ensure your HTML structure is correct.`);
+                window.showMessage('خطا در به‌روزرسانی تعداد. ورودی تعداد یافت نشد.', 'error');
+                return;
+            }
+
+            if (isNaN(itemPrice)) {
+                console.error(`Item price is NaN for cart item ${cartItemId}. Check the 'data-unit-price' attribute on the cart item container. Value: ${mainCartItemContainer.dataset.unitPrice}`);
+                window.showMessage('خطا در به‌روزرسانی تعداد. قیمت محصول نامعتبر است.', 'error');
+                return;
+            }
+
+
+            // --- مرحله ۱: بررسی و اصلاح کد گرفتن مقدار quantity از DOM ---
+            const quantity = parseInt(quantityInput?.value);
+
+            if (isNaN(quantity) || quantity < 1) {
+                console.warn("مقدار نامعتبر: ", quantityInput?.value, `for cart item ${cartItemId}.`);
+                window.showMessage('لطفاً یک عدد معتبر برای تعداد وارد کنید.', 'warning');
+                return;
+            }
+            // --- پایان مرحله ۱ ---
+
+            let newQuantity = quantity; // استفاده از quantity که از DOM گرفته شده
             if (action === 'increase') {
                 newQuantity++;
             } else if (action === 'decrease') {
@@ -230,6 +298,10 @@ class CartManager {
 
             // آپدیت UI بلافاصله
             updateQuantityInUI(cartItemId, newQuantity, itemPrice);
+
+            // --- مرحله ۲: دیباگ پیشرفته (اختیاری اما مفید) ---
+            console.log("Updating item", cartItemId, "با تعداد:", newQuantity, typeof newQuantity);
+            // --- پایان مرحله ۲ ---
 
             // آپدیت server از طریق CartManager با debounce
             this.debouncedUpdateCartItemQuantity(cartItemId, newQuantity); // استفاده از نسخه debounce شده
@@ -266,10 +338,10 @@ class CartManager {
                 // فقط در صورتی renderMainCart را فراخوانی کنید که DOM.cartItemsContainer وجود داشته باشد
                 if (this.dom.cartItemsContainer) {
                     // تغییر در اینجا: ارسال cartContents.summary به عنوان cartTotals
-                    renderMainCart(cartContents.items, cartContents.summary); 
+                    renderMainCart(cartContents.items, cartContents.summary);
                 }
                 // تغییر در اینجا: ارسال cartContents.summary.totalQuantity و cartContents.summary.totalPrice
-                renderMiniCartDetails(cartContents.items, cartContents.summary.totalQuantity, cartContents.summary.totalPrice); 
+                renderMiniCartDetails(cartContents.items, cartContents.summary.totalQuantity, cartContents.summary.totalPrice);
                 console.log('Cart contents loaded and rendered successfully.');
             } else {
                 window.showMessage(response.message, 'error');
@@ -284,34 +356,7 @@ class CartManager {
         }
     }
 
-    /**
-     * افزودن محصول به سبد خرید.
-     * @param {number} productId
-     * @param {number} quantity
-     * @param {number|null} productVariantId
-     */
-    async addItem(productId, quantity, productVariantId = null) {
-        setCartLoadingState(true);
-        try {
-            const response = await addItem(productId, quantity, productVariantId);
-            if (response.success) {
-                // پیام موفقیت از اینجا نمایش داده می‌شود
-                // window.showMessage(response.message || 'محصول با موفقیت به سبد خرید اضافه شد.', 'success');
-                await this.loadAndRenderCart(); // Reload cart contents after adding
-            } else {
-                // پیام خطا از اینجا نمایش داده می‌شود
-                // window.showMessage(response.message, 'error');
-            }
-            return response; // برای استفاده در handleAddToCartClick
-        } catch (error) {
-            // خطا از اینجا مدیریت می‌شود
-            // console.error('Error adding item to cart:', error);
-            // window.showMessage('خطا در افزودن محصول به سبد خرید.', 'error');
-            throw error; // برای اینکه handleAddToCartClick بتواند خطا را بگیرد
-        } finally {
-            setCartLoadingState(false);
-        }
-    }
+    // تابع addItem که قبلاً در اینجا بود، حذف شده است زیرا اکنون مستقیماً از addToCart ایمپورت شده از api.js استفاده می‌شود.
 
     /**
      * به‌روزرسانی تعداد آیتم در سبد خرید.
@@ -370,7 +415,7 @@ class CartManager {
                 window.showMessage(response.message, 'success');
                 await this.loadAndRenderCart();
             } else {
-                    window.showMessage(response.message, 'error');
+                window.showMessage(response.message, 'error');
             }
         } catch (error) {
             console.error('Error clearing cart:', error);

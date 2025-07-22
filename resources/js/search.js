@@ -76,18 +76,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Set a timeout to send the search request after a short delay (e.g., 300ms)
         searchTimeout = setTimeout(async () => {
             try {
-                // Send a GET request to the /search endpoint with the query parameter
-                const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
+                // تغییر: استفاده از window.axios برای ارسال درخواست جستجو
+                const response = await window.axios.get(`/search?q=${encodeURIComponent(query)}`);
                 
-                // Check if the HTTP response was successful
-                if (!response.ok) {
-                    // Use window.showMessage for error notifications to user
-                    window.showMessage('خطا در جستجو. لطفاً دوباره تلاش کنید.', 'error');
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                // Parse the JSON response
-                const data = await response.json();
+                // Axios به طور خودکار خطاها را با throw می‌کند، نیازی به بررسی response.ok نیست.
+                // داده‌ها مستقیماً در response.data قرار دارند.
+                const data = response.data;
                 
                 // Display the results
                 displayResults(data);
@@ -95,7 +89,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Log and display an error message if the fetch fails
                 console.error('Search error:', error);
                 // Use window.showMessage for network/parsing errors
-                window.showMessage('خطا در ارتباط با سرور. لطفا اتصال اینترنت خود را بررسی کنید.', 'error');
+                const errorMessage = error.response?.data?.message || 'خطا در ارتباط با سرور. لطفا اتصال اینترنت خود را بررسی کنید.';
+                window.showMessage(errorMessage, 'error');
                 resultsContainer.innerHTML = `<p class="text-red-500 p-4 text-center">خطا در ارتباط با سرور</p>`;
                 resultsContainer.classList.remove('hidden'); // Ensure container is visible for error message
             }

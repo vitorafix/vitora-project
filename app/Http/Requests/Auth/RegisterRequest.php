@@ -53,7 +53,7 @@ class RegisterRequest extends FormRequest
         // Convert Persian/Arabic digits to English digits before validation.
         $this->merge([
             'name' => strip_tags($this->input('name')),
-            'lastname' => strip_tags($this->input('lastname')),
+            'lastname' => strip_tags($this->input('lastname')), // Changed back to 'lastname'
             'mobile_number' => convertPersianDigitsToEnglish(trim($this->input('mobile_number'))), // Use the global helper function
         ]);
     }
@@ -74,7 +74,7 @@ class RegisterRequest extends FormRequest
                 'max:255',
                 'regex:/^[\pL\s\-]+$/u'
             ],
-            'lastname' => [
+            'lastname' => [ // Changed back to 'lastname'
                 'nullable',
                 'string',
                 'max:255',
@@ -127,9 +127,9 @@ class RegisterRequest extends FormRequest
             'name.max' => 'لطفاً اطلاعات صحیح را وارد نمایید.',
             'name.regex' => 'لطفاً اطلاعات صحیح را وارد نمایید.',
 
-            'lastname.string' => 'لطفاً اطلاعات صحیح را وارد نمایید.',
-            'lastname.max' => 'لطفاً اطلاعات صحیح را وارد نمایید.',
-            'lastname.regex' => 'لطفاً اطلاعات صحیح را وارد نمایید.',
+            'lastname.string' => 'لطفاً اطلاعات صحیح را وارد نمایید.', // Changed back to 'lastname'
+            'lastname.max' => 'لطفاً اطلاعات صحیح را وارد نمایید.', // Changed back to 'lastname'
+            'lastname.regex' => 'لطفاً اطلاعات صحیح را وارد نمایید.', // Changed back to 'lastname'
 
             'mobile_number.required' => 'شماره موبایل الزامی است.',
             'mobile_number.string' => 'لطفاً اطلاعات صحیح را وارد نمایید.',
@@ -151,7 +151,7 @@ class RegisterRequest extends FormRequest
     {
         return [
             'name' => 'نام',
-            'lastname' => 'نام خانوادگی',
+            'lastname' => 'نام خانوادگی', // Changed back to 'lastname'
             'mobile_number' => 'شماره موبایل',
         ];
     }

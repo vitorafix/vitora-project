@@ -1,12 +1,23 @@
 // resources/js/auth.js
 console.log('auth.js loaded and starting...');
 
-// Import necessary API functions
-// storeJwtToken and clearJwtToken are also imported from api.js
-import { sendOtp, verifyOtpAndLogin, logoutUser, storeJwtToken, clearJwtToken } from './api.js'; 
-// NEW: Removed the import of updateNavbarUserStatus from navbar_new.js.
-// This function is now called via initializeNavbarAndCart in app.js.
-// import { updateNavbarUserStatus } from './navbar_new.js'; // This line has been removed
+// این فایل مسئول مدیریت احراز هویت کاربر، شامل ثبت نام، ورود و مدیریت OTP است.
+
+// ایمپورت کردن توابع مورد نیاز از ماژول‌های دیگر
+// توابع storeJwtToken و clearJwtToken از api.js ایمپورت می‌شوند.
+import { sendOtp, verifyOtpAndLogin, logoutUser, storeJwtToken, clearJwtToken, getJwtToken, registerUserAndSendOtp } from './api.js'; // اضافه شدن registerUserAndSendOtp از api.js
+import { updateNavbarUserStatus } from './navbar_new.js'; // برای به‌روزرسانی وضعیت نوار ناوبری
+
+// تابع برای ذخیره guest_uuid در localStorage (این تابع مستقیماً با Axios ارتباط ندارد، پس نیازی به تغییر ندارد)
+function setGuestUuid(uuid) {
+    localStorage.setItem('guest_uuid', uuid);
+    console.log('Guest UUID set in localStorage:', uuid);
+}
+
+// تابع برای دریافت guest_uuid از localStorage (این تابع مستقیماً با Axios ارتباط ندارد، پس نیازی به تغییر ندارد)
+function getGuestUuid() {
+    return localStorage.getItem('guest_uuid');
+}
 
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -17,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
             '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
             '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
             '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
-            '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9' 
+            '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
         };
         let convertedValue = '';
         for (let i = 0; i < value.length; i++) {
@@ -138,15 +149,15 @@ document.addEventListener('DOMContentLoaded', function() {
             registerButton.classList.add('opacity-50', 'cursor-not-allowed');
             registerButton.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال ثبت‌نام...';
 
+            console.log('Auth.js: Register button clicked!'); // Debug log
+
             try {
-                // Pass name and lastname in the userData object
-                const response = await sendOtp(mobileNumber, {
-                    name: name,
-                    lastname: lastname,
-                });
+                // NEW LOGIC: Call registerUserAndSendOtp for registration flow
+                const response = await registerUserAndSendOtp(mobileNumber, name, lastname);
 
                 window.showMessage(response.message || 'ثبت‌نام با موفقیت انجام شد. کد تأیید ارسال شد.', 'success');
 
+                // For registration, we always redirect to verify-otp-form after sending OTP
                 window.location.href = `${window.location.origin}/auth/verify-otp-form?mobile_number=${mobileNumber}`;
 
             } catch (error) {
@@ -196,19 +207,33 @@ document.addEventListener('DOMContentLoaded', function() {
             sendOtpButton.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال ارسال...';
 
             try {
-                const response = await sendOtp(mobileNumber); // Use the imported sendOtp function
+                const response = await sendOtp(mobileNumber);
 
                 window.showMessage(response.message || 'کد تأیید با موفقیت ارسال شد.', 'success');
 
-                // Redirect to OTP verification page, passing the mobile number
-                // This logic defaults to redirecting to verify-otp-form.
-                // MobileAuthController in the backend is responsible for redirecting to register-form if needed.
-                window.location.href = `${window.location.origin}/auth/verify-otp-form?mobile_number=${mobileNumber}`;
+                // Check 'user_exists' flag from the backend response
+                // If user_exists is explicitly false, redirect to registration
+                if (response.user_exists === false) {
+                    console.log('Auth.js: User does not exist, redirecting to registration form.');
+                    window.location.href = `${window.location.origin}/auth/register?mobile_number=${mobileNumber}`;
+                } else {
+                    // User exists, redirect to OTP verification page
+                    console.log('Auth.js: User exists, redirecting to OTP verification form.');
+                    window.location.href = `${window.location.origin}/auth/verify-otp-form?mobile_number=${mobileNumber}`;
+                }
 
             } catch (error) {
-                const errorMessage = error.response?.data?.message || 'خطا در ارسال کد تأیید. لطفاً دوباره تلاش کنید.';
-                window.showMessage(errorMessage, 'error');
-                console.error('Auth.js: Error sending OTP:', error);
+                // Handle 404 specifically for 'requires_registration'
+                if (error.response && error.response.status === 404 && error.response.data.requires_registration) {
+                    const errorMessage = error.response.data.message || 'این شماره در سیستم ثبت نشده است. لطفاً ابتدا ثبت‌نام کنید.';
+                    window.showMessage(errorMessage, 'error');
+                    console.log('Auth.js: Server indicated registration required. Redirecting to registration form.');
+                    window.location.href = `${window.location.origin}/auth/register?mobile_number=${mobileNumber}`;
+                } else {
+                    const errorMessage = error.response?.data?.message || 'خطا در ارسال کد تأیید. لطفاً دوباره تلاش کنید.';
+                    window.showMessage(errorMessage, 'error');
+                    console.error('Auth.js: Error sending OTP:', error);
+                }
             } finally {
                 // Hide loading state
                 sendOtpButton.disabled = false;
@@ -348,15 +373,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     const data = await verifyOtpAndLogin(mobileNumber, otp);
                     window.showMessage(data.message || 'ورود با موفقیت انجام شد.', 'success');
                     console.log('Auth.js: User data after login:', data.user);
-                    console.log('Auth.js: JWT Token:', data.token);
+                    // Correction: Token should be read from data.access_token
+                    console.log('Auth.js: JWT Token:', data.access_token); // Corrected here
 
-                    // NEW: Update navbar user status immediately
-                    // This line has been removed because initializeNavbarAndCart is called in app.js
-                    // if (typeof updateNavbarUserStatus === 'function') {
-                    //     await updateNavbarUserStatus(); 
-                    // } else {
-                    //     console.warn('updateNavbarUserStatus function not found in global scope.');
-                    // }
+                    // --- تغییر کلیدی: فراخوانی jwtLogin برای لاگین در سشن وب لاراول ---
+                    if (data.access_token) {
+                        localStorage.setItem('jwt_token', data.access_token); // ذخیره توکن
+
+                        // فراخوانی API برای لاگین کردن کاربر در سشن وب لاراول
+                        try {
+                            const jwtLoginResponse = await axios.post('/api/auth/jwt-login', { token: data.access_token });
+                            console.log('Auth.js: Web session login successful:', jwtLoginResponse.data);
+                        } catch (jwtLoginError) {
+                            console.error('Auth.js: Error during web session login (jwt-login API call):', jwtLoginError);
+                            // اگر لاگین سشن ناموفق بود، ممکن است بخواهید پیام خطای خاصی نمایش دهید
+                            window.showMessage('خطا در ورود به سشن وب. لطفاً دوباره تلاش کنید.', 'error');
+                        }
+                    }
+                    // --- پایان تغییر کلیدی ---
+
+                    // به‌روزرسانی وضعیت نوار ناوبری (باید پس از لاگین سشن انجام شود)
+                    updateNavbarUserStatus();
 
                     // Redirect to dashboard or home page after successful login
                     window.location.href = '/'; // Or your dashboard route

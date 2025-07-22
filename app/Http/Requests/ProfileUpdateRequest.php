@@ -17,6 +17,7 @@ class ProfileUpdateRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'lastname' => ['nullable', 'string', 'max:255'], // Changed from 'last_name' to 'lastname'
             'email' => [
                 'required',
                 'string',
