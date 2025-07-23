@@ -26,36 +26,11 @@ use App\Contracts\Services\AuditServiceInterface;
 use App\Services\Contracts\CartServiceInterface;
 use App\Http\Requests\SendOtpRequest;
 use App\Http\Requests\VerifyOtpRequest;
-// REMOVED: No longer needed here as registration is handled by RegisterController
-// use App\Http\Requests\Auth\RegisterRequest;
 
 // Add Spatie's Role class if used
 use Spatie\Permission\Models\Role;
 
 use App\Exceptions\OtpSendException; // NEW: Import OtpSendException from its new location
-
-/**
- * Custom Exception to carry generated OTP on failure.
- * REMOVED: This class definition has been moved to app/Exceptions/OtpSendException.php
- */
-/*
-class OtpSendException extends \Exception
-{
-    public ?string $generatedOtp;
-
-    public function __construct(string $message, ?string $generatedOtp = null, int $code = 0, Throwable $previous = null)
-    {
-        parent::__construct($message, $code, $previous);
-        $this->generatedOtp = $generatedOtp;
-    }
-
-    public function getGeneratedOtp(): ?string
-    {
-        return $this->generatedOtp;
-    }
-}
-*/
-
 
 class MobileAuthController extends Controller
 {
@@ -141,25 +116,39 @@ class MobileAuthController extends Controller
         $mobileNumber = $request->mobile_number;
         $ipAddress = $request->ip();
 
-        Log::debug('MobileAuthController: Starting sendOtp process for mobile: ' . maskForLog($mobileNumber, 'phone'));
+        // NEW: Determine if this is a login attempt or a registration attempt
+        // You might send a hidden field or a specific parameter from the frontend
+        // For example, if the request comes from the registration form, it might include 'is_registration' => true
+        $isRegistrationAttempt = $request->input('is_registration', false); // Default to false if not provided
+
+        Log::debug('MobileAuthController: Starting sendOtp process for mobile: ' . maskForLog($mobileNumber, 'phone') . ' (Is Registration: ' . ($isRegistrationAttempt ? 'Yes' : 'No') . ')');
 
         try {
-            // NEW LOGIC: Check if the user exists before attempting to send OTP
             $user = User::where('mobile_number', $mobileNumber)->first();
 
-            if (!$user) {
-                // User does not exist, return a JSON response indicating registration is required
-                // This is specifically for AJAX calls from the login page.
-                Log::info('MobileAuthController: Mobile number ' . maskForLog($mobileNumber, 'phone') . ' not found. Responding with requires_registration.');
+            // Check if there's a pending OTP for this mobile number in cache.
+            // This indicates a registration/login flow is already in progress.
+            // This call requires the hasPendingOtp method to be implemented in OtpService.
+            $hasPendingOtp = $this->otpService->hasPendingOtp($mobileNumber);
+
+            // Scenario 2: User exists AND it's a registration attempt (conflict)
+            if ($user && $isRegistrationAttempt) {
+                Log::info('MobileAuthController: Mobile number ' . maskForLog($mobileNumber, 'phone') . ' already exists for registration. Responding with user_exists.');
                 return response()->json([
-                    'message' => 'این شماره در سیستم ثبت نشده است. لطفاً ابتدا ثبت‌نام کنید.',
-                    'requires_registration' => true
-                ], 404); // Using 404 Not Found as per user's suggestion for non-existent user
+                    'message' => 'این شماره قبلاً در سیستم ثبت شده است. لطفاً وارد شوید.',
+                    'user_exists' => true // Indicate that user exists, so frontend should switch to login flow
+                ], 409); // Using 409 Conflict as the resource (user) already exists
             }
 
-            // User exists, proceed with sending OTP for login
+            // Proceed with sending OTP in all other valid scenarios:
+            // - User exists and it's a login attempt.
+            // - User does not exist, but it's a registration attempt (is_registration is true).
+            // - User does not exist, it's NOT explicitly a registration attempt, BUT there IS a pending OTP (resend scenario).
+            // The previous 404 response for non-existent users on login attempts without pending OTP is removed.
+            // The logic now allows OTP to be sent for registration attempts even if the user doesn't exist.
             Log::debug('MobileAuthController: Calling otpService->sendOtpForMobile for mobile: ' . maskForLog($mobileNumber, 'phone'));
 
+            // IMPORTANT: Pass the $isRegistrationAttempt flag to the OtpService
             $this->otpService->sendOtpForMobile(
                 $mobileNumber,
                 $ipAddress,
@@ -176,15 +165,15 @@ class MobileAuthController extends Controller
                         hashForCache($mobileNumber, 'audit_mobile_hash'),
                         $userId, $userType, $objectId, $level
                     );
-                }
+                },
+                $isRegistrationAttempt // Pass the flag to OtpService
             );
 
             Log::debug('MobileAuthController: otpService->sendOtpForMobile completed successfully for mobile: ' . maskForLog($mobileNumber, 'phone'));
 
-            // OTP sent successfully for an existing user
             return response()->json([
                 'message' => 'کد تأیید با موفقیت ارسال شد.',
-                'user_exists' => true // Indicate that user exists and OTP was sent for login
+                'user_exists' => (bool)$user // Indicate whether user exists (for login) or not (for registration)
             ]);
 
         } catch (OtpSendException $e) {
@@ -233,116 +222,6 @@ class MobileAuthController extends Controller
             );
         }
     }
-
-    /**
-     * REMOVED: This method was creating users directly without OTP verification.
-     * User registration (creation) should now happen exclusively within OtpService->verifyOtpForMobile
-     * after successful OTP verification, leveraging the pending registration data.
-     *
-     * ثبت‌نام کاربر جدید.
-     *
-     * @param RegisterRequest $request
-     * @return RedirectResponse|\Illuminate\Http\JsonResponse
-     * @throws ValidationException
-     */
-    /*
-    public function register(RegisterRequest $request)
-    {
-        $validatedData = $request->validated();
-
-        try {
-            $user = User::create([
-                'name' => $validatedData['name'],
-                'lastname' => $validatedData['lastname'] ?? null,
-                'mobile_number' => $validatedData['mobile_number'],
-                'profile_completed' => (!empty($validatedData['name']) && !empty($validatedData['lastname'])),
-                'status' => 'active',
-            ]);
-
-            $userRole = Role::where('name', 'user')->first();
-            if ($userRole) {
-                $user->assignRole($userRole);
-                $this->auditService->log(
-                    'role_assigned_on_registration',
-                    'Role "user" assigned to new user: ' . maskForLog($user->mobile_number, 'phone'),
-                    $request,
-                    [
-                        'user_id' => $user->id,
-                        'mobile_number_masked' => maskForLog($user->mobile_number, 'phone'),
-                        'role' => 'user'
-                    ],
-                    hashForCache($user->mobile_number, 'audit_mobile_hash'),
-                    $user->id, 'User', $user->id, 'info'
-                );
-            } else {
-                Log::warning('MobileAuthController: Role "user" not found when registering user: ' . maskForLog($user->mobile_number, 'phone'));
-                $this->auditService->log(
-                    'role_not_found_on_registration',
-                    'Attempted to assign "user" role but role not found for user: ' . maskForLog($user->mobile_number, 'phone'),
-                    $request,
-                    [
-                        'user_id' => $user->id,
-                        'mobile_number_masked' => maskForLog($user->mobile_number, 'phone'),
-                        'missing_role' => 'user'
-                    ],
-                    hashForCache($user->mobile_number, 'audit_mobile_hash'),
-                    $user->id, 'User', $user->id, 'warning'
-                );
-            }
-
-            $this->auditService->log(
-                'user_registered',
-                'New user registered: ' . maskForLog($user->mobile_number, 'phone'),
-                $request,
-                [
-                    'user_id' => $user->id,
-                    'mobile_number_masked' => maskForLog($user->mobile_number, 'phone'),
-                ],
-                hashForCache($user->mobile_number, 'audit_mobile_hash'),
-                $user->id, 'User', $user->id, 'info'
-            );
-
-            if ($request->expectsJson()) {
-                $token = JWTAuth::fromUser($user);
-                Log::info('MobileAuthController: JWT token generated for newly registered user ' . $user->id);
-
-                return response()->json([
-                    'message' => 'ثبت‌نام با موفقیت انجام شد و شما وارد شدید.',
-                    'user' => $user,
-                    'token' => $token,
-                    'token_type' => 'bearer',
-                    'expires_in' => JWTAuth::factory()->getTTL() * 60
-                ], 201);
-            }
-
-            return redirect()->route('auth.verify-otp-form', ['mobile_number' => $user->mobile_number])->with('status', 'ثبت‌نام شما با موفقیت انجام شد. کد تأیید برای شما ارسال گردید.');
-
-        } catch (QueryException $e) {
-            Log::error('MobileAuthController: Database error during registration: ' . $e->getMessage(), [
-                'mobile_number_masked' => maskForLog($validatedData['mobile_number'], 'phone'),
-                'exception' => $e->getTraceAsString()
-            ]);
-            return $this->respondWithError(
-                'خطا در ثبت‌نام. لطفاً دوباره تلاش کنید.',
-                500,
-                $request,
-                'general'
-            );
-        } catch (\Exception $e) {
-            Log::error('MobileAuthController: General error during registration: ' . $e->getMessage(), [
-                'mobile_number_masked' => maskForLog($validatedData['mobile_number'], 'phone'),
-                'exception' => $e->getTraceAsString()
-            ]);
-            return $this->respondWithError(
-                'خطایی رخ داد. لطفاً دوباره تلاش کنید.',
-                500,
-                $request,
-                'general'
-            );
-        }
-    }
-    */
-
 
     /**
      * Verify OTP and log in the user or redirect to registration.
@@ -554,15 +433,6 @@ class MobileAuthController extends Controller
         } catch (Throwable $e) {
             Log::warning('MobileAuthController: Failed to invalidate JWT token during logout for user ' . ($userId ?? 'N/A') . ': ' . $e->getMessage());
         }
-
-        // این خطوط مربوط به سشن وب لاراول هستند و برای مسیرهای API که از JWT استفاده می‌کنند،
-        // معمولاً ضروری نیستند و می‌توانند باعث خطای "Session store not set on request." شوند.
-        // بنابراین، این خطوط را حذف یا کامنت می‌کنیم.
-        // Auth::guard('web')->logout();
-        // $request->session()->invalidate();
-        // $request->session()->regenerateToken();
-        // Log::info('MobileAuthController: User logged out from web session.');
-
 
         $this->auditService->log(
             'user_logged_out',

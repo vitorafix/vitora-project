@@ -56,4 +56,13 @@ interface OtpServiceInterface
      * @return void
      */
     public function clearOtp(string $mobileNumber): void;
+
+    /**
+     * Checks if there's a pending OTP in cache for the given mobile number.
+     * بررسی می‌کند که آیا کد OTP معلق (در انتظار تأیید) برای شماره موبایل مورد نظر در کش وجود دارد یا خیر.
+     *
+     * @param string $mobileNumber
+     * @return bool
+     */
+    public function hasPendingOtp(string $mobileNumber): bool;
 }

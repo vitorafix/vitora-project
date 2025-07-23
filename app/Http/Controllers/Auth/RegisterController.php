@@ -12,10 +12,10 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Illuminate\Support\Str;
-use App\Services\MelipayamakSmsService; // ایمپورت کردن سرویس پیامک
-use Illuminate\Support\Facades\Crypt; // اضافه شده: ایمپورت کردن کلاس Crypt برای رمزگذاری
-use Illuminate\Support\Facades\Log; // اضافه شده برای لاگ
-use App\Http\Requests\Auth\RegisterRequest; // ایمپورت کردن RegisterRequest
+use App\Services\MelipayamakSmsService; // Import SMS service
+use Illuminate\Support\Facades\Crypt; // Added: Import Crypt class for encryption
+use Illuminate\Support\Facades\Log; // Added for logging
+use App\Http\Requests\Auth\RegisterRequest; // Import RegisterRequest
 
 // NEW: Import OtpServiceInterface and AuditServiceInterface
 use App\Contracts\Services\OtpServiceInterface;
@@ -84,6 +84,7 @@ class RegisterController extends Controller
 
     /**
      * ثبت‌نام کاربر جدید با نام، نام خانوادگی و شماره موبایل و ارسال OTP.
+     * این متد می‌تواند به عنوان نقطه شروع ثبت‌نام (ارسال اولین OTP) نیز عمل کند.
      *
      * @param  \App\Http\Requests\Auth\RegisterRequest  $request
      * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
@@ -107,7 +108,6 @@ class RegisterController extends Controller
             return back()->withErrors(['mobile_number' => 'این شماره موبایل قبلاً ثبت‌نام شده است. لطفاً وارد شوید.'])->withInput();
         }
 
-
         // تولید کلید کش برای اطلاعات ثبت‌نام در حال انتظار (با استفاده از هش)
         // این بخش برای ذخیره نام و نام خانوادگی کاربر جدید قبل از تایید OTP است.
         $pendingRegistrationCacheKey = self::CACHE_PENDING_REGISTRATION_PREFIX . hashForCache($mobileNumber, 'pending_reg_cache_key');
@@ -121,17 +121,52 @@ class RegisterController extends Controller
         Cache::put($pendingRegistrationCacheKey, json_encode($registrationData), now()->addMinutes(self::PENDING_REGISTRATION_CACHE_TTL_MINUTES));
         Log::debug('RegisterController: Stored pending registration data in cache with key: ' . $pendingRegistrationCacheKey . ' and data: ' . json_encode($registrationData));
 
+        // حالا، به جای ارسال مستقیم OTP، متد requestOtp را فراخوانی می‌کنیم
+        // این کار باعث می‌شود منطق ارسال OTP یکپارچه باشد.
+        return $this->requestOtp($request);
+    }
 
-        // --- تغییر کلیدی: استفاده از OtpService برای ارسال OTP ---
+    /**
+     * ارسال کد OTP به شماره موبایل برای فرآیند ثبت‌نام.
+     * این متد هم برای ارسال اولیه OTP و هم برای ارسال مجدد کد استفاده می‌شود.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function requestOtp(Request $request)
+    {
+        // اعتبارسنجی شماره موبایل
+        $request->validate([
+            'mobile_number' => ['required', 'string', 'regex:/^09\d{9}$/']
+        ]);
+
+        $mobileNumber = $request->input('mobile_number');
+        $ipAddress = $request->ip();
+
+        Log::debug('RegisterController: Starting requestOtp process for mobile: ' . maskForLog($mobileNumber, 'phone'));
+
         try {
-            Log::info('RegisterController: Calling otpService->sendOtpForMobile for new registration: ' . maskForLog($mobileNumber, 'phone'));
+            // بررسی کنید که آیا کاربر با این شماره قبلاً ثبت‌نام کرده است یا خیر.
+            // اگر ثبت‌نام کرده باشد، باید به مسیر ورود هدایت شود.
+            $existingUser = User::where('mobile_number', $mobileNumber)->first();
+            if ($existingUser) {
+                Log::info('RegisterController: Mobile number ' . maskForLog($mobileNumber, 'phone') . ' already exists. Responding with user_exists.');
+                return response()->json([
+                    'message' => 'این شماره قبلاً در سیستم ثبت شده است. لطفاً وارد شوید.',
+                    'user_exists' => true // Indicate that user exists, so frontend should switch to login flow
+                ], 409); // Using 409 Conflict as the resource (user) already exists
+            }
+
+            // اگر کاربر وجود ندارد، OTP را برای ثبت‌نام ارسال کنید.
+            Log::info('RegisterController: Calling otpService->sendOtpForMobile for new registration/resend: ' . maskForLog($mobileNumber, 'phone'));
             $this->otpService->sendOtpForMobile(
                 $mobileNumber,
                 $ipAddress,
-                $this->rateLimitService, // Pass RateLimitService
+                $this->rateLimitService,
                 function ($message, $level = 'info', $userId = null, $userType = null, $objectId = null, $extra = []) use ($request, $mobileNumber, $ipAddress) {
                     $this->auditService->log(
-                        'otp_send_event_registration', // Changed event type for clarity
+                        'otp_send_event_registration',
                         $message,
                         $request,
                         array_merge($extra, [
@@ -142,9 +177,15 @@ class RegisterController extends Controller
                         $userId, $userType, $objectId, $level
                     );
                 },
-                $registrationData // NEW: Pass the registrationData array here
+                true // این آرگومان باید 'true' باشد تا نشان دهد این یک تلاش ثبت‌نام است.
             );
             Log::info("RegisterController: OTP sent via OtpService to {$mobileNumber}");
+
+            return response()->json([
+                'message' => 'کد تأیید به شماره شما ارسال شد.',
+                'user_exists' => false // Explicitly state that user does not exist
+            ], 200);
+
         } catch (OtpSendException $e) {
             Log::error('RegisterController: OtpSendException caught during registration OTP send: ' . $e->getMessage(), [
                 'mobile_number' => maskForLog($mobileNumber, 'phone'),
@@ -165,16 +206,5 @@ class RegisterController extends Controller
             }
             return back()->withErrors(['mobile_number' => 'خطا در ارسال کد تایید. لطفاً دوباره تلاش کنید.'])->withInput();
         }
-        // --- پایان تغییر کلیدی ---
-
-
-        if ($request->expectsJson()) {
-            return response()->json(['message' => 'کد تایید به شماره شما ارسال شد.'], 200);
-        }
-
-        // هدایت کاربر به صفحه تأیید OTP
-        // شماره موبایل از طریق query parameter ارسال می‌شود.
-        return redirect()->route('auth.verify-otp-form', ['mobile_number' => $mobileNumber])
-                         ->with('status', 'کد تایید به شماره شما ارسال شد. لطفاً آن را وارد کنید.');
     }
 }

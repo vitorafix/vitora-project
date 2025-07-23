@@ -5,9 +5,9 @@ console.log('auth.js loaded and starting...');
 
 // ایمپورت کردن توابع مورد نیاز از ماژول‌های دیگر
 // توابع storeJwtToken و clearJwtToken از api.js ایمپورت می‌شوند.
-import {sendOtp, verifyOtpAndLogin, logoutUser, storeJwtToken, clearJwtToken, getJwtToken, registerUserAndSendOtp} from "/resources/js/api.js";
-// اضافه شدن registerUserAndSendOtp از api.js
-import {updateNavbarUserStatus} from "/resources/js/navbar_new.js";
+import { sendOtp, verifyOtpAndLogin, logoutUser, storeJwtToken, clearJwtToken, getJwtToken, registerUserAndSendOtp, requestOtpForRegister } from "/resources/js/api.js";
+// اضافه شدن registerUserAndSendOtp و requestOtpForRegister از api.js
+import { updateNavbarUserStatus } from "/resources/js/navbar_new.js";
 // برای به‌روزرسانی وضعیت نوار ناوبری
 
 // تابع برای ذخیره guest_uuid در localStorage (این تابع مستقیماً با Axios ارتباط ندارد، پس نیازی به تغییر ندارد)
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Ensure any existing timer is stopped
             this.updateDisplay();
             // Update immediately
-            this.interval = setInterval( () => {
+            this.interval = setInterval(() => {
                 this.seconds--;
                 this.updateDisplay();
                 if (this.seconds <= 0) {
@@ -63,8 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.onCompleteCallback?.();
                     // Call callback if provided
                 }
-            }
-            , 1000);
+            }, 1000);
         }
 
         stop() {
@@ -90,14 +89,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const otpDigitInputs = document.querySelectorAll('.otp-digit-input');
         otpDigitInputs.forEach(input => {
             input.value = '';
-        }
-        );
+        });
         if (otpDigitInputs.length > 0) {
             otpDigitInputs[0].focus();
             // Focus on the first field for convenience
         }
-    }
-    ;
+    };
 
     // Function to get the combined OTP string from individual inputs (moved from verify-otp.blade.php)
     const getCombinedOtp = () => {
@@ -105,11 +102,9 @@ document.addEventListener('DOMContentLoaded', function() {
         let otp = '';
         otpDigitInputs.forEach(input => {
             otp += input.value;
-        }
-        );
+        });
         return otp;
-    }
-    ;
+    };
 
     // --- Logic for the registration page (register.blade.php) ---
     const registerNameInput = document.getElementById('name');
@@ -166,6 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             try {
                 // NEW LOGIC: Call registerUserAndSendOtp for registration flow
+                // This will now internally call the /api/auth/register/request-otp endpoint
                 const response = await registerUserAndSendOtp(mobileNumber, name, lastname);
 
                 window.showMessage(response.message || 'ثبت‌نام با موفقیت انجام شد. کد تأیید ارسال شد.', 'success');
@@ -222,7 +218,7 @@ document.addEventListener('DOMContentLoaded', function() {
             sendOtpButton.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال ارسال...';
 
             try {
-                const response = await sendOtp(mobileNumber);
+                const response = await sendOtp(mobileNumber); // This calls /api/auth/send-otp
 
                 window.showMessage(response.message || 'کد تأیید با موفقیت ارسال شد.', 'success');
 
@@ -240,10 +236,11 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (error) {
                 // Handle 404 specifically for 'requires_registration'
                 if (error.response && error.response.status === 404 && error.response.data.requires_registration) {
-                    const errorMessage = error.response.data.message || 'این شماره در سیستم ثبت نشده است. لطفاً ابتدا ثبت‌نام کنید.';
-                    window.showMessage(errorMessage, 'error');
-                    console.log('Auth.js: Server indicated registration required. Redirecting to registration form.');
-                    window.location.href = `${window.location.origin}/auth/register?mobile_number=${mobileNumber}`;
+                    // تغییر فقط در اینجا: پیام مستقیم و بدون ابهام، بدون ریدایرکت
+                    const customMessage = 'ارسال کد تأیید ناموفق بود: این شماره در سیستم ما ثبت نشده است.';
+                    window.showMessage(customMessage, 'error'); // نوع پیام را خطا قرار می‌دهیم
+                    console.log('Auth.js: Server indicated registration required. Not redirecting as per user request.');
+                    // REMOVED: window.location.href = `${window.location.origin}/auth/register?mobile_number=${mobileNumber}`;
                 } else {
                     const errorMessage = error.response?.data?.message || 'خطا در ارسال کد تأیید. لطفاً دوباره تلاش کنید.';
                     window.showMessage(errorMessage, 'error');
@@ -292,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Store original text
 
         // Apply auto-focus/backspace/paste logic for OTP inputs
-        otpDigitInputs.forEach( (input, index) => {
+        otpDigitInputs.forEach((input, index) => {
             input.addEventListener('input', function(event) {
                 event.target.value = convertAndFilterDigits(event.target.value);
 
@@ -325,8 +322,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     otpDigitInputs[lastFilledIndex].focus();
                 }
             });
-        }
-        );
+        });
 
         // Apply digit conversion and filtering to new mobile number input in modal
         if (newMobileInput) {
@@ -336,7 +332,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Initialize main countdown timer
-        mainCountdownTimer = new CountdownTimer(countdownTimerElement,120, () => {
+        mainCountdownTimer = new CountdownTimer(countdownTimerElement, 120, () => {
             resendButton.disabled = false;
             resendButton.classList.remove('opacity-50', 'cursor-not-allowed');
             resendButton.removeAttribute('aria-disabled');
@@ -345,11 +341,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // Clear timer text
             resendButton.innerHTML = resendButtonOriginalText;
             // Restore original text
-        }
-        );
+        });
 
         // Initialize resend cooldown timer (initially not running)
-        resendCooldownTimer = new CountdownTimer(resendTimerElement,120, () => {
+        resendCooldownTimer = new CountdownTimer(resendTimerElement, 120, () => {
             resendButton.disabled = false;
             resendButton.classList.remove('opacity-50', 'cursor-not-allowed');
             resendButton.removeAttribute('aria-disabled');
@@ -358,8 +353,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Clear timer text
             resendButton.innerHTML = resendButtonOriginalText;
             // Restore original text
-        }
-        );
+        });
 
         // Update startCountdown function to use the new class
         function startCountdown() {
@@ -467,7 +461,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 resendButton.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال ارسال...';
 
                 try {
-                    const response = await sendOtp(mobileNumber);
+                    // NEW LOGIC: Use requestOtpForRegister for resending OTP in registration flow
+                    const response = await requestOtpForRegister(mobileNumber);
 
                     window.showMessage(response.message || 'کد تأیید مجدداً ارسال شد.', 'success');
                     clearOtpFields();
@@ -508,7 +503,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     modalErrorMessage.textContent = 'لطفاً یک شماره موبایل معتبر وارد کنید (مثال: 09123456789).';
                     modalErrorMessage.classList.remove('hidden');
                     modalErrorMessage.classList.add('animate-pulse');
-                    setTimeout( () => modalErrorMessage.classList.remove('animate-pulse'), 2000);
+                    setTimeout(() => modalErrorMessage.classList.remove('animate-pulse'), 2000);
                     return;
                 }
 
@@ -518,7 +513,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 sendNewOtpButton.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i> در حال ارسال...';
 
                 try {
-                    const response = await sendOtp(newMobileNumber);
+                    // NEW LOGIC: Use requestOtpForRegister for sending OTP for new mobile number in change flow
+                    const response = await requestOtpForRegister(newMobileNumber);
 
                     window.showMessage(response.message || 'شماره موبایل با موفقیت تغییر یافت. کد جدید ارسال شد.', 'success');
                     hiddenMobileNumberInput.value = newMobileNumber;
@@ -533,7 +529,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     modalErrorMessage.textContent = errorMessage;
                     modalErrorMessage.classList.remove('hidden');
                     modalErrorMessage.classList.add('animate-pulse');
-                    setTimeout( () => modalErrorMessage.classList.remove('animate-pulse'), 2000);
+                    setTimeout(() => modalErrorMessage.classList.remove('animate-pulse'), 2000);
                     console.error('Auth.js: Error changing mobile number:', error);
                     clearOtpFields();
                 } finally {

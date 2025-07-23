@@ -13,15 +13,23 @@ let cartFetchPromise = null;
 /**
  * Sends an OTP to the specified mobile number.
  * This function is primarily for the login flow (existing users).
+ * It can also be used for registration flow if `isRegistrationAttempt` is true.
  *
  * @param {string} mobileNumber The mobile number to send OTP to.
+ * @param {boolean} [isRegistrationAttempt=false] Indicates if this is a registration attempt.
  * @returns {Promise<object>} The API response data.
  */
-export const sendOtp = async (mobileNumber) => {
+export const sendOtp = async (mobileNumber, isRegistrationAttempt = false) => {
     try {
-        const response = await axios.post('/api/auth/send-otp', {
+        const payload = {
             mobile_number: mobileNumber
-        });
+        };
+        // Add is_registration flag to payload if it's a registration attempt
+        if (isRegistrationAttempt) {
+            payload.is_registration = true;
+        }
+
+        const response = await axios.post('/api/auth/send-otp', payload);
         console.log('API: OTP sent successfully:', response.data);
         return response.data;
     } catch (error) {
@@ -33,6 +41,7 @@ export const sendOtp = async (mobileNumber) => {
 /**
  * Registers a new user and sends an OTP.
  * This function is specifically for the registration flow.
+ * It calls the /api/auth/register endpoint which in turn calls requestOtpForRegister internally.
  *
  * @param {string} mobileNumber The mobile number for registration.
  * @param {string} name The user's first name.
@@ -50,6 +59,26 @@ export const registerUserAndSendOtp = async (mobileNumber, name, lastname = '') 
         return response.data;
     } catch (error) {
         console.error('API: Error during registration and OTP send:', error.response?.data || error.message);
+        throw error;
+    }
+};
+
+/**
+ * Requests OTP for registration flow (initial send or resend).
+ * This function calls the dedicated registration OTP endpoint.
+ *
+ * @param {string} mobileNumber The mobile number to request OTP for.
+ * @returns {Promise<object>} The API response data.
+ */
+export const requestOtpForRegister = async (mobileNumber) => {
+    try {
+        const response = await axios.post('/api/auth/register/request-otp', {
+            mobile_number: mobileNumber
+        });
+        console.log('API: OTP requested for registration successfully:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('API: Error requesting OTP for registration:', error.response?.data || error.message);
         throw error;
     }
 };

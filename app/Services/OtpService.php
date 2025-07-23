@@ -11,8 +11,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Encryption\DecryptException;
-use App\Exceptions\OtpSendException; // CHANGED: Now importing from App\Exceptions
-use App\Http\Controllers\Auth\MobileAuthController; // Added for constants
+use App\Exceptions\OtpSendException;
+use App\Http\Controllers\Auth\MobileAuthController;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
@@ -151,7 +151,7 @@ class OtpService implements OtpServiceInterface
 
         } catch (\Exception $e) {
             Log::critical('OTPService: Exception during Cache::put operation for mobile: ' . $this->maskMobile($mobileNumber) . '. Error: ' . $e->getMessage());
-            throw new \Exception('خطا در ذخیره کد تأیید. لطفاً با پشتیبانی تماس بگیرید.', 500);
+            throw new \Exception('خطا در ذخیره کد تأیید. لطفاً با پشتیبانی تماس بگیگیرد.', 500);
         }
 
         Log::debug('OTPService: Generated and stored OTP: ' . $otp . ' for mobile: ' . $this->maskMobile($mobileNumber) . ' with cache key: ' . $cacheKey);
@@ -258,7 +258,7 @@ class OtpService implements OtpServiceInterface
      * @param string $ipAddress The IP address of the request for rate limiting.
      * @param RateLimitServiceInterface $rateLimitService The rate limit service instance.
      * @param callable $auditLogger A callable function for logging audit events.
-     * @param array|null $registrationData Optional array of registration data (name, lastname) for new users.
+     * @param bool $isRegistrationAttempt Indicates if this is an attempt to register a new user.
      * @throws OtpSendException
      */
     public function sendOtpForMobile(
@@ -266,9 +266,9 @@ class OtpService implements OtpServiceInterface
         string $ipAddress,
         RateLimitServiceInterface $rateLimitService,
         callable $auditLogger,
-        ?array $registrationData = null // NEW: Added registrationData parameter
+        bool $isRegistrationAttempt = false // Changed to bool and default to false
     ): void {
-        Log::debug('OTPService: sendOtpForMobile called for mobile: ' . $this->maskMobile($mobileNumber) . ', IP: ' . $this->maskIp($ipAddress));
+        Log::debug('OTPService: sendOtpForMobile called for mobile: ' . $this->maskMobile($mobileNumber) . ', IP: ' . $this->maskIp($ipAddress) . ', Is Registration Attempt: ' . ($isRegistrationAttempt ? 'Yes' : 'No'));
         Log::info('OTPService: Starting OTP sending process for mobile: ' . $this->maskMobile($mobileNumber));
 
         // Apply rate limits using injected service
@@ -290,25 +290,19 @@ class OtpService implements OtpServiceInterface
 
         // Handle new user registration vs. existing user login
         if (!$user) {
-            if ($registrationData) {
-                // This is a new registration flow, store pending data from RegisterController
-                $pendingRegistrationCacheKey = $this->getPendingRegistrationCacheKey($mobileNumber);
-                Cache::put($pendingRegistrationCacheKey, json_encode($registrationData), now()->addMinutes(self::PENDING_REGISTRATION_CACHE_TTL_MINUTES));
-                Log::info('OTPService: Stored pending registration data in cache for mobile: ' . $this->maskMobile($mobileNumber) . ' with data: ' . json_encode($registrationData));
+            if ($isRegistrationAttempt) { // Check the boolean flag directly
+                Log::info('OTPService: Mobile number ' . $this->maskMobile($mobileNumber) . ' not found in users table, but it is a registration attempt. Proceeding to send OTP.');
                 $auditLogger(
                     'otp_send_event_registration',
-                    'Mobile number ' . $this->maskMobile($mobileNumber) . ' not found in users table. Pending registration data stored.',
+                    'Mobile number ' . $this->maskMobile($mobileNumber) . ' not found in users table. OTP sent for registration attempt.',
                     null, null, null,
                     [
                         'mobile_number_masked' => $this->maskMobile($mobileNumber),
-                        'ip_address_masked' => $this->maskIp($ipAddress),
-                        'pending_data' => $registrationData // Log the actual data
+                        'ip_address_masked' => $this->maskIp($ipAddress)
                     ]
                 );
             } else {
-                // This scenario means a new user tried to get OTP without going through registration form first.
-                // Or RegisterController didn't pass registrationData.
-                Log::warning('OTPService: Mobile number ' . $this->maskMobile($mobileNumber) . ' not found in users table and no registration data provided. This might be an unexpected flow.');
+                Log::warning('OTPService: Mobile number ' . $this->maskMobile($mobileNumber) . ' not found in users table and not marked as a registration attempt. Throwing error.');
                 throw new OtpSendException('این شماره در سیستم ثبت نشده است. لطفاً ابتدا ثبت‌نام کنید.', null, 404);
             }
         } else {
@@ -451,7 +445,7 @@ class OtpService implements OtpServiceInterface
                         Log::warning('OTPService: "user" role not found. New user created without a role.');
                         $auditLogger(
                             'role_not_found_on_registration',
-                            'Attempted to assign "user" role but role not found for user: ' . $this->maskMobile($user->mobile_number),
+                            'Attempted to assign "user" role but role not found for user: ' . $this->maskMobile($mobileNumber),
                             $user->id, 'User', $user->id,
                             ['missing_role' => 'user'], 'warning'
                         );
@@ -523,6 +517,26 @@ class OtpService implements OtpServiceInterface
         $cacheKey = $this->getOtpCacheKey($mobileNumber);
         Cache::forget($cacheKey);
         Log::info('OTPService: Cleared OTP from cache for mobile: ' . $this->maskMobile($mobileNumber) . ' with key: ' . $cacheKey);
+    }
+
+    /**
+     * Checks if there's a pending OTP in cache for the given mobile number.
+     * بررسی می‌کند که آیا کد OTP معلق (در انتظار تأیید) برای شماره موبایل مورد نظر در کش وجود دارد یا خیر.
+     *
+     * @param string $mobileNumber
+     * @return bool
+     */
+    public function hasPendingOtp(string $mobileNumber): bool
+    {
+        // This key should precisely match how you store the OTP or pending registration data.
+        // If you use a hashForCache function or another structure, apply it here.
+        // Assuming your OTPs are stored with OTP_CACHE_PREFIX and pending registration data
+        // with PENDING_REGISTRATION_CACHE_PREFIX and hashForCache.
+        $otpCacheKey = $this->getOtpCacheKey($mobileNumber);
+        $pendingRegistrationCacheKey = $this->getPendingRegistrationCacheKey($mobileNumber);
+
+        // Check if either an OTP or pending registration data exists in cache
+        return Cache::has($otpCacheKey) || Cache::has($pendingRegistrationCacheKey);
     }
 
     /**

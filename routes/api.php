@@ -29,6 +29,11 @@ Route::post('/auth/login', [MobileAuthController::class, 'verifyOtpAndLogin'])->
 // و ارسال OTP است. ایجاد نهایی کاربر پس از تأیید OTP در OtpService انجام می‌شود.
 Route::post('/auth/register', [RegisterController::class, 'register'])->name('api.auth.register');
 
+// NEW: مسیر اختصاصی برای ارسال مجدد OTP در زمان ثبت‌نام
+// این مسیر برای ارسال OTP به شماره موبایلی است که هنوز در سیستم ثبت‌نام نکرده است.
+Route::post('/auth/register/request-otp', [RegisterController::class, 'requestOtp'])->name('api.auth.register.request-otp');
+
+
 // مسیر برای ورود به سشن با استفاده از JWT (برای صفحات وب)
 // این مسیر نیازی به middleware 'jwt.auth' ندارد زیرا وظیفه آن احراز هویت JWT دریافتی
 // و سپس لاگین کردن کاربر در سشن وب لاراول است.
