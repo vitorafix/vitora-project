@@ -6,6 +6,10 @@ import { storeJwtToken, clearJwtToken, getJwtToken } from './jwt_manager.js'; //
 // Export JWT functions directly for use in auth.js
 export { storeJwtToken, clearJwtToken, getJwtToken };
 
+// Variable to hold the promise of an active fetchCartContents request
+// This prevents sending multiple simultaneous requests.
+let cartFetchPromise = null;
+
 /**
  * Sends an OTP to the specified mobile number.
  * This function is primarily for the login flow (existing users).
@@ -100,7 +104,7 @@ export const logoutUser = async () => {
         console.log('API: User logged out successfully.'); // Log message after clearing token
 
         // Redirect to login page or home page after successful logout
-        window.location.href = '/'; // CHANGED: Redirect to the home page
+        window.location.href = '/'; // Redirect to the home page as requested
     } catch (error) {
         console.error('API: Error logging out:', error.response?.data || error.message);
         throw error;
@@ -110,19 +114,28 @@ export const logoutUser = async () => {
 /**
  * Fetches cart contents for the current user or guest.
  * @returns {Promise<object>} The API response data.
+ *
+ * CHANGED: Added caching mechanism to prevent multiple simultaneous requests.
  */
 export const fetchCartContents = async () => {
-    try {
-        const guestUuid = localStorage.getItem('guest_uuid');
-        const headers = guestUuid ? { 'X-Guest-UUID': guestUuid } : {};
-
-        const response = await axios.get('/api/cart/contents', { headers });
-        console.log('API: Cart contents fetched:', response.data);
-        return response.data;
-    } catch (error) {
-        console.error('API: Error fetching cart contents:', error.response?.data || error.message);
-        throw error;
+    // If a fetchCartContents request is already in progress, return the same Promise.
+    if (cartFetchPromise) {
+        console.log('API: fetchCartContents request already in progress. Returning existing promise.');
+        return cartFetchPromise;
     }
+
+    const guestUuid = localStorage.getItem('guest_uuid');
+    const headers = guestUuid ? { 'X-Guest-UUID': guestUuid } : {};
+
+    // Create a new Promise and store it in cartFetchPromise.
+    cartFetchPromise = axios.get('/api/cart/contents', { headers })
+        .finally(() => {
+            // After the request is settled (success or failure), clear the Promise so subsequent requests can execute.
+            cartFetchPromise = null;
+        });
+
+    console.log('API: Initiating new fetchCartContents request.');
+    return cartFetchPromise;
 };
 
 /**
@@ -136,9 +149,9 @@ export const addToCart = async (productId, quantity = 1) => {
         const guestUuid = localStorage.getItem('guest_uuid');
         const headers = guestUuid ? { 'X-Guest-UUID': guestUuid } : {};
 
-        const response = await axios.post('/api/cart/add', {
-            product_id: productId,
-            quantity: quantity
+        // CHANGED: Construct the URL to include productId as a path parameter
+        const response = await axios.post(`/api/cart/add/${productId}`, {
+            quantity: quantity // Only quantity is needed in the body now
         }, { headers });
         console.log('API: Product added to cart:', response.data);
         return response.data;
@@ -154,7 +167,7 @@ export const addToCart = async (productId, quantity = 1) => {
  * @param {number} quantity The new quantity.
  * @returns {Promise<object>} The API response data.
  */
-export const updateCartItemQuantity = async (productId, quantity) => { // Changed from updateCartItem to updateCartItemQuantity for consistency
+export const updateCartItemQuantity = async (productId, quantity) => {
     try {
         const guestUuid = localStorage.getItem('guest_uuid');
         const headers = guestUuid ? { 'X-Guest-UUID': guestUuid } : {};
@@ -208,7 +221,7 @@ export const clearCart = async () => {
 };
 
 /**
- * Applies a coupon code to the cart.
+ * Applies a coupon to the cart.
  * @param {string} couponCode The coupon code to apply.
  * @returns {Promise<object>} The API response data.
  */

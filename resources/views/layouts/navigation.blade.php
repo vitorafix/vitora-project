@@ -58,6 +58,7 @@
                     <!-- Mini Cart Dropdown -->
                     <div id="mini-cart-dropdown" class="absolute top-full right-0 mt-3 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50 p-4 hidden">
                         <h3 class="text-lg font-bold text-gray-800 mb-3 text-right">سبد خرید شما</h3>
+                        {{-- Changed id back to mini-cart-items-container to satisfy cart.js/events.js --}}
                         <div id="mini-cart-items-container" class="space-y-3 hidden">
                             <!-- Cart items will be rendered here by JS -->
                         </div>
@@ -66,6 +67,10 @@
                             <p class="text-gray-600">سبد خرید شما خالی است.</p>
                         </div>
                         <div id="mini-cart-summary" class="mt-4 pt-4 border-t border-gray-200 hidden">
+                            <div class="flex justify-between items-center mb-3 text-right">
+                                <span class="text-gray-700 font-semibold">تعداد کل:</span>
+                                <span id="mini-cart-total-quantity" class="text-gray-700 font-bold text-lg">0</span>
+                            </div>
                             <div class="flex justify-between items-center mb-3 text-right">
                                 <span class="text-gray-700 font-semibold">جمع کل:</span>
                                 <span id="mini-cart-total-price" class="text-green-700 font-bold text-lg">0 تومان</span>
