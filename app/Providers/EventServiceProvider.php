@@ -18,9 +18,10 @@ class EventServiceProvider extends ServiceProvider
      */
     protected $listen = [
         // ثبت AssignGuestCartToUserListener برای رویداد Login
-        Login::class => [
-            AssignGuestCartToUserListener::class,
-        ],
+        // این خط حذف شده است تا از فراخوانی تکراری منطق ادغام سبد خرید جلوگیری شود.
+        // Login::class => [
+        //     AssignGuestCartToUserListener::class,
+        // ],
     ];
 
     /**
@@ -35,4 +36,3 @@ class EventServiceProvider extends ServiceProvider
         //
     }
 }
-

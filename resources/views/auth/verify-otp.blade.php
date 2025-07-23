@@ -97,23 +97,25 @@
                         ارسال مجدد کد (<span id="resend-timer">02:00</span>)
                     </button>
 
-                    <button id="change-mobile-button"
+                    {{-- Changed "تغییر شماره موبایل" to "بازگشت به صفحه ورود" and added route --}}
+                    {{-- Updated route to auth.mobile-login-form --}}
+                    <a href="{{ route('auth.mobile-login-form') }}"
                             class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900/20 rounded-lg transition-all duration-300 ease-in-out">
-                        تغییر شماره موبایل
-                    </button>
+                        بازگشت به صفحه ورود
+                    </a>
                 </div>
             </div>
         </section>
 
-        {{-- Change Mobile Number Modal --}}
-        <div id="change-mobile-modal" class="custom-modal-overlay"> {{-- Removed x-cloak --}}
+        {{-- Removed Change Mobile Number Modal --}}
+        {{--
+        <div id="change-mobile-modal" class="custom-modal-overlay">
             <div class="custom-modal-content">
                 <button id="close-modal-button" class="custom-modal-close-btn text-gray-600 dark:text-gray-400 hover:text-red-500">
                     <i class="fas fa-times"></i>
                 </button>
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">تغییر شماره موبایل</h3>
                 <p class="text-gray-600 dark:text-gray-400 mb-4">لطفاً شماره موبایل جدید خود را وارد کنید.</p>
-                {{-- Removed pattern and required attributes for client-side validation --}}
                 <input id="new_mobile_number"
                        class="input-field text-center block w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 transition-all duration-200 ease-in-out text-base placeholder-gray-400"
                        type="text"
@@ -126,6 +128,7 @@
                 </button>
             </div>
         </div>
+        --}}
 
         {{-- Hidden div to pass routes to JavaScript --}}
         <div id="app-routes"

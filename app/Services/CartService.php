@@ -14,7 +14,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Collection;
-use InvalidArgumentException; // Import for validation
+use InvalidArgumentException;
 
 // Contracts
 use App\Services\Contracts\CartServiceInterface;
@@ -107,6 +107,8 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                 Log::info('Existing cart found by guest UUID.', ['cart_id' => $cart->id, 'guest_uuid' => $guestUuid]);
                 // If a guest cart is found and user is now logged in, assign it to the user
                 if ($user && !$cart->user_id) {
+                    // NOTE: The assignGuestCartToUser method is called here.
+                    // If this method is also called by a Login Event Listener, it will cause duplication.
                     $this->assignGuestCartToUser($user, $guestUuid); // Use guestUuid for assignment
                     $cart->refresh(); // Refresh the cart to get updated user_id
                     Log::info('Guest cart assigned to logged-in user during getOrCreateCart.', ['cart_id' => $cart->id, 'user_id' => $user->id, 'guest_uuid' => $guestUuid]);
@@ -122,13 +124,15 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                 Log::info('Existing cart found by session ID (fallback).', ['cart_id' => $cart->id, 'session_id' => $sessionId]);
                 // If a guest cart is found and user is now logged in, assign it to the user
                 if ($user && !$cart->user_id) {
+                    // NOTE: The assignGuestCartToUser method is called here.
+                    // If this method is also called by a Login Event Listener, it will cause duplication.
                     $this->assignGuestCartToUser($user, $guestUuid ?? $sessionId); // Use guestUuid if available, else sessionId
                     $cart->refresh(); // Refresh the cart to get updated user_id
                     Log::info('Guest cart assigned to logged-in user during getOrCreateCart (from session_id).', ['cart_id' => $cart->id, 'user_id' => $user->id, 'session_id' => $sessionId]);
                 }
             }
         }
-        
+
         // 4. If no cart found by user, guest UUID, or session, create a new one
         if (!$cart) {
             Log::info('No existing cart found. Attempting to create new cart.', [
@@ -153,6 +157,8 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         } else {
             // Ensure the cart has the correct user_id if it was a guest cart and user logged in
             if ($user && !$cart->user_id) {
+                // NOTE: The assignGuestCartToUser method is called here.
+                // If this method is also called by a Login Event Listener, it will cause duplication.
                 $this->assignGuestCartToUser($user, $guestUuid ?? $sessionId); // Use guestUuid if available, else sessionId
                 $cart->refresh();
                 Log::info('Existing guest cart updated with user ID.', ['cart_id' => $cart->id, 'user_id' => $user->id, 'session_id' => $sessionId, 'guest_uuid' => $guestUuid]);
@@ -939,6 +945,20 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             }
 
             $userCart = $this->cartRepository->findByUserId($user->id);
+
+            // NEW: Check if the guestCart is already the user's cart
+            // این بررسی از ادغام تکراری یا حذف اشتباه سبد خرید کاربر جلوگیری می‌کند.
+            if ($guestCart && $userCart && $guestCart->id === $userCart->id) {
+                Log::info('CartService: Guest cart is already the user\'s cart. Skipping merge/assignment.', [
+                    'user_id' => $user->id,
+                    'cart_id' => $guestCart->id,
+                    'guest_identifier' => $guestIdentifier,
+                ]);
+                DB::commit();
+                $this->cacheManager->clearCache($user, null, $guestIdentifier);
+                $this->metricsManager->recordMetric('assignGuestCartToUser_duration', microtime(true) - $startTime, ['user_id' => $user->id, 'status' => 'skipped_already_assigned']);
+                return CartOperationResponse::success('سبد خرید مهمان از قبل به کاربر اختصاص داده شده بود.');
+            }
 
             if ($guestCart) {
                 if ($userCart) {
