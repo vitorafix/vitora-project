@@ -9,7 +9,8 @@ console.log('cart.js loaded and starting...');
 // تغییر: addItem به addToCart تغییر یافت
 import { fetchCartContents, addToCart, updateCartItemQuantity, removeCartItem, clearCart, applyCoupon, removeCoupon } from './api.js';
 // این توابع مسئول به‌روزرسانی رابط کاربری (DOM) بر اساس داده‌های سبد خرید هستند.
-import { setCartLoadingState, renderMainCart, renderMiniCartDetails } from './renderer.js';
+// تغییر: اکنون CartRenderer به عنوان یک شیء واحد ایمپورت می‌شود.
+import { CartRenderer } from './renderer.js';
 // این توابع مسئول کش کردن عناصر DOM و تنظیم Event Listenerها هستند.
 import {
     initializeDOMCache,
@@ -330,7 +331,7 @@ class CartManager {
      * بارگذاری محتویات سبد خرید از API و رندر کردن آن در UI.
      */
     async loadAndRenderCart() {
-        setCartLoadingState(true);
+        CartRenderer.setCartLoadingState(true); // تغییر اینجا
         try {
             const response = await fetchCartContents();
             if (response.success) {
@@ -338,10 +339,10 @@ class CartManager {
                 // فقط در صورتی renderMainCart را فراخوانی کنید که DOM.cartItemsContainer وجود داشته باشد
                 if (this.dom.cartItemsContainer) {
                     // تغییر در اینجا: ارسال cartContents.summary به عنوان cartTotals
-                    renderMainCart(cartContents.items, cartContents.summary);
+                    CartRenderer.renderMainCart(cartContents.items, cartContents.summary); // تغییر اینجا
                 }
                 // تغییر در اینجا: ارسال cartContents.summary.totalQuantity و cartContents.summary.totalPrice
-                renderMiniCartDetails(cartContents.items, cartContents.summary.totalQuantity, cartContents.summary.totalPrice);
+                CartRenderer.renderMiniCartDetails(cartContents.items, cartContents.summary.totalQuantity, cartContents.summary.totalPrice); // تغییر اینجا
                 console.log('Cart contents loaded and rendered successfully.');
             } else {
                 window.showMessage(response.message, 'error');
@@ -349,10 +350,10 @@ class CartManager {
         } catch (error) {
             console.error('Error loading cart contents:', error);
             window.showMessage('خطا در بارگذاری سبد خرید. لطفاً دوباره تلاش کنید.', 'error');
-            renderMainCart([], {}); // نمایش سبد خرید خالی در صورت خطا
-            renderMiniCartDetails([], 0, 0);
+            CartRenderer.renderMainCart([], {}); // تغییر اینجا
+            CartRenderer.renderMiniCartDetails([], 0, 0); // تغییر اینجا
         } finally {
-            setCartLoadingState(false);
+            CartRenderer.setCartLoadingState(false); // تغییر اینجا
         }
     }
 
@@ -364,7 +365,7 @@ class CartManager {
      * @param {number} quantity
      */
     async updateItemQuantity(cartItemId, quantity) {
-        setCartLoadingState(true);
+        CartRenderer.setCartLoadingState(true); // تغییر اینجا
         try {
             // استفاده از updateCartItemQuantity که از api.js ایمپورت شده است.
             const response = await updateCartItemQuantity(cartItemId, quantity);
@@ -378,7 +379,7 @@ class CartManager {
             console.error('Error updating cart item quantity:', error);
             window.showMessage('خطا در به‌روزرسانی تعداد محصول در سبد خرید.', 'error');
         } finally {
-            setCartLoadingState(false);
+            CartRenderer.setCartLoadingState(false); // تغییر اینجا
         }
     }
 
@@ -387,7 +388,7 @@ class CartManager {
      * @param {string} cartItemId
      */
     async removeItem(cartItemId) {
-        setCartLoadingState(true);
+        CartRenderer.setCartLoadingState(true); // تغییر اینجا
         try {
             const response = await removeCartItem(cartItemId);
             if (response.success) {
@@ -400,7 +401,7 @@ class CartManager {
             console.error('Error removing item from cart:', error);
             window.showMessage('خطا در حذف محصول از سبد خرید.', 'error');
         } finally {
-            setCartLoadingState(false);
+            CartRenderer.setCartLoadingState(false); // تغییر اینجا
         }
     }
 
@@ -408,7 +409,7 @@ class CartManager {
      * پاک کردن کامل سبد خرید.
      */
     async clearCart() {
-        setCartLoadingState(true);
+        CartRenderer.setCartLoadingState(true); // تغییر اینجا
         try {
             const response = await clearCart();
             if (response.success) {
@@ -421,7 +422,7 @@ class CartManager {
             console.error('Error clearing cart:', error);
             window.showMessage('خطا در پاک کردن سبد خرید.', 'error');
         } finally {
-            setCartLoadingState(false);
+            CartRenderer.setCartLoadingState(false); // تغییر اینجا
         }
     }
 
@@ -430,7 +431,7 @@ class CartManager {
      * @param {string} couponCode
      */
     async applyCoupon(couponCode) {
-        setCartLoadingState(true);
+        CartRenderer.setCartLoadingState(true); // تغییر اینجا
         try {
             const response = await applyCoupon(couponCode);
             if (response.success) {
@@ -443,7 +444,7 @@ class CartManager {
             console.error('Error applying coupon:', error);
             window.showMessage('خطا در اعمال کد تخفیف.', 'error');
         } finally {
-            setCartLoadingState(false);
+            CartRenderer.setCartLoadingState(false); // تغییر اینجا
         }
     }
 
@@ -451,7 +452,7 @@ class CartManager {
      * حذف کد تخفیف از سبد خرید.
      */
     async removeCoupon() {
-        setCartLoadingState(true);
+        CartRenderer.setCartLoadingState(true); // تغییر اینجا
         try {
             const response = await removeCoupon();
             if (response.success) {
@@ -464,7 +465,7 @@ class CartManager {
             console.error('Error removing coupon:', error);
             window.showMessage('خطا در حذف کد تخفیف.', 'error');
         } finally {
-            setCartLoadingState(false);
+            CartRenderer.setCartLoadingState(false); // تغییر اینجا
         }
     }
 }
