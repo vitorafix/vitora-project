@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Session; // این خط در فایل اصلی شما بود، اما Session::getId() در API ممکن است مشکل ساز باشد. اگرچه در CartService مدیریت شده، اما در اینجا نیازی به آن نیست.
 use Illuminate\Support\Facades\Log;
 use App\Models\CartItem;
 use App\Models\Product;
@@ -126,10 +126,22 @@ class ApiCartController extends Controller
                     ->response()
                     ->setStatusCode(200);
             } else {
+                // تغییر اینجا: به جای $response->getStatusCode()، یک کد وضعیت مناسب را به صورت دستی برگردانید.
+                // CartOperationResponse متد getStatusCode() را ندارد.
+                $statusCode = 400; // پیش‌فرض برای خطاهای سمت کلاینت (مثلاً موجودی ناکافی)
+                // می‌توانید با توجه به پیام خطا، کد وضعیت را دقیق‌تر کنید.
+                if (str_contains(strtolower($response->getMessage()), 'موجودی کافی نیست')) {
+                    $statusCode = 400; // Bad Request
+                } elseif (str_contains(strtolower($response->getMessage()), 'یافت نشد')) {
+                    $statusCode = 404; // Not Found
+                } else {
+                    $statusCode = 500; // خطای سرور برای موارد غیرمنتظره
+                }
+
                 return response()->json([
                     'success' => false,
                     'message' => $response->getMessage(),
-                ], $response->getStatusCode());
+                ], $statusCode);
             }
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error('Validation error adding item to cart: ' . $e->getMessage(), ['errors' => $e->errors()]);
@@ -210,10 +222,21 @@ class ApiCartController extends Controller
                     ->response()
                     ->setStatusCode(200);
             } else {
+                // تغییر اینجا: به جای $response->getStatusCode()، یک کد وضعیت مناسب را به صورت دستی برگردانید.
+                $statusCode = 400; // پیش‌فرض
+                if (str_contains(strtolower($response->getMessage()), 'unauthorized')) {
+                    $statusCode = 403; // Forbidden
+                } elseif (str_contains(strtolower($response->getMessage()), 'موجودی کافی نیست')) {
+                    $statusCode = 400; // Bad Request
+                } elseif (str_contains(strtolower($response->getMessage()), 'یافت نشد')) {
+                    $statusCode = 404; // Not Found
+                } else {
+                    $statusCode = 500; // خطای سرور
+                }
                 return response()->json([
                     'success' => false,
                     'message' => $response->getMessage(),
-                ], $response->getStatusCode());
+                ], $statusCode);
             }
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error('Validation error updating cart item quantity: ' . $e->getMessage(), ['errors' => $e->errors()]);
@@ -282,10 +305,19 @@ class ApiCartController extends Controller
                     ->response()
                     ->setStatusCode(200);
             } else {
+                // تغییر اینجا: به جای $response->getStatusCode()، یک کد وضعیت مناسب را به صورت دستی برگردانید.
+                $statusCode = 400; // پیش‌فرض
+                if (str_contains(strtolower($response->getMessage()), 'unauthorized')) {
+                    $statusCode = 403; // Forbidden
+                } elseif (str_contains(strtolower($response->getMessage()), 'یافت نشد')) {
+                    $statusCode = 404; // Not Found
+                } else {
+                    $statusCode = 500; // خطای سرور
+                }
                 return response()->json([
                     'success' => false,
                     'message' => $response->getMessage(),
-                ], $response->getStatusCode());
+                ], $statusCode);
             }
         } catch (UnauthorizedCartAccessException $e) {
             Log::error('Unauthorized cart access: ' . $e->getMessage());
@@ -335,10 +367,12 @@ class ApiCartController extends Controller
                     ->response()
                     ->setStatusCode(200);
             } else {
+                // تغییر اینجا: به جای $response->getStatusCode()، یک کد وضعیت مناسب را به صورت دستی برگردانید.
+                $statusCode = 500; // پاک کردن سبد خرید معمولاً باید موفق باشد مگر خطای دیتابیس
                 return response()->json([
                     'success' => false,
                     'message' => $response->getMessage(),
-                ], $response->getStatusCode());
+                ], $statusCode);
             }
         } catch (\Throwable $e) {
             Log::error('Error clearing cart: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
@@ -383,10 +417,15 @@ class ApiCartController extends Controller
                     ->response()
                     ->setStatusCode(200);
             } else {
+                // تغییر اینجا: به جای $response->getStatusCode()، یک کد وضعیت مناسب را به صورت دستی برگردانید.
+                $statusCode = 400; // Bad request برای کوپن نامعتبر
+                if (str_contains(strtolower($response->getMessage()), 'error')) {
+                    $statusCode = 500;
+                }
                 return response()->json([
                     'success' => false,
                     'message' => $response->getMessage(),
-                ], $response->getStatusCode());
+                ], $statusCode);
             }
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error('Validation error applying coupon: ' . $e->getMessage(), ['errors' => $e->errors()]);
@@ -433,10 +472,15 @@ class ApiCartController extends Controller
                         ->response()
                         ->setStatusCode(200);
                 } else {
+                    // تغییر اینجا: به جای $response->getStatusCode()، یک کد وضعیت مناسب را به صورت دستی برگردانید.
+                    $statusCode = 400; // Bad request برای حذف کوپن نامعتبر
+                    if (str_contains(strtolower($response->getMessage()), 'error')) {
+                        $statusCode = 500;
+                    }
                     return response()->json([
                         'success' => false,
                         'message' => $response->getMessage(),
-                    ], $response->getStatusCode());
+                    ], $statusCode);
                 }
             } catch (\Throwable $e) {
                 Log::error('API remove coupon error: ' . $e->getMessage(), ['exception' => $e]);

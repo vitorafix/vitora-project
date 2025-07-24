@@ -3,145 +3,130 @@
 namespace App\Services;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cookie;
-use Illuminate\Support\Facades\Config; // اضافه کردن Facade Config
-use Illuminate\Support\Facades\Log; // اضافه کردن Facade Log برای ثبت خطاها
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\Response;
 
 class GuestService
 {
-    // کلید مورد استفاده برای ذخیره UUID مهمان در سشن (از فایل کانفیگ خوانده می‌شود)
-    const GUEST_UUID_KEY = 'guest_uuid';
-    // نام کوکی مورد استفاده برای ذخیره UUID مهمان (از فایل کانفیگ خوانده می‌شود)
-    const GUEST_UUID_COOKIE = 'guest_uuid';
+    public const GUEST_UUID_COOKIE = 'guest_uuid';
+    public const GUEST_UUID_HEADER = 'X-Guest-UUID';
+    public const GUEST_UUID_SESSION_KEY = 'guest_uuid';
 
     /**
-     * UUID مهمان را دریافت می‌کند یا در صورت عدم وجود، آن را ایجاد می‌کند.
+     * Get or create a guest UUID.
+     * For web requests, it uses session and cookie.
+     * For API requests, it primarily uses cookie/header and sets cookie in response.
      *
-     * @param Request $request شیء درخواست HTTP
-     * @return string UUID مهمان
+     * @param Request $request
+     * @param Response|null $response Optional: Pass a Response object to set the cookie on it.
+     * @return string The guest UUID.
      */
-    public static function getOrCreateGuestUuid(Request $request): string
+    public static function getOrCreateGuestUuid(Request $request, ?Response $response = null): string
     {
-        try {
-            // 1. ابتدا سعی می‌کنیم UUID مهمان را از سشن بخوانیم.
-            $guestUuid = $request->session()->get(Config::get('guest.uuid_session_key', self::GUEST_UUID_KEY));
+        $currentGuestUuid = null;
 
-            // 2. اگر UUID از سشن معتبر نبود یا وجود نداشت، سعی می‌کنیم از کوکی بخوانیم.
-            if (!$guestUuid || !self::isValidUuid($guestUuid)) {
-                $guestUuid = $request->cookie(Config::get('guest.uuid_cookie_name', self::GUEST_UUID_COOKIE));
-
-                // 3. اگر UUID از کوکی معتبر بود، آن را در سشن هم ذخیره می‌کنیم.
-                if ($guestUuid && self::isValidUuid($guestUuid)) {
-                    $request->session()->put(Config::get('guest.uuid_session_key', self::GUEST_UUID_KEY), $guestUuid);
-                } else {
-                    // 4. اگر نه در سشن و نه در کوکی یک UUID معتبر پیدا نشد، یک UUID جدید ایجاد می‌کنیم.
-                    $guestUuid = self::createNewGuestUuid($request);
-                }
-            }
-
-            return $guestUuid;
-        } catch (\Exception $e) {
-            // ثبت خطا در لاگ‌ها
-            Log::error('Error managing guest UUID: ' . $e->getMessage());
-            // در صورت بروز خطا، یک UUID جدید به عنوان fallback ایجاد می‌کنیم.
-            return self::createNewGuestUuid($request);
+        // 1. Check from request attributes (set by middleware)
+        if ($request->attributes->has(self::GUEST_UUID_SESSION_KEY)) {
+            $currentGuestUuid = $request->attributes->get(self::GUEST_UUID_SESSION_KEY);
+            Log::debug('GuestService: UUID from attributes: ' . $currentGuestUuid);
         }
+
+        // 2. Check from header (common for API)
+        if (!$currentGuestUuid && $request->hasHeader(self::GUEST_UUID_HEADER)) {
+            $headerUuid = $request->header(self::GUEST_UUID_HEADER);
+            if (self::isValidUuid($headerUuid)) {
+                $currentGuestUuid = $headerUuid;
+                Log::debug('GuestService: UUID from header: ' . $currentGuestUuid);
+            }
+        }
+
+        // 3. Check from cookie
+        if (!$currentGuestUuid && $request->hasCookie(self::GUEST_UUID_COOKIE)) {
+            $cookieUuid = $request->cookie(self::GUEST_UUID_COOKIE);
+            if (self::isValidUuid($cookieUuid)) {
+                $currentGuestUuid = $cookieUuid;
+                Log::debug('GuestService: UUID from cookie: ' . $currentGuestUuid);
+            }
+        }
+
+        // 4. Check from session (primarily for web, if middleware hasn't set it yet)
+        // This part will only be attempted if session is available.
+        if (!$currentGuestUuid && $request->hasSession() && $request->session()->has(self::GUEST_UUID_SESSION_KEY)) {
+            $sessionUuid = $request->session()->get(self::GUEST_UUID_SESSION_KEY);
+            if (self::isValidUuid($sessionUuid)) {
+                $currentGuestUuid = $sessionUuid;
+                Log::debug('GuestService: UUID from session: ' . $currentGuestUuid);
+            }
+        }
+
+        // If no valid UUID found, generate a new one
+        if (!$currentGuestUuid) {
+            $currentGuestUuid = self::createNewGuestUuid($request);
+            Log::info('GuestService: Generated new Guest UUID: ' . $currentGuestUuid);
+        } else {
+            Log::info('GuestService: Existing Guest UUID retrieved: ' . $currentGuestUuid);
+        }
+
+        // Set UUID in session (if session is available)
+        if ($request->hasSession()) {
+            $request->session()->put(self::GUEST_UUID_SESSION_KEY, $currentGuestUuid);
+            Log::debug('GuestService: UUID set in session: ' . $currentGuestUuid);
+        }
+
+        // Set/update cookie (for both web and API persistence)
+        // Ensure the cookie is set on the response for API calls if a response object is provided.
+        $cookieExpiration = 60 * 24 * 30; // 30 days
+        $cookie = Cookie::make(
+            self::GUEST_UUID_COOKIE,
+            $currentGuestUuid,
+            $cookieExpiration,
+            '/', // path
+            env('SESSION_DOMAIN'), // domain from .env
+            $request->secure(), // secure only if HTTPS
+            true, // httpOnly
+            false, // raw
+            $request->secure() ? 'None' : 'Lax' // SameSite: 'None' for secure, 'Lax' for HTTP
+        );
+
+        if ($response) {
+            $response->headers->setCookie($cookie);
+            Log::debug('GuestService: Guest UUID cookie set on response object.');
+        } else {
+            // For web requests where middleware handles response, or if no response object provided
+            Cookie::queue($cookie);
+            Log::debug('GuestService: Guest UUID cookie queued.');
+        }
+
+        // Ensure it's in request attributes for immediate use in current request cycle
+        $request->attributes->set(self::GUEST_UUID_SESSION_KEY, $currentGuestUuid);
+
+        return $currentGuestUuid;
     }
 
     /**
-     * یک UUID جدید برای مهمان ایجاد کرده و آن را در سشن و کوکی ذخیره می‌کند.
+     * Generates a new UUID.
      *
-     * @param Request $request شیء درخواست HTTP
-     * @return string UUID جدید مهمان
+     * @param Request $request
+     * @return string
      */
     private static function createNewGuestUuid(Request $request): string
     {
-        $guestUuid = (string) Str::uuid();
-
-        // ذخیره UUID جدید در سشن
-        $request->session()->put(Config::get('guest.uuid_session_key', self::GUEST_UUID_KEY), $guestUuid);
-
-        // ذخیره UUID جدید در کوکی
-        self::setGuestUuidCookie($guestUuid);
-
-        return $guestUuid;
+        $newUuid = (string) Str::uuid();
+        // No need to set it in session here, as getOrCreateGuestUuid handles it.
+        // No need to set cookie here, as getOrCreateGuestUuid handles it.
+        return $newUuid;
     }
 
     /**
-     * UUID مهمان را در کوکی تنظیم می‌کند.
+     * Validates if a string is a valid UUID.
      *
-     * @param string $uuid UUID مهمان
-     * @return void
+     * @param string|null $uuid
+     * @return bool
      */
-    private static function setGuestUuidCookie(string $uuid): void
+    public static function isValidUuid(?string $uuid): bool
     {
-        // عمر کوکی را از فایل کانفیگ می‌خوانیم، پیش‌فرض 30 روز
-        $cookieLifetimeDays = Config::get('guest.cookie_lifetime_days', 30);
-        $cookieSecure = Config::get('guest.cookie_secure', request()->secure()); // تشخیص خودکار HTTPS
-        $cookieHttpOnly = Config::get('guest.cookie_http_only', true); // httpOnly = true برای امنیت بیشتر
-
-        // کوکی با عمر مشخص ایجاد و به صف می‌اندازیم.
-        Cookie::queue(
-            Config::get('guest.uuid_cookie_name', self::GUEST_UUID_COOKIE),
-            $uuid,
-            60 * 24 * $cookieLifetimeDays, // تبدیل روز به دقیقه
-            '/',
-            null,
-            $cookieSecure,
-            $cookieHttpOnly
-        );
-    }
-
-    /**
-     * بررسی می‌کند که آیا رشته داده شده یک UUID معتبر است یا خیر.
-     *
-     * @param string $uuid رشته UUID برای اعتبارسنجی
-     * @return bool اگر UUID معتبر باشد true، در غیر این صورت false
-     */
-    private static function isValidUuid(string $uuid): bool
-    {
-        return Str::isUuid($uuid);
-    }
-
-    /**
-     * بررسی می‌کند که آیا یک UUID مهمان معتبر در سشن یا کوکی وجود دارد یا خیر.
-     *
-     * @param Request $request شیء درخواست HTTP
-     * @return bool اگر UUID مهمان معتبر وجود داشته باشد true، در غیر این صورت false
-     */
-    public static function hasGuestUuid(Request $request): bool
-    {
-        $uuid = $request->session()->get(Config::get('guest.uuid_session_key', self::GUEST_UUID_KEY));
-
-        if (!$uuid || !self::isValidUuid($uuid)) {
-            $uuid = $request->cookie(Config::get('guest.uuid_cookie_name', self::GUEST_UUID_COOKIE));
-        }
-
-        return $uuid && self::isValidUuid($uuid);
-    }
-
-    /**
-     * UUID مهمان را از سشن و کوکی پاک کرده و یک UUID جدید ایجاد می‌کند.
-     *
-     * @param Request $request شیء درخواست HTTP
-     * @return string UUID جدید مهمان
-     */
-    public static function refreshGuestUuid(Request $request): string
-    {
-        self::clearGuestUuid($request);
-        return self::createNewGuestUuid($request);
-    }
-
-    /**
-     * UUID مهمان را از سشن و کوکی پاک می‌کند.
-     *
-     * @param Request $request شیء درخواست HTTP
-     * @return void
-     */
-    public static function clearGuestUuid(Request $request): void
-    {
-        $request->session()->forget(Config::get('guest.uuid_session_key', self::GUEST_UUID_KEY));
-        Cookie::queue(Cookie::forget(Config::get('guest.uuid_cookie_name', self::GUEST_UUID_COOKIE)));
+        return !empty($uuid) && Str::isUuid($uuid);
     }
 }

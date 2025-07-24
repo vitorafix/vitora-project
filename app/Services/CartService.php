@@ -22,7 +22,7 @@ use Illuminate\Support\Str; // Added for Str::uuid() - still needed for general 
 use App\Services\Contracts\CartServiceInterface;
 use App\Contracts\Repositories\CartRepositoryInterface;
 use App\Contracts\Repositories\ProductRepositoryInterface;
-use App\Contracts\ProductServiceInterface;
+use App\Contracts\ProductServiceInterface; // این خط قبلاً وجود نداشت، اضافه شد اگر نیاز باشد
 use App\Services\Contracts\CartCleanupServiceInterface;
 use App\Services\Contracts\CartItemManagementServiceInterface;
 use App\Services\Contracts\CartBulkUpdateServiceInterface;
@@ -59,6 +59,9 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
     private Dispatcher $eventDispatcher;
     private CartCalculationService $cartCalculationService;
 
+    // اگر ProductServiceInterface در constructor شما استفاده می‌شود، مطمئن شوید که اینجا هم تعریف شده است.
+    // private ProductServiceInterface $productService; // اگر در constructor استفاده می‌شود، این را فعال کنید.
+
     public function __construct(
         CartRepositoryInterface $cartRepository,
         ProductRepositoryInterface $productRepository,
@@ -70,6 +73,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         CouponService $couponService,
         Dispatcher $eventDispatcher,
         CartCalculationService $cartCalculationService
+        // ProductServiceInterface $productService // اگر در constructor استفاده می‌شود، این را فعال کنید.
     ) {
         $this->cartRepository = $cartRepository;
         $this->productRepository = $productRepository;
@@ -81,6 +85,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         $this->couponService = $couponService;
         $this->eventDispatcher = $eventDispatcher;
         $this->cartCalculationService = $cartCalculationService;
+        // $this->productService = $productService; // اگر در constructor استفاده می‌شود، این را فعال کنید.
     }
 
     /**
@@ -98,7 +103,20 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
 
         // دریافت Guest UUID پایدار از GuestService
         $guestUuid = GuestService::getOrCreateGuestUuid($request);
-        $sessionId = $request->session()->getId();
+
+        $sessionId = null; // مقداردهی اولیه به null
+        // فقط در صورتی که شیء Request دارای Session Store باشد، Session ID را دریافت می‌کنیم.
+        // این برای مسیرهای API که ممکن است Session نداشته باشند، ضروری است.
+        if ($request->hasSession()) {
+            try {
+                $sessionId = $request->session()->getId();
+            } catch (\Throwable $e) {
+                Log::error('Error accessing session in CartService::getOrCreateCart for session ID: ' . $e->getMessage());
+                // در صورت بروز خطا در دسترسی به سشن، sessionId را null نگه می‌داریم.
+                $sessionId = null;
+            }
+        }
+
 
         Log::info('CartService: getOrCreateCart called.', [
             'user_id_input' => $user ? $user->id : 'null',
@@ -136,7 +154,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                     Log::info('Guest cart assigned to logged-in user during getOrCreateCart.', ['cart_id' => $cart->id, 'user_id' => $user->id, 'guest_uuid' => $guestUuid]);
                 }
                 // اطمینان حاصل می‌کنیم که session_id سبد خرید مهمان با session_id فعلی به‌روز باشد.
-                if ($cart->session_id !== $sessionId) {
+                if ($sessionId && $cart->session_id !== $sessionId) { // فقط اگر sessionId موجود است، آن را به‌روز کنید
                     $cart->session_id = $sessionId;
                     $cart->save();
                     Log::info('Guest cart session_id updated.', ['cart_id' => $cart->id, 'guest_uuid' => $guestUuid, 'session_id' => $sessionId]);
@@ -584,7 +602,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                 );
                 $this->metricsManager->recordMetric('getCartContents_duration', microtime(true) - $startTime, ['cart_id' => $cart->id, 'status' => 'empty_cart']);
                 // Convert the empty collection to an array before passing it
-                return new CartContentsResponse($cart->items->toArray(), 0, 0.0, $emptyTotals);
+                return new CartContentsResponse(collect([])->toArray(), 0, 0.0, $emptyTotals);
             }
 
             // Calculate totals using the dedicated service
@@ -1035,7 +1053,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                             $finalNewQuantity = $desiredNewQuantity;
                             if ($desiredNewQuantity > $availableStock) {
                                 $finalNewQuantity = $availableStock;
-                                Log::warning('Merged cart item quantity capped due to insufficient stock.', [
+                                Log::warning('Merged cart item quantity capped due to insufficient stock during cart merge.', [
                                     'product_id' => $product->id,
                                     'requested_quantity' => $desiredNewQuantity,
                                     'capped_quantity' => $finalNewQuantity,
