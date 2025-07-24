@@ -1,15 +1,16 @@
 // resources/js/app.tsx
-import React from 'react'; // این خط باید دقیقا اولین خط کد باشد
+import React from 'react';
 import { createRoot } from 'react-dom/client';
-import MiniCart from './components/cart/MiniCart'; // مسیر صحیح به MiniCart.tsx
-import { CartProvider, useCartContext } from './context/CartContext'; // وارد کردن CartProvider و useCartContext
-import { addToCart } from './core/api'; // وارد کردن تابع addToCart از api.js
+import MiniCart from './components/cart/MiniCart';
+import { CartProvider, useCartContext } from './context/CartContext';
+import { addToCart } from './core/api';
 
 // تعریف یک کامپوننت برای دکمه "افزودن به سبد خرید" که از Context استفاده می‌کند
 interface AddToCartButtonProps {
     productId: string;
     productName: string;
     price: number;
+    // می‌توانید پراپ‌های دیگری مانند image را نیز اضافه کنید
 }
 
 export const AddToCartButton: React.FC<AddToCartButtonProps> = ({ productId, productName, price }) => {
@@ -93,30 +94,25 @@ if (miniCartRootElement) {
 // برای رندر کردن دکمه‌های افزودن به سبد خرید در صفحات محصول
 document.querySelectorAll('[id^="add-to-cart-root-"]').forEach(rootElement => {
     const productId = rootElement.id.replace('add-to-cart-root-', '');
-    const productContainer = rootElement.closest('.group');
-    if (productContainer) {
-        const productName = productContainer.querySelector('h3')?.textContent || 'نامشخص';
-        const priceText = productContainer.querySelector('.text-green-700')?.textContent;
-        const price = priceText ? parseFloat(priceText.replace(/[^0-9.]/g, '')) : 0;
+    // اطلاعات محصول را مستقیماً از data attributes روی div نقطه اتصال می‌خوانیم
+    const productName = rootElement.dataset.productName || 'نامشخص';
+    const price = parseFloat(rootElement.dataset.productPrice || '0');
 
-        if (productId && productName && price) {
-            const root = createRoot(rootElement);
-            root.render(
-                <React.StrictMode>
-                    <CartProvider>
-                        <AddToCartButton
-                            productId={productId}
-                            productName={productName}
-                            price={price}
-                        />
-                    </CartProvider>
-                </React.StrictMode>
-            );
-            console.log(`AddToCartButton mounted for product ${productId}`);
-        } else {
-            console.warn(`Could not find product data for mounting AddToCartButton for root: ${rootElement.id}`);
-        }
+    if (productId && productName && price) {
+        const root = createRoot(rootElement);
+        root.render(
+            <React.StrictMode>
+                <CartProvider>
+                    <AddToCartButton
+                        productId={productId}
+                        productName={productName}
+                        price={price}
+                    />
+                </CartProvider>
+            </React.StrictMode>
+        );
+        console.log(`AddToCartButton mounted for product ${productId}`);
     } else {
-        console.warn(`Could not find product container for root: ${rootElement.id}`);
+        console.warn(`Could not find product data for mounting AddToCartButton for root: ${rootElement.id}`);
     }
 });

@@ -24,46 +24,37 @@
             </div>
         @endif
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-8">
             @forelse ($products as $product)
-                <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 card-hover-effect">
-                    {{-- Link to product single page, now using product ID as per route definition --}}
-                    <a href="{{ route('products.show', $product->id) }}">
-                        {{-- Display the product image using the image_url accessor --}}
-                        <img src="{{ $product->image_url }}"
-                             alt="{{ $product->title }}"
-                             class="w-full h-48 object-cover transition-transform duration-300 hover:scale-105"
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 transform transition-transform duration-300 hover:scale-105 hover:shadow-xl group">
+                    <div class="relative overflow-hidden">
+                        <img src="{{ $product->image_url }}" alt="{{ $product->title }}" class="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-110"
                              onerror="this.onerror=null;this.src='https://placehold.co/400x400/E5E7EB/4B5563?text=Product';">
-                    </a>
-
-                    <div class="p-5 text-center rtl:text-right">
-                        <h3 class="text-xl font-semibold text-brown-900 mb-2 truncate">
-                            {{-- Link to product single page, now using product ID --}}
-                            <a href="{{ route('products.show', $product->id) }}" class="hover:text-green-700 transition-colors duration-200">
-                                {{ $product->title }}
+                        <div class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <a href="{{ route('products.show', $product->id) }}" class="btn-primary-outline text-white border-white">
+                                مشاهده جزئیات
                             </a>
-                        </h3>
-                        @if ($product->category)
-                            <p class="text-sm text-gray-500 mb-2">دسته‌بندی: {{ $product->category->name }}</p>
-                        @endif
-                        <p class="text-green-700 font-bold text-2xl mb-4">
-                            {{ number_format($product->price) }} تومان
-                        </p>
-                        @if ($product->stock > 0 && $product->is_active) {{-- اضافه شدن شرط is_active --}}
-                            <button class="add-to-cart-btn btn-primary w-full py-2 flex items-center justify-center text-lg"
-                                    data-product-id="{{ $product->id }}"
-                                    data-product-title="{{ $product->title }}"
-                                    data-product-price="{{ $product->price }}"
-                                    data-product-image="{{ $product->image_url }}">
-                                <i class="fas fa-cart-plus ml-2"></i>
-                                افزودن به سبد
-                            </button>
-                        @else
-                            <button class="btn-disabled w-full py-2 flex items-center justify-center text-lg" disabled>
-                                <i class="fas fa-ban ml-2"></i>
-                                ناموجود
-                            </button>
-                        @endif
+                        </div>
+                    </div>
+                    <div class="p-6 text-right">
+                        <h3 class="text-xl font-semibold text-brown-900 mb-2">{{ $product->title }}</h3>
+                        <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ $product->description }}</p>
+                        <div class="flex justify-between items-center mt-4">
+                            {{-- قیمت محصول --}}
+                            <span class="text-green-700 text-2xl font-bold">{{ number_format($product->price) }} تومان</span>
+                            {{-- نقطه اتصال برای دکمه افزودن به سبد خرید React --}}
+                            @if ($product->stock > 0)
+                                <div id="add-to-cart-root-{{ $product->id }}"
+                                     data-product-name="{{ $product->title }}"
+                                     data-product-price="{{ $product->price }}">
+                                </div>
+                            @else
+                                <button class="btn-disabled w-full py-2 flex items-center justify-center text-lg" disabled>
+                                    <i class="fas fa-ban ml-2"></i>
+                                    ناموجود
+                                </button>
+                            @endif
+                        </div>
                     </div>
                 </div>
             @empty

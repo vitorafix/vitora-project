@@ -1,4 +1,5 @@
 // resources/js/core/app.js
+console.log('app.js loaded and starting...');
 
 import '../vendor/bootstrap'; // Correct path for bootstrap.js in vendor folder
 import Alpine from 'alpinejs';
@@ -8,7 +9,6 @@ Alpine.start();
 
 // --- Import general and base files (always necessary) ---
 // These files should be in the 'core' folder or their path should be set correctly.
-// jalaali-js is usually from node_modules, so direct import here is correct
 import * as jalaali from 'jalaali-js';
 window.jalaali = jalaali;
 
@@ -22,7 +22,7 @@ import {
     applyCoupon,
     removeCoupon,
     getJwtToken,
-    logoutUser
+    logoutUser // این تابع برای استفاده در navbar_new.js و AppDebugger اکسپوز شده است
 } from './api.js'; // api.js is in the same core folder
 
 // `events.js`, `renderer.js`, `axiosInstance.js` files are in `core` and are always necessary:
@@ -31,7 +31,6 @@ import './renderer.js';
 import './axiosInstance.js'; // axiosInstance.js is in the same core folder
 
 // --- Global Data and Functions ---
-// These sections can remain in this file or be moved to a `utils.js` file.
 window.adminActivityLog = [
     { timestamp: new Date(), username: 'سیستم', action: 'راه‌اندازی پنل', details: 'سیستم آماده کار است.' }
 ];
@@ -92,13 +91,10 @@ window.showConfirmationModal = function(title, message, onConfirm, onCancel) {
     let cancelBtn = modalOverlay.querySelector('#confirm-no');
 
     // Reset event listeners to prevent multiple bindings
-    // By using cloneNode(true), we can get a deep copy of the button
-    // and then replace the original button with the copy to remove all previous Event Listeners.
     confirmBtn.replaceWith(confirmBtn.cloneNode(true));
     cancelBtn.replaceWith(cancelBtn.cloneNode(true));
     confirmBtn = modalOverlay.querySelector('#confirm-yes'); // New reference to cloned buttons
     cancelBtn = modalOverlay.querySelector('#confirm-no');
-
 
     modalTitle.textContent = title;
     modalMessage.textContent = message;
@@ -236,18 +232,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Dynamic Imports based on page path ---
 
     // Authentication module (auth) and JWT Manager
-    // These modules are needed on login, register, profile, and dashboard pages.
     if (path.includes('/login') || path.includes('/register') || path.includes('/profile') || path.includes('/dashboard') || path.includes('/mobile-login') || path.includes('/verify-otp-form')) {
         import('../auth/auth.js')
             .then(module => {
-                if (module.initAuth) { // initAuth function in auth.js
+                if (module.initAuth) {
                     module.initAuth();
                 }
                 console.log('Auth module loaded and initialized.');
             })
             .catch(err => console.error('Failed to load auth module:', err));
 
-        // jwt_manager.js does not need specific init, just import to make its functions available.
         import('../auth/jwt_manager.js')
             .then(() => {
                 console.log('JWT Manager module loaded.');
@@ -255,26 +249,28 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(err => console.error('Failed to load JWT Manager module:', err));
     }
 
-    // Cart module (cart)
-    // CHANGE: Added '/' and '/home' to the condition to load cart.js on the homepage and other product display pages.
-    if (path.includes('/cart') || path === '/' || path.includes('/home') || path.includes('/products')) {
-        import('../cart/cart.js')
-            .then(module => {
-                if (module.initCart) { // initCart function in cart.js
-                    module.initCart();
-                } else {
-                    console.warn('Cart module loaded but initCart function not found.');
-                }
-                console.log('Cart module loaded and initialized.');
-            })
-            .catch(err => console.error('Failed to load cart module:', err));
-    }
+    // Cart module (cart) - REMOVED: React now handles cart functionality
+    // If you still need the old cart.js for the main /cart page,
+    // you should load it conditionally ONLY on that page, not globally.
+    // if (path.includes('/cart')) { // Example: Only load on /cart page
+    //     import('../cart/cart.js')
+    //         .then(module => {
+    //             if (module.initCart) {
+    //                 module.initCart();
+    //             } else {
+    //                 console.warn('Cart module loaded but initCart function not found.');
+    //             }
+    //             console.log('Cart module loaded and initialized.');
+    //         })
+    //         .catch(err => console.error('Failed to load cart module:', err));
+    // }
+
 
     // Search module (search)
     if (path.includes('/search') || path.includes('/products')) {
-        import('../search/search.js')
+        import('../ui/search.js') // Corrected path to ui/search.js
             .then(module => {
-                if (module.initSearch) { // initSearch function in search.js
+                if (module.initSearch) {
                     module.initSearch();
                 } else {
                     console.warn('Search module loaded but initSearch function not found.');
@@ -285,11 +281,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Navbar module (navbar_new)
-    // This module is needed on most pages, so its condition can be based on DOM element existence.
     if (document.querySelector('#main-navbar') || document.querySelector('.main-nav')) {
         import('../ui/navbar_new.js')
             .then(module => {
-                if (module.initializeNavbarAndCart) { // initializeNavbarAndCart function in navbar_new.js
+                if (module.initializeNavbarAndCart) {
                     module.initializeNavbarAndCart();
                 } else {
                     console.warn('Navbar module loaded but initializeNavbarAndCart function not found.');
@@ -303,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (path.startsWith('/admin/')) {
         import('../admin/admin.js')
             .then(module => {
-                if (module.initAdminPanel) { // initAdminPanel function in admin.js
+                if (module.initAdminPanel) {
                     module.initAdminPanel();
                 } else {
                     console.warn('Admin module loaded but initAdminPanel function not found.');
@@ -314,11 +309,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Charts module (charts)
-    // This module is typically used on dashboard or admin reports pages.
     if (path.includes('/dashboard') || path.includes('/admin-reports') || path.includes('/analytics')) {
         import('../admin/charts.js')
             .then(module => {
-                if (module.initCharts) { // initCharts function in charts.js
+                if (module.initCharts) {
                     module.initCharts();
                 } else {
                     console.warn('Charts module loaded but initCharts function not found.');
@@ -332,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (path.includes('/checkout')) {
         import('../checkout/checkout.js')
             .then(module => {
-                if (module.initCheckout) { // initCheckout function in checkout.js
+                if (module.initCheckout) {
                     module.initCheckout();
                 } else {
                     console.warn('Checkout module loaded but initCheckout function not found.');
@@ -343,11 +337,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Hero module (hero)
-    // This module is typically used only on the homepage or specific pages with a hero carousel.
     if (path === '/' || path.includes('/home')) {
         import('../ui/hero.js')
             .then(module => {
-                if (module.initHeroCarousel) { // initHeroCarousel function in hero.js
+                if (module.initHeroCarousel) {
                     module.initHeroCarousel();
                 } else {
                     console.warn('Hero module loaded but initHeroCarousel function not found.');
@@ -358,11 +351,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Export module (export.js)
-    // This module is typically used on reports or management pages.
-    if (document.getElementById('export-excel') || document.getElementById('export-pdf')) { // If export buttons exist
-        import('../cart/export.js') // Correct path to export.js file
+    if (document.getElementById('export-excel') || document.getElementById('export-pdf')) {
+        import('../cart/export.js')
             .then(module => {
-                if (module.setupExportButtons) { // setupExportButtons function in export.js
+                if (module.setupExportButtons) {
                     module.setupExportButtons();
                 } else {
                     console.warn('Export module loaded but setupExportButtons function not found.');
@@ -373,7 +365,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Calling setupProductEditListeners (if on product edit page)
-    // This function is defined in this app.js file.
     if (path.includes('/products/edit') || path.includes('/products/create')) {
         setupProductEditListeners();
         console.log('Product edit listeners setup.');
@@ -381,11 +372,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- For debugging purposes: make functions globally accessible ---
-// Remove these lines in production environment.
-// Note: These functions come from dynamically loaded modules and might be undefined at initial load time.
-// It's better to access them directly via module.functionName in the console for debugging
-// or keep these only for truly global functions defined in this file.
-// window.initializeNavbarAndCart = initializeNavbarAndCart; // This function comes from navbar_new.js
-// window.updateNavbarUserStatus = updateNavbarUserStatus; // This function comes from navbar_new.js
-window.logoutUser = logoutUser; // This function comes from api.js and is imported here.
-// --- End of debugging section ---
+window.logoutUser = logoutUser;

@@ -10,11 +10,29 @@ import {
     removeCoupon // اگر نیاز بود
 } from '../core/api'; // مسیر صحیح به فایل api.js شما
 
-import { CartItem, CartState } from '../types/cart'; // وارد کردن تایپ‌های مشترک
+// تعریف تایپ برای آیتم سبد خرید
+interface CartItem {
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+    image?: string;
+}
+
+// تعریف تایپ برای وضعیت سبد خرید
+interface CartState {
+    items: CartItem[];
+    total: number;
+    subtotal: number;
+    discount: number;
+    shipping: number;
+    tax: number;
+    loading: boolean;
+    error: string | null;
+}
 
 // هوک سفارشی useCart
 export const useCart = () => {
-    // استفاده از تایپ CartState که از types/cart.ts وارد شده است
     const [cart, setCart] = useState<CartState>({
         items: [],
         total: 0,
@@ -28,88 +46,89 @@ export const useCart = () => {
 
     // تابع برای بارگذاری محتویات سبد خرید از API
     const loadCart = useCallback(async () => {
-        setCart(prev => ({ ...prev, loading: true, error: null }));
+        setCart(prev => ({ ...prev, loading: true }));
         try {
-            // فرض می‌کنیم fetchCartContents یک آبجکت شامل items و total برمی‌گرداند
             const response = await fetchCartContents();
-            // ساختار پاسخ API شما ممکن است متفاوت باشد، آن را مطابق با API خود تنظیم کنید
-            // استفاده از تایپ CartItem که از types/cart.ts وارد شده است
-            const fetchedItems: CartItem[] = response.cart_items.map((item: any) => ({
-                id: item.id.toString(), // اطمینان از اینکه id رشته است
-                name: item.product_name,
-                price: parseFloat(item.price),
-                quantity: parseInt(item.quantity),
-                image: item.product_image_url || undefined, // اگر تصویر ندارید
-            }));
-
-            setCart({
-                items: fetchedItems,
-                total: parseFloat(response.total_price),
-                subtotal: parseFloat(response.subtotal_price || response.total_price), // فرض می‌کنیم subtotal هم هست
-                discount: parseFloat(response.discount_amount || 0),
-                shipping: parseFloat(response.shipping_cost || 0),
-                tax: parseFloat(response.tax_amount || 0),
-                loading: false,
-                error: null,
-            });
-        } catch (err) {
-            console.error("Failed to fetch cart contents:", err);
-            setCart(prev => ({ ...prev, loading: false, error: "Failed to load cart. Please try again." }));
+            if (response.success && response.data) { // اطمینان از وجود response.data
+                const { items, total, subtotal, discount, shipping, tax } = response.data;
+                setCart({
+                    items: items || [], // اطمینان از اینکه items یک آرایه است
+                    total: total || 0,
+                    subtotal: subtotal || 0,
+                    discount: discount || 0,
+                    shipping: shipping || 0,
+                    tax: tax || 0,
+                    loading: false,
+                    error: null,
+                });
+            } else {
+                // اگر response.success false بود یا response.data وجود نداشت
+                console.error("Failed to fetch cart contents:", response.message || "No data received.");
+                setCart(prev => ({ ...prev, loading: false, error: response.message || "Failed to fetch cart contents." }));
+            }
+        } catch (err: any) {
+            console.error("Error loading cart:", err);
+            setCart(prev => ({ ...prev, loading: false, error: err.message || "Error loading cart." }));
         }
     }, []);
 
-    // بارگذاری سبد خرید هنگام mount شدن کامپوننت
+    // Effect برای بارگذاری اولیه سبد خرید
     useEffect(() => {
         loadCart();
-        // می‌توانیم یک event listener برای به‌روزرسانی سبد خرید در صورت تغییرات خارجی اضافه کنیم
-        // مثلاً وقتی کاربر از صفحه محصولی به سبد خرید اضافه می‌کند
-        window.addEventListener('cartUpdated', loadCart);
-
-        return () => {
-            window.removeEventListener('cartUpdated', loadCart);
-        };
     }, [loadCart]);
 
-    // توابع مدیریت سبد خرید
-    const addItem = useCallback(async (productId: string, quantity: number = 1) => {
+    // تابع برای افزودن آیتم به سبد خرید
+    const addItem = useCallback(async (productId: string, quantity: number) => {
         setCart(prev => ({ ...prev, loading: true }));
         try {
-            await addToCart(productId, quantity);
-            window.showMessage('محصول به سبد خرید اضافه شد.', 'success');
-            await loadCart(); // پس از افزودن، سبد خرید را دوباره بارگذاری کنید
+            const response = await addToCart(productId, quantity);
+            if (response.success) {
+                window.showMessage(response.message || 'محصول با موفقیت به سبد خرید اضافه شد.', 'success');
+                await loadCart(); // پس از افزودن، سبد خرید را دوباره بارگذاری کنید
+            } else {
+                window.showMessage(response.message || 'خطا در افزودن محصول.', 'error');
+                setCart(prev => ({ ...prev, loading: false, error: response.message || "Failed to add item." }));
+            }
         } catch (err) {
-            console.error("Failed to add item to cart:", err);
+            console.error("Failed to add item:", err);
             window.showMessage('خطا در افزودن محصول به سبد خرید.', 'error');
             setCart(prev => ({ ...prev, loading: false, error: "Failed to add item." }));
         }
     }, [loadCart]);
 
+    // تابع برای به‌روزرسانی تعداد آیتم در سبد خرید
     const updateQuantity = useCallback(async (itemId: string, quantity: number) => {
-        if (quantity < 1) {
-            // اگر تعداد به صفر یا کمتر رسید، آیتم را حذف کنید
-            await removeItem(itemId);
-            return;
-        }
         setCart(prev => ({ ...prev, loading: true }));
         try {
-            await updateCartItemQuantity(itemId, quantity);
-            window.showMessage('تعداد آیتم به‌روزرسانی شد.', 'success');
-            await loadCart(); // پس از به‌روزرسانی، سبد خرید را دوباره بارگذاری کنید
+            const response = await updateCartItemQuantity(itemId, quantity);
+            if (response.success) {
+                window.showMessage(response.message || 'تعداد محصول به‌روزرسانی شد.', 'success');
+                await loadCart(); // پس از به‌روزرسانی، سبد خرید را دوباره بارگذاری کنید
+            } else {
+                window.showMessage(response.message || 'خطا در به‌روزرسانی تعداد محصول.', 'error');
+                setCart(prev => ({ ...prev, loading: false, error: response.message || "Failed to update quantity." }));
+            }
         } catch (err) {
-            console.error("Failed to update item quantity:", err);
-            window.showMessage('خطا در به‌روزرسانی تعداد آیتم.', 'error');
+            console.error("Failed to update quantity:", err);
+            window.showMessage('خطا در به‌روزرسانی تعداد محصول.', 'error');
             setCart(prev => ({ ...prev, loading: false, error: "Failed to update quantity." }));
         }
     }, [loadCart]);
 
+    // تابع برای حذف آیتم از سبد خرید
     const removeItem = useCallback(async (itemId: string) => {
         setCart(prev => ({ ...prev, loading: true }));
         try {
-            await removeCartItem(itemId);
-            window.showMessage('محصول از سبد خرید حذف شد.', 'success');
-            await loadCart(); // پس از حذف، سبد خرید را دوباره بارگذاری کنید
+            const response = await removeCartItem(itemId);
+            if (response.success) {
+                window.showMessage(response.message || 'محصول از سبد خرید حذف شد.', 'success');
+                await loadCart(); // پس از حذف، سبد خرید را دوباره بارگذاری کنید
+            } else {
+                window.showMessage(response.message || 'خطا در حذف محصول.', 'error');
+                setCart(prev => ({ ...prev, loading: false, error: response.message || "Failed to remove item." }));
+            }
         } catch (err) {
-            console.error("Failed to remove item from cart:", err);
+            console.error("Failed to remove item:", err);
             window.showMessage('خطا در حذف محصول از سبد خرید.', 'error');
             setCart(prev => ({ ...prev, loading: false, error: "Failed to remove item." }));
         }
@@ -144,8 +163,8 @@ export const useCart = () => {
         cartError: cart.error,
         addItem,
         updateQuantity,
-        removeFromCart: removeItem, // نام تابع را برای وضوح بیشتر تغییر دادیم
-        clearCart: clearAllItems, // نام تابع را برای وضوح بیشتر تغییر دادیم
-        loadCart // برای بارگذاری دستی سبد خرید
+        removeFromCart: removeItem, // نام تابع را برای وضوح بیشتر
+        clearAllItems,
+        loadCart // این تابع را نیز برای رفرش دستی MiniCart در AppDebugger اکسپوز می‌کنیم
     };
 };
