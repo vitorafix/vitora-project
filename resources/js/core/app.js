@@ -1,18 +1,18 @@
-// resources/js/core/app.js  <-- این فایل باید به این مسیر منتقل شود
+// resources/js/core/app.js
 
-import '../vendor/bootstrap'; // مسیر صحیح برای bootstrap.js در فولدر vendor
+import '../vendor/bootstrap'; // Correct path for bootstrap.js in vendor folder
 import Alpine from 'alpinejs';
 
 window.Alpine = Alpine;
 Alpine.start();
 
-// --- Import فایل‌های عمومی و پایه (که همیشه لازم هستند) ---
-// این فایل‌ها باید در فولدر 'core' باشند یا مسیرشان به درستی تنظیم شود.
-// jalaali-js معمولا از node_modules است، پس import مستقیم آن در اینجا صحیح است
+// --- Import general and base files (always necessary) ---
+// These files should be in the 'core' folder or their path should be set correctly.
+// jalaali-js is usually from node_modules, so direct import here is correct
 import * as jalaali from 'jalaali-js';
 window.jalaali = jalaali;
 
-// API functions - اینها معمولا در تمام صفحات لازم هستند و در فولدر core قرار دارند
+// API functions - these are usually needed on all pages and are in the core folder
 import {
     fetchCartContents,
     addToCart,
@@ -23,15 +23,15 @@ import {
     removeCoupon,
     getJwtToken,
     logoutUser
-} from './api.js'; // api.js در همین فولدر core قرار دارد
+} from './api.js'; // api.js is in the same core folder
 
-// فایل‌های `events.js`, `renderer.js`, `axiosInstance.js` در `core` هستند و همیشه لازمند:
+// `events.js`, `renderer.js`, `axiosInstance.js` files are in `core` and are always necessary:
 import './events.js';
 import './renderer.js';
-import './axiosInstance.js'; // axiosInstance.js در همین فولدر core قرار دارد
+import './axiosInstance.js'; // axiosInstance.js is in the same core folder
 
-// --- توابع و داده‌های سراسری (Global Data and Functions) ---
-// این بخش‌ها می‌توانند در همین فایل باقی بمانند یا به یک فایل `utils.js` منتقل شوند.
+// --- Global Data and Functions ---
+// These sections can remain in this file or be moved to a `utils.js` file.
 window.adminActivityLog = [
     { timestamp: new Date(), username: 'سیستم', action: 'راه‌اندازی پنل', details: 'سیستم آماده کار است.' }
 ];
@@ -80,7 +80,7 @@ window.showMessage = function(message, type = 'info', duration = 3000) {
  */
 window.showConfirmationModal = function(title, message, onConfirm, onCancel) {
     const modalOverlay = document.getElementById('confirm-modal-overlay');
-    // بررسی وجود modalOverlay
+    // Check for modalOverlay existence
     if (!modalOverlay) {
         console.error("Confirmation modal overlay not found. Ensure 'confirm-modal-overlay' element exists in your layout.");
         return;
@@ -92,11 +92,11 @@ window.showConfirmationModal = function(title, message, onConfirm, onCancel) {
     let cancelBtn = modalOverlay.querySelector('#confirm-no');
 
     // Reset event listeners to prevent multiple bindings
-    // با استفاده از cloneNode(true) می‌توانیم یک کپی عمیق از دکمه بگیریم
-    // و سپس دکمه اصلی را با کپی جایگزین کنیم تا تمام Event Listenerهای قبلی حذف شوند.
+    // By using cloneNode(true), we can get a deep copy of the button
+    // and then replace the original button with the copy to remove all previous Event Listeners.
     confirmBtn.replaceWith(confirmBtn.cloneNode(true));
     cancelBtn.replaceWith(cancelBtn.cloneNode(true));
-    confirmBtn = modalOverlay.querySelector('#confirm-yes'); // ارجاع جدید به دکمه‌های کلون شده
+    confirmBtn = modalOverlay.querySelector('#confirm-yes'); // New reference to cloned buttons
     cancelBtn = modalOverlay.querySelector('#confirm-no');
 
 
@@ -153,9 +153,9 @@ function generateUUID() {
 /**
  * Sets a cookie with the given name, value, and expiry.
  * یک کوکی با نام، مقدار و تاریخ انقضای مشخص تنظیم می‌کند.
- * @param {string} name - نام کوکی.
- * @param {string} value - مقدار کوکی.
- * @param {number} days - تعداد روزهایی که کوکی معتبر است.
+ * @param {string} name - Cookie name.
+ * @param {string} value - Cookie value.
+ * @param {number} days - Number of days the cookie is valid.
  */
 function setCookie(name, value, days) {
     let expires = "";
@@ -233,21 +233,22 @@ window.guest_uuid = initializeGuestUUID();
 document.addEventListener('DOMContentLoaded', () => {
     const path = window.location.pathname;
 
-    // --- Dynamic Imports بر اساس مسیر صفحه ---
+    // --- Dynamic Imports based on page path ---
 
-    // ماژول احراز هویت (auth) و JWT Manager
-    // این ماژول‌ها در صفحات ورود، ثبت‌نام، پروفایل و داشبورد نیاز هستند.
-    if (path.includes('/login') || path.includes('/register') || path.includes('/profile') || path.includes('/dashboard')) {
+    // Authentication module (auth) and JWT Manager
+    // These modules are needed on login, register, profile, and dashboard pages.
+    // CHANGE: Added 'mobile-login' and 'verify-otp-form' to the condition
+    if (path.includes('/login') || path.includes('/register') || path.includes('/profile') || path.includes('/dashboard') || path.includes('/mobile-login') || path.includes('/verify-otp-form')) {
         import('../auth/auth.js')
             .then(module => {
-                if (module.initAuth) { // تابع initAuth در auth.js
+                if (module.initAuth) { // initAuth function in auth.js
                     module.initAuth();
                 }
                 console.log('Auth module loaded and initialized.');
             })
             .catch(err => console.error('Failed to load auth module:', err));
 
-        // jwt_manager.js نیازی به init خاصی ندارد، فقط import شود تا توابعش در دسترس باشند.
+        // jwt_manager.js does not need specific init, just import to make its functions available.
         import('../auth/jwt_manager.js')
             .then(() => {
                 console.log('JWT Manager module loaded.');
@@ -255,11 +256,11 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(err => console.error('Failed to load JWT Manager module:', err));
     }
 
-    // ماژول سبد خرید (cart)
+    // Cart module (cart)
     if (path.includes('/cart')) {
         import('../cart/cart.js')
             .then(module => {
-                if (module.initCart) { // تابع initCart در cart.js
+                if (module.initCart) { // initCart function in cart.js
                     module.initCart();
                 } else {
                     console.warn('Cart module loaded but initCart function not found.');
@@ -269,11 +270,11 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(err => console.error('Failed to load cart module:', err));
     }
 
-    // ماژول جستجو (search)
+    // Search module (search)
     if (path.includes('/search') || path.includes('/products')) {
         import('../search/search.js')
             .then(module => {
-                if (module.initSearch) { // تابع initSearch در search.js
+                if (module.initSearch) { // initSearch function in search.js
                     module.initSearch();
                 } else {
                     console.warn('Search module loaded but initSearch function not found.');
@@ -283,12 +284,12 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(err => console.error('Failed to load search module:', err));
     }
 
-    // ماژول نوار ناوبری (navbar_new)
-    // این ماژول در اکثر صفحات نیاز است، بنابراین شرط آن می‌تواند بر اساس وجود عناصر DOM باشد.
+    // Navbar module (navbar_new)
+    // This module is needed on most pages, so its condition can be based on DOM element existence.
     if (document.querySelector('#main-navbar') || document.querySelector('.main-nav')) {
         import('../ui/navbar_new.js')
             .then(module => {
-                if (module.initializeNavbarAndCart) { // تابع initializeNavbarAndCart در navbar_new.js
+                if (module.initializeNavbarAndCart) { // initializeNavbarAndCart function in navbar_new.js
                     module.initializeNavbarAndCart();
                 } else {
                     console.warn('Navbar module loaded but initializeNavbarAndCart function not found.');
@@ -298,11 +299,11 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(err => console.error('Failed to load navbar module:', err));
     }
 
-    // ماژول پنل مدیریت (admin)
+    // Admin panel module (admin)
     if (path.startsWith('/admin/')) {
         import('../admin/admin.js')
             .then(module => {
-                if (module.initAdminPanel) { // تابع initAdminPanel در admin.js
+                if (module.initAdminPanel) { // initAdminPanel function in admin.js
                     module.initAdminPanel();
                 } else {
                     console.warn('Admin module loaded but initAdminPanel function not found.');
@@ -312,12 +313,12 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(err => console.error('Failed to load admin module:', err));
     }
 
-    // ماژول نمودارها (charts)
-    // این ماژول معمولاً در صفحات داشبورد یا گزارشات ادمین استفاده می‌شود.
+    // Charts module (charts)
+    // This module is typically used on dashboard or admin reports pages.
     if (path.includes('/dashboard') || path.includes('/admin-reports') || path.includes('/analytics')) {
         import('../admin/charts.js')
             .then(module => {
-                if (module.initCharts) { // تابع initCharts در charts.js
+                if (module.initCharts) { // initCharts function in charts.js
                     module.initCharts();
                 } else {
                     console.warn('Charts module loaded but initCharts function not found.');
@@ -327,11 +328,11 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(err => console.error('Failed to load charts module:', err));
     }
 
-    // ماژول پرداخت (checkout)
+    // Checkout module (checkout)
     if (path.includes('/checkout')) {
         import('../checkout/checkout.js')
             .then(module => {
-                if (module.initCheckout) { // تابع initCheckout در checkout.js
+                if (module.initCheckout) { // initCheckout function in checkout.js
                     module.initCheckout();
                 } else {
                     console.warn('Checkout module loaded but initCheckout function not found.');
@@ -341,12 +342,12 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(err => console.error('Failed to load checkout module:', err));
     }
 
-    // ماژول هیرو (hero)
-    // این ماژول معمولاً فقط در صفحه اصلی یا صفحات خاصی که کاروسل هیرو دارند استفاده می‌شود.
+    // Hero module (hero)
+    // This module is typically used only on the homepage or specific pages with a hero carousel.
     if (path === '/' || path.includes('/home')) {
         import('../ui/hero.js')
             .then(module => {
-                if (module.initHeroCarousel) { // تابع initHeroCarousel در hero.js
+                if (module.initHeroCarousel) { // initHeroCarousel function in hero.js
                     module.initHeroCarousel();
                 } else {
                     console.warn('Hero module loaded but initHeroCarousel function not found.');
@@ -356,12 +357,12 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(err => console.error('Failed to load hero module:', err));
     }
 
-    // ماژول Export (export.js)
-    // این ماژول معمولاً در صفحات گزارشات یا مدیریت استفاده می‌شود.
-    if (document.getElementById('export-excel') || document.getElementById('export-pdf')) { // اگر دکمه‌های export وجود دارند
-        import('../cart/export.js') // مسیر صحیح به فایل export.js
+    // Export module (export.js)
+    // This module is typically used on reports or management pages.
+    if (document.getElementById('export-excel') || document.getElementById('export-pdf')) { // If export buttons exist
+        import('../cart/export.js') // Correct path to export.js file
             .then(module => {
-                if (module.setupExportButtons) { // تابع setupExportButtons در export.js
+                if (module.setupExportButtons) { // setupExportButtons function in export.js
                     module.setupExportButtons();
                 } else {
                     console.warn('Export module loaded but setupExportButtons function not found.');
@@ -371,20 +372,20 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(err => console.error('Failed to load export module:', err));
     }
 
-    // فراخوانی setupProductEditListeners (اگر در صفحه ویرایش محصول هستیم)
-    // این تابع در همین فایل app.js تعریف شده است.
+    // Calling setupProductEditListeners (if on product edit page)
+    // This function is defined in this app.js file.
     if (path.includes('/products/edit') || path.includes('/products/create')) {
         setupProductEditListeners();
         console.log('Product edit listeners setup.');
     }
 });
 
-// --- برای اهداف دیباگ: توابع را به صورت گلوبال در دسترس قرار دهید ---
-// این خطوط را در محیط پروداکشن حذف کنید.
-// توجه: این توابع از ماژول‌های داینامیک لود شده می‌آیند و ممکن است در زمان بارگذاری اولیه undefined باشند.
-// بهتر است برای دیباگ، مستقیماً به module.functionName در کنسول دسترسی پیدا کنید
-// یا اینها را فقط برای توابع واقعاً گلوبال که در همین فایل تعریف شده‌اند، نگه دارید.
-// window.initializeNavbarAndCart = initializeNavbarAndCart; // این تابع از navbar_new.js می‌آید
-// window.updateNavbarUserStatus = updateNavbarUserStatus; // این تابع از navbar_new.js می‌آید
-window.logoutUser = logoutUser; // این تابع از api.js می‌آید و در اینجا import شده است.
-// --- پایان بخش دیباگ ---
+// --- For debugging purposes: make functions globally accessible ---
+// Remove these lines in production environment.
+// Note: These functions come from dynamically loaded modules and might be undefined at initial load time.
+// It's better to access them directly via module.functionName in the console for debugging
+// or keep these only for truly global functions defined in this file.
+// window.initializeNavbarAndCart = initializeNavbarAndCart; // This function comes from navbar_new.js
+// window.updateNavbarUserStatus = updateNavbarUserStatus; // This function comes from navbar_new.js
+window.logoutUser = logoutUser; // This function comes from api.js and is imported here.
+// --- End of debugging section ---

@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'چای ابراهیم')</title>
+    <title><?php echo $__env->yieldContent('title', 'چای ابراهیم'); ?></title>
 
-    {{-- REQUIRED FOR AJAX REQUESTS: CSRF Token --}}
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+    
+    <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
 
     <!-- Vazirmatn Font -->
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Font Awesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
-    {{-- Vite CSS and JS --}}
-    {{-- app.js مسئول ایمپورت کردن سایر ماژول‌ها (مانند cart.js, search.js, auth.js, navbar_new.js) است --}}
-    {{-- تغییر: مسیر app.js به core/app.js اصلاح شد --}}
-    @vite(['resources/css/app.css', 'resources/js/core/app.js'])
+    
+    
+    
+    <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css', 'resources/js/core/app.js']); ?>
 
     <style>
         /* تنظیم فونت Vazirmatn برای کل بدنه */
@@ -75,14 +75,14 @@
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 min-h-screen flex items-center justify-center">
 
-    {{-- محتوای اصلی صفحه در اینجا قرار می‌گیرد --}}
-    @yield('content')
+    
+    <?php echo $__env->yieldContent('content'); ?>
 
-    {{-- اسکریپت‌های سفارشی که از ویوهای فرزند push می‌شوند (اگر نیازی باشد) --}}
-    @stack('scripts')
+    
+    <?php echo $__env->yieldPushContent('scripts'); ?>
 
-    {{-- Confirmation Modal structure (اگر قبلاً در app.blade.php تعریف نشده است) --}}
-    {{-- این مدال برای نمایش پیام‌های تایید به کاربر استفاده می‌شود --}}
+    
+    
     <div id="confirm-modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
         <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-sm text-center">
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4"></h3>
@@ -95,3 +95,4 @@
     </div>
 </body>
 </html>
+<?php /**PATH C:\xampp\htdocs\myshop\resources\views/layouts/guest.blade.php ENDPATH**/ ?>
