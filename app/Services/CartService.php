@@ -126,7 +126,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
 
         // 1. ابتدا تلاش می‌کنیم سبد خرید را بر اساس user_id پیدا کنیم (اگر کاربر لاگین کرده باشد).
         if ($user) {
-            $cart = $this->cartRepository->findByUserId($user->id);
+            $cart = $this->cartRepository->findByUserId((string) $user->id); // Cast to string
             if ($cart) {
                 Log::info('Existing cart found by user ID.', ['cart_id' => $cart->id, 'user_id' => $user->id]);
                 // اگر سبد خرید کاربر موجود است، مطمئن می‌شویم که guest_uuid آن به‌روز است.
@@ -214,7 +214,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
 
         $data = [];
         if ($user) {
-            $data['user_id'] = $user->id;
+            $data['user_id'] = (string) $user->id; // Cast to string for consistency
             $data['session_id'] = null; // پاک کردن session_id برای کاربران احراز هویت شده
             $data['guest_uuid'] = null; // پاک کردن guest_uuid برای کاربران احراز هویت شده
         } else {
@@ -222,6 +222,12 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             $data['guest_uuid'] = $guestUuid;
             $data['session_id'] = $sessionId; // حفظ session_id برای سازگاری عقب‌رو/فال‌بک
             $data['user_id'] = 'guest'; // اطمینان از تنظیم user_id به 'guest' برای سبدهای مهمان
+
+            // حذف خط problematic:
+            // $existingGuestCart = $this->cartRepository->findByUserId('guest');
+            // این خط باعث TypeError می شد زیرا findByUserId انتظار int دارد.
+            // با توجه به اینکه guest_uuid اکنون شناسه اصلی است و جستجو بر اساس آن انجام می شود،
+            // و همچنین unique constraint روی user_id حذف شده است، این خط دیگر لازم نیست.
         }
         $cart = $this->cartRepository->create($data);
         Log::info('New cart created.', ['cart_id' => $cart->id, 'user_id' => $user->id ?? 'guest', 'session_id' => $sessionId, 'guest_uuid' => $data['guest_uuid']]); // لاگ کردن guest_uuid واقعی استفاده شده
@@ -744,7 +750,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
      */
     public function userOwnsCartItem(CartItem $cartItem, ?User $user, ?string $sessionId, ?string $guestUuid = null): bool
     {
-        if ($user && $cartItem->cart->user_id === $user->id) {
+        if ($user && $cartItem->cart->user_id === (string) $user->id) { // Cast to string
             return true;
         }
         if ($guestUuid && $cartItem->cart->guest_uuid === $guestUuid) {
@@ -772,7 +778,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         $cart = $this->cartRepository->findById($cartId);
         // Ensure that if the cart exists, it belongs to the current user or session or guest UUID.
         if ($cart && (
-            ($user && $cart->user_id === $user->id) ||
+            ($user && $cart->user_id === (string) $user->id) || // Cast to string
             ($guestUuid && $cart->guest_uuid === $guestUuid) ||
             ($sessionId && $cart->session_id === $sessionId)
         )) {
@@ -1007,7 +1013,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                 $guestCart = $this->cartRepository->findBySessionId($guestIdentifier);
             }
 
-            $userCart = $this->cartRepository->findByUserId($user->id);
+            $userCart = $this->cartRepository->findByUserId((string) $user->id); // Cast to string
 
             // 2. بررسی اینکه آیا guestCart از قبل همان userCart است
             if ($guestCart && $userCart && $guestCart->id === $userCart->id) {
