@@ -1,4 +1,4 @@
-<nav x-data="{ mobileMenuOpen: false }" class="bg-gradient-to-r from-green-800 via-green-700 to-green-600 shadow-xl border-b-4 border-amber-400 sticky top-0 z-50 backdrop-blur-sm">
+<nav x-data="{ mobileMenuOpen: false }" id="main-navbar" class="bg-gradient-to-r from-green-800 via-green-700 to-green-600 shadow-xl border-b-4 border-amber-400 sticky top-0 z-50 backdrop-blur-sm">
     <!-- Primary Navigation Menu -->
     <div class="max-w-full mx-auto px-0"> <!-- Changed to max-w-full and px-0 for full width -->
         <!-- Main flex container for logo, navigation links, and user/search section -->

@@ -1,8 +1,8 @@
 // resources/js/admin/admin.js
 
 // Import functions from other modules (assuming their new paths)
-// charts.js is in resources/js/ui/
-import { initializeMonthlySalesChart, updateChartOnResize } from '../ui/charts.js';
+// charts.js is in resources/js/admin/
+import { initializeMonthlySalesChart, updateChartOnResize } from '../admin/charts.js';
 import * as jalaali from 'jalaali-js'; // jalaali-js is usually from node_modules, so this path is fine
 
 // The hardcoded user array has been removed as requested.
