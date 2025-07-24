@@ -53,7 +53,8 @@
     
     <?php echo app('Illuminate\Foundation\Vite')([
         'resources/css/app.css',
-        'resources/js/core/app.js', 
+        'resources/js/core/app.js',
+        'resources/js/app.tsx', 
     ]); ?>
 
     
@@ -305,6 +306,12 @@
                 </div>
             </div>
         </main>
+
+        
+        
+        
+        <div id="mini-cart-root"></div>
+
 
         
         

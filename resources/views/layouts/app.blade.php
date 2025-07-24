@@ -53,7 +53,8 @@
     {{-- تغییر: مسیر app.js به resources/js/core/app.js اصلاح شد. --}}
     @vite([
         'resources/css/app.css',
-        'resources/js/core/app.js', 
+        'resources/js/core/app.js',
+        'resources/js/app.tsx', {{-- این خط جدید برای بارگذاری React App است --}}
     ])
 
     {{-- CDN for Chart.js (used in dashboard) --}}
@@ -305,6 +306,12 @@
                 </div>
             </div>
         </main>
+
+        {{-- این div برای رندر کردن MiniCart React در اینجا قرار می‌گیرد --}}
+        {{-- این المنت باید در جایی قرار گیرد که MiniCart بتواند به درستی نمایش داده شود، مثلاً نزدیک آیکون سبد خرید در نوار ناوبری --}}
+        {{-- برای سادگی، فعلاً آن را در انتهای main-content-wrapper قرار می‌دهیم. بعداً می‌توانید آن را به navigation.blade.php منتقل کنید. --}}
+        <div id="mini-cart-root"></div>
+
 
         {{-- در اینجا فوتر سایت را include می‌کنیم --}}
         {{-- فرض بر این است که فایل فوتر شما در resources/views/layouts/footer.blade.php قرار دارد --}}

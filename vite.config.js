@@ -1,6 +1,7 @@
 // vite.config.js
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
+import react from '@vitejs/plugin-react'; // این خط را اضافه کنید
 
 export default defineConfig({
     plugins: [
@@ -11,6 +12,7 @@ export default defineConfig({
             ],
             refresh: true,
         }),
+        react(), // این خط را به آرایه plugins اضافه کنید
     ],
     build: {
         // این گزینه به Vite می‌گوید که فایل‌های خروجی را در چه مسیری قرار دهد
@@ -46,6 +48,10 @@ export default defineConfig({
                         }
                         if (id.includes('chart')) { // برای کتابخانه‌های نمودار مثل Chart.js
                             return 'vendor-charts';
+                        }
+                        // اگر از React استفاده می‌کنید، آن را به یک چانک جداگانه منتقل کنید
+                        if (id.includes('react') || id.includes('react-dom')) {
+                            return 'vendor-react';
                         }
                         // در غیر این صورت، همه node_modules را در یک چانک vendor قرار دهید
                         return 'vendor';
