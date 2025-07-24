@@ -1,71 +1,35 @@
-// خط import مشکل‌ساز را حذف می‌کنیم.
-// import { showMessage, showConfirmationModal, logAdminAction, adminActivityLog, currentUser } from './app.js';
-import { initializeMonthlySalesChart, updateChartOnResize } from './charts.js';
-import * as jalaali from 'jalaali-js';
+// resources/js/admin/admin.js
+
+// Import functions from other modules (assuming their new paths)
+// charts.js is in resources/js/ui/
+import { initializeMonthlySalesChart, updateChartOnResize } from '../ui/charts.js';
+import * as jalaali from 'jalaali-js'; // jalaali-js is usually from node_modules, so this path is fine
 
 // The hardcoded user array has been removed as requested.
 // The user list will now be initially empty and should be populated from a data source like an API.
-export let users = [];
+export let users = []; // This should ideally be managed via an API call
 
 export function renderActivityLog() {
     const logContainer = document.getElementById('admin-activity-log');
     if (!logContainer) return;
 
     logContainer.innerHTML = '';
-    // adminActivityLog اکنون از طریق window.adminActivityLog قابل دسترسی است.
-    window.adminActivityLog.slice().reverse().forEach(log => {
-        const logEntry = document.createElement('div');
-        logEntry.className = 'p-2 bg-gray-50 rounded-md text-sm text-gray-700';
-        logEntry.innerHTML = `
-            <p><span class="font-semibold">${log.username}</span>: ${log.action} - <span class="text-gray-500">${new Date(log.timestamp).toLocaleString('fa-IR')}</span></p>
-            <span class="text-xs text-gray-400">${log.details}</span>
-        `;
-        logContainer.appendChild(logEntry);
-    });
+    // adminActivityLog is now accessible via window.adminActivityLog
+    if (window.adminActivityLog) { // Ensure window.adminActivityLog exists
+        window.adminActivityLog.slice().reverse().forEach(log => {
+            const logEntry = document.createElement('div');
+            logEntry.className = 'p-2 bg-gray-50 rounded-md text-sm text-gray-700';
+            logEntry.innerHTML = `
+                <p><span class="font-semibold">${log.username}</span>: ${log.action} - <span class="text-gray-500">${new Date(log.timestamp).toLocaleString('fa-IR')}</span></p>
+                <span class="text-xs text-gray-400">${log.details}</span>
+            `;
+            logContainer.appendChild(logEntry);
+        });
+    }
 }
 
-window.showSection = function(sectionId) {
-    const sections = document.querySelectorAll('.section-content');
-    sections.forEach(section => {
-        section.classList.remove('active');
-    });
-    const targetSection = document.getElementById(`${sectionId}-content`);
-    if (targetSection) {
-        targetSection.classList.add('active');
-    }
-
-    const titleElement = document.getElementById('current-section-title');
-    const navTextElement = document.querySelector(`[onclick="showSection('${sectionId}')"] .nav-text`);
-    if (titleElement && navTextElement) {
-        titleElement.textContent = navTextElement.textContent;
-    }
-
-    const notificationDropdown = document.getElementById('notification-dropdown');
-    if (notificationDropdown) {
-        notificationDropdown.classList.add('hidden');
-    }
-
-    const floatingReportToggle = document.getElementById('toggle-report-actions');
-    const reportActionsContainer = document.getElementById('report-actions-container');
-    if (floatingReportToggle && reportActionsContainer) {
-        reportActionsContainer.classList.add('hidden');
-        floatingReportToggle.setAttribute('aria-expanded', 'false');
-    }
-
-    if (sectionId === 'dashboard') {
-        initializeMonthlySalesChart();
-        updateChartOnResize();
-    } else if (sectionId === 'user-management') {
-        fetchUsers();
-    }
-};
-
-// !!! این تابع window.logoutUser حذف شد تا با تابع logoutUser در api.js تداخل نداشته باشد !!!
-// window.logoutUser = function() {
-//     // showMessage اکنون به طور مستقیم در دسترس است.
-//     window.showMessage('شما از سیستم خارج شدید.', 'info');
-//     console.log('User logged out.');
-// };
+// window.showSection is defined in app.js, so we call it directly via window
+// window.showSection = function(sectionId) { ... }; // This definition is removed from here
 
 let currentPage = 1;
 let itemsPerPage = 5;
@@ -205,10 +169,10 @@ function renderUserList(usersToRender) {
             </td>
             <td class="py-3 px-6 text-center whitespace-nowrap">
                 <div class="flex item-center justify-center space-x-2 space-x-reverse">
-                    <button onclick="window.showUserModal(${user.id})" class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center hover:bg-blue-600 transition duration-200" title="ویرایش">
+                    <button class="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center hover:bg-blue-600 transition duration-200 edit-user-btn" data-user-id="${user.id}" title="ویرایش">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button onclick="window.deleteUser(${user.id})" class="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition duration-200" title="حذف">
+                    <button class="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition duration-200 delete-user-btn" data-user-id="${user.id}" title="حذف">
                         <i class="fas fa-trash-alt"></i>
                     </button>
                 </div>
@@ -219,6 +183,14 @@ function renderUserList(usersToRender) {
 
     userListBody.querySelectorAll('.user-checkbox').forEach(checkbox => {
         checkbox.addEventListener('change', handleUserCheckboxClick);
+    });
+
+    // Attach listeners for edit/delete buttons using event delegation
+    userListBody.querySelectorAll('.edit-user-btn').forEach(button => {
+        button.addEventListener('click', (event) => window.showUserModal(parseInt(event.currentTarget.dataset.userId)));
+    });
+    userListBody.querySelectorAll('.delete-user-btn').forEach(button => {
+        button.addEventListener('click', (event) => window.deleteUser(parseInt(event.currentTarget.dataset.userId)));
     });
 }
 
@@ -291,9 +263,9 @@ window.showUserModal = function(userId = null) {
             window.showMessage('کاربر یافت نشد.', 'error');
             return;
         }
-        
+
         modalTitle.textContent = 'ویرایش کاربر';
-        
+
         // تنظیم مقادیر با بررسی وجود elements
         if (userIdInput) userIdInput.value = user.id;
         if (usernameInput) usernameInput.value = user.username;
@@ -301,9 +273,9 @@ window.showUserModal = function(userId = null) {
         if (roleSelect) roleSelect.value = user.role;
         if (statusSelect) statusSelect.value = user.status;
         if (phoneInput) phoneInput.value = user.phone || '';
-        
+
         console.log('User ID exists. Setting password fields to not required.');
-        
+
         // اصلاح اصلی - بررسی وجود element قبل از تنظیم required
         if (passwordInput) {
             passwordInput.required = false;
@@ -311,36 +283,36 @@ window.showUserModal = function(userId = null) {
         } else {
             console.error('passwordInput element not found');
         }
-        
+
         if (passwordConfirmationInput) {
             passwordConfirmationInput.required = false;
             console.log('passwordConfirmationInput.required set to false.');
         } else {
             console.error('passwordConfirmationInput element not found');
         }
-        
+
         if (passwordRequired) {
             console.log('passwordRequired element found. Hiding it.');
             passwordRequired.classList.add('hidden');
         } else {
             console.log('passwordRequired element NOT found.');
         }
-        
+
         if (passwordConfirmRequired) {
             console.log('passwordConfirmRequired element found. Hiding it.');
             passwordConfirmRequired.classList.add('hidden');
         } else {
             console.log('passwordConfirmRequired element NOT found.');
         }
-        
+
         if (formMethodInput) formMethodInput.value = 'PUT';
-        
+
     } else {
         modalTitle.textContent = 'افزودن کاربر جدید';
         if (userIdInput) userIdInput.value = '';
-        
+
         console.log('New user. Setting password fields to required.');
-        
+
         // اصلاح اصلی - بررسی وجود element قبل از تنظیم required
         if (passwordInput) {
             console.log('Attempting to set passwordInput.required = true;');
@@ -349,7 +321,7 @@ window.showUserModal = function(userId = null) {
         } else {
             console.error('passwordInput element not found');
         }
-        
+
         if (passwordConfirmationInput) {
             console.log('Attempting to set passwordConfirmationInput.required = true;');
             passwordConfirmationInput.required = true;
@@ -357,14 +329,14 @@ window.showUserModal = function(userId = null) {
         } else {
             console.error('passwordConfirmationInput element not found');
         }
-        
+
         if (passwordRequired) {
             console.log('passwordRequired element found. Showing it.');
             passwordRequired.classList.remove('hidden');
         } else {
             console.log('passwordRequired element NOT found.');
         }
-        
+
         if (passwordConfirmRequired) {
             console.log('passwordConfirmRequired element found. Showing it.');
             passwordConfirmRequired.classList.remove('hidden');
@@ -396,7 +368,6 @@ function resetUserForm() {
     }
 }
 
-// اصلاح function validateUserForm (حدود خط 310-370)
 function validateUserForm(form) {
     if (!form) {
         console.error('Form element is null');
@@ -406,7 +377,7 @@ function validateUserForm(form) {
     let isValid = true;
     const errorList = document.getElementById('error-list');
     const formErrorsDiv = document.getElementById('form-errors');
-    
+
     if (errorList) {
         errorList.innerHTML = '';
     }
@@ -441,12 +412,12 @@ function validateUserForm(form) {
         displayFieldError(usernameInput, 'نام کاربری نمی‌تواند خالی باشد.');
         isValid = false;
     }
-    
+
     if (emailInput && (emailInput.value.trim() === '' || !/\S+@\S+\.\S+/.test(emailInput.value))) {
         displayFieldError(emailInput, 'ایمیل نامعتبر است.');
         isValid = false;
     }
-    
+
     if (roleSelect && roleSelect.value === '') {
         displayFieldError(roleSelect, 'نقش کاربر را انتخاب کنید.');
         isValid = false;
@@ -454,7 +425,7 @@ function validateUserForm(form) {
 
     const userIdInput = document.getElementById('user-id');
     const isNewUser = !userIdInput || !userIdInput.value;
-    
+
     if (passwordInput && passwordConfirmationInput) {
         if (isNewUser || (passwordInput.value !== '' || passwordConfirmationInput.value !== '')) {
             if (passwordInput.value.length < 8) {
@@ -476,29 +447,28 @@ function validateUserForm(form) {
     if (!isValid && formErrorsDiv) {
         formErrorsDiv.classList.remove('hidden');
     }
-    
+
     return isValid;
 }
 
-// اصلاح function displayFieldError (حدود خط 370-390)
 function displayFieldError(inputElement, message) {
     // بررسی وجود inputElement
     if (!inputElement) {
         console.error('inputElement is null or undefined');
         return;
     }
-    
+
     const errorDiv = inputElement.nextElementSibling;
     if (errorDiv && errorDiv.classList.contains('invalid-feedback')) {
         errorDiv.textContent = message;
         errorDiv.classList.remove('hidden');
     }
-    
+
     // اضافه کردن کلاس error با بررسی وجود classList
     if (inputElement.classList) {
         inputElement.classList.add('border-red-500');
     }
-    
+
     const errorList = document.getElementById('error-list');
     if (errorList) {
         const li = document.createElement('li');
@@ -510,7 +480,6 @@ function displayFieldError(inputElement, message) {
 }
 
 
-// اصلاح function handleUserFormSubmit (حدود خط 390-450)
 async function handleUserFormSubmit(event) {
     event.preventDefault();
     const form = event.target;
@@ -558,7 +527,7 @@ async function handleUserFormSubmit(event) {
     }
 
     const originalBtnText = submitBtn.innerHTML;
-    
+
     // اصلاح اصلی - بررسی وجود submitBtn قبل از تنظیم properties
     if (submitBtn) {
         submitBtn.disabled = true;
@@ -594,15 +563,15 @@ async function handleUserFormSubmit(event) {
             window.showMessage('کاربر جدید با موفقیت اضافه شد.', 'success');
             window.logAdminAction(window.currentUser.username, 'افزودن کاربر', `کاربر ${username} اضافه شد.`);
         }
-        
+
         const userModalOverlay = document.getElementById('user-modal-overlay');
         if (userModalOverlay) {
             userModalOverlay.classList.add('hidden');
             userModalOverlay.classList.remove('active');
         }
-        
+
         fetchUsers();
-        
+
     } catch (error) {
         console.error('Error saving user:', error);
         window.showMessage('خطا در ذخیره کاربر: ' + error.message, 'error');
@@ -622,14 +591,14 @@ window.deleteUser = function(userId) {
         return;
     }
 
-    // showConfirmationModal اکنون به طور مستقیم در دسترس است.
+    // showConfirmationModal is now directly accessible via window
     window.showConfirmationModal(
         'تایید حذف کاربر',
         `آیا از حذف کاربر "${userToDelete.username}" مطمئن هستید؟ این عملیات قابل بازگشت نیست.`,
         async () => {
             try {
                 await new Promise(resolve => setTimeout(resolve, 500));
-                
+
                 const userIndex = users.findIndex(user => user.id === userId);
 
                 if (userIndex > -1) {
@@ -639,8 +608,8 @@ window.deleteUser = function(userId) {
                 } else {
                     window.showMessage('خطا در حذف کاربر. کاربر یافت نشد.', 'error');
                 }
-                
-                fetchUsers(currentPage); 
+
+                fetchUsers(currentPage);
             } catch (error) {
                 console.error('Error deleting user:', error);
                 window.showMessage('خطا در حذف کاربر: ' + error.message, 'error');
@@ -666,7 +635,7 @@ function toggleBulkActionsVisibility() {
 function updateSelectedUsersCount() {
     const selectAllCheckbox = document.getElementById('select-all');
     const userCheckboxes = document.querySelectorAll('.user-checkbox');
-    
+
     if (userCheckboxes.length > 0 && selectedUserIds.size === userCheckboxes.length && selectedUserIds.size > 0) {
         if (selectAllCheckbox) selectAllCheckbox.checked = true;
     } else {
@@ -728,7 +697,7 @@ async function handleBulkAction(actionType) {
         return;
     }
 
-    // showConfirmationModal اکنون به طور مستقیم در دسترس است.
+    // showConfirmationModal is now directly accessible via window
     window.showConfirmationModal(
         'تایید عملیات گروهی',
         confirmMessage,
@@ -746,7 +715,7 @@ async function handleBulkAction(actionType) {
                         }
                     });
                 }
-                
+
                 window.showMessage(successMessage, 'success');
                 window.logAdminAction(window.currentUser.username, logAction, `عملیات روی کاربران: ${usernames}`);
                 selectedUserIds.clear();
@@ -762,14 +731,24 @@ async function handleBulkAction(actionType) {
     );
 }
 
-export function setupAdminPanelListeners() {
-    if (!window.location.pathname.startsWith('/admin/')) {
-        console.log("در صفحه ادمین نیستیم، تنظیم شنونده‌های پنل ادمین نادیده گرفته می‌شود.");
-        return;
+// Main initialization function for the admin panel
+export function initAdminPanel() {
+    console.log("Admin module initializing...");
+
+    // Initial setup (previously in window.onload)
+    if (window.location.pathname.startsWith('/admin/')) {
+        window.showSection('dashboard'); // Assuming showSection is a global function from app.js
+        renderActivityLog();
+
+        const storedAdmin = users.find(u => u.username === window.currentUser.username);
+        if (storedAdmin) {
+            window.logAdminAction(window.currentUser.username, 'ورود به پنل', 'ورود موفق به سیستم');
+        } else {
+            window.showMessage('کاربر ادمین شبیه‌سازی شده یافت نشد. به عنوان کاربر پیش‌فرض عمل می‌کنیم.', 'info');
+        }
     }
-    console.log("در صفحه ادمین هستیم، شنونده‌های پنل ادمین تنظیم می‌شوند.");
 
-
+    // Setup event listeners for the admin panel UI
     const sidebarToggle = document.getElementById('sidebar-toggle');
     const sidebar = document.getElementById('sidebar');
     const mainContentWrapper = document.getElementById('main-content-wrapper');
@@ -912,23 +891,9 @@ export function setupAdminPanelListeners() {
     document.getElementById('bulk-delete')?.addEventListener('click', () => handleBulkAction('delete'));
     document.getElementById('bulk-activate')?.addEventListener('click', () => handleBulkAction('activate'));
     document.getElementById('bulk-deactivate')?.addEventListener('click', () => handleBulkAction('deactivate'));
+
+    console.log("Admin module initialized successfully.");
 }
 
-window.onload = () => {
-    if (window.location.pathname.startsWith('/admin/')) {
-        window.showSection('dashboard');
-        renderActivityLog();
-
-        // currentUser اکنون از طریق window.currentUser قابل دسترسی است.
-        const storedAdmin = users.find(u => u.username === window.currentUser.username);
-        if (storedAdmin) {
-            window.logAdminAction(window.currentUser.username, 'ورود به پنل', 'ورود موفق به سیستم');
-        } else {
-            // This message is expected now since the users array is initially empty.
-            window.showMessage('کاربر ادمین شبیه‌سازی شده یافت نشد. به عنوان کاربر پیش‌فرض عمل می‌کنیم.', 'info');
-        }
-    }
-    // setupAdminPanelListeners به عنوان یک تابع export شده در admin.js باقی می‌ماند
-    // و از app.js فراخوانی می‌شود.
-    setupAdminPanelListeners();
-};
+// Export the initAdminPanel function so app.js can call it
+// The previous window.onload block is removed as app.js will handle the loading.

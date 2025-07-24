@@ -50,19 +50,18 @@
     {{-- Vite Assets for CSS and JS --}}
     {{-- فقط app.js به عنوان نقطه ورودی جاوااسکریپت اصلی را بارگذاری کنید. --}}
     {{-- app.js خودش مسئول ایمپورت کردن سایر ماژول‌ها (cart.js, search.js, auth.js, navbar_new.js و غیره) است. --}}
+    {{-- تغییر: مسیر app.js به resources/js/core/app.js اصلاح شد. --}}
     @vite([
         'resources/css/app.css',
-        'resources/js/app.js', 
+        'resources/js/core/app.js', 
     ])
 
     {{-- CDN for Chart.js (used in dashboard) --}}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    {{-- CDN for SheetJS (Excel export) --}}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    {{-- CDN for jsPDF (PDF export) --}}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    {{-- CDN for html2canvas (for PDF from HTML) --}}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    {{-- تغییر: این CDN ها حذف شدند زیرا این کتابخانه‌ها توسط Vite Bundle می‌شوند. --}}
+    {{-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> --}}
+    {{-- <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> --}}
+    {{-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script> --}}
+    {{-- <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script> --}}
 
     <style>
         /* این استایل برای جلوگیری از نمایش لحظه‌ای المنت‌های x-cloak قبل از بارگذاری Alpine.js ضروری است */
@@ -341,7 +340,10 @@
                 document.documentElement.style.setProperty('--nav-height', `${navHeight}px`);
             }
 
-            // Hero Carousel logic (preserved from your original app.blade.php)
+            // --- تغییر: منطق Hero Carousel به فایل resources/js/ui/hero.js منتقل شده است. ---
+            // بنابراین، کد زیر از اینجا حذف می‌شود.
+            // app.js مسئول dynamic import و فراخوانی initHeroCarousel است.
+            /*
             const slides = document.querySelectorAll('.hero-slide');
             const prevBtn = document.getElementById('hero-prev-btn');
             const nextBtn = document.getElementById('hero-next-btn');
@@ -450,6 +452,8 @@
             } else {
                 console.warn("No hero slides found. Hero carousel will not be initialized.");
             }
+            */
+            // --- پایان تغییر: منطق Hero Carousel حذف شد. ---
         });
     </script>
 

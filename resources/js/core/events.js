@@ -1,4 +1,4 @@
-// events.js
+// resources/js/core/events.js
 // این فایل مسئول مدیریت رویدادهای DOM و کش کردن عناصر است.
 
 let DOM = {}; // Object to store cached DOM elements
@@ -9,7 +9,7 @@ let DOM = {}; // Object to store cached DOM elements
  * @param {number} delay - تأخیر بر حسب میلی‌ثانیه.
  * @returns {Function} - نسخه debounce شده تابع.
  */
-export function debounce(func, delay) { // اضافه کردن 'export' در اینجا
+export function debounce(func, delay) {
     let timeout;
     return function(...args) {
         const context = this;
@@ -102,7 +102,7 @@ export function setupAddToCartButtons() {
             event.preventDefault();
             const productId = addToCartBtn.getAttribute('data-product-id');
             const productTitle = addToCartBtn.getAttribute('data-product-title');
-            const productPrice = addToCartBtn.getAttribute('data-product-price'); // اگر نیاز بود
+            // const productPrice = addToCartBtn.getAttribute('data-product-price'); // اگر نیاز بود
             const quantity = 1; // مقدار پیش‌فرض
 
             if (typeof window.cartManager === 'undefined') {
@@ -127,26 +127,6 @@ export function setupAddToCartButtons() {
             }
         }
     });
-}
-
-/**
- * به‌روزرسانی فوری زیرمجموع یک آیتم در UI.
- * @param {string} cartItemId - شناسه آیتم سبد خرید.
- * @param {number} newQuantity - تعداد جدید آیتم.
- */
-function updateSubtotalInUI(cartItemId, newQuantity) {
-    const cartItemElement = document.querySelector(`[data-cart-item-id="${cartItemId}"]`).closest('.cart-item-card');
-    if (cartItemElement) {
-        const itemPriceElement = cartItemElement.querySelector('.item-price');
-        const subtotalElement = cartItemElement.querySelector('.item-subtotal');
-        if (itemPriceElement && subtotalElement) {
-            const itemPrice = parseFloat(itemPriceElement.getAttribute('data-price'));
-            const newSubtotal = newQuantity * itemPrice;
-            subtotalElement.textContent = newSubtotal.toLocaleString('fa-IR') + ' تومان';
-            subtotalElement.setAttribute('data-subtotal', newSubtotal);
-            console.log(`Subtotal updated to: ${newSubtotal} for item ${cartItemId}`);
-        }
-    }
 }
 
 /**

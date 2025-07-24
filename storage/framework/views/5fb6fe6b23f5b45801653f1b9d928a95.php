@@ -50,19 +50,18 @@
     
     
     
+    
     <?php echo app('Illuminate\Foundation\Vite')([
         'resources/css/app.css',
-        'resources/js/app.js', 
+        'resources/js/core/app.js', 
     ]); ?>
 
     
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    
 
     <style>
         /* این استایل برای جلوگیری از نمایش لحظه‌ای المنت‌های x-cloak قبل از بارگذاری Alpine.js ضروری است */
@@ -341,7 +340,10 @@
                 document.documentElement.style.setProperty('--nav-height', `${navHeight}px`);
             }
 
-            // Hero Carousel logic (preserved from your original app.blade.php)
+            // --- تغییر: منطق Hero Carousel به فایل resources/js/ui/hero.js منتقل شده است. ---
+            // بنابراین، کد زیر از اینجا حذف می‌شود.
+            // app.js مسئول dynamic import و فراخوانی initHeroCarousel است.
+            /*
             const slides = document.querySelectorAll('.hero-slide');
             const prevBtn = document.getElementById('hero-prev-btn');
             const nextBtn = document.getElementById('hero-next-btn');
@@ -450,6 +452,8 @@
             } else {
                 console.warn("No hero slides found. Hero carousel will not be initialized.");
             }
+            */
+            // --- پایان تغییر: منطق Hero Carousel حذف شد. ---
         });
     </script>
 

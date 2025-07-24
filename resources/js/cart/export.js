@@ -1,6 +1,9 @@
-// resources/js/export.js
+// resources/js/cart/export.js
 
 // نیازی به import showMessage نیست چون به صورت global در window تعریف شده است.
+// کتابخانه‌های XLSX, jspdf و html2canvas باید به صورت گلوبال در دسترس باشند
+// یا توسط Vite به صورت جداگانه Bundle و لود شوند.
+// فرض بر این است که این کتابخانه‌ها از طریق <script> تگ در HTML یا تنظیمات Vite لود می‌شوند.
 
 export function setupExportButtons() {
     // دکمه Export Excel
@@ -8,6 +11,16 @@ export function setupExportButtons() {
 
     if (exportExcelButton) {
         exportExcelButton.addEventListener('click', () => {
+            // اطمینان حاصل کنید که XLSX به صورت گلوبال در دسترس است
+            if (typeof XLSX === 'undefined') {
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage('خطا: کتابخانه XLSX برای صادرات اکسل یافت نشد.', 'error');
+                } else {
+                    console.error('Error: XLSX library not found for Excel export.');
+                }
+                return;
+            }
+
             const data = [
                 ['نام محصول', 'قیمت', 'موجودی'],
                 ['چای سیاه', 50000, 1000],
@@ -33,7 +46,17 @@ export function setupExportButtons() {
 
     if (exportPdfButton) {
         exportPdfButton.addEventListener('click', async () => {
-            const { jsPDF } = window.jspdf;
+            // اطمینان حاصل کنید که jspdf و html2canvas به صورت گلوبال در دسترس هستند
+            if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined') {
+                if (typeof window.showMessage === 'function') {
+                    window.showMessage('خطا: کتابخانه‌های jspdf یا html2canvas برای صادرات PDF یافت نشدند.', 'error');
+                } else {
+                    console.error('Error: jspdf or html2canvas libraries not found for PDF export.');
+                }
+                return;
+            }
+
+            const { jsPDF } = window.jspdf; // دسترسی به jsPDF از window
             const doc = new jsPDF();
 
             const content = document.getElementById('reports-content');
@@ -104,5 +127,5 @@ export function setupExportButtons() {
     }
 }
 
-// فعال‌سازی پس از لود کامل DOM
-document.addEventListener('DOMContentLoaded', setupExportButtons);
+// The document.addEventListener('DOMContentLoaded') block is removed from here.
+// app.js will dynamically import this module and call setupExportButtons().

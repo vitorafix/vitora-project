@@ -1,8 +1,9 @@
-// resources/js/navbar_new.js
+// resources/js/ui/navbar_new.js
 console.log('navbar_new.js loaded and starting...');
 
 // Import necessary API functions
-import { getJwtToken, logoutUser, fetchCartContents, removeCartItem, fetchUserData, clearJwtToken } from './api.js';
+// تغییر: مسیر import برای api.js به فولدر core اصلاح شده است.
+import { getJwtToken, logoutUser, fetchCartContents, removeCartItem, fetchUserData, clearJwtToken } from '../core/api.js';
 
 // === Mini Cart Logic Functions ===
 /**
@@ -220,6 +221,7 @@ export function initializeNavbarAndCart() {
             const removeButton = event.target.closest('.remove-item-btn');
             if (removeButton) {
                 const itemId = removeButton.dataset.id;
+                // window.showConfirmationModal is assumed to be global from app.js
                 window.showConfirmationModal(
                     'حذف محصول',
                     'آیا مطمئن هستید که می‌خواهید این محصول را حذف کنید؟',
@@ -227,10 +229,12 @@ export function initializeNavbarAndCart() {
                         try {
                             const response = await removeCartItem(itemId);
                             if (response.success) {
+                                // window.showMessage is assumed to be global from app.js
                                 window.showMessage(response.message || 'آیتم از سبد خرید حذف شد.', 'success');
                                 await renderMiniCart();
-                                if (window.location.pathname === '/cart' && typeof window.loadCart === 'function') {
-                                    window.loadCart();
+                                // window.loadCart is assumed to be global from app.js or cart.js
+                                if (window.location.pathname === '/cart' && typeof window.cartManager !== 'undefined' && typeof window.cartManager.loadAndRenderCart === 'function') {
+                                    window.cartManager.loadAndRenderCart(); // Call the method on cartManager instance
                                 }
                             } else {
                                 window.showMessage(response.message || 'خطا در حذف محصول.', 'error');
@@ -273,11 +277,12 @@ export function initializeNavbarAndCart() {
         });
     });
 
-    if (window.renderMainCart) {
-        const originalRenderMainCart = window.renderMainCart;
-        window.renderMainCart = async function() {
-            await originalRenderMainCart();
-            renderMiniCart();
-        };
-    }
+    // Removed the problematic window.renderMainCart override.
+    // The main cart logic is now managed by CartManager in cart.js.
+    // If you need to trigger a main cart refresh from here,
+    // ensure window.cartManager is available and call its loadAndRenderCart method.
+    // Example:
+    // if (window.cartManager && typeof window.cartManager.loadAndRenderCart === 'function') {
+    //     window.cartManager.loadAndRenderCart();
+    // }
 }

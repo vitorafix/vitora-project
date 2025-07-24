@@ -1,4 +1,4 @@
-// resources/js/cart.js
+// resources/js/cart/cart.js
 console.log('cart.js loaded and starting...');
 
 // این فایل شامل کلاس CartManager است که مسئول مدیریت کلی سبد خرید،
@@ -6,17 +6,17 @@ console.log('cart.js loaded and starting...');
 
 // ایمپورت کردن توابع مورد نیاز از ماژول‌های دیگر
 // این توابع مسئول برقراری ارتباط با API بک‌اند هستند.
-// تغییر: setGuestUuidHeader را از api.js ایمپورت می‌کنیم.
-import { fetchCartContents, addToCart, updateCartItemQuantity, removeCartItem, clearCart, applyCoupon, removeCoupon, setGuestUuidHeader } from './api.js';
+// تغییر: مسیرهای import به فولدر core اصلاح شده‌اند.
+import { fetchCartContents, addToCart, updateCartItemQuantity, removeCartItem, clearCart, applyCoupon, removeCoupon, setGuestUuidHeader } from '../core/api.js';
 // این توابع مسئول به‌روزرسانی رابط کاربری (DOM) بر اساس داده‌های سبد خرید هستند.
-import { CartRenderer } from './renderer.js';
+import { CartRenderer } from '../core/renderer.js';
 // این توابع مسئول کش کردن عناصر DOM و تنظیم Event Listenerها هستند.
 import {
     initializeDOMCache,
     setupMiniCartToggle,
     getDOM, // اضافه کردن تابع getDOM
     debounce // اضافه کردن تابع debounce از events.js
-} from './events.js';
+} from '../core/events.js'; // مسیر صحیح
 
 // جلوگیری از اجرای مکرر initialization
 let isInitialized = false;
@@ -487,9 +487,23 @@ class CartManager {
     }
 }
 
-// ایجاد یک نمونه از CartManager و راه‌اندازی آن پس از بارگذاری کامل DOM
-document.addEventListener('DOMContentLoaded', () => {
-    const cartManager = new CartManager();
-    window.cartManager = cartManager;
-    cartManager.init();
-});
+// تابع `initCart` برای فراخوانی توسط `app.js`
+export function initCart() {
+    // اطمینان حاصل کنید که این کد فقط زمانی اجرا می‌شود که DOM آماده باشد.
+    // اگر `app.js` این تابع را بعد از `DOMContentLoaded` فراخوانی کند، نیازی به `addEventListener` نیست.
+    // اما برای اطمینان بیشتر، می‌توانیم یک بررسی ساده انجام دهیم.
+    if (document.readyState === 'loading') { // اگر DOM هنوز در حال بارگذاری است
+        document.addEventListener('DOMContentLoaded', () => {
+            const cartManager = new CartManager();
+            window.cartManager = cartManager; // برای دسترسی گلوبال
+            cartManager.init();
+        });
+    } else { // اگر DOM قبلاً بارگذاری شده است
+        const cartManager = new CartManager();
+        window.cartManager = cartManager; // برای دسترسی گلوبال
+        cartManager.init();
+    }
+}
+
+// نکته: خط `document.addEventListener('DOMContentLoaded', ...)` قبلی حذف شده است
+// زیرا `app.js` مسئول فراخوانی `initCart()` پس از Dynamic Import است.

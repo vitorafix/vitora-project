@@ -1,4 +1,7 @@
-import axiosInstance from './axiosInstance'; // تغییر: ایمپورت کردن axiosInstance
+// resources/js/vendor/bootstrap.js
+
+// تغییر: مسیر ایمپورت کردن axiosInstance به فولدر core اصلاح شد.
+import axiosInstance from '../core/axiosInstance.js';
 
 // Axios را به صورت سراسری در دسترس قرار دهید و از axiosInstance استفاده کنید
 window.axios = axiosInstance; // تغییر کلیدی: اختصاص axiosInstance به window.axios

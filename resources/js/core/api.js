@@ -1,7 +1,8 @@
-// resources/js/api.js
+// resources/js/core/api.js
 
-import axios from './axiosInstance.js'; // Ensure this path is correct for your project setup
-import { storeJwtToken, clearJwtToken, getJwtToken } from './jwt_manager.js';
+import axios from './axiosInstance.js'; // مسیر صحیح: axiosInstance.js در همین فولدر core است
+// تغییر: مسیر import برای jwt_manager.js به فولدر auth اصلاح شده است.
+import { storeJwtToken, clearJwtToken, getJwtToken } from '../auth/jwt_manager.js';
 
 // Export JWT functions directly for use in auth.js
 export { storeJwtToken, clearJwtToken, getJwtToken };

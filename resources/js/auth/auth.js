@@ -1,16 +1,19 @@
-// resources/js/auth.js
+// resources/js/auth/auth.js
 console.log('auth.js loaded and starting...');
 
 // این فایل مسئول مدیریت احراز هویت کاربر، شامل ثبت نام، ورود و مدیریت OTP است.
 
 // ایمپورت کردن توابع مورد نیاز از ماژول‌های دیگر
 // توابع storeJwtToken و clearJwtToken از api.js ایمپورت می‌شوند.
-import { sendOtp, verifyOtpAndLogin, logoutUser, storeJwtToken, clearJwtToken, getJwtToken, registerUserAndSendOtp, requestOtpForRegister } from "/resources/js/api.js";
+// تغییر: مسیرهای import به فولدرهای core و ui اصلاح شده‌اند.
+import { sendOtp, verifyOtpAndLogin, logoutUser, storeJwtToken, clearJwtToken, getJwtToken, registerUserAndSendOtp, requestOtpForRegister } from "../core/api.js";
 // اضافه شدن registerUserAndSendOtp و requestOtpForRegister از api.js
-import { updateNavbarUserStatus } from "/resources/js/navbar_new.js";
+import { updateNavbarUserStatus } from "../ui/navbar_new.js";
 // برای به‌روزرسانی وضعیت نوار ناوبری
 
 // تابع برای ذخیره guest_uuid در localStorage (این تابع مستقیماً با Axios ارتباط ندارد، پس نیازی به تغییر ندارد)
+// این توابع به app.js منتقل شده‌اند و در اینجا نیازی به تعریف مجدد نیست.
+/*
 function setGuestUuid(uuid) {
     localStorage.setItem('guest_uuid', uuid);
     console.log('Guest UUID set in localStorage:', uuid);
@@ -20,91 +23,98 @@ function setGuestUuid(uuid) {
 function getGuestUuid() {
     return localStorage.getItem('guest_uuid');
 }
+*/
 
-document.addEventListener('DOMContentLoaded', function() {
-
-    // Function to convert Persian/Arabic digits to English and remove non-digits
-    // This function is used for all three registration, login, and OTP verification forms.
-    const convertAndFilterDigits = (value) => {
-        const persianToEnglishMap = {
-            '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
-            '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
-            '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
-            '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
-        };
-        let convertedValue = '';
-        for (let i = 0; i < value.length; i++) {
-            const char = value[i];
-            convertedValue += persianToEnglishMap[char] || char;
-        }
-        // Remove any non-digit characters after conversion
-        return convertedValue.replace(/\D/g, '');
+// Function to convert Persian/Arabic digits to English and remove non-digits
+// This function is used for all three registration, login, and OTP verification forms.
+const convertAndFilterDigits = (value) => {
+    const persianToEnglishMap = {
+        '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
+        '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
+        '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+        '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
     };
+    let convertedValue = '';
+    for (let i = 0; i < value.length; i++) {
+        const char = value[i];
+        convertedValue += persianToEnglishMap[char] || char;
+    }
+    // Remove any non-digit characters after conversion
+    return convertedValue.replace(/\D/g, '');
+};
 
-    // Class to manage countdown timers (moved from verify-otp.blade.php)
-    class CountdownTimer {
-        constructor(element, initialSeconds, onCompleteCallback) {
-            this.element = element;
-            this.seconds = initialSeconds;
-            this.onCompleteCallback = onCompleteCallback;
-            this.interval = null;
-        }
-
-        start() {
-            this.stop();
-            // Ensure any existing timer is stopped
-            this.updateDisplay();
-            // Update immediately
-            this.interval = setInterval(() => {
-                this.seconds--;
-                this.updateDisplay();
-                if (this.seconds <= 0) {
-                    this.stop();
-                    this.onCompleteCallback?.();
-                    // Call callback if provided
-                }
-            }, 1000);
-        }
-
-        stop() {
-            clearInterval(this.interval);
-            this.interval = null;
-        }
-
-        reset(newSeconds) {
-            this.stop();
-            this.seconds = newSeconds;
-            this.updateDisplay();
-        }
-
-        updateDisplay() {
-            const minutes = Math.floor(this.seconds / 60);
-            const seconds = this.seconds % 60;
-            this.element.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
+// Class to manage countdown timers (moved from verify-otp.blade.php)
+class CountdownTimer {
+    constructor(element, initialSeconds, onCompleteCallback) {
+        this.element = element;
+        this.seconds = initialSeconds;
+        this.onCompleteCallback = onCompleteCallback;
+        this.interval = null;
     }
 
-    // Function to clear OTP input fields and focus on the first one (moved from verify-otp.blade.php)
-    const clearOtpFields = () => {
-        const otpDigitInputs = document.querySelectorAll('.otp-digit-input');
-        otpDigitInputs.forEach(input => {
-            input.value = '';
-        });
-        if (otpDigitInputs.length > 0) {
-            otpDigitInputs[0].focus();
-            // Focus on the first field for convenience
-        }
-    };
+    start() {
+        this.stop();
+        // Ensure any existing timer is stopped
+        this.updateDisplay();
+        // Update immediately
+        this.interval = setInterval(() => {
+            this.seconds--;
+            this.updateDisplay();
+            if (this.seconds <= 0) {
+                this.stop();
+                this.onCompleteCallback?.();
+                // Call callback if provided
+            }
+        }, 1000);
+    }
 
-    // Function to get the combined OTP string from individual inputs (moved from verify-otp.blade.php)
-    const getCombinedOtp = () => {
-        const otpDigitInputs = document.querySelectorAll('.otp-digit-input');
-        let otp = '';
-        otpDigitInputs.forEach(input => {
-            otp += input.value;
-        });
-        return otp;
-    };
+    stop() {
+        clearInterval(this.interval);
+        this.interval = null;
+    }
+
+    reset(newSeconds) {
+        this.stop();
+        this.seconds = newSeconds;
+        this.updateDisplay();
+    }
+
+    updateDisplay() {
+        const minutes = Math.floor(this.seconds / 60);
+        const seconds = this.seconds % 60;
+        this.element.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+}
+
+// Function to clear OTP input fields and focus on the first one (moved from verify-otp.blade.php)
+const clearOtpFields = () => {
+    const otpDigitInputs = document.querySelectorAll('.otp-digit-input');
+    otpDigitInputs.forEach(input => {
+        input.value = '';
+    });
+    if (otpDigitInputs.length > 0) {
+        otpDigitInputs[0].focus();
+        // Focus on the first field for convenience
+    }
+};
+
+// Function to get the combined OTP string from individual inputs (moved from verify-otp.blade.php)
+const getCombinedOtp = () => {
+    const otpDigitInputs = document.querySelectorAll('.otp-digit-input');
+    let otp = '';
+    otpDigitInputs.forEach(input => {
+        otp += input.value;
+    });
+    return otp;
+};
+
+/**
+ * Main initialization function for the authentication module.
+ * این تابع اصلی راه‌اندازی ماژول احراز هویت است.
+ * app.js این تابع را به صورت داینامیک فراخوانی می‌کند.
+ */
+export function initAuth() {
+    console.log('Auth module initializing...');
 
     // --- Logic for the registration page (register.blade.php) ---
     const registerNameInput = document.getElementById('name');
@@ -411,7 +421,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         // فراخوانی API برای لاگین کردن کاربر در سشن وب لاراول
                         try {
-                            const jwtLoginResponse = await axios.post('/api/auth/jwt-login', {
+                            // Assuming window.axios is available globally from bootstrap.js
+                            const jwtLoginResponse = await window.axios.post('/api/auth/jwt-login', {
                                 token: data.access_token
                             });
                             console.log('Auth.js: Web session login successful:', jwtLoginResponse.data);
@@ -548,34 +559,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (errorContainer && !errorContainer.classList.contains('hidden')) {
             clearOtpFields();
         }
-
-        // --- Logout Logic for JWT ---
-        // REMOVED: Logout logic moved to navbar_new.js to avoid duplication and conflicts.
-        // const logoutButtonDesktop = document.getElementById('logout-link');
-        // if (logoutButtonDesktop) {
-        //     logoutButtonDesktop.addEventListener('click', async function(event) {
-        //         event.preventDefault();
-        //         try {
-        //             await logoutUser();
-        //         } catch (error) {
-        //             console.error('Auth.js: Error during desktop logout:', error);
-        //             window.showMessage('خطا در خروج از حساب. لطفاً دوباره تلاش کنید.', 'error');
-        //         }
-        //     });
-        // }
-
-        // const logoutButtonMobile = document.getElementById('logout-link-mobile');
-        // if (logoutButtonMobile) {
-        //     logoutButtonMobile.addEventListener('click', async function(event) {
-        //         event.preventDefault();
-        //         try {
-        //             await logoutUser();
-        //         } catch (error) {
-        //             console.error('Auth.js: Error during mobile logout:', error);
-        //             window.showMessage('خطا در خروج از حساب. لطفاً دوباره تلاش کنید.', 'error');
-        //         }
-        //     });
-        // }
     } else {
         console.log('Auth.js: OTP verification elements NOT found. Skipping OTP logic.');
         console.log('Auth.js: countdownTimerElement:', countdownTimerElement);
@@ -583,4 +566,4 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Auth.js: otpDigitInputs.length:', otpDigitInputs.length);
         console.log('Auth.js: hiddenMobileNumberInput:', hiddenMobileNumberInput);
     }
-});
+}
