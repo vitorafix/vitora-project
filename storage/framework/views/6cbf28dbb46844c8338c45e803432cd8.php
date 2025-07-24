@@ -118,10 +118,9 @@
                     </button>
 
                     
-                    
-                    <a href="<?php echo e(route('auth.mobile-login-form')); ?>"
+                    <a href="javascript:void(0);" onclick="window.history.back();"
                             class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900/20 rounded-lg transition-all duration-300 ease-in-out">
-                        بازگشت به صفحه ورود
+                        بازگشت به صفحه قبلی
                     </a>
                 </div>
             </div>

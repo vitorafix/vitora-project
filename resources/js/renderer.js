@@ -40,7 +40,13 @@ export const CartRenderer = {
      * @param {Object} cartTotals - شیء شامل مجموع‌های سبد خرید (subtotal, total, etc.).
      */
     renderMainCart: function(items, cartTotals) {
-        console.log('renderMainCart called with items:', items, 'and cartTotals:', cartTotals);
+        // --- لاگ‌های دیباگ عمیق ---
+        console.log('renderMainCart: Function called.');
+        console.log('renderMainCart: Received items:', items);
+        console.log('renderMainCart: Received cartTotals:', cartTotals);
+        console.log('renderMainCart: Is items array an array?', Array.isArray(items));
+        console.log('renderMainCart: Items array length:', items ? items.length : 'N/A');
+        // --- پایان لاگ‌های دیباگ عمیق ---
 
         const cartItemsContainer = document.getElementById('cart-items-container');
         const cartEmptyMessage = document.getElementById('cart-empty-message');
@@ -69,11 +75,12 @@ export const CartRenderer = {
 
         cartItemsContainer.innerHTML = ''; // پاک کردن آیتم‌های قبلی
 
+        // --- لاگ دیباگ برای شرط خالی بودن ---
         if (!Array.isArray(items) || items.length === 0) {
+            console.log('renderMainCart: Condition for empty cart met. Displaying empty message.');
             cartEmptyMessage.classList.remove('hidden');
             cartItemsContainer.classList.add('hidden');
             cartSummary.classList.add('hidden');
-            console.log('Main cart is empty. Displaying empty message.');
             // همچنین مجموع‌ها را صفر کنید
             cartSubtotalPriceElement.textContent = '0 تومان';
             cartDiscountPriceElement.textContent = '0 تومان';
@@ -82,12 +89,15 @@ export const CartRenderer = {
             cartTotalPriceElement.textContent = '0 تومان';
             return;
         }
+        // --- پایان لاگ دیباگ برای شرط خالی بودن ---
 
+        console.log('renderMainCart: Cart is NOT empty. Proceeding to render items.'); // DEBUG: Add this line
         cartEmptyMessage.classList.add('hidden');
         cartItemsContainer.classList.remove('hidden');
         cartSummary.classList.remove('hidden');
 
-        items.forEach(item => {
+        items.forEach((item, index) => { // اضافه کردن index برای دیباگ
+            console.log(`renderMainCart: Processing item ${index + 1}:`, item); // DEBUG: Add this line
             const itemElement = document.createElement('div');
             itemElement.classList.add('flex', 'items-center', 'justify-between', 'py-4', 'border-b', 'border-gray-200', 'last:border-b-0');
             itemElement.setAttribute('data-cart-item-id', item.id);
@@ -128,6 +138,7 @@ export const CartRenderer = {
                 </div>
             `;
             cartItemsContainer.appendChild(itemElement);
+            console.log(`renderMainCart: Appended item ${item.id} to cartItemsContainer.`); // DEBUG: Add this line
         });
 
         // Update totals
@@ -137,7 +148,7 @@ export const CartRenderer = {
         cartTaxPriceElement.textContent = new Intl.NumberFormat('fa-IR').format(cartTotals.tax ?? 0) + ' تومان';
         // اصلاح شده: استفاده از cartTotals.totalPrice به جای cartTotals.total
         cartTotalPriceElement.textContent = new Intl.NumberFormat('fa-IR').format(cartTotals.totalPrice ?? 0) + ' تومان';
-        console.log('cartTotalPriceElement textContent after update:', cartTotalPriceElement.textContent); // DEBUG LOG
+        console.log('Main cart totals updated. Total price:', cartTotalPriceElement.textContent); // DEBUG LOG
 
         console.log('Main cart rendered successfully.');
     },
@@ -211,3 +222,9 @@ export const CartRenderer = {
         console.log('Mini cart rendered successfully.');
     }
 };
+
+// برای اهداف دیباگینگ: CartRenderer را به صورت سراسری در دسترس قرار دهید
+if (typeof window !== 'undefined') {
+    window.CartRenderer = CartRenderer;
+    console.log('CartRenderer exposed globally for debugging.');
+}

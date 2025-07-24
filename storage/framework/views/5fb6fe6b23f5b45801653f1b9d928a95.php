@@ -12,6 +12,42 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
     
+    <script>
+        if (typeof window !== 'undefined' && window.localStorage) {
+            let guestUUIDFromLocalStorage = localStorage.getItem('guest_uuid');
+            let guestUUIDFromBackend = '<?php echo e($guestUuidFromBackend ?? 'null'); ?>'; // مقدار ارسال شده از کنترلر
+
+            // اگر بک‌اند یک UUID معتبر ارسال کرده باشد، آن را به عنوان اولویت قرار دهید
+            if (guestUUIDFromBackend !== 'null' && guestUUIDFromBackend) {
+                window.guestUUID = guestUUIDFromBackend;
+                // اگر UUID بک‌اند با UUID در localStorage متفاوت است، localStorage را به‌روز کنید
+                if (guestUUIDFromLocalStorage !== guestUUIDFromBackend) {
+                    localStorage.setItem('guest_uuid', guestUUIDFromBackend);
+                    console.log('Blade/Initial Load Guest UUID: Updated localStorage with backend UUID:', window.guestUUID);
+                } else {
+                    console.log('Blade/Initial Load Guest UUID: Using existing localStorage UUID (matches backend):', window.guestUUID);
+                }
+            } else if (guestUUIDFromLocalStorage) {
+                // اگر بک‌اند UUID ارسال نکرده اما در localStorage موجود است، از آن استفاده کنید
+                window.guestUUID = guestUUIDFromLocalStorage;
+                console.log('Blade/Initial Load Guest UUID: Using existing localStorage UUID (no backend UUID):', window.guestUUID);
+            } else {
+                // اگر هیچ کدام موجود نبود، یک UUID جدید تولید کنید
+                const newGuestUUID = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+                localStorage.setItem('guest_uuid', newGuestUUID);
+                window.guestUUID = newGuestUUID;
+                console.log('Blade/Initial Load Guest UUID: Generated new UUID and stored in localStorage:', window.guestUUID);
+            }
+        } else {
+            console.warn('localStorage is not available. Guest UUID cannot be persisted.');
+            window.guestUUID = null; // Fallback if localStorage is not available
+        }
+    </script>
+
+    
     
     
     <?php echo app('Illuminate\Foundation\Vite')([

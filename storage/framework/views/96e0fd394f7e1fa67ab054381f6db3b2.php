@@ -182,10 +182,11 @@
                     <div class="absolute top-full right-0 mt-3 w-48 bg-white rounded-xl shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50 p-4" dir="rtl" style="right: -50%;"> 
                         
                         <div id="user-status-guest" class="space-y-2 hidden"> 
-                            <div class="text-center text-gray-500 mb-2">کاربر مهمان</div>
-                            <a href="<?php echo e(route('auth.mobile-login-form')); ?>" class="nav-link-dropdown" id="login-register-link">
-                                <i class="fas fa-sign-in-alt mr-2"></i>
-                                <span>ورود / ثبت‌نام</span>
+                            
+                            
+                            <a href="<?php echo e(route('auth.mobile-login-form')); ?>" class="nav-link-dropdown flex items-center" id="login-register-link">
+                                <i class="fas fa-sign-in-alt ml-auto mr-2"></i>
+                                <span class="mr-[15%]">ورود / ثبت‌نام</span>
                             </a>
                         </div>
 
@@ -393,13 +394,15 @@
         <div class="pt-4 pb-3 border-t border-green-700">
             
             <div id="mobile-user-status-guest" class="space-y-2 px-4 hidden"> 
-                <a href="<?php echo e(route('auth.mobile-login-form')); ?>" class="mobile-nav-link">
-                    <i class="fas fa-sign-in-alt mr-2"></i>
-                    <span>ورود به حساب</span>
+                
+                <a href="<?php echo e(route('auth.mobile-login-form')); ?>" class="mobile-nav-link flex items-center">
+                    <i class="fas fa-sign-in-alt ml-auto mr-2"></i>
+                    <span class="mr-[15%]">ورود به حساب</span>
                 </a>
-                <a href="<?php echo e(route('auth.register-form')); ?>" class="mobile-nav-link">
-                    <i class="fas fa-user-plus mr-2"></i>
-                    <span>ثبت‌نام</span>
+                
+                <a href="<?php echo e(route('auth.register-form')); ?>" class="mobile-nav-link flex items-center">
+                    <i class="fas fa-user-plus ml-auto mr-2"></i>
+                    <span class="mr-[15%]">ثبت‌نام</span>
                 </a>
             </div>
 

@@ -92,10 +92,11 @@
                     <div class="absolute top-full right-0 mt-3 w-48 bg-white rounded-xl shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50 p-4" dir="rtl" style="right: -50%;"> {{-- Changed right: -40%; to right: -50%; to move 10% more to the right --}}
                         {{-- Both guest and logged-in states are rendered, JS will hide/show --}}
                         <div id="user-status-guest" class="space-y-2 hidden"> {{-- Initially hidden --}}
-                            <div class="text-center text-gray-500 mb-2">کاربر مهمان</div>
-                            <a href="{{ route('auth.mobile-login-form') }}" class="nav-link-dropdown" id="login-register-link">
-                                <i class="fas fa-sign-in-alt mr-2"></i>
-                                <span>ورود / ثبت‌نام</span>
+                            {{-- Removed the "کاربر مهمان" text as requested --}}
+                            {{-- Changed to flex and applied ml-auto to icon and mr-[15%] to text for better positioning --}}
+                            <a href="{{ route('auth.mobile-login-form') }}" class="nav-link-dropdown flex items-center" id="login-register-link">
+                                <i class="fas fa-sign-in-alt ml-auto mr-2"></i>
+                                <span class="mr-[15%]">ورود / ثبت‌نام</span>
                             </a>
                         </div>
 
@@ -153,7 +154,7 @@
         <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             <x-responsive-nav-link :href="route('home')" :active="request()->routeIs('home')">
                 صفحه اصلی
-            </x-responsive-nav-link>
+            </x-responsive-link>
             <x-responsive-nav-link :href="route('products.index')" :active="request()->routeIs('products.index')">
                 محصولات
             </x-responsive-nav-link>
@@ -177,13 +178,15 @@
         <div class="pt-4 pb-3 border-t border-green-700">
             {{-- Mobile User Status (controlled by JS) --}}
             <div id="mobile-user-status-guest" class="space-y-2 px-4 hidden"> {{-- Initially hidden --}}
-                <a href="{{ route('auth.mobile-login-form') }}" class="mobile-nav-link">
-                    <i class="fas fa-sign-in-alt mr-2"></i>
-                    <span>ورود به حساب</span>
+                {{-- Changed to flex and applied ml-auto to icon and mr-[15%] to text for better positioning --}}
+                <a href="{{ route('auth.mobile-login-form') }}" class="mobile-nav-link flex items-center">
+                    <i class="fas fa-sign-in-alt ml-auto mr-2"></i>
+                    <span class="mr-[15%]">ورود به حساب</span>
                 </a>
-                <a href="{{ route('auth.register-form') }}" class="mobile-nav-link">
-                    <i class="fas fa-user-plus mr-2"></i>
-                    <span>ثبت‌نام</span>
+                {{-- Changed to flex and applied ml-auto to icon and mr-[15%] to text for better positioning --}}
+                <a href="{{ route('auth.register-form') }}" class="mobile-nav-link flex items-center">
+                    <i class="fas fa-user-plus ml-auto mr-2"></i>
+                    <span class="mr-[15%]">ثبت‌نام</span>
                 </a>
             </div>
 

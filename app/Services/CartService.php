@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
+use Illuminate\Support\Str; // Added for Str::uuid()
 
 // Contracts
 use App\Services\Contracts\CartServiceInterface;
@@ -97,82 +98,79 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             $cart = $this->cartRepository->findByUserId($user->id);
             if ($cart) {
                 Log::info('Existing cart found by user ID.', ['cart_id' => $cart->id, 'user_id' => $user->id]);
+                // If a user cart exists, ensure it has the latest guest_uuid if provided
+                if ($guestUuid && !$cart->guest_uuid) {
+                    $cart->guest_uuid = $guestUuid;
+                    $cart->save();
+                    Log::info('User cart updated with guest_uuid.', ['cart_id' => $cart->id, 'user_id' => $user->id, 'guest_uuid' => $guestUuid]);
+                }
+                $this->metricsManager->recordMetric('getOrCreateCart_duration', microtime(true) - $startTime, ['user_id' => $user->id, 'status' => 'found_by_user']);
+                return $cart;
             }
         }
 
         // 2. If no user cart found, try to find by guest UUID
-        if (!$cart && $guestUuid) {
+        // This check should happen before session ID, as guest UUID is more persistent than session ID.
+        if ($guestUuid) {
             $cart = $this->cartRepository->findByGuestUuid($guestUuid);
             if ($cart) {
                 Log::info('Existing cart found by guest UUID.', ['cart_id' => $cart->id, 'guest_uuid' => $guestUuid]);
                 // If a guest cart is found and user is now logged in, assign it to the user
                 if ($user && !$cart->user_id) {
-                    // NOTE: The assignGuestCartToUser method is called here.
-                    // If this method is also called by a Login Event Listener, it will cause duplication.
                     $this->assignGuestCartToUser($user, $guestUuid); // Use guestUuid for assignment
                     $cart->refresh(); // Refresh the cart to get updated user_id
                     Log::info('Guest cart assigned to logged-in user during getOrCreateCart.', ['cart_id' => $cart->id, 'user_id' => $user->id, 'guest_uuid' => $guestUuid]);
                 }
+                $this->metricsManager->recordMetric('getOrCreateCart_duration', microtime(true) - $startTime, ['guest_uuid' => $guestUuid, 'status' => 'found_by_guest_uuid']);
+                return $cart;
             }
         }
 
         // 3. If no cart found by user or guest UUID, try to find by session ID (fallback)
         // This is a fallback for existing carts using session_id before guest_uuid implementation
-        if (!$cart && $sessionId) {
+        if ($sessionId) {
             $cart = $this->cartRepository->findBySessionId($sessionId);
             if ($cart) {
                 Log::info('Existing cart found by session ID (fallback).', ['cart_id' => $cart->id, 'session_id' => $sessionId]);
-                // If a guest cart is found and user is now logged in, assign it to the user
+                // IMPORTANT: If a session-based cart is found, and we now have a guestUuid,
+                // update this cart with the guestUuid. This links the two.
+                if ($guestUuid && !$cart->guest_uuid) {
+                    $cart->guest_uuid = $guestUuid;
+                    $cart->save();
+                    Log::info('Session-based cart updated with guest_uuid.', ['cart_id' => $cart->id, 'guest_uuid' => $guestUuid, 'session_id' => $sessionId]);
+                }
+                // If a guest cart (session-based) is found and user is now logged in, assign it to the user
                 if ($user && !$cart->user_id) {
-                    // NOTE: The assignGuestCartToUser method is called here.
-                    // If this method is also called by a Login Event Listener, it will cause duplication.
                     $this->assignGuestCartToUser($user, $guestUuid ?? $sessionId); // Use guestUuid if available, else sessionId
                     $cart->refresh(); // Refresh the cart to get updated user_id
                     Log::info('Guest cart assigned to logged-in user during getOrCreateCart (from session_id).', ['cart_id' => $cart->id, 'user_id' => $user->id, 'session_id' => $sessionId]);
                 }
+                $this->metricsManager->recordMetric('getOrCreateCart_duration', microtime(true) - $startTime, ['session_id' => $sessionId, 'status' => 'found_by_session_id']);
+                return $cart;
             }
         }
 
         // 4. If no cart found by user, guest UUID, or session, create a new one
-        if (!$cart) {
-            Log::info('No existing cart found. Attempting to create new cart.', [
-                'user_id_passed' => $user ? $user->id : 'null',
-                'session_id_passed' => $sessionId ?? 'null',
-                'guest_uuid_passed' => $guestUuid ?? 'null',
-                'current_session_id_from_laravel' => Session::getId()
-            ]);
+        Log::info('No existing cart found. Attempting to create new cart.', [
+            'user_id_passed' => $user ? $user->id : 'null',
+            'session_id_passed' => $sessionId ?? 'null',
+            'guest_uuid_passed' => $guestUuid ?? 'null',
+            'current_session_id_from_laravel' => Session::getId()
+        ]);
 
-            $data = [];
-            if ($user) {
-                $data['user_id'] = $user->id;
-                $data['session_id'] = null; // Clear session_id for authenticated users
-                $data['guest_uuid'] = null; // Clear guest_uuid for authenticated users
-            } else {
-                // For guest carts, prioritize guest_uuid, then session_id
-                $data['guest_uuid'] = $guestUuid;
-                $data['session_id'] = $sessionId ?? Session::getId(); // Keep session_id for backward compatibility/fallback
-            }
-            $cart = $this->cartRepository->create($data);
-            Log::info('New cart created.', ['cart_id' => $cart->id, 'user_id' => $user->id ?? 'guest', 'session_id' => $sessionId ?? Session::getId(), 'guest_uuid' => $guestUuid ?? 'null']);
+        $data = [];
+        if ($user) {
+            $data['user_id'] = $user->id;
+            $data['session_id'] = null; // Clear session_id for authenticated users
+            $data['guest_uuid'] = null; // Clear guest_uuid for authenticated users
         } else {
-            // Ensure the cart has the correct user_id if it was a guest cart and user logged in
-            if ($user && !$cart->user_id) {
-                // NOTE: The assignGuestCartToUser method is called here.
-                // If this method is also called by a Login Event Listener, it will cause duplication.
-                $this->assignGuestCartToUser($user, $guestUuid ?? $sessionId); // Use guestUuid if available, else sessionId
-                $cart->refresh();
-                Log::info('Existing guest cart updated with user ID.', ['cart_id' => $cart->id, 'user_id' => $user->id, 'session_id' => $sessionId, 'guest_uuid' => $guestUuid]);
-            }
-            // If an existing cart is found and it's a guest cart based on session_id,
-            // update its guest_uuid if a new one is provided and the existing one is null.
-            if (!$cart->user_id && $cart->session_id && !$cart->guest_uuid && $guestUuid) {
-                $cart->guest_uuid = $guestUuid;
-                $cart->save();
-                Log::info('Guest cart updated with new guest_uuid from session_id based cart.', ['cart_id' => $cart->id, 'guest_uuid' => $guestUuid, 'session_id' => $sessionId]);
-            }
+            // For guest carts, prioritize guest_uuid if available, otherwise use session_id
+            $data['guest_uuid'] = $guestUuid ?? (string) Str::uuid(); // Generate new UUID if not provided
+            $data['session_id'] = $sessionId ?? Session::getId(); // Keep session_id for backward compatibility/fallback
         }
-
-        $this->metricsManager->recordMetric('getOrCreateCart_duration', microtime(true) - $startTime, ['user_id' => $user ? $user->id : null, 'session_id' => $sessionId ?? session()->getId(), 'guest_uuid' => $guestUuid ?? 'null']);
+        $cart = $this->cartRepository->create($data);
+        Log::info('New cart created.', ['cart_id' => $cart->id, 'user_id' => $user->id ?? 'guest', 'session_id' => $sessionId ?? Session::getId(), 'guest_uuid' => $guestUuid ?? 'null']);
+        $this->metricsManager->recordMetric('getOrCreateCart_duration', microtime(true) - $startTime, ['status' => 'new_cart_created']);
         return $cart;
     }
 

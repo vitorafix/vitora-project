@@ -5,16 +5,17 @@ namespace App\Services;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Product;
+use App\Models\ProductVariant; // Make sure ProductVariant is imported
 use App\Contracts\Repositories\CartRepositoryInterface;
 use App\Contracts\Repositories\ProductRepositoryInterface;
 use App\Contracts\Services\CouponService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache; // New import for caching
-use Illuminate\Support\Facades\Event; // New import for event dispatching
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Event;
 use App\Services\Responses\CartOperationResponse;
-use App\Exceptions\EmptyCartException; // New import for custom exception
-use App\DTOs\CartTotalsDTO; // New import for DTO
+use App\Exceptions\EmptyCartException;
+use App\DTOs\CartTotalsDTO;
 
 class CartCalculationService
 {
@@ -41,6 +42,8 @@ class CartCalculationService
     public function refreshCartItemPrices(Cart $cart): CartOperationResponse
     {
         $startTime = microtime(true);
+        // Ensure products and product variants are loaded for all items
+        // اطمینان از بارگذاری محصولات و واریانت‌های محصول برای همه آیتم‌ها
         $cart->loadMissing('items.product', 'items.productVariant');
         $updates = [];
         $updatedCount = 0;
@@ -48,11 +51,19 @@ class CartCalculationService
         DB::beginTransaction();
         try {
             foreach ($cart->items as $item) {
+                // Check if the product exists before proceeding
+                // قبل از ادامه، بررسی کنید که آیا محصول وجود دارد یا خیر
+                if (!$item->product) {
+                    Log::warning('Skipping refresh for cart item with missing product.', ['cart_item_id' => $item->id]);
+                    continue;
+                }
+
                 // Fetch the product with lock for update to ensure latest price
                 // محصول را با قفل برای به‌روزرسانی دریافت کنید تا آخرین قیمت اطمینان حاصل شود.
-                $product = Product::where('id', $item->product_id)->lockForUpdate()->first();
+                // Using productRepository to ensure consistency and potential caching/locking logic
+                $product = $this->productRepository->findByIdWithLock($item->product_id);
                 if (!$product) {
-                    Log::warning('Skipping refresh for cart item with missing product (locked).', ['cart_item_id' => $item->id]);
+                    Log::warning('Skipping refresh for cart item with product not found by repository (locked).', ['cart_item_id' => $item->id, 'product_id' => $item->product_id]);
                     continue;
                 }
 
@@ -62,7 +73,9 @@ class CartCalculationService
                 if ($item->productVariant) {
                     // Fetch variant with lock for update if its price_adjustment is dynamic
                     // واریانت را با قفل برای به‌روزرسانی دریافت کنید اگر price_adjustment آن پویا است.
-                    $productVariant = ProductVariant::where('id', $item->product_variant_id)->lockForUpdate()->first();
+                    // Using productRepository or a dedicated variant repository if available
+                    // در صورت وجود، از productRepository یا یک ریپازیتوری واریانت اختصاصی استفاده کنید
+                    $productVariant = ProductVariant::where('id', $item->product_variant_id)->lockForUpdate()->first(); // Assuming ProductVariant model is directly accessible
                     if ($productVariant) {
                         $expectedPrice += (float) $productVariant->price_adjustment;
                     } else {
@@ -109,12 +122,24 @@ class CartCalculationService
     public function calculateSubtotal(Cart $cart): float
     {
         $subtotal = 0.0;
-        $cart->loadMissing('items');
+        // Load items along with their product relationship
+        // بارگذاری آیتم‌ها همراه با رابطه محصول آن‌ها
+        $cart->loadMissing('items.product');
         Log::debug('CartCalculationService::calculateSubtotal - Starting calculation for cart: ' . $cart->id);
         foreach ($cart->items as $item) {
-            $itemSubtotal = (float) $item->price * (int) $item->quantity;
-            $subtotal += $itemSubtotal;
-            Log::debug('CartCalculationService::calculateSubtotal - Item: ' . $item->id . ', Product: ' . ($item->product->name ?? 'N/A') . ', Price: ' . $item->price . ', Quantity: ' . $item->quantity . ', Item Subtotal: ' . $itemSubtotal);
+            // Check if product is loaded before accessing its properties
+            // قبل از دسترسی به ویژگی‌های محصول، بررسی کنید که آیا محصول بارگذاری شده است
+            if ($item->product) {
+                $itemSubtotal = (float) $item->price * (int) $item->quantity;
+                $subtotal += $itemSubtotal;
+                Log::debug('CartCalculationService::calculateSubtotal - Item: ' . $item->id . ', Product: ' . ($item->product->name ?? 'N/A') . ', Price: ' . $item->price . ', Quantity: ' . $item->quantity . ', Item Subtotal: ' . $itemSubtotal);
+            } else {
+                Log::warning('CartCalculationService::calculateSubtotal - Item: ' . $item->id . ', Product: N/A. Skipping item from subtotal calculation due to missing product.', [
+                    'cart_item_id' => $item->id,
+                    'product_id_on_item' => $item->product_id,
+                    'cart_id' => $cart->id
+                ]);
+            }
         }
         Log::debug('CartCalculationService::calculateSubtotal - Final Subtotal: ' . $subtotal);
         return (float) $subtotal;
@@ -219,7 +244,10 @@ class CartCalculationService
         $subtotal = $this->calculateSubtotal($cart);
         Log::debug('CartCalculationService::performCalculations - Calculated Subtotal: ' . $subtotal);
 
-        $discount = (float) $cart->discount_amount ?? $this->calculateCouponDiscount($cart);
+        // Ensure coupon and its related data are loaded before accessing discount_amount
+        // اطمینان از بارگذاری کوپن و داده‌های مرتبط قبل از دسترسی به discount_amount
+        $cart->loadMissing('coupon');
+        $discount = (float) ($cart->discount_amount ?? $this->calculateCouponDiscount($cart));
         Log::debug('CartCalculationService::performCalculations - Calculated Discount: ' . $discount);
 
         $tax = $this->calculateTax($cart);
