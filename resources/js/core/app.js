@@ -237,7 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Authentication module (auth) and JWT Manager
     // These modules are needed on login, register, profile, and dashboard pages.
-    // CHANGE: Added 'mobile-login' and 'verify-otp-form' to the condition
     if (path.includes('/login') || path.includes('/register') || path.includes('/profile') || path.includes('/dashboard') || path.includes('/mobile-login') || path.includes('/verify-otp-form')) {
         import('../auth/auth.js')
             .then(module => {
@@ -257,7 +256,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Cart module (cart)
-    if (path.includes('/cart')) {
+    // CHANGE: Added '/' and '/home' to the condition to load cart.js on the homepage and other product display pages.
+    if (path.includes('/cart') || path === '/' || path.includes('/home') || path.includes('/products')) {
         import('../cart/cart.js')
             .then(module => {
                 if (module.initCart) { // initCart function in cart.js
