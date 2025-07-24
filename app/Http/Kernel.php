@@ -32,17 +32,19 @@ class Kernel extends HttpKernel
         'web' => [
             \App\Http\Middleware\EncryptCookies::class,
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\Session\Middleware\StartSession::class, // این باید قبل از GuestUuidMiddleware باشد
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \App\Http\Middleware\GuestUuidMiddleware::class, // مدیریت UUID مهمان - جابجا شده به اینجا
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            \App\Http\Middleware\GuestUuidMiddleware::class, // مدیریت UUID مهمان
         ],
 
         'api' => [
             // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class, // در صورت استفاده از Sanctum فعال شود
             'throttle:api', // محدودیت نرخ برای APIها
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \Illuminate\Session\Middleware\StartSession::class, // اضافه شده برای API
+            \App\Http\Middleware\GuestUuidMiddleware::class, // در اینجا هم باید باشد
             // \App\Http\Middleware\AuthenticateOnceWithBasicAuth::class, // حذف شد: این میدل‌ویر با JWTAuth اصلی تداخل داشت.
             // توجه: میدل‌ویر 'jwt.auth' به صورت مستقیم در فایل routes/api.php برای مسیرهای محافظت شده اعمال می‌شود.
         ],
@@ -89,6 +91,7 @@ class Kernel extends HttpKernel
     protected $middlewarePriority = [
         \Illuminate\Session\Middleware\StartSession::class,
         \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        \App\Http\Middleware\GuestUuidMiddleware::class, // جابجا شده به اینجا
         \App\Http\Middleware\Authenticate::class,
         \Illuminate\Routing\Middleware\ThrottleRequests::class,
         \Illuminate\Session\Middleware\AuthenticateSession::class,
@@ -96,6 +99,5 @@ class Kernel extends HttpKernel
         \Illuminate\Auth\Middleware\Authorize::class,
         \App\Http\Middleware\EnsureProfileIsCompleted::class,
         \App\Http\Middleware\OptimizeResourceForMobile::class, // در صورت وجود و نیاز به بهینه‌سازی منابع برای موبایل
-        \App\Http\Middleware\GuestUuidMiddleware::class,
     ];
 }

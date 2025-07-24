@@ -4,13 +4,15 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cookie;
+use App\Services\GuestService; // اضافه کردن GuestService
 
 class GuestUuidMiddleware
 {
-    private const COOKIE_NAME = 'guest_uuid';
+    // نام کوکی را از GuestService می‌خوانیم تا یکپارچگی حفظ شود
+    private const COOKIE_NAME = GuestService::GUEST_UUID_COOKIE;
 
     public function handle(Request $request, Closure $next): Response
     {
@@ -18,54 +20,35 @@ class GuestUuidMiddleware
         Log::debug('GuestUuidMiddleware: Request URL: ' . $request->fullUrl());
         Log::debug('GuestUuidMiddleware: Is user authenticated? ' . (auth()->check() ? 'Yes' : 'No'));
 
-        // این منطق فقط برای کاربران مهمان (لاگین نشده) اجرا می‌شود.
+        // اگر کاربر لاگین نکرده باشد، از GuestService برای مدیریت UUID استفاده می‌کنیم.
         if (!auth()->check()) {
-            $guestUuidFromCookie = $request->cookie(self::COOKIE_NAME);
-            Log::debug('GuestUuidMiddleware: Raw guest_uuid from $request->cookie(): ' . ($guestUuidFromCookie ?? 'NULL'));
+            // GuestService::getOrCreateGuestUuid هم UUID را در سشن قرار می‌دهد و هم کوکی را تنظیم/تمدید می‌کند.
+            $finalGuestUuid = GuestService::getOrCreateGuestUuid($request);
+            Log::debug('GuestUuidMiddleware: Guest UUID managed by GuestService: ' . $finalGuestUuid);
 
-            // بررسی می‌کنیم که آیا کوکی 'guest_uuid' وجود دارد و آیا مقدار آن یک UUID معتبر است.
-            if (!$guestUuidFromCookie || !Str::isUuid($guestUuidFromCookie)) {
-                $newGuestUuid = (string) Str::uuid();
-                Log::info('GuestUuidMiddleware: Guest UUID is missing or invalid. Generating new UUID: ' . $newGuestUuid);
-
-                // تعیین اینکه کوکی باید 'secure' باشد یا خیر، بر اساس محیط برنامه.
-                $secure = app()->environment('production');
-
-                // کوکی را در صف قرار می‌دهیم تا به پاسخ HTTP اضافه شود.
-                cookie()->queue(
-                    cookie(
-                        self::COOKIE_NAME,
-                        $newGuestUuid,
-                        60 * 24 * 30, // 30 روز
-                        '/',
-                        null,
-                        $secure,
-                        false, // httpOnly: false به جاوااسکریپت اجازه دسترسی می‌دهد
-                        false,
-                        'Lax'
-                    )
-                );
-                Log::debug('GuestUuidMiddleware: Queued new guest_uuid cookie: ' . $newGuestUuid);
-                $finalGuestUuid = $newGuestUuid; // از UUID جدید استفاده می‌کنیم
-            } else {
-                Log::debug('GuestUuidMiddleware: Valid guest_uuid found from cookie: ' . $guestUuidFromCookie);
-                $finalGuestUuid = $guestUuidFromCookie; // از UUID موجود استفاده می‌کنیم
-            }
-
-            // ذخیره guest_uuid در Request attributes برای دسترسی آسان‌تر در کنترلرها
+            // ذخیره guest_uuid در Request attributes برای دسترسی آسان‌تر در کنترلرها و سایر میدل‌ویرها
             $request->attributes->set('guest_uuid', $finalGuestUuid);
             Log::debug('GuestUuidMiddleware: Guest UUID set in request attributes: ' . $request->attributes->get('guest_uuid'));
 
         } else {
-            Log::debug('GuestUuidMiddleware: User is authenticated. Skipping guest_uuid generation/check.');
-            // اگر کاربر لاگین کرده است، guest_uuid را از کوکی می‌خوانیم و در attributes قرار می‌دهیم
-            // این برای مواقعی است که کاربر لاگین می‌کند اما هنوز guest_uuid در کوکی دارد
-            $guestUuidFromCookie = $request->cookie(self::COOKIE_NAME);
-            if ($guestUuidFromCookie && Str::isUuid($guestUuidFromCookie)) {
-                $request->attributes->set('guest_uuid', $guestUuidFromCookie);
-                Log::debug('GuestUuidMiddleware: Authenticated user has guest_uuid cookie: ' . $guestUuidFromCookie . '. Set in attributes.');
+            // اگر کاربر لاگین کرده است، guest_uuid را از کوکی یا هدر می‌خوانیم و در attributes قرار می‌دهیم
+            // این بخش از منطق شما حفظ می‌شود تا guest_uuid قدیمی کاربر لاگین شده همچنان در دسترس باشد
+            $initialGuestUuidFromCookie = $request->cookie(self::COOKIE_NAME);
+            $initialGuestUuidFromHeader = $request->header('X-Guest-UUID');
+
+            $guestUuidForAuthenticated = null;
+            if ($initialGuestUuidFromHeader && GuestService::isValidUuid($initialGuestUuidFromHeader)) {
+                $guestUuidForAuthenticated = $initialGuestUuidFromHeader;
+                Log::debug('GuestUuidMiddleware: Authenticated user has guest_uuid in header: ' . $guestUuidForAuthenticated . '. Set in attributes.');
+            } else if ($initialGuestUuidFromCookie && GuestService::isValidUuid($initialGuestUuidFromCookie)) {
+                $guestUuidForAuthenticated = $initialGuestUuidFromCookie;
+                Log::debug('GuestUuidMiddleware: Authenticated user has guest_uuid cookie: ' . $guestUuidForAuthenticated . '. Set in attributes.');
             } else {
-                Log::debug('GuestUuidMiddleware: Authenticated user has no valid guest_uuid cookie.');
+                Log::debug('GuestUuidMiddleware: Authenticated user has no valid guest_uuid cookie or header.');
+            }
+
+            if ($guestUuidForAuthenticated) {
+                 $request->attributes->set('guest_uuid', $guestUuidForAuthenticated);
             }
         }
 

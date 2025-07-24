@@ -1,7 +1,7 @@
 // resources/js/api.js
 
 import axios from './axiosInstance.js'; // Ensure this path is correct for your project setup
-import { storeJwtToken, clearJwtToken, getJwtToken } from './jwt_manager.js'; // Import JWT functions
+import { storeJwtToken, clearJwtToken, getJwtToken } from './jwt_manager.js';
 
 // Export JWT functions directly for use in auth.js
 export { storeJwtToken, clearJwtToken, getJwtToken };
@@ -9,6 +9,21 @@ export { storeJwtToken, clearJwtToken, getJwtToken };
 // Variable to hold the promise of an active fetchCartContents request
 // This prevents sending multiple simultaneous requests.
 let cartFetchPromise = null;
+
+/**
+ * Sets the X-Guest-UUID header for all subsequent Axios requests.
+ * This should be called once when the guestUuid is known (e.g., on CartManager initialization).
+ * @param {string|null} guestUuid - The guest UUID to set. If null, the header will be removed.
+ */
+export const setGuestUuidHeader = (guestUuid) => {
+    if (guestUuid) {
+        axios.defaults.headers.common['X-Guest-UUID'] = guestUuid;
+        console.log('API: X-Guest-UUID header set globally to:', guestUuid);
+    } else {
+        delete axios.defaults.headers.common['X-Guest-UUID'];
+        console.log('API: X-Guest-UUID header removed globally.');
+    }
+};
 
 /**
  * Sends an OTP to the specified mobile number.
@@ -93,20 +108,20 @@ export const requestOtpForRegister = async (mobileNumber) => {
  */
 export const verifyOtpAndLogin = async (mobileNumber, otp) => {
     try {
-        const guestUuid = localStorage.getItem('guest_uuid'); // Retrieve guest_uuid
-        const headers = guestUuid ? { 'X-Guest-UUID': guestUuid } : {};
-
+        // guestUuid is now handled by the global setGuestUuidHeader
         const response = await axios.post('/api/auth/verify-otp', {
             mobile_number: mobileNumber,
             otp: otp
-        }, { headers }); // Pass headers here
+        });
 
         console.log('API: OTP verified and login successful:', response.data);
 
         if (response.data.access_token) {
             storeJwtToken(response.data.access_token);
             // Optionally remove guest_uuid after successful login and cart merge
+            // This is handled by CartService in backend, but good to clear client-side too.
             localStorage.removeItem('guest_uuid');
+            setGuestUuidHeader(null); // Clear the header after login/merge
         }
 
         return response.data;
@@ -153,11 +168,11 @@ export const fetchCartContents = async () => {
         return cartFetchPromise;
     }
 
-    const guestUuid = localStorage.getItem('guest_uuid');
-    const headers = guestUuid ? { 'X-Guest-UUID': guestUuid } : {};
+    // guestUuid is now handled by the global setGuestUuidHeader
+    // No need for local guestUuid and headers here.
 
     // Create a new Promise and store it in cartFetchPromise.
-    cartFetchPromise = axios.get('/api/cart/contents', { headers })
+    cartFetchPromise = axios.get('/api/cart/contents') // Remove { headers } here
         .finally(() => {
             // After the request is settled (success or failure), clear the Promise so subsequent requests can execute.
             cartFetchPromise = null;
@@ -175,13 +190,13 @@ export const fetchCartContents = async () => {
  */
 export const addToCart = async (productId, quantity = 1) => {
     try {
-        const guestUuid = localStorage.getItem('guest_uuid');
-        const headers = guestUuid ? { 'X-Guest-UUID': guestUuid } : {};
+        // guestUuid is now handled by the global setGuestUuidHeader
+        // No need for local guestUuid and headers here.
 
         // CHANGED: Construct the URL to include productId as a path parameter
         const response = await axios.post(`/api/cart/add/${productId}`, {
             quantity: quantity // Only quantity is needed in the body now
-        }, { headers });
+        }); // Remove { headers } here
         console.log('API: Product added to cart:', response.data);
         return response.data;
     } catch (error) {
@@ -198,12 +213,12 @@ export const addToCart = async (productId, quantity = 1) => {
  */
 export const updateCartItemQuantity = async (productId, quantity) => {
     try {
-        const guestUuid = localStorage.getItem('guest_uuid');
-        const headers = guestUuid ? { 'X-Guest-UUID': guestUuid } : {};
+        // guestUuid is now handled by the global setGuestUuidHeader
+        // No need for local guestUuid and headers here.
 
         const response = await axios.put(`/api/cart/update/${productId}`, {
             quantity: quantity
-        }, { headers });
+        }); // Remove { headers } here
         console.log('API: Cart item quantity updated:', response.data);
         return response.data;
     } catch (error) {
@@ -219,10 +234,10 @@ export const updateCartItemQuantity = async (productId, quantity) => {
  */
 export const removeCartItem = async (productId) => {
     try {
-        const guestUuid = localStorage.getItem('guest_uuid');
-        const headers = guestUuid ? { 'X-Guest-UUID': guestUuid } : {};
+        // guestUuid is now handled by the global setGuestUuidHeader
+        // No need for local guestUuid and headers here.
 
-        const response = await axios.delete(`/api/cart/remove/${productId}`, { headers });
+        const response = await axios.delete(`/api/cart/remove/${productId}`); // Remove { headers } here
         console.log('API: Cart item removed:', response.data);
         return response.data;
     } catch (error) {
@@ -237,10 +252,10 @@ export const removeCartItem = async (productId) => {
  */
 export const clearCart = async () => {
     try {
-        const guestUuid = localStorage.getItem('guest_uuid');
-        const headers = guestUuid ? { 'X-Guest-UUID': guestUuid } : {};
+        // guestUuid is now handled by the global setGuestUuidHeader
+        // No need for local guestUuid and headers here.
 
-        const response = await axios.post('/api/cart/clear', {}, { headers });
+        const response = await axios.post('/api/cart/clear', {}); // Remove { headers } here
         console.log('API: Cart cleared:', response.data);
         return response.data;
     } catch (error) {
@@ -256,12 +271,12 @@ export const clearCart = async () => {
  */
 export const applyCoupon = async (couponCode) => {
     try {
-        const guestUuid = localStorage.getItem('guest_uuid');
-        const headers = guestUuid ? { 'X-Guest-UUID': guestUuid } : {};
+        // guestUuid is now handled by the global setGuestUuidHeader
+        // No need for local guestUuid and headers here.
 
         const response = await axios.post('/api/cart/apply-coupon', {
             coupon_code: couponCode
-        }, { headers });
+        }); // Remove { headers } here
         console.log('API: Coupon applied successfully:', response.data);
         return response.data;
     } catch (error) {
@@ -276,10 +291,10 @@ export const applyCoupon = async (couponCode) => {
  */
 export const removeCoupon = async () => {
     try {
-        const guestUuid = localStorage.getItem('guest_uuid');
-        const headers = guestUuid ? { 'X-Guest-UUID': guestUuid } : {};
+        // guestUuid is now handled by the global setGuestUuidHeader
+        // No need for local guestUuid and headers here.
 
-        const response = await axios.post('/api/cart/remove-coupon', {}, { headers });
+        const response = await axios.post('/api/cart/remove-coupon', {}); // Remove { headers } here
         console.log('API: Coupon removed successfully:', response.data);
         return response.data;
     } catch (error) {

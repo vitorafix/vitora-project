@@ -5,6 +5,7 @@ namespace App\Services\Contracts;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\User;
+use Illuminate\Http\Request; // اضافه شده برای استفاده از Request در اینترفیس
 use App\Services\Responses\CartContentsResponse;
 use App\Services\Responses\CartOperationResponse;
 use Carbon\Carbon;
@@ -12,14 +13,14 @@ use Carbon\Carbon;
 interface CartServiceInterface
 {
     /**
-     * Get or create a cart for a given user or session.
-     * دریافت یا ایجاد یک سبد خرید برای کاربر یا جلسه مشخص.
+     * Get or create a cart for a given user, session, or guest UUID.
+     * دریافت یا ایجاد یک سبد خرید برای کاربر، جلسه یا UUID مهمان مشخص.
      *
-     * @param \App\Models\User|null $user
-     * @param string|null $sessionId
-     * @return \App\Models\Cart
+     * @param Request $request شیء درخواست HTTP برای دسترسی به سشن و کوکی
+     * @param User|null $user
+     * @return Cart
      */
-    public function getOrCreateCart(?User $user = null, ?string $sessionId = null): Cart;
+    public function getOrCreateCart(Request $request, ?User $user = null): Cart;
 
     /**
      * Merge a guest cart into a user's cart upon login.
@@ -61,9 +62,10 @@ interface CartServiceInterface
      * @param int $newQuantity
      * @param \App\Models\User|null $user
      * @param string|null $sessionId
+     * @param string|null $guestUuid
      * @return \App\Services\Responses\CartOperationResponse
      */
-    public function updateCartItemQuantity(CartItem $cartItem, int $newQuantity, ?User $user = null, ?string $sessionId = null): CartOperationResponse;
+    public function updateCartItemQuantity(CartItem $cartItem, int $newQuantity, ?User $user = null, ?string $sessionId = null, ?string $guestUuid = null): CartOperationResponse;
 
     /**
      * Remove a specific cart item.
@@ -72,9 +74,10 @@ interface CartServiceInterface
      * @param \App\Models\CartItem $cartItem
      * @param \App\Models\User|null $user
      * @param string|null $sessionId
+     * @param string|null $guestUuid
      * @return \App\Services\Responses\CartOperationResponse
      */
-    public function removeCartItem(CartItem $cartItem, ?User $user = null, ?string $sessionId = null): CartOperationResponse;
+    public function removeCartItem(CartItem $cartItem, ?User $user = null, ?string $sessionId = null, ?string $guestUuid = null): CartOperationResponse;
 
     /**
      * Clear all items from the cart.
@@ -120,9 +123,10 @@ interface CartServiceInterface
      * @param \App\Models\CartItem $cartItem
      * @param \App\Models\User|null $user
      * @param string|null $sessionId
+     * @param string|null $guestUuid
      * @return bool
      */
-    public function userOwnsCartItem(CartItem $cartItem, ?User $user, ?string $sessionId): bool;
+    public function userOwnsCartItem(CartItem $cartItem, ?User $user, ?string $sessionId, ?string $guestUuid = null): bool;
 
     /**
      * Get a cart by its ID, ensuring ownership.
@@ -131,9 +135,10 @@ interface CartServiceInterface
      * @param int $cartId
      * @param \App\Models\User|null $user
      * @param string|null $sessionId
+     * @param string|null $guestUuid
      * @return \App\Models\Cart|null
      */
-    public function getCartById(int $cartId, ?User $user = null, ?string $sessionId = null): ?Cart;
+    public function getCartById(int $cartId, ?User $user = null, ?string $sessionId = null, ?string $guestUuid = null): ?Cart;
 
     /**
      * Calculate the subtotal, total, shipping, tax, and discount for a cart.
@@ -218,4 +223,3 @@ interface CartServiceInterface
      */
     public function refreshCartItemPrices(Cart $cart): CartOperationResponse;
 }
-

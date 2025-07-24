@@ -7,6 +7,7 @@ use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use Illuminate\Http\Request; // اضافه شده برای دسترسی به شیء Request
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
@@ -15,7 +16,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
-use Illuminate\Support\Str; // Added for Str::uuid()
+use Illuminate\Support\Str; // Added for Str::uuid() - still needed for general UUID generation if not using GuestService
 
 // Contracts
 use App\Services\Contracts\CartServiceInterface;
@@ -41,6 +42,9 @@ use App\Services\Responses\CartOperationResponse;
 use App\Services\Responses\CartContentsResponse;
 use App\Exceptions\EmptyCartException;
 use App\DTOs\CartTotalsDTO;
+
+// اضافه کردن GuestService
+use App\Services\GuestService;
 
 class CartService implements CartServiceInterface, CartItemManagementServiceInterface, CartBulkUpdateServiceInterface, CartClearServiceInterface, CartCleanupServiceInterface
 {
@@ -83,66 +87,99 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
      * Get or create a cart for a given user, session, or guest UUID.
      * دریافت یا ایجاد یک سبد خرید برای کاربر، جلسه یا UUID مهمان مشخص.
      *
+     * @param Request $request شیء درخواست HTTP برای دسترسی به سشن و کوکی
      * @param User|null $user
-     * @param string|null $sessionId
-     * @param string|null $guestUuid
      * @return Cart
      */
-    public function getOrCreateCart(?User $user = null, ?string $sessionId = null, ?string $guestUuid = null): Cart
+    public function getOrCreateCart(Request $request, ?User $user = null): Cart
     {
         $startTime = microtime(true);
         $cart = null;
 
-        // 1. Try to find cart by user ID if user is authenticated
+        // دریافت Guest UUID پایدار از GuestService
+        $guestUuid = GuestService::getOrCreateGuestUuid($request);
+        $sessionId = $request->session()->getId();
+
+        Log::info('CartService: getOrCreateCart called.', [
+            'user_id_input' => $user ? $user->id : 'null',
+            'current_guest_uuid' => $guestUuid,
+            'current_session_id' => $sessionId
+        ]);
+
+        // 1. ابتدا تلاش می‌کنیم سبد خرید را بر اساس user_id پیدا کنیم (اگر کاربر لاگین کرده باشد).
         if ($user) {
             $cart = $this->cartRepository->findByUserId($user->id);
             if ($cart) {
                 Log::info('Existing cart found by user ID.', ['cart_id' => $cart->id, 'user_id' => $user->id]);
-                // If a user cart exists, ensure it has the latest guest_uuid if provided
-                if ($guestUuid && !$cart->guest_uuid) {
+                // اگر سبد خرید کاربر موجود است، مطمئن می‌شویم که guest_uuid آن به‌روز است.
+                // این برای لینک کردن سبدهای خرید موجود کاربر با guest_uuid جدید از سمت کلاینت ضروری است.
+                if ($guestUuid && $cart->guest_uuid !== $guestUuid) {
                     $cart->guest_uuid = $guestUuid;
                     $cart->save();
-                    Log::info('User cart updated with guest_uuid.', ['cart_id' => $cart->id, 'user_id' => $user->id, 'guest_uuid' => $guestUuid]);
+                    Log::info('User cart updated with latest guest_uuid.', ['cart_id' => $cart->id, 'user_id' => $user->id, 'guest_uuid' => $guestUuid]);
                 }
                 $this->metricsManager->recordMetric('getOrCreateCart_duration', microtime(true) - $startTime, ['user_id' => $user->id, 'status' => 'found_by_user']);
                 return $cart;
             }
         }
 
-        // 2. If no user cart found, try to find by guest UUID
-        // This check should happen before session ID, as guest UUID is more persistent than session ID.
+        // 2. اگر سبد خرید کاربر پیدا نشد، تلاش می‌کنیم بر اساس guest UUID پیدا کنیم.
+        // این بررسی باید قبل از session ID انجام شود، زیرا guest UUID پایدارتر از session ID است.
         if ($guestUuid) {
             $cart = $this->cartRepository->findByGuestUuid($guestUuid);
             if ($cart) {
                 Log::info('Existing cart found by guest UUID.', ['cart_id' => $cart->id, 'guest_uuid' => $guestUuid]);
-                // If a guest cart is found and user is now logged in, assign it to the user
-                if ($user && !$cart->user_id) {
-                    $this->assignGuestCartToUser($user, $guestUuid); // Use guestUuid for assignment
-                    $cart->refresh(); // Refresh the cart to get updated user_id
+                // اگر سبد خرید مهمان پیدا شد و کاربر اکنون لاگین کرده است، آن را به کاربر اختصاص می‌دهیم.
+                if ($user && ($cart->user_id === 'guest' || is_null($cart->user_id))) { // بررسی دقیق‌تر برای اطمینان از اینکه سبد واقعاً مهمان است
+                    $this->assignGuestCartToUser($user, $guestUuid); // از guestUuid برای اختصاص استفاده کنید
+                    $cart->refresh(); // سبد خرید را رفرش کنید تا user_id به‌روز شده را دریافت کنید
                     Log::info('Guest cart assigned to logged-in user during getOrCreateCart.', ['cart_id' => $cart->id, 'user_id' => $user->id, 'guest_uuid' => $guestUuid]);
+                }
+                // اطمینان حاصل می‌کنیم که session_id سبد خرید مهمان با session_id فعلی به‌روز باشد.
+                if ($cart->session_id !== $sessionId) {
+                    $cart->session_id = $sessionId;
+                    $cart->save();
+                    Log::info('Guest cart session_id updated.', ['cart_id' => $cart->id, 'guest_uuid' => $guestUuid, 'session_id' => $sessionId]);
                 }
                 $this->metricsManager->recordMetric('getOrCreateCart_duration', microtime(true) - $startTime, ['guest_uuid' => $guestUuid, 'status' => 'found_by_guest_uuid']);
                 return $cart;
             }
         }
 
-        // 3. If no cart found by user or guest UUID, try to find by session ID (fallback)
-        // This is a fallback for existing carts using session_id before guest_uuid implementation
+        // 3. اگر سبد خرید بر اساس کاربر یا guest UUID پیدا نشد، تلاش می‌کنیم بر اساس session ID پیدا کنیم (فال‌بک).
+        // این یک فال‌بک برای سبدهای خرید موجود است که قبل از پیاده‌سازی guest_uuid از session_id استفاده می‌کردند.
         if ($sessionId) {
             $cart = $this->cartRepository->findBySessionId($sessionId);
             if ($cart) {
                 Log::info('Existing cart found by session ID (fallback).', ['cart_id' => $cart->id, 'session_id' => $sessionId]);
-                // IMPORTANT: If a session-based cart is found, and we now have a guestUuid,
-                // update this cart with the guestUuid. This links the two.
+                // مهم: اگر یک سبد خرید مبتنی بر سشن پیدا شد و اکنون یک guestUuid داریم،
+                // این سبد را با guestUuid به‌روزرسانی کنید. این دو را به هم پیوند می‌دهد.
                 if ($guestUuid && !$cart->guest_uuid) {
-                    $cart->guest_uuid = $guestUuid;
-                    $cart->save();
-                    Log::info('Session-based cart updated with guest_uuid.', ['cart_id' => $cart->id, 'guest_uuid' => $guestUuid, 'session_id' => $sessionId]);
+                    // قبل از اختصاص guest_uuid جدید، بررسی کنید که آیا این guest_uuid قبلاً به سبد دیگری اختصاص داده شده است.
+                    // این برای جلوگیری از نقض unique constraint در دیتابیس مهم است.
+                    $existingCartWithGuestUuid = $this->cartRepository->findByGuestUuid($guestUuid);
+                    if ($existingCartWithGuestUuid && $existingCartWithGuestUuid->id !== $cart->id) {
+                        // اگر guest_uuid به سبد دیگری تعلق دارد، این سبد را به آن ادغام کنید و سبد فعلی را حذف کنید.
+                        Log::warning('CartService: Session-based cart found, but guest_uuid already assigned to another cart. Attempting merge.', [
+                            'session_cart_id' => $cart->id,
+                            'guest_uuid_cart_id' => $existingCartWithGuestUuid->id,
+                            'guest_uuid' => $guestUuid,
+                            'session_id' => $sessionId
+                        ]);
+                        $this->mergeCarts($existingCartWithGuestUuid, $cart);
+                        $this->metricsManager->recordMetric('getOrCreateCart_duration', microtime(true) - $startTime, ['session_id' => $sessionId, 'status' => 'merged_session_cart']);
+                        return $existingCartWithGuestUuid; // بازگرداندن سبد ادغام شده
+                    } else {
+                        $cart->guest_uuid = $guestUuid;
+                        $cart->save();
+                        Log::info('Session-based cart updated with guest_uuid.', ['cart_id' => $cart->id, 'guest_uuid' => $guestUuid, 'session_id' => $sessionId]);
+                    }
                 }
-                // If a guest cart (session-based) is found and user is now logged in, assign it to the user
-                if ($user && !$cart->user_id) {
-                    $this->assignGuestCartToUser($user, $guestUuid ?? $sessionId); // Use guestUuid if available, else sessionId
-                    $cart->refresh(); // Refresh the cart to get updated user_id
+                // اگر یک سبد خرید مهمان (مبتنی بر سشن) پیدا شد و کاربر اکنون لاگین کرده است، آن را به کاربر اختصاص می‌دهیم.
+                if ($user && ($cart->user_id === 'guest' || is_null($cart->user_id))) {
+                    // guestUuid را به assignGuestCartToUser ارسال کنید تا مطمئن شوید از شناسه صحیح استفاده می‌شود.
+                    $this->assignGuestCartToUser($user, $guestUuid ?? $sessionId);
+                    $cart->refresh(); // سبد خرید را رفرش کنید تا user_id به‌روز شده را دریافت کنید
                     Log::info('Guest cart assigned to logged-in user during getOrCreateCart (from session_id).', ['cart_id' => $cart->id, 'user_id' => $user->id, 'session_id' => $sessionId]);
                 }
                 $this->metricsManager->recordMetric('getOrCreateCart_duration', microtime(true) - $startTime, ['session_id' => $sessionId, 'status' => 'found_by_session_id']);
@@ -150,26 +187,26 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             }
         }
 
-        // 4. If no cart found by user, guest UUID, or session, create a new one
+        // 4. اگر هیچ سبد خریدی بر اساس کاربر، guest UUID یا سشن پیدا نشد، یک سبد جدید ایجاد می‌کنیم.
         Log::info('No existing cart found. Attempting to create new cart.', [
             'user_id_passed' => $user ? $user->id : 'null',
-            'session_id_passed' => $sessionId ?? 'null',
-            'guest_uuid_passed' => $guestUuid ?? 'null',
-            'current_session_id_from_laravel' => Session::getId()
+            'current_session_id' => $sessionId,
+            'current_guest_uuid' => $guestUuid,
         ]);
 
         $data = [];
         if ($user) {
             $data['user_id'] = $user->id;
-            $data['session_id'] = null; // Clear session_id for authenticated users
-            $data['guest_uuid'] = null; // Clear guest_uuid for authenticated users
+            $data['session_id'] = null; // پاک کردن session_id برای کاربران احراز هویت شده
+            $data['guest_uuid'] = null; // پاک کردن guest_uuid برای کاربران احراز هویت شده
         } else {
-            // For guest carts, prioritize guest_uuid if available, otherwise use session_id
-            $data['guest_uuid'] = $guestUuid ?? (string) Str::uuid(); // Generate new UUID if not provided
-            $data['session_id'] = $sessionId ?? Session::getId(); // Keep session_id for backward compatibility/fallback
+            // برای سبدهای خرید مهمان، guest_uuid را اولویت می‌دهیم.
+            $data['guest_uuid'] = $guestUuid;
+            $data['session_id'] = $sessionId; // حفظ session_id برای سازگاری عقب‌رو/فال‌بک
+            $data['user_id'] = 'guest'; // اطمینان از تنظیم user_id به 'guest' برای سبدهای مهمان
         }
         $cart = $this->cartRepository->create($data);
-        Log::info('New cart created.', ['cart_id' => $cart->id, 'user_id' => $user->id ?? 'guest', 'session_id' => $sessionId ?? Session::getId(), 'guest_uuid' => $guestUuid ?? 'null']);
+        Log::info('New cart created.', ['cart_id' => $cart->id, 'user_id' => $user->id ?? 'guest', 'session_id' => $sessionId, 'guest_uuid' => $data['guest_uuid']]); // لاگ کردن guest_uuid واقعی استفاده شده
         $this->metricsManager->recordMetric('getOrCreateCart_duration', microtime(true) - $startTime, ['status' => 'new_cart_created']);
         return $cart;
     }
@@ -184,7 +221,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
      */
     public function mergeGuestCart(User $user, string $guestIdentifier): void
     {
-        // Try to find by guest UUID first, then by session ID
+        // تلاش برای یافتن سبد خرید مهمان ابتدا با guest UUID، سپس با session ID
         $guestCart = $this->cartRepository->findByGuestUuid($guestIdentifier);
         if (!$guestCart) {
             $guestCart = $this->cartRepository->findBySessionId($guestIdentifier);
@@ -291,7 +328,8 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             }
 
             DB::commit();
-            $this->cacheManager->clearCache($cart->user, $cart->session_id); // Keep session_id for now
+            // Pass guest_uuid for cache clearing
+            $this->cacheManager->clearCache($cart->user, $cart->session_id, $cart->guest_uuid);
             $this->metricsManager->recordMetric('addOrUpdateItem_duration', microtime(true) - $startTime, ['action' => $action]);
             Log::info('Cart item ' . $action, ['cart_item_id' => $cartItem->id, 'product_id' => $productId, 'product_variant_id' => $productVariantId, 'quantity' => $quantity]);
             return CartOperationResponse::success('آیتم سبد خرید با موفقیت ' . ($action === 'added' ? 'اضافه' : 'به‌روزرسانی') . ' شد.', ['cart_item' => $cartItem]);
@@ -385,7 +423,8 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             }
 
             DB::commit();
-            $this->cacheManager->clearCache($user ?? $cartItem->cart->user, $sessionId ?? $cartItem->cart->session_id); // Keep session_id for now
+            // Pass guest_uuid for cache clearing
+            $this->cacheManager->clearCache($user ?? $cartItem->cart->user, $sessionId ?? $cartItem->cart->session_id, $guestUuid ?? $cartItem->cart->guest_uuid);
             $this->metricsManager->recordMetric('updateItemQuantity_duration', microtime(true) - $startTime, ['action' => 'updated']);
             Log::info('Cart item quantity updated', ['cart_item_id' => $cartItem->id, 'product_id' => $product->id, 'product_variant_id' => $cartItem->product_variant_id, 'old_quantity' => $oldQuantity, 'new_quantity' => $newQuantity]);
             return CartOperationResponse::success('تعداد آیتم سبد خرید با موفقیت به‌روزرسانی شد.', ['cart_item' => $cartItem]);
@@ -443,7 +482,8 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             }
             $this->cartRepository->deleteCartItem($cartItem);
             DB::commit();
-            $this->cacheManager->clearCache($user ?? $cartItem->cart->user, $sessionId ?? $cartItem->cart->session_id); // Keep session_id for now
+            // Pass guest_uuid for cache clearing
+            $this->cacheManager->clearCache($user ?? $cartItem->cart->user, $sessionId ?? $cartItem->cart->session_id, $guestUuid ?? $cartItem->cart->guest_uuid);
             Log::info('Cart item removed', ['cart_item_id' => $cartItem->id]);
             return CartOperationResponse::success('آیتم سبد خرید با موفقیت حذف شد.');
         } catch (\Throwable $e) {
@@ -502,7 +542,8 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
 
             $this->cartRepository->clearCart($cart);
             DB::commit();
-            $this->cacheManager->clearCache($user, $sessionId, $guestUuid); // Pass guestUuid to clearCache
+            // Pass guest_uuid for cache clearing
+            $this->cacheManager->clearCache($user, $sessionId, $guestUuid);
             $this->metricsManager->recordMetric('clearCart_duration', microtime(true) - $startTime, ['action' => 'cleared']);
             Log::info('Cart cleared', ['cart_id' => $cart->id]);
             return CartOperationResponse::success('سبد خرید با موفقیت پاک شد.');
@@ -603,13 +644,15 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             foreach ($updates as $update) {
                 $cartItem = $cart->items->find($update['cart_item_id']);
                 if ($cartItem) {
-                    $this->updateItemQuantity($cartItem, $update['quantity'], $cart->user, $cart->session_id, $cart->guest_uuid); // Pass guestUuid
+                    // Pass guest_uuid for cache clearing
+                    $this->updateItemQuantity($cartItem, $update['quantity'], $cart->user, $cart->session_id, $cart->guest_uuid);
                 } else {
                     Log::warning('Cart item not found for bulk update.', ['cart_item_id' => $update['cart_item_id']]);
                 }
             }
             DB::commit();
-            $this->cacheManager->clearCache($cart->user, $cart->session_id, $cart->guest_uuid); // Pass guestUuid
+            // Pass guest_uuid for cache clearing
+            $this->cacheManager->clearCache($cart->user, $cart->session_id, $cart->guest_uuid);
             return CartOperationResponse::success('آیتم‌های سبد خرید با موفقیت به‌روزرسانی شدند.');
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -649,7 +692,8 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                     }
                     $this->cartRepository->delete($cart); // Delete the cart and its items (due to cascade delete if set up)
                     DB::commit();
-                    $this->cacheManager->clearCache(null, $cart->session_id, $cart->guest_uuid); // Clear cache for the deleted cart
+                    // Pass guest_uuid for cache clearing
+                    $this->cacheManager->clearCache(null, $cart->session_id, $cart->guest_uuid);
                     $cleanedCount++;
                     Log::info('Expired guest cart cleaned up.', ['cart_id' => $cart->id, 'session_id' => $cart->session_id, 'guest_uuid' => $cart->guest_uuid]);
                 } catch (\Throwable $e) {
@@ -901,7 +945,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
      */
     public function getCartExpiryDate(Cart $cart): ?Carbon
     {
-        if ($cart->user_id) {
+        if ($cart->user_id && $cart->user_id !== 'guest') { // تغییر برای بررسی اینکه کاربر واقعا لاگین کرده باشد
             return null;
         }
         $guestCartLifetimeHours = config('cart.guest_cart_lifetime_hours', 72);
@@ -936,16 +980,18 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         try {
             DB::beginTransaction();
 
-            // Try to find the guest cart by guest_uuid first, then by session_id
+            // 1. تلاش برای یافتن سبد خرید مهمان ابتدا با guest_uuid، سپس با session_id
             $guestCart = $this->cartRepository->findByGuestUuid($guestIdentifier);
-            if (!$guestCart) {
+            if (!$guestCart && GuestService::isValidUuid($guestIdentifier)) { // اگر guestIdentifier یک UUID معتبر است
+                // اگر با UUID پیدا نشد، ممکن است guestIdentifier یک session_id قدیمی باشد.
+                $guestCart = $this->cartRepository->findBySessionId($guestIdentifier);
+            } elseif (!$guestCart) { // اگر guestIdentifier یک UUID نیست، حتما session_id است.
                 $guestCart = $this->cartRepository->findBySessionId($guestIdentifier);
             }
 
             $userCart = $this->cartRepository->findByUserId($user->id);
 
-            // NEW: Check if the guestCart is already the user's cart
-            // این بررسی از ادغام تکراری یا حذف اشتباه سبد خرید کاربر جلوگیری می‌کند.
+            // 2. بررسی اینکه آیا guestCart از قبل همان userCart است
             if ($guestCart && $userCart && $guestCart->id === $userCart->id) {
                 Log::info('CartService: Guest cart is already the user\'s cart. Skipping merge/assignment.', [
                     'user_id' => $user->id,
@@ -958,7 +1004,9 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                 return CartOperationResponse::success('سبد خرید مهمان از قبل به کاربر اختصاص داده شده بود.');
             }
 
+            // 3. اگر سبد خرید مهمان وجود دارد
             if ($guestCart) {
+                // 4. اگر سبد خرید کاربر وجود دارد، ادغام کنید
                 if ($userCart) {
                     Log::info('CartService: Attempting to merge guest cart into existing user cart.', [
                         'user_id' => $user->id,
@@ -967,7 +1015,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                         'guest_identifier' => $guestIdentifier,
                     ]);
                     foreach ($guestCart->items as $guestItem) {
-                        // Use the new findByIdWithLock method
                         // از متد جدید findByIdWithLock استفاده کنید.
                         $product = $this->productRepository->findByIdWithLock($guestItem->product_id);
                         if (!$product) {
@@ -1031,10 +1078,11 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                     $this->cartRepository->delete($guestCart);
                     Log::info('CartService: Guest cart merged with user cart successfully.', ['guest_cart_id' => $guestCart->id, 'user_cart_id' => $userCart->id, 'user_id' => $user->id]);
                 } else {
-                    // If no user cart exists, assign the guest cart to the user
+                    // 5. اگر سبد خرید کاربر وجود ندارد، سبد خرید مهمان را به کاربر اختصاص دهید
                     $this->cartRepository->assignCartToUser($guestCart, $user);
-                    // Also update the guest_uuid of the cart if it was assigned based on session_id
-                    if (!$guestCart->guest_uuid && $guestIdentifier && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $guestIdentifier)) {
+                    // همچنین guest_uuid سبد خرید را به‌روزرسانی کنید اگر بر اساس session_id اختصاص داده شده بود
+                    // این اطمینان می‌دهد که سبد خرید اکنون دارای guest_uuid پایدار از سمت کلاینت است
+                    if (GuestService::isValidUuid($guestIdentifier) && $guestCart->guest_uuid !== $guestIdentifier) {
                         $guestCart->guest_uuid = $guestIdentifier;
                         $guestCart->save();
                         Log::info('CartService: Guest cart assigned to user and guest_uuid updated.', ['cart_id' => $guestCart->id, 'user_id' => $user->id, 'guest_uuid' => $guestIdentifier]);
@@ -1046,7 +1094,8 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                 Log::info('CartService: No guest cart found for identifier to assign/merge.', ['user_id' => $user->id, 'guest_identifier' => $guestIdentifier]);
             }
             DB::commit();
-            $this->cacheManager->clearCache($user, null, $guestIdentifier); // Clear cache using guestIdentifier
+            // Clear cache using guestIdentifier and also the user's cache
+            $this->cacheManager->clearCache($user, null, $guestIdentifier);
             $this->metricsManager->recordMetric('assignGuestCartToUser_duration', microtime(true) - $startTime, ['user_id' => $user->id]);
             return CartOperationResponse::success('سبد خرید مهمان با موفقیت به کاربر اختصاص داده شد.');
         } catch (\Throwable $e) {
@@ -1054,6 +1103,114 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             Log::error('Error assigning guest cart to user: ' . $e->getMessage(), ['user_id' => $user->id, 'exception' => $e->getTraceAsString()]);
             $this->metricsManager->recordMetric('assignGuestCartToUser_exception', microtime(true) - $startTime, ['error_type' => 'unexpected']);
             return CartOperationResponse::error('خطا در اختصاص سبد خرید مهمان به کاربر.', 500);
+        }
+    }
+
+    /**
+     * Merges two carts into one, transferring items from the source cart to the destination cart.
+     * سبدهای خرید را با هم ادغام می‌کند و آیتم‌ها را از سبد مبدا به سبد مقصد منتقل می‌کند.
+     *
+     * @param Cart $destinationCart سبد خریدی که آیتم‌ها به آن منتقل می‌شوند (سبد اصلی).
+     * @param Cart $sourceCart سبد خریدی که آیتم‌های آن منتقل می‌شوند و سپس حذف می‌شود (سبد تکراری).
+     * @return void
+     */
+    private function mergeCarts(Cart $destinationCart, Cart $sourceCart): void
+    {
+        Log::info('CartService: Attempting to merge two carts.', [
+            'destination_cart_id' => $destinationCart->id,
+            'source_cart_id' => $sourceCart->id,
+            'destination_user_id' => $destinationCart->user_id,
+            'source_user_id' => $sourceCart->user_id,
+            'destination_guest_uuid' => $destinationCart->guest_uuid,
+            'source_guest_uuid' => $sourceCart->guest_uuid,
+        ]);
+
+        if ($destinationCart->id === $sourceCart->id) {
+            Log::warning('CartService: Attempted to merge a cart with itself. Skipping.', ['cart_id' => $destinationCart->id]);
+            return;
+        }
+
+        try {
+            DB::beginTransaction();
+
+            foreach ($sourceCart->items as $sourceItem) {
+                $product = $this->productRepository->findByIdWithLock($sourceItem->product_id);
+                if (!$product) {
+                    Log::warning('Product not found during cart merge, skipping item.', ['product_id' => $sourceItem->product_id]);
+                    continue;
+                }
+
+                $existingDestinationItem = $destinationCart->items->first(function ($item) use ($sourceItem) {
+                    return $item->product_id === $sourceItem->product_id && $item->product_variant_id === $sourceItem->product_variant_id;
+                });
+
+                if ($existingDestinationItem) {
+                    $oldDestinationQuantity = $existingDestinationItem->quantity;
+                    $desiredNewQuantity = $oldDestinationQuantity + $sourceItem->quantity;
+
+                    $availableStock = $product->stock - ($product->reserved_stock ?? 0) + $oldDestinationQuantity;
+
+                    $finalNewQuantity = $desiredNewQuantity;
+                    if ($desiredNewQuantity > $availableStock) {
+                        $finalNewQuantity = $availableStock;
+                        Log::warning('Merged cart item quantity capped due to insufficient stock during cart merge.', [
+                            'product_id' => $product->id,
+                            'requested_quantity' => $desiredNewQuantity,
+                            'capped_quantity' => $finalNewQuantity,
+                            'available_stock' => $availableStock,
+                            'current_reserved_stock' => ($product->reserved_stock ?? 0),
+                            'old_destination_quantity' => $oldDestinationQuantity
+                        ]);
+                    }
+
+                    $this->cartRepository->updateCartItem($existingDestinationItem, ['quantity' => $finalNewQuantity]);
+                    if ($this->stockManager) {
+                        $quantityDifference = $finalNewQuantity - $oldDestinationQuantity;
+                        if ($quantityDifference > 0) {
+                            $this->stockManager->reserveStock($product, $quantityDifference);
+                        } elseif ($quantityDifference < 0) {
+                            $this->stockManager->releaseStock($product, abs($quantityDifference));
+                        }
+                    }
+                    Log::info('CartService: Merged item updated in destination cart.', [
+                        'destination_cart_item_id' => $existingDestinationItem->id,
+                        'product_id' => $product->id,
+                        'old_quantity' => $oldDestinationQuantity,
+                        'new_quantity' => $finalNewQuantity,
+                    ]);
+                } else {
+                    $sourceItem->cart_id = $destinationCart->id;
+                    $sourceItem->save();
+                    // نیازی به reserveStock نیست چون آیتم از سبد دیگری منتقل شده و موجودی قبلاً رزرو شده است.
+                    // فقط اگر این آیتم از یک سبد خرید مهمان بود که قرار است حذف شود، باید اطمینان حاصل کنیم که رزرو موجودی حفظ می‌شود.
+                    // در اینجا، ما فرض می‌کنیم که آیتم‌ها در حال انتقال هستند و رزرو موجودی از قبل انجام شده است.
+                    Log::info('CartService: Item moved to destination cart.', [
+                        'source_cart_item_id' => $sourceItem->id,
+                        'product_id' => $product->id,
+                        'quantity' => $sourceItem->quantity,
+                    ]);
+                }
+            }
+
+            // پس از انتقال آیتم‌ها، سبد خرید مبدا را حذف می‌کنیم.
+            $this->cartRepository->delete($sourceCart);
+            DB::commit();
+            Log::info('CartService: Carts merged successfully. Source cart deleted.', [
+                'destination_cart_id' => $destinationCart->id,
+                'source_cart_id' => $sourceCart->id,
+            ]);
+            // کش هر دو سبد را پاک کنید
+            $this->cacheManager->clearCache($destinationCart->user, $destinationCart->session_id, $destinationCart->guest_uuid);
+            $this->cacheManager->clearCache($sourceCart->user, $sourceCart->session_id, $sourceCart->guest_uuid);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Error merging carts: ' . $e->getMessage(), [
+                'destination_cart_id' => $destinationCart->id,
+                'source_cart_id' => $sourceCart->id,
+                'exception' => $e->getTraceAsString()
+            ]);
+            throw $e; // یا یک پاسخ خطا برگردانید
         }
     }
 }

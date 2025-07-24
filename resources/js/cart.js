@@ -6,7 +6,8 @@ console.log('cart.js loaded and starting...');
 
 // ایمپورت کردن توابع مورد نیاز از ماژول‌های دیگر
 // این توابع مسئول برقراری ارتباط با API بک‌اند هستند.
-import { fetchCartContents, addToCart, updateCartItemQuantity, removeCartItem, clearCart, applyCoupon, removeCoupon } from './api.js';
+// تغییر: setGuestUuidHeader را از api.js ایمپورت می‌کنیم.
+import { fetchCartContents, addToCart, updateCartItemQuantity, removeCartItem, clearCart, applyCoupon, removeCoupon, setGuestUuidHeader } from './api.js';
 // این توابع مسئول به‌روزرسانی رابط کاربری (DOM) بر اساس داده‌های سبد خرید هستند.
 import { CartRenderer } from './renderer.js';
 // این توابع مسئول کش کردن عناصر DOM و تنظیم Event Listenerها هستند.
@@ -19,6 +20,9 @@ import {
 
 // جلوگیری از اجرای مکرر initialization
 let isInitialized = false;
+
+// کلید برای ذخیره guest_uuid در localStorage
+const GUEST_UUID_KEY = 'guest_uuid';
 
 /**
  * تابع برای آپدیت UI بدون reload کامل cart.
@@ -91,6 +95,23 @@ function updateQuantityInUI(itemId, newQuantity, itemPrice) {
 }
 
 /**
+ * تابعی برای دریافت یا تولید یک guest_uuid.
+ * اگر guest_uuid در localStorage موجود نباشد، یک UUID جدید تولید و ذخیره می‌کند.
+ * @returns {string} guest_uuid
+ */
+function getGuestUuid() {
+    let guestUuid = localStorage.getItem(GUEST_UUID_KEY);
+    if (!guestUuid) {
+        guestUuid = crypto.randomUUID(); // تولید یک UUID جدید
+        localStorage.setItem(GUEST_UUID_KEY, guestUuid);
+        console.log('New guest_uuid generated and stored:', guestUuid);
+    } else {
+        console.log('Existing guest_uuid retrieved:', guestUuid);
+    }
+    return guestUuid;
+}
+
+/**
  * کلاس CartManager مسئول مدیریت کلی وضعیت سبد خرید و هماهنگی بین API، Renderer و Events است.
  */
 class CartManager {
@@ -102,8 +123,10 @@ class CartManager {
         this.dom = getDOM(); // کش کردن عناصر DOM
         this.debouncedLoadAndRenderCart = debounce(this.loadAndRenderCart.bind(this), 300); // Debounce برای لود و رندر
         this.debouncedUpdateCartItemQuantity = debounce(this.updateItemQuantity.bind(this), 500); // Debounce برای آپدیت تعداد
+        this.guestUuid = getGuestUuid(); // دریافت یا تولید guest_uuid در زمان ساخت نمونه
+        setGuestUuidHeader(this.guestUuid); // تغییر: تنظیم guestUuid در هدرهای Axios به صورت سراسری
         isInitialized = true;
-        console.log('CartManager instance created.');
+        console.log('CartManager instance created with guestUuid:', this.guestUuid);
     }
 
     /**
@@ -211,8 +234,11 @@ class CartManager {
 
             console.log(`Adding product ${productId} with quantity ${quantity} to cart.`);
             try {
+                // تغییر: guestUuid دیگر به عنوان پارامتر ارسال نمی‌شود، زیرا به صورت سراسری تنظیم شده است.
                 const response = await addToCart(productId, quantity, productVariantId);
                 window.showMessage(response.message || 'محصول با موفقیت به سبد خرید اضافه شد.', 'success');
+                // پس از افزودن موفقیت‌آمیز، سبد خرید را دوباره بارگذاری و رندر کنید
+                await this.loadAndRenderCart();
             } catch (error) {
                 const errorMessage = error.response?.data?.message || 'خطا در افزودن محصول به سبد خرید. لطفاً دوباره تلاش کنید.';
                 window.showMessage(errorMessage, 'error');
@@ -310,23 +336,35 @@ class CartManager {
     async loadAndRenderCart() {
         CartRenderer.setCartLoadingState(true);
         try {
+            // تغییر: guestUuid دیگر به عنوان پارامتر ارسال نمی‌شود، زیرا به صورت سراسری تنظیم شده است.
             const response = await fetchCartContents();
-            if (response.success) {
+            if (response.success && response.data) { // اطمینان از وجود response.data
                 const cartContents = response.data;
                 // --- لاگ حیاتی جدید ---
-                console.log('loadAndRenderCart: Items received from API for rendering:', cartContents.items);
+                // اطمینان از وجود cartContents.items قبل از لاگ کردن
+                if (cartContents.items) {
+                    console.log('loadAndRenderCart: Items received from API for rendering:', cartContents.items);
+                } else {
+                    console.warn('loadAndRenderCart: No items array found in API response data.');
+                }
                 // --- پایان لاگ حیاتی ---
                 if (this.dom.cartItemsContainer) {
-                    CartRenderer.renderMainCart(cartContents.items, cartContents.summary);
+                    // اطمینان از ارسال یک آرایه خالی در صورت عدم وجود items
+                    CartRenderer.renderMainCart(cartContents.items || [], cartContents.summary || {});
                 }
-                CartRenderer.renderMiniCartDetails(cartContents.items, cartContents.summary.totalQuantity, cartContents.summary.totalPrice);
+                // اطمینان از ارسال مقادیر پیش‌فرض در صورت عدم وجود summary
+                CartRenderer.renderMiniCartDetails(cartContents.items || [], cartContents.summary?.totalQuantity || 0, cartContents.summary?.totalPrice || 0);
                 console.log('Cart contents loaded and rendered successfully.');
             } else {
-                window.showMessage(response.message, 'error');
+                // اگر response.success false باشد یا response.data وجود نداشته باشد
+                window.showMessage(response.message || 'خطا در دریافت داده‌های سبد خرید.', 'error');
+                CartRenderer.renderMainCart([], {});
+                CartRenderer.renderMiniCartDetails([], 0, 0);
             }
         } catch (error) {
             console.error('Error loading cart contents:', error);
             window.showMessage('خطا در بارگذاری سبد خرید. لطفاً دوباره تلاش کنید.', 'error');
+            // در صورت بروز خطا، سبد خرید را خالی رندر کنید
             CartRenderer.renderMainCart([], {});
             CartRenderer.renderMiniCartDetails([], 0, 0);
         } finally {
@@ -342,6 +380,7 @@ class CartManager {
     async updateItemQuantity(cartItemId, quantity) {
         CartRenderer.setCartLoadingState(true);
         try {
+            // تغییر: guestUuid دیگر به عنوان پارامتر ارسال نمی‌شود، زیرا به صورت سراسری تنظیم شده است.
             const response = await updateCartItemQuantity(cartItemId, quantity);
             if (response.success) {
                 window.showMessage(response.message, 'success');
@@ -364,6 +403,7 @@ class CartManager {
     async removeItem(cartItemId) {
         CartRenderer.setCartLoadingState(true);
         try {
+            // تغییر: guestUuid دیگر به عنوان پارامتر ارسال نمی‌شود، زیرا به صورت سراسری تنظیم شده است.
             const response = await removeCartItem(cartItemId);
             if (response.success) {
                 window.showMessage(response.message, 'success');
@@ -385,6 +425,7 @@ class CartManager {
     async clearCart() {
         CartRenderer.setCartLoadingState(true);
         try {
+            // تغییر: guestUuid دیگر به عنوان پارامتر ارسال نمی‌شود، زیرا به صورت سراسری تنظیم شده است.
             const response = await clearCart();
             if (response.success) {
                 window.showMessage(response.message, 'success');
@@ -407,6 +448,7 @@ class CartManager {
     async applyCoupon(couponCode) {
         CartRenderer.setCartLoadingState(true);
         try {
+            // تغییر: guestUuid دیگر به عنوان پارامتر ارسال نمی‌شود، زیرا به صورت سراسری تنظیم شده است.
             const response = await applyCoupon(couponCode);
             if (response.success) {
                 window.showMessage(response.message, 'success');
@@ -415,7 +457,7 @@ class CartManager {
                 window.showMessage(response.message, 'error');
             }
         } catch (error) {
-            console.error('Error applying coupon:', error);
+                console.error('Error applying coupon:', error);
             window.showMessage('خطا در اعمال کد تخفیف.', 'error');
         } finally {
             CartRenderer.setCartLoadingState(false);
@@ -428,6 +470,7 @@ class CartManager {
     async removeCoupon() {
         CartRenderer.setCartLoadingState(true);
         try {
+            // تغییر: guestUuid دیگر به عنوان پارامتر ارسال نمی‌شود، زیرا به صورت سراسری تنظیم شده است.
             const response = await removeCoupon();
             if (response.success) {
                 window.showMessage(response.message, 'success');
