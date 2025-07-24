@@ -1,4 +1,5 @@
 // resources/js/core/api.js
+console.log('api.js loaded and starting...');
 
 import axios from './axiosInstance.js'; // مسیر صحیح: axiosInstance.js در همین فولدر core است
 // تغییر: مسیر import برای jwt_manager.js به فولدر auth اصلاح شده است.
@@ -47,7 +48,7 @@ export const sendOtp = async (mobileNumber, isRegistrationAttempt = false) => {
 
         const response = await axios.post('/api/auth/send-otp', payload);
         console.log('API: OTP sent successfully:', response.data);
-        return response.data;
+        return response.data; // This returns the raw response data, auth.js handles success/message
     } catch (error) {
         console.error('API: Error sending OTP:', error.response?.data || error.message);
         throw error;
@@ -72,7 +73,7 @@ export const registerUserAndSendOtp = async (mobileNumber, name, lastname = '') 
             lastname: lastname
         });
         console.log('API: User registered and OTP sent successfully:', response.data);
-        return response.data;
+        return response.data; // This returns the raw response data, auth.js handles success/message
     } catch (error) {
         console.error('API: Error during registration and OTP send:', error.response?.data || error.message);
         throw error;
@@ -92,7 +93,7 @@ export const requestOtpForRegister = async (mobileNumber) => {
             mobile_number: mobileNumber
         });
         console.log('API: OTP requested for registration successfully:', response.data);
-        return response.data;
+        return response.data; // This returns the raw response data, auth.js handles success/message
     } catch (error) {
         console.error('API: Error requesting OTP for registration:', error.response?.data || error.message);
         throw error;
@@ -125,7 +126,7 @@ export const verifyOtpAndLogin = async (mobileNumber, otp) => {
             setGuestUuidHeader(null); // Clear the header after login/merge
         }
 
-        return response.data;
+        return response.data; // This returns the raw response data, auth.js handles success/message
     } catch (error) {
         console.error('API: Error verifying OTP and logging in:', error.response?.data || error.message);
         throw error;
@@ -160,26 +161,31 @@ export const logoutUser = async () => {
  * Fetches cart contents for the current user or guest.
  * @returns {Promise<object>} The API response data.
  *
- * CHANGED: Added caching mechanism to prevent multiple simultaneous requests.
+ * CHANGED: Implemented a robust caching mechanism to prevent multiple simultaneous requests.
+ * CHANGED: Now resolves with `response.data` directly, assuming it contains `items` and `summary`.
  */
 export const fetchCartContents = async () => {
     // If a fetchCartContents request is already in progress, return the same Promise.
     if (cartFetchPromise) {
-        console.log('API: fetchCartContents request already in progress. Returning existing promise.');
+        console.warn('API: fetchCartContents request already in progress. Returning existing promise.');
         return cartFetchPromise;
     }
 
-    // guestUuid is now handled by the global setGuestUuidHeader
-    // No need for local guestUuid and headers here.
-
     // Create a new Promise and store it in cartFetchPromise.
-    cartFetchPromise = axios.get('/api/cart/contents') // Remove { headers } here
-        .finally(() => {
-            // After the request is settled (success or failure), clear the Promise so subsequent requests can execute.
-            cartFetchPromise = null;
-        });
-
-    console.log('API: Initiating new fetchCartContents request.');
+    cartFetchPromise = new Promise(async (resolve, reject) => {
+        try {
+            console.log('API: Initiating new fetchCartContents request.');
+            const response = await axios.get('/api/cart/contents');
+            console.log('API: fetchCartContents response received:', response.data); // لاگ کردن پاسخ کامل
+            // Resolve directly with response.data, assuming it contains 'items' and 'summary'
+            resolve(response.data); // Removed { success: true, data: response.data, message: ... }
+        } catch (error) {
+            console.error('API: Error fetching cart contents:', error.response?.data || error.message);
+            reject({ success: false, message: error.response?.data?.message || 'خطا در دریافت محتویات سبد خرید.' });
+        } finally {
+            cartFetchPromise = null; // Reset the Promise after it settles (success or failure)
+        }
+    });
     return cartFetchPromise;
 };
 
@@ -187,120 +193,122 @@ export const fetchCartContents = async () => {
  * Adds a product to the cart.
  * @param {number} productId The ID of the product to add.
  * @param {number} quantity The quantity to add.
- * @returns {Promise<object>} The API response data.
+ * @param {number|null} productVariantId - شناسه واریانت محصول (اختیاری).
+ * @returns {Promise<object>} The API response data with success flag and message.
+ *
+ * CHANGED: Ensured the response format includes 'success' and 'message' properties for consistency.
  */
-export const addToCart = async (productId, quantity = 1) => {
+export const addToCart = async (productId, quantity = 1, productVariantId = null) => {
     try {
-        // guestUuid is now handled by the global setGuestUuidHeader
-        // No need for local guestUuid and headers here.
-
-        // CHANGED: Construct the URL to include productId as a path parameter
+        console.log(`API: Adding product ${productId} to cart with quantity ${quantity}.`);
         const response = await axios.post(`/api/cart/add/${productId}`, {
-            quantity: quantity // Only quantity is needed in the body now
-        }); // Remove { headers } here
+            quantity: quantity,
+            product_variant_id: productVariantId // Ensure variant ID is passed if available
+        });
         console.log('API: Product added to cart:', response.data);
-        return response.data;
+        // Assuming backend response for add to cart is { success: true, message: "..." }
+        return { success: true, message: response.data.message || 'محصول با موفقیت به سبد خرید اضافه شد.', data: response.data };
     } catch (error) {
         console.error('API: Error adding to cart:', error.response?.data || error.message);
-        throw error;
+        throw { success: false, message: error.response?.data?.message || 'خطا در افزودن محصول به سبد خرید.' };
     }
 };
 
 /**
  * Updates the quantity of a product in the cart.
- * @param {number} productId The ID of the product to update.
+ * @param {string} cartItemId The ID of the cart item to update.
  * @param {number} quantity The new quantity.
- * @returns {Promise<object>} The API response data.
+ * @returns {Promise<object>} The API response data with success flag and message.
+ *
+ * CHANGED: Ensured the response format includes 'success' and 'message' properties for consistency.
  */
-export const updateCartItemQuantity = async (productId, quantity) => {
+export const updateCartItemQuantity = async (cartItemId, quantity) => {
     try {
-        // guestUuid is now handled by the global setGuestUuidHeader
-        // No need for local guestUuid and headers here.
-
-        const response = await axios.put(`/api/cart/update/${productId}`, {
+        console.log(`API: Updating cart item ${cartItemId} quantity to ${quantity}.`);
+        const response = await axios.put(`/api/cart/update/${cartItemId}`, {
             quantity: quantity
-        }); // Remove { headers } here
+        });
         console.log('API: Cart item quantity updated:', response.data);
-        return response.data;
+        return { success: true, message: response.data.message || 'تعداد محصول در سبد خرید به‌روز شد.', data: response.data };
     } catch (error) {
         console.error('API: Error updating cart item quantity:', error.response?.data || error.message);
-        throw error;
+        throw { success: false, message: error.response?.data?.message || 'خطا در به‌روزرسانی تعداد محصول در سبد خرید.' };
     }
 };
 
 /**
  * Removes a product from the cart.
- * @param {number} productId The ID of the product to remove.
- * @returns {Promise<object>} The API response data.
+ * @param {string} cartItemId The ID of the cart item to remove.
+ * @returns {Promise<object>} The API response data with success flag and message.
+ *
+ * CHANGED: Ensured the response format includes 'success' and 'message' properties for consistency.
  */
-export const removeCartItem = async (productId) => {
+export const removeCartItem = async (cartItemId) => {
     try {
-        // guestUuid is now handled by the global setGuestUuidHeader
-        // No need for local guestUuid and headers here.
-
-        const response = await axios.delete(`/api/cart/remove/${productId}`); // Remove { headers } here
+        console.log(`API: Removing cart item ${cartItemId}.`);
+        const response = await axios.delete(`/api/cart/remove/${cartItemId}`);
         console.log('API: Cart item removed:', response.data);
-        return response.data;
+        return { success: true, message: response.data.message || 'محصول از سبد خرید حذف شد.', data: response.data };
     } catch (error) {
         console.error('API: Error removing cart item:', error.response?.data || error.message);
-        throw error;
+        throw { success: false, message: error.response?.data?.message || 'خطا در حذف محصول از سبد خرید.' };
     }
 };
 
 /**
  * Clears all items from the cart.
- * @returns {Promise<object>} The API response data.
+ * @returns {Promise<object>} The API response data with success flag and message.
+ *
+ * CHANGED: Ensured the response format includes 'success' and 'message' properties for consistency.
  */
 export const clearCart = async () => {
     try {
-        // guestUuid is now handled by the global setGuestUuidHeader
-        // No need for local guestUuid and headers here.
-
-        const response = await axios.post('/api/cart/clear', {}); // Remove { headers } here
+        console.log('API: Clearing cart.');
+        const response = await axios.post('/api/cart/clear', {});
         console.log('API: Cart cleared:', response.data);
-        return response.data;
+        return { success: true, message: response.data.message || 'سبد خرید با موفقیت پاک شد.', data: response.data };
     } catch (error) {
         console.error('API: Error clearing cart:', error.response?.data || error.message);
-        throw error;
+        throw { success: false, message: error.response?.data?.message || 'خطا در پاک کردن سبد خرید.' };
     }
 };
 
 /**
  * Applies a coupon to the cart.
  * @param {string} couponCode The coupon code to apply.
- * @returns {Promise<object>} The API response data.
+ * @returns {Promise<object>} The API response data with success flag and message.
+ *
+ * CHANGED: Ensured the response format includes 'success' and 'message' properties for consistency.
  */
 export const applyCoupon = async (couponCode) => {
     try {
-        // guestUuid is now handled by the global setGuestUuidHeader
-        // No need for local guestUuid and headers here.
-
+        console.log(`API: Applying coupon code: ${couponCode}.`);
         const response = await axios.post('/api/cart/apply-coupon', {
             coupon_code: couponCode
-        }); // Remove { headers } here
+        });
         console.log('API: Coupon applied successfully:', response.data);
-        return response.data;
+        return { success: true, message: response.data.message || 'کد تخفیف با موفقیت اعمال شد.', data: response.data };
     } catch (error) {
         console.error('API: Error applying coupon:', error.response?.data || error.message);
-        throw error;
+        throw { success: false, message: error.response?.data?.message || 'خطا در اعمال کد تخفیف.' };
     }
 };
 
 /**
  * Removes the applied coupon from the cart.
- * @returns {Promise<object>} The API response data.
+ * @returns {Promise<object>} The API response data with success flag and message.
+ *
+ * CHANGED: Ensured the response format includes 'success' and 'message' properties for consistency.
  */
 export const removeCoupon = async () => {
     try {
-        // guestUuid is now handled by the global setGuestUuidHeader
-        // No need for local guestUuid and headers here.
-
-        const response = await axios.post('/api/cart/remove-coupon', {}); // Remove { headers } here
+        console.log('API: Removing coupon.');
+        const response = await axios.post('/api/cart/remove-coupon', {});
         console.log('API: Coupon removed successfully:', response.data);
-        return response.data;
+        return { success: true, message: response.data.message || 'کد تخفیف با موفقیت حذف شد.', data: response.data };
     } catch (error) {
         console.error('API: Error removing coupon:', error.response?.data || error.message);
-        throw error;
+        throw { success: false, message: error.response?.data?.message || 'خطا در حذف کد تخفیف.' };
     }
 };
 
@@ -313,9 +321,10 @@ export const fetchUserData = async () => {
     try {
         const response = await axios.get('/api/user');
         console.log('API: User data fetched:', response.data);
-        return response.data;
+        return response.data; // This returns the raw response data, navbar_new.js handles success/message
     } catch (error) {
         console.error('API: Error fetching user data:', error.response?.data || error.message);
+        clearJwtToken(); // اگر توکن نامعتبر بود، آن را پاک کن
         throw error;
     }
 };
