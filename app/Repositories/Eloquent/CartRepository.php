@@ -16,10 +16,10 @@ class CartRepository implements CartRepositoryInterface
      * Find a cart by user ID.
      * سبد خرید را بر اساس شناسه کاربر پیدا می‌کند.
      *
-     * @param int $userId
+     * @param string $userId
      * @return Cart|null
      */
-    public function findByUserId(int $userId): ?Cart
+    public function findByUserId(string $userId): ?Cart
     {
         return Cart::where('user_id', $userId)->first();
     }
@@ -59,7 +59,7 @@ class CartRepository implements CartRepositoryInterface
     public function findByUserOrSession(?User $user = null, ?string $sessionId = null): ?Cart
     {
         if ($user) {
-            return $this->findByUserId($user->id);
+            return $this->findByUserId((string) $user->id); // Cast to string
         }
 
         if ($sessionId) {
@@ -103,10 +103,11 @@ class CartRepository implements CartRepositoryInterface
      */
     public function assignCartToUser(Cart $cart, User $user): bool
     {
-        $cart->user_id = $user->id;
+        // این متد فقط user_id را به user->id (عددی) تغییر می دهد.
+        // تغییرات guest_uuid و session_id باید در CartService مدیریت شوند.
+        $cart->user_id = (string) $user->id; // Cast to string for consistency with findByUserId
         $cart->session_id = null; // Clear session ID as it's now owned by a user
-        // اگر guest_uuid وجود دارد، آن را حفظ می‌کنیم. در غیر این صورت، آن را null می‌کنیم.
-        $cart->guest_uuid = $cart->guest_uuid ?? null; 
+        $cart->guest_uuid = null; // Clear guest_uuid as it's now owned by a user
         return $cart->save();
     }
 
@@ -237,8 +238,10 @@ class CartRepository implements CartRepositoryInterface
      */
     public function getExpiredGuestCarts(Carbon $cutoffDate): Collection
     {
+        // اگر user_id در جدول carts برای مهمانان واقعاً NULL ذخیره می‌شود، این خط صحیح است.
+        // اگر user_id در جدول carts برای مهمانان رشته 'guest' ذخیره می‌شود، باید از where('user_id', 'guest') استفاده کنید.
         return Cart::where('updated_at', '<', $cutoffDate)
-                   ->whereNull('user_id')
+                   ->whereNull('user_id') // فرض بر این است که user_id برای مهمانان NULL است.
                    ->get();
     }
 

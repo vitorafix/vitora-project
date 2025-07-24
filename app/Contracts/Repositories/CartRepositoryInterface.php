@@ -13,10 +13,10 @@ interface CartRepositoryInterface
      * Find a cart by user ID.
      * سبد خرید را بر اساس شناسه کاربر پیدا می‌کند.
      *
-     * @param int $userId
+     * @param string $userId // تغییر از int به string
      * @return Cart|null
      */
-    public function findByUserId(int $userId): ?Cart;
+    public function findByUserId(string $userId): ?Cart;
 
     /**
      * Find a cart by session ID.
@@ -62,7 +62,7 @@ interface CartRepositoryInterface
      * @param User $user
      * @return bool
      */
-    public function assignCartToUser(Cart $cart, User $user): bool;
+    public function assignCartToUser(Cart $cart, User $user): bool; // این متد نیز باید با تغییر User ID در CartService سازگار باشد
 
     /**
      * Delete a cart.
@@ -167,4 +167,22 @@ interface CartRepositoryInterface
      * @return bool
      */
     public function clearCart(Cart $cart): bool;
+
+    /**
+     * Find a cart by ID.
+     * سبد خرید را بر اساس شناسه آن پیدا می‌کند.
+     *
+     * @param int $cartId
+     * @return Cart|null
+     */
+    public function findById(int $cartId): ?Cart;
+
+    /**
+     * Bulk update multiple cart items by their IDs.
+     * چندین آیتم سبد خرید را به صورت انبوه بر اساس شناسه‌های آنها به‌روزرسانی می‌کند.
+     *
+     * @param array $updates An array of arrays, where each inner array contains 'id' and the fields to update (e.g., 'price').
+     * @return int The number of affected rows.
+     */
+    public function bulkUpdateCartItems(array $updates): int;
 }

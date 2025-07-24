@@ -7,7 +7,7 @@ use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use Illuminate\Http\Request; // اضافه شده برای دسترسی به شیء Request
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
@@ -16,13 +16,13 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
-use Illuminate\Support\Str; // Added for Str::uuid() - still needed for general UUID generation if not using GuestService
+use Illuminate\Support\Str;
 
 // Contracts
 use App\Services\Contracts\CartServiceInterface;
 use App\Contracts\Repositories\CartRepositoryInterface;
 use App\Contracts\Repositories\ProductRepositoryInterface;
-use App\Contracts\ProductServiceInterface; // این خط قبلاً وجود نداشت، اضافه شد اگر نیاز باشد
+use App\Contracts\ProductServiceInterface;
 use App\Services\Contracts\CartCleanupServiceInterface;
 use App\Services\Contracts\CartItemManagementServiceInterface;
 use App\Services\Contracts\CartBulkUpdateServiceInterface;
@@ -59,9 +59,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
     private Dispatcher $eventDispatcher;
     private CartCalculationService $cartCalculationService;
 
-    // اگر ProductServiceInterface در constructor شما استفاده می‌شود، مطمئن شوید که اینجا هم تعریف شده است.
-    // private ProductServiceInterface $productService; // اگر در constructor استفاده می‌شود، این را فعال کنید.
-
     public function __construct(
         CartRepositoryInterface $cartRepository,
         ProductRepositoryInterface $productRepository,
@@ -73,7 +70,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         CouponService $couponService,
         Dispatcher $eventDispatcher,
         CartCalculationService $cartCalculationService
-        // ProductServiceInterface $productService // اگر در constructor استفاده می‌شود، این را فعال کنید.
     ) {
         $this->cartRepository = $cartRepository;
         $this->productRepository = $productRepository;
@@ -85,7 +81,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         $this->couponService = $couponService;
         $this->eventDispatcher = $eventDispatcher;
         $this->cartCalculationService = $cartCalculationService;
-        // $this->productService = $productService; // اگر در constructor استفاده می‌شود، این را فعال کنید.
     }
 
     /**
@@ -104,19 +99,15 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         // دریافت Guest UUID پایدار از GuestService
         $guestUuid = GuestService::getOrCreateGuestUuid($request);
 
-        $sessionId = null; // مقداردهی اولیه به null
-        // فقط در صورتی که شیء Request دارای Session Store باشد، Session ID را دریافت می‌کنیم.
-        // این برای مسیرهای API که ممکن است Session نداشته باشند، ضروری است.
+        $sessionId = null;
         if ($request->hasSession()) {
             try {
                 $sessionId = $request->session()->getId();
             } catch (\Throwable $e) {
                 Log::error('Error accessing session in CartService::getOrCreateCart for session ID: ' . $e->getMessage());
-                // در صورت بروز خطا در دسترسی به سشن، sessionId را null نگه می‌داریم.
                 $sessionId = null;
             }
         }
-
 
         Log::info('CartService: getOrCreateCart called.', [
             'user_id_input' => $user ? $user->id : 'null',
@@ -129,8 +120,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             $cart = $this->cartRepository->findByUserId((string) $user->id); // Cast to string
             if ($cart) {
                 Log::info('Existing cart found by user ID.', ['cart_id' => $cart->id, 'user_id' => $user->id]);
-                // اگر سبد خرید کاربر موجود است، مطمئن می‌شویم که guest_uuid آن به‌روز است.
-                // این برای لینک کردن سبدهای خرید موجود کاربر با guest_uuid جدید از سمت کلاینت ضروری است.
                 if ($guestUuid && $cart->guest_uuid !== $guestUuid) {
                     $cart->guest_uuid = $guestUuid;
                     $cart->save();
@@ -142,19 +131,17 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         }
 
         // 2. اگر سبد خرید کاربر پیدا نشد، تلاش می‌کنیم بر اساس guest UUID پیدا کنیم.
-        // این بررسی باید قبل از session ID انجام شود، زیرا guest UUID پایدارتر از session ID است.
         if ($guestUuid) {
             $cart = $this->cartRepository->findByGuestUuid($guestUuid);
             if ($cart) {
                 Log::info('Existing cart found by guest UUID.', ['cart_id' => $cart->id, 'guest_uuid' => $guestUuid]);
                 // اگر سبد خرید مهمان پیدا شد و کاربر اکنون لاگین کرده است، آن را به کاربر اختصاص می‌دهیم.
-                if ($user && ($cart->user_id === 'guest' || is_null($cart->user_id))) { // بررسی دقیق‌تر برای اطمینان از اینکه سبد واقعاً مهمان است
-                    $this->assignGuestCartToUser($user, $guestUuid); // از guestUuid برای اختصاص استفاده کنید
-                    $cart->refresh(); // سبد خرید را رفرش کنید تا user_id به‌روز شده را دریافت کنید
+                if ($user && is_null($cart->user_id)) {
+                    $this->assignGuestCartToUser($user, $guestUuid);
+                    $cart->refresh();
                     Log::info('Guest cart assigned to logged-in user during getOrCreateCart.', ['cart_id' => $cart->id, 'user_id' => $user->id, 'guest_uuid' => $guestUuid]);
                 }
-                // اطمینان حاصل می‌کنیم که session_id سبد خرید مهمان با session_id فعلی به‌روز باشد.
-                if ($sessionId && $cart->session_id !== $sessionId) { // فقط اگر sessionId موجود است، آن را به‌روز کنید
+                if ($sessionId && $cart->session_id !== $sessionId) {
                     $cart->session_id = $sessionId;
                     $cart->save();
                     Log::info('Guest cart session_id updated.', ['cart_id' => $cart->id, 'guest_uuid' => $guestUuid, 'session_id' => $sessionId]);
@@ -165,19 +152,13 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         }
 
         // 3. اگر سبد خرید بر اساس کاربر یا guest UUID پیدا نشد، تلاش می‌کنیم بر اساس session ID پیدا کنیم (فال‌بک).
-        // این یک فال‌بک برای سبدهای خرید موجود است که قبل از پیاده‌سازی guest_uuid از session_id استفاده می‌کردند.
         if ($sessionId) {
             $cart = $this->cartRepository->findBySessionId($sessionId);
             if ($cart) {
                 Log::info('Existing cart found by session ID (fallback).', ['cart_id' => $cart->id, 'session_id' => $sessionId]);
-                // مهم: اگر یک سبد خرید مبتنی بر سشن پیدا شد و اکنون یک guestUuid داریم،
-                // این سبد را با guestUuid به‌روزرسانی کنید. این دو را به هم پیوند می‌دهد.
                 if ($guestUuid && !$cart->guest_uuid) {
-                    // قبل از اختصاص guest_uuid جدید، بررسی کنید که آیا این guest_uuid قبلاً به سبد دیگری اختصاص داده شده است.
-                    // این برای جلوگیری از نقض unique constraint در دیتابیس مهم است.
                     $existingCartWithGuestUuid = $this->cartRepository->findByGuestUuid($guestUuid);
                     if ($existingCartWithGuestUuid && $existingCartWithGuestUuid->id !== $cart->id) {
-                        // اگر guest_uuid به سبد دیگری تعلق دارد، این سبد را به آن ادغام کنید و سبد فعلی را حذف کنید.
                         Log::warning('CartService: Session-based cart found, but guest_uuid already assigned to another cart. Attempting merge.', [
                             'session_cart_id' => $cart->id,
                             'guest_uuid_cart_id' => $existingCartWithGuestUuid->id,
@@ -186,7 +167,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                         ]);
                         $this->mergeCarts($existingCartWithGuestUuid, $cart);
                         $this->metricsManager->recordMetric('getOrCreateCart_duration', microtime(true) - $startTime, ['session_id' => $sessionId, 'status' => 'merged_session_cart']);
-                        return $existingCartWithGuestUuid; // بازگرداندن سبد ادغام شده
+                        return $existingCartWithGuestUuid;
                     } else {
                         $cart->guest_uuid = $guestUuid;
                         $cart->save();
@@ -194,10 +175,9 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                     }
                 }
                 // اگر یک سبد خرید مهمان (مبتنی بر سشن) پیدا شد و کاربر اکنون لاگین کرده است، آن را به کاربر اختصاص می‌دهیم.
-                if ($user && ($cart->user_id === 'guest' || is_null($cart->user_id))) {
-                    // guestUuid را به assignGuestCartToUser ارسال کنید تا مطمئن شوید از شناسه صحیح استفاده می‌شود.
+                if ($user && is_null($cart->user_id)) {
                     $this->assignGuestCartToUser($user, $guestUuid ?? $sessionId);
-                    $cart->refresh(); // سبد خرید را رفرش کنید تا user_id به‌روز شده را دریافت کنید
+                    $cart->refresh();
                     Log::info('Guest cart assigned to logged-in user during getOrCreateCart (from session_id).', ['cart_id' => $cart->id, 'user_id' => $user->id, 'session_id' => $sessionId]);
                 }
                 $this->metricsManager->recordMetric('getOrCreateCart_duration', microtime(true) - $startTime, ['session_id' => $sessionId, 'status' => 'found_by_session_id']);
@@ -214,23 +194,16 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
 
         $data = [];
         if ($user) {
-            $data['user_id'] = (string) $user->id; // Cast to string for consistency
-            $data['session_id'] = null; // پاک کردن session_id برای کاربران احراز هویت شده
-            $data['guest_uuid'] = null; // پاک کردن guest_uuid برای کاربران احراز هویت شده
+            $data['user_id'] = (string) $user->id; // Cast to string
+            $data['session_id'] = null;
+            $data['guest_uuid'] = null;
         } else {
-            // برای سبدهای خرید مهمان، guest_uuid را اولویت می‌دهیم.
             $data['guest_uuid'] = $guestUuid;
-            $data['session_id'] = $sessionId; // حفظ session_id برای سازگاری عقب‌رو/فال‌بک
-            $data['user_id'] = 'guest'; // اطمینان از تنظیم user_id به 'guest' برای سبدهای مهمان
-
-            // حذف خط problematic:
-            // $existingGuestCart = $this->cartRepository->findByUserId('guest');
-            // این خط باعث TypeError می شد زیرا findByUserId انتظار int دارد.
-            // با توجه به اینکه guest_uuid اکنون شناسه اصلی است و جستجو بر اساس آن انجام می شود،
-            // و همچنین unique constraint روی user_id حذف شده است، این خط دیگر لازم نیست.
+            $data['session_id'] = $sessionId;
+            $data['user_id'] = null; // برای سبدهای مهمان، user_id باید null باشد
         }
         $cart = $this->cartRepository->create($data);
-        Log::info('New cart created.', ['cart_id' => $cart->id, 'user_id' => $user->id ?? 'guest', 'session_id' => $sessionId, 'guest_uuid' => $data['guest_uuid']]); // لاگ کردن guest_uuid واقعی استفاده شده
+        Log::info('New cart created.', ['cart_id' => $cart->id, 'user_id' => $user->id ?? 'null_for_guest', 'session_id' => $sessionId, 'guest_uuid' => $data['guest_uuid']]);
         $this->metricsManager->recordMetric('getOrCreateCart_duration', microtime(true) - $startTime, ['status' => 'new_cart_created']);
         return $cart;
     }
@@ -245,7 +218,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
      */
     public function mergeGuestCart(User $user, string $guestIdentifier): void
     {
-        // تلاش برای یافتن سبد خرید مهمان ابتدا با guest UUID، سپس با session ID
         $guestCart = $this->cartRepository->findByGuestUuid($guestIdentifier);
         if (!$guestCart) {
             $guestCart = $this->cartRepository->findBySessionId($guestIdentifier);
@@ -289,18 +261,16 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         $startTime = microtime(true);
         try {
             if ($quantity <= 0) {
-                return CartOperationResponse::fail('تعداد نمی‌تواند صفر یا منفی باشد.', 400); // Changed to fail
+                return CartOperationResponse::fail('تعداد نمی‌تواند صفر یا منفی باشد.', 400);
             }
 
             DB::beginTransaction();
 
-            // Use the new findByIdWithLock method
-            // از متد جدید findByIdWithLock استفاده کنید.
             $product = $this->productRepository->findByIdWithLock($productId);
             if (!$product) {
                 DB::rollBack();
                 Log::error('Product not found during add/update cart item.', ['product_id' => $productId]);
-                return CartOperationResponse::fail('محصول یافت نشد.', 404); // Changed to fail
+                return CartOperationResponse::fail('محصول یافت نشد.', 404);
             }
 
             $cartItem = $cart->items->first(function ($item) use ($productId, $productVariantId) {
@@ -310,7 +280,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             $oldQuantity = $cartItem ? $cartItem->quantity : 0;
             $newQuantity = $oldQuantity + $quantity;
 
-            // Check stock
             $availableStockConsideringOtherReservations = $product->stock - ($product->reserved_stock ?? 0) + $oldQuantity;
 
             if ($newQuantity > $availableStockConsideringOtherReservations) {
@@ -324,7 +293,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                     'old_quantity_this_item' => $oldQuantity
                 ]);
                 $message = 'موجودی کافی نیست. حداکثر موجودی قابل افزودن: ' . ($availableStockConsideringOtherReservations - $oldQuantity) . ' عدد.';
-                return CartOperationResponse::fail($message, 400); // Changed to fail
+                return CartOperationResponse::fail($message, 400);
             }
 
             if ($cartItem) {
@@ -337,7 +306,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                     'product_id' => $productId,
                     'product_variant_id' => $productVariantId,
                     'quantity' => $newQuantity,
-                    'price' => $product->price, // Store current price
+                    'price' => $product->price,
                 ]);
                 $action = 'added';
             }
@@ -352,7 +321,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             }
 
             DB::commit();
-            // Pass guest_uuid for cache clearing
             $this->cacheManager->clearCache($cart->user, $cart->session_id, $cart->guest_uuid);
             $this->metricsManager->recordMetric('addOrUpdateItem_duration', microtime(true) - $startTime, ['action' => $action]);
             Log::info('Cart item ' . $action, ['cart_item_id' => $cartItem->id, 'product_id' => $productId, 'product_variant_id' => $productVariantId, 'quantity' => $quantity]);
@@ -369,8 +337,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
      * Add product to cart or update quantity.
      * محصول را به سبد خرید اضافه یا تعداد آن را به‌روزرسانی می‌کند.
      *
-     * This method forwards the call to addOrUpdateItem to satisfy CartServiceInterface.
-     *
      * @param \App\Models\Cart $cart
      * @param int $productId
      * @param int $quantity
@@ -386,8 +352,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
      * Updates the quantity of an existing cart item.
      * تعداد یک آیتم موجود در سبد خرید را به‌روزرسانی می‌کند.
      *
-     * This method implements CartItemManagementServiceInterface::updateItemQuantity.
-     *
      * @param \App\Models\CartItem $cartItem The cart item to update.
      * @param int $newQuantity The new quantity for the item.
      * @param \App\Models\User|null $user The authenticated user, if any.
@@ -401,18 +365,16 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         $startTime = microtime(true);
         try {
             if ($newQuantity < 0) {
-                return CartOperationResponse::fail('تعداد نمی‌تواند منفی باشد.', 400); // Changed to fail
+                return CartOperationResponse::fail('تعداد نمی‌تواند منفی باشد.', 400);
             }
 
             DB::beginTransaction();
 
-            // Use the new findByIdWithLock method
-            // از متد جدید findByIdWithLock استفاده کنید.
             $product = $this->productRepository->findByIdWithLock($cartItem->product_id);
             if (!$product) {
                 DB::rollBack();
                 Log::error('Product not found for cart item during quantity update (locked).', ['cart_item_id' => $cartItem->id]);
-                return CartOperationResponse::fail('محصول مرتبط با آیتم سبد خرید یافت نشد.', 404); // Changed to fail
+                return CartOperationResponse::fail('محصول مرتبط با آیتم سبد خرید یافت نشد.', 404);
             }
 
             $oldQuantity = $cartItem->quantity;
@@ -431,7 +393,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                     'old_quantity_this_item' => $oldQuantity
                 ]);
                 $message = 'موجودی کافی نیست. حداکثر موجودی قابل تنظیم: ' . $availableStockConsideringOtherReservations . ' عدد.';
-                return CartOperationResponse::fail($message, 400); // Changed to fail
+                return CartOperationResponse::fail($message, 400);
             }
 
             $cartItem->quantity = $newQuantity;
@@ -447,7 +409,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             }
 
             DB::commit();
-            // Pass guest_uuid for cache clearing
             $this->cacheManager->clearCache($user ?? $cartItem->cart->user, $sessionId ?? $cartItem->cart->session_id, $guestUuid ?? $cartItem->cart->guest_uuid);
             $this->metricsManager->recordMetric('updateItemQuantity_duration', microtime(true) - $startTime, ['action' => 'updated']);
             Log::info('Cart item quantity updated', ['cart_item_id' => $cartItem->id, 'product_id' => $product->id, 'product_variant_id' => $cartItem->product_variant_id, 'old_quantity' => $oldQuantity, 'new_quantity' => $newQuantity]);
@@ -463,8 +424,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
     /**
      * Update quantity of a specific cart item.
      * تعداد یک آیتم خاص در سبد خرید را به‌روزرسانی می‌کند.
-     *
-     * This method forwards the call to updateItemQuantity to satisfy CartServiceInterface.
      *
      * @param \App\Models\CartItem $cartItem
      * @param int $newQuantity
@@ -482,8 +441,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
      * Remove a specific cart item.
      * یک آیتم خاص را از سبد خرید حذف می‌کند.
      *
-     * This method implements CartServiceInterface::removeCartItem.
-     *
      * @param \App\Models\CartItem $cartItem The cart item to remove.
      * @param \App\Models\User|null $user The authenticated user, if any.
      * @param string|null $sessionId The session ID for guest carts.
@@ -495,8 +452,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         try {
             DB::beginTransaction();
             if ($this->stockManager) {
-                // Use the new findByIdWithLock method
-                // از متد جدید findByIdWithLock استفاده کنید.
                 $product = $this->productRepository->findByIdWithLock($cartItem->product_id);
                 if ($product) {
                     $this->stockManager->releaseStock($product, $cartItem->quantity);
@@ -506,7 +461,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             }
             $this->cartRepository->deleteCartItem($cartItem);
             DB::commit();
-            // Pass guest_uuid for cache clearing
             $this->cacheManager->clearCache($user ?? $cartItem->cart->user, $sessionId ?? $cartItem->cart->session_id, $guestUuid ?? $cartItem->cart->guest_uuid);
             Log::info('Cart item removed', ['cart_item_id' => $cartItem->id]);
             return CartOperationResponse::success('آیتم سبد خرید با موفقیت حذف شد.');
@@ -520,8 +474,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
     /**
      * Removes a cart item from the cart.
      * یک آیتم سبد خرید را از سبد خرید حذف می‌کند.
-     *
-     * This method forwards the call to removeCartItem to satisfy CartItemManagementServiceInterface.
      *
      * @param \App\Models\CartItem $cartItem The cart item to remove.
      * @param \App\Models\User|null $user The authenticated user, if any.
@@ -549,12 +501,10 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             DB::beginTransaction();
             $user = $cart->user;
             $sessionId = $cart->session_id;
-            $guestUuid = $cart->guest_uuid; // Get guest_uuid from cart
+            $guestUuid = $cart->guest_uuid;
 
             if ($this->stockManager) {
                 foreach ($cart->items as $item) {
-                    // Use the new findByIdWithLock method
-                    // از متد جدید findByIdWithLock استفاده کنید.
                     $product = $this->productRepository->findByIdWithLock($item->product_id);
                     if ($product) {
                         $this->stockManager->releaseStock($product, $item->quantity);
@@ -566,7 +516,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
 
             $this->cartRepository->clearCart($cart);
             DB::commit();
-            // Pass guest_uuid for cache clearing
             $this->cacheManager->clearCache($user, $sessionId, $guestUuid);
             $this->metricsManager->recordMetric('clearCart_duration', microtime(true) - $startTime, ['action' => 'cleared']);
             Log::info('Cart cleared', ['cart_id' => $cart->id]);
@@ -590,14 +539,10 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
     {
         $startTime = microtime(true);
         try {
-            // Load items and their relations
-            $cart->load(['items.product', 'items.productVariant']); // بارگذاری روابط مستقیماً روی آبجکت $cart
+            $cart->load(['items.product', 'items.productVariant']);
 
-            // DEBUG LOG: Log the items collection before checking if it's empty
             Log::debug('CartService::getCartContents - Items collection before isEmpty check:', ['cart_id' => $cart->id, 'items_count' => $cart->items->count(), 'items_data' => $cart->items->toArray()]);
 
-
-            // اگر سبد خرید خالی است، یک پاسخ خالی و با مجموع‌های صفر برگردانید.
             if ($cart->items->isEmpty()) {
                 $emptyTotals = new CartTotalsDTO(
                     subtotal: 0,
@@ -607,22 +552,16 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                     total: 0
                 );
                 $this->metricsManager->recordMetric('getCartContents_duration', microtime(true) - $startTime, ['cart_id' => $cart->id, 'status' => 'empty_cart']);
-                // Convert the empty collection to an array before passing it
                 return new CartContentsResponse(collect([])->toArray(), 0, 0.0, $emptyTotals);
             }
 
-            // Calculate totals using the dedicated service
-            // Note: This DTO contains subtotal, tax, total, etc.
             $cartTotalsDTO = $this->cartCalculationService->calculateCartTotals($cart);
 
-            // Create the response object using positional arguments
-            // Since CartContentsResponse now expects $cartTotals in its constructor,
-            // we pass it directly as the fourth positional argument.
             $response = new CartContentsResponse(
-                $cart->items->toArray(), // تبدیل کالکشن به آرایه
+                $cart->items->toArray(),
                 $cart->items->sum('quantity'),
                 $cartTotalsDTO->total,
-                $cartTotalsDTO // Pass CartTotalsDTO directly as the fourth argument
+                $cartTotalsDTO
             );
 
             $this->metricsManager->recordMetric('getCartContents_duration', microtime(true) - $startTime, ['cart_id' => $cart->id]);
@@ -632,7 +571,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             Log::error('Error getting cart contents: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
             $this->metricsManager->recordMetric('getCartContents_exception', microtime(true) - $startTime, ['error_type' => 'unexpected']);
 
-            // In case of any error, return an empty CartContentsResponse with default totals
             $emptyTotals = new CartTotalsDTO(
                 subtotal: 0,
                 discount: 0,
@@ -641,12 +579,11 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                 total: 0
             );
 
-            // Pass all arguments as positional, including the emptyTotals DTO
             $errorResponse = new CartContentsResponse(
-                collect([])->toArray(), // items (empty Collection converted to array)
-                0,           // totalQuantity
-                0.0,         // totalPrice
-                $emptyTotals // cartTotals
+                collect([])->toArray(),
+                0,
+                0.0,
+                $emptyTotals
             );
 
             return $errorResponse;
@@ -668,14 +605,12 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             foreach ($updates as $update) {
                 $cartItem = $cart->items->find($update['cart_item_id']);
                 if ($cartItem) {
-                    // Pass guest_uuid for cache clearing
                     $this->updateItemQuantity($cartItem, $update['quantity'], $cart->user, $cart->session_id, $cart->guest_uuid);
                 } else {
                     Log::warning('Cart item not found for bulk update.', ['cart_item_id' => $update['cart_item_id']]);
                 }
             }
             DB::commit();
-            // Pass guest_uuid for cache clearing
             $this->cacheManager->clearCache($cart->user, $cart->session_id, $cart->guest_uuid);
             return CartOperationResponse::success('آیتم‌های سبد خرید با موفقیت به‌روزرسانی شدند.');
         } catch (\Throwable $e) {
@@ -703,7 +638,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             foreach ($expiredCarts as $cart) {
                 DB::beginTransaction();
                 try {
-                    // Release stock for items in the expired cart
                     if ($this->stockManager) {
                         foreach ($cart->items as $item) {
                             $product = $this->productRepository->findByIdWithLock($item->product_id);
@@ -714,9 +648,8 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                             }
                         }
                     }
-                    $this->cartRepository->delete($cart); // Delete the cart and its items (due to cascade delete if set up)
+                    $this->cartRepository->delete($cart);
                     DB::commit();
-                    // Pass guest_uuid for cache clearing
                     $this->cacheManager->clearCache(null, $cart->session_id, $cart->guest_uuid);
                     $cleanedCount++;
                     Log::info('Expired guest cart cleaned up.', ['cart_id' => $cart->id, 'session_id' => $cart->session_id, 'guest_uuid' => $cart->guest_uuid]);
@@ -728,7 +661,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             $this->metricsManager->recordMetric('cleanupExpiredCarts_duration', microtime(true) - $startTime, ['cleaned_count' => $cleanedCount]);
             Log::info('CleanupExpiredCarts service method completed successfully.', [
                 'cleaned_carts_count' => $cleanedCount,
-                'days_cutoff' => $daysCutoff ?? config('cart.guest_cart_lifetime_days', 30) // Include days_cutoff in final log
+                'days_cutoff' => $daysCutoff ?? config('cart.guest_cart_lifetime_days', 30)
             ]);
             return $cleanedCount;
         } catch (\Throwable $e) {
@@ -756,7 +689,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         if ($guestUuid && $cartItem->cart->guest_uuid === $guestUuid) {
             return true;
         }
-        // Fallback to session_id for existing carts
         if ($sessionId && $cartItem->cart->session_id === $sessionId) {
             return true;
         }
@@ -776,7 +708,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
     public function getCartById(int $cartId, ?User $user = null, ?string $sessionId = null, ?string $guestUuid = null): ?Cart
     {
         $cart = $this->cartRepository->findById($cartId);
-        // Ensure that if the cart exists, it belongs to the current user or session or guest UUID.
         if ($cart && (
             ($user && $cart->user_id === (string) $user->id) || // Cast to string
             ($guestUuid && $cart->guest_uuid === $guestUuid) ||
@@ -791,17 +722,13 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
      * Calculate the subtotal, total, shipping, tax, and discount for a cart.
      * محاسبه مجموع فرعی، مجموع کل، هزینه حمل و نقل، مالیات و تخفیف برای یک سبد خرید.
      *
-     * This method implements CartServiceInterface::calculateCartTotals.
-     *
      * @param \App\Models\Cart $cart
      * @return array
      */
     public function calculateCartTotals(Cart $cart): array
     {
-        // Delegate the calculation to the dedicated CartCalculationService
-        // محاسبه را به سرویس اختصاصی CartCalculationService واگذار کنید.
         $cartTotalsDTO = $this->cartCalculationService->calculateCartTotals($cart);
-        return $cartTotalsDTO->toArray(); // Assuming CartTotalsDTO has a toArray method
+        return $cartTotalsDTO->toArray();
     }
 
     /**
@@ -821,8 +748,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                 continue;
             }
 
-            // Use the new findByIdWithLock method
-            // از متد جدید findByIdWithLock استفاده کنید.
             $product = $this->productRepository->findByIdWithLock($product->id);
             if (!$product) {
                  $issues[] = ['type' => 'missing_product_after_lock', 'cart_item_id' => $item->id];
@@ -855,20 +780,16 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
     {
         try {
             DB::beginTransaction();
-            // واگذاری اعمال کوپن به CouponService
             $response = $this->couponService->applyCoupon($cart, $couponCode);
 
             if ($response->isSuccess()) {
-                // اگر اعمال کوپن موفقیت‌آمیز بود، کش را پاک کرده
-                // و CartOperationResponse را با مجموع‌های جدید سبد خرید برمی‌گردانیم.
-                $this->cacheManager->clearCache($cart->user, $cart->session_id, $cart->guest_uuid); // Pass guestUuid
+                $this->cacheManager->clearCache($cart->user, $cart->session_id, $cart->guest_uuid);
                 return CartOperationResponse::success(
                     $response->getMessage(),
                     ['cartTotals' => $this->cartCalculationService->calculateCartTotals($cart->fresh())]
                 );
             }
 
-            // اگر اعمال کوپن ناموفق بود، تراکنش را Rollback کرده و پاسخ CouponService را برمی‌گردانیم.
             DB::rollBack();
             return $response;
         } catch (\Throwable $e) {
@@ -889,20 +810,16 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
     {
         try {
             DB::beginTransaction();
-            // واگذاری حذف کوپن به CouponService
             $response = $this->couponService->removeCoupon($cart);
 
             if ($response->isSuccess()) {
-                // اگر حذف کوپن موفقیت‌آمیز بود، کش را پاک کرده
-                // و CartOperationResponse را با مجموع‌های جدید سبد خرید برمی‌گردانیم.
-                $this->cacheManager->clearCache($cart->user, $cart->session_id, $cart->guest_uuid); // Pass guestUuid
+                $this->cacheManager->clearCache($cart->user, $cart->session_id, $cart->guest_uuid);
                 return CartOperationResponse::success(
                     $response->getMessage(),
                     ['cartTotals' => $this->cartCalculationService->calculateCartTotals($cart->fresh())]
                 );
             }
 
-            // اگر حذف کوپن ناموفق بود، تراکنش را Rollback کرده و پاسخ CouponService را برمی‌گردانیم.
             DB::rollBack();
             return $response;
         } catch (\Throwable $e) {
@@ -938,7 +855,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
             DB::beginTransaction();
             $this->cartRepository->assignCartToUser($cart, $newOwner);
             DB::commit();
-            $this->cacheManager->clearCache($newOwner, null, $cart->guest_uuid); // Pass guestUuid
+            $this->cacheManager->clearCache($newOwner, null, $cart->guest_uuid);
             Log::info('Cart ownership transferred', ['cart_id' => $cart->id, 'old_session_id' => $cart->session_id, 'new_user_id' => $newOwner->id, 'guest_uuid' => $cart->guest_uuid]);
             return true;
         } catch (\Throwable $e) {
@@ -969,7 +886,8 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
      */
     public function getCartExpiryDate(Cart $cart): ?Carbon
     {
-        if ($cart->user_id && $cart->user_id !== 'guest') { // تغییر برای بررسی اینکه کاربر واقعا لاگین کرده باشد
+        // اگر user_id وجود دارد و null نیست، یعنی کاربر لاگین کرده است.
+        if (!is_null($cart->user_id)) {
             return null;
         }
         $guestCartLifetimeHours = config('cart.guest_cart_lifetime_hours', 72);
@@ -985,8 +903,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
      */
     public function refreshCartItemPrices(Cart $cart): CartOperationResponse
     {
-        // This method now delegates to CartCalculationService
-        // این متد اکنون به CartCalculationService واگذار می‌شود.
         return $this->cartCalculationService->refreshCartItemPrices($cart);
     }
 
@@ -1004,18 +920,15 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
         try {
             DB::beginTransaction();
 
-            // 1. تلاش برای یافتن سبد خرید مهمان ابتدا با guest_uuid، سپس با session_id
             $guestCart = $this->cartRepository->findByGuestUuid($guestIdentifier);
-            if (!$guestCart && GuestService::isValidUuid($guestIdentifier)) { // اگر guestIdentifier یک UUID معتبر است
-                // اگر با UUID پیدا نشد، ممکن است guestIdentifier یک session_id قدیمی باشد.
+            if (!$guestCart && GuestService::isValidUuid($guestIdentifier)) {
                 $guestCart = $this->cartRepository->findBySessionId($guestIdentifier);
-            } elseif (!$guestCart) { // اگر guestIdentifier یک UUID نیست، حتما session_id است.
+            } elseif (!$guestCart) {
                 $guestCart = $this->cartRepository->findBySessionId($guestIdentifier);
             }
 
             $userCart = $this->cartRepository->findByUserId((string) $user->id); // Cast to string
 
-            // 2. بررسی اینکه آیا guestCart از قبل همان userCart است
             if ($guestCart && $userCart && $guestCart->id === $userCart->id) {
                 Log::info('CartService: Guest cart is already the user\'s cart. Skipping merge/assignment.', [
                     'user_id' => $user->id,
@@ -1028,9 +941,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                 return CartOperationResponse::success('سبد خرید مهمان از قبل به کاربر اختصاص داده شده بود.');
             }
 
-            // 3. اگر سبد خرید مهمان وجود دارد
             if ($guestCart) {
-                // 4. اگر سبد خرید کاربر وجود دارد، ادغام کنید
                 if ($userCart) {
                     Log::info('CartService: Attempting to merge guest cart into existing user cart.', [
                         'user_id' => $user->id,
@@ -1039,7 +950,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                         'guest_identifier' => $guestIdentifier,
                     ]);
                     foreach ($guestCart->items as $guestItem) {
-                        // از متد جدید findByIdWithLock استفاده کنید.
                         $product = $this->productRepository->findByIdWithLock($guestItem->product_id);
                         if (!$product) {
                             Log::warning('Product not found during guest cart merge, skipping item.', ['product_id' => $guestItem->product_id]);
@@ -1102,10 +1012,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                     $this->cartRepository->delete($guestCart);
                     Log::info('CartService: Guest cart merged with user cart successfully.', ['guest_cart_id' => $guestCart->id, 'user_cart_id' => $userCart->id, 'user_id' => $user->id]);
                 } else {
-                    // 5. اگر سبد خرید کاربر وجود ندارد، سبد خرید مهمان را به کاربر اختصاص دهید
                     $this->cartRepository->assignCartToUser($guestCart, $user);
-                    // همچنین guest_uuid سبد خرید را به‌روزرسانی کنید اگر بر اساس session_id اختصاص داده شده بود
-                    // این اطمینان می‌دهد که سبد خرید اکنون دارای guest_uuid پایدار از سمت کلاینت است
                     if (GuestService::isValidUuid($guestIdentifier) && $guestCart->guest_uuid !== $guestIdentifier) {
                         $guestCart->guest_uuid = $guestIdentifier;
                         $guestCart->save();
@@ -1118,7 +1025,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                 Log::info('CartService: No guest cart found for identifier to assign/merge.', ['user_id' => $user->id, 'guest_identifier' => $guestIdentifier]);
             }
             DB::commit();
-            // Clear cache using guestIdentifier and also the user's cache
             $this->cacheManager->clearCache($user, null, $guestIdentifier);
             $this->metricsManager->recordMetric('assignGuestCartToUser_duration', microtime(true) - $startTime, ['user_id' => $user->id]);
             return CartOperationResponse::success('سبد خرید مهمان با موفقیت به کاربر اختصاص داده شد.');
@@ -1205,9 +1111,6 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                 } else {
                     $sourceItem->cart_id = $destinationCart->id;
                     $sourceItem->save();
-                    // نیازی به reserveStock نیست چون آیتم از سبد دیگری منتقل شده و موجودی قبلاً رزرو شده است.
-                    // فقط اگر این آیتم از یک سبد خرید مهمان بود که قرار است حذف شود، باید اطمینان حاصل کنیم که رزرو موجودی حفظ می‌شود.
-                    // در اینجا، ما فرض می‌کنیم که آیتم‌ها در حال انتقال هستند و رزرو موجودی از قبل انجام شده است.
                     Log::info('CartService: Item moved to destination cart.', [
                         'source_cart_item_id' => $sourceItem->id,
                         'product_id' => $product->id,
@@ -1216,14 +1119,12 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                 }
             }
 
-            // پس از انتقال آیتم‌ها، سبد خرید مبدا را حذف می‌کنیم.
             $this->cartRepository->delete($sourceCart);
             DB::commit();
             Log::info('CartService: Carts merged successfully. Source cart deleted.', [
                 'destination_cart_id' => $destinationCart->id,
                 'source_cart_id' => $sourceCart->id,
             ]);
-            // کش هر دو سبد را پاک کنید
             $this->cacheManager->clearCache($destinationCart->user, $destinationCart->session_id, $destinationCart->guest_uuid);
             $this->cacheManager->clearCache($sourceCart->user, $sourceCart->session_id, $sourceCart->guest_uuid);
 
@@ -1234,7 +1135,7 @@ class CartService implements CartServiceInterface, CartItemManagementServiceInte
                 'source_cart_id' => $sourceCart->id,
                 'exception' => $e->getTraceAsString()
             ]);
-            throw $e; // یا یک پاسخ خطا برگردانید
+            throw $e;
         }
     }
 }
