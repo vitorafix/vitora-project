@@ -1,57 +1,54 @@
-// resources/js/components/cart/CartItem.tsx
-import React from 'react';
-// وارد کردن تایپ CartItem از فایل مشترک با نام مستعار CartItemType
-import { CartItem as CartItemType } from '../../types/cart';
+// resources/js/components/cart/MiniCart.tsx
+import React from 'react'; // این خط باید دقیقا اولین خط کد باشد
+import CartItem from './CartItem';
+import CartFooter from './CartFooter';
+import { useCart } from '../../hooks/useCart';
 
-// تعریف تایپ برای پراپ‌های CartItemProps
-// توجه: تعریف interface CartItem از اینجا حذف شده است
-// زیرا اکنون از CartItemType که از 'types/cart' وارد شده، استفاده می‌کنیم.
-interface CartItemProps {
-    item: CartItemType; // استفاده از تایپ CartItemType وارد شده
-    onRemove: (itemId: string) => void;
-    onUpdateQuantity: (itemId: string, quantity: number) => void;
+interface MiniCartProps {
+    isOpen: boolean;
+    onClose: () => void;
 }
 
-const CartItem: React.FC<CartItemProps> = ({ item, onRemove, onUpdateQuantity }) => {
+const MiniCart: React.FC<MiniCartProps> = ({ isOpen, onClose }) => {
+    const { cartItems, cartTotal, removeFromCart, updateQuantity, cartLoading } = useCart();
+
+    if (!isOpen) return null;
+
     return (
-        <div className="flex items-center p-4 border-b border-gray-100 last:border-b-0">
-            <img
-                src={item.image || `https://placehold.co/60x60/E2E8F0/64748B?text=No+Image`} // Placeholder if no image
-                alt={item.name}
-                className="w-16 h-16 object-cover rounded-md ml-3"
-                onError={(e) => {
-                    (e.target as HTMLImageElement).src = `https://placehold.co/60x60/E2E8F0/64748B?text=No+Image`; // Fallback on error
-                }}
-            />
-            <div className="flex-1">
-                <h4 className="text-sm font-medium text-gray-800">{item.name}</h4>
-                <p className="text-xs text-gray-600 mt-1">{item.quantity} x {item.price.toLocaleString()} تومان</p>
-                <div className="flex items-center mt-2">
-                    <button
-                        onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
-                        disabled={item.quantity <= 1}
-                        className="text-gray-500 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <i className="fas fa-minus-circle"></i>
-                    </button>
-                    <span className="mx-2 text-sm font-semibold">{item.quantity}</span>
-                    <button
-                        onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-                        className="text-gray-500 hover:text-green-700"
-                    >
-                        <i className="fas fa-plus-circle"></i>
-                    </button>
-                    <button
-                        onClick={() => onRemove(item.id)}
-                        className="text-red-500 hover:text-red-700 ml-auto"
-                        aria-label="حذف آیتم"
-                    >
-                        <i className="fas fa-trash-alt"></i>
-                    </button>
-                </div>
+        <div className="mini-cart-dropdown-content active absolute left-0 md:left-auto md:right-0 mt-2 w-72 md:w-80 bg-white rounded-lg shadow-xl z-50 overflow-hidden">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-gray-800">سبد خرید</h3>
+                <button
+                    onClick={onClose}
+                    className="text-gray-500 hover:text-gray-700 transition-colors"
+                    aria-label="بستن سبد خرید"
+                >
+                    <i className="fas fa-times"></i>
+                </button>
             </div>
+            {cartLoading ? (
+                <p className="text-center text-gray-500 py-8">در حال بارگذاری سبد خرید...</p>
+            ) : (
+                <div className="max-h-80 overflow-y-auto custom-scrollbar">
+                    {cartItems.length === 0 ? (
+                        <p className="text-center text-gray-500 py-8">سبد خرید شما خالی است.</p>
+                    ) : (
+                        cartItems.map(item => (
+                            <CartItem
+                                key={item.id}
+                                item={item}
+                                onRemove={removeFromCart}
+                                onUpdateQuantity={updateQuantity}
+                            />
+                        ))
+                    )}
+                </div>
+            )}
+            {cartItems.length > 0 && (
+                <CartFooter total={cartTotal} loading={cartLoading} />
+            )}
         </div>
     );
 };
 
-export default CartItem;
+export default MiniCart;

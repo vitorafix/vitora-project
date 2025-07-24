@@ -4,106 +4,9 @@ console.log('navbar_new.js loaded and starting...');
 // Import necessary API functions
 import { getJwtToken, logoutUser, fetchCartContents, removeCartItem, fetchUserData, clearJwtToken } from '../core/api.js';
 
-// === Mini Cart Logic Functions ===
-/**
- * محتویات مینی سبد خرید را بر اساس داده‌های سبد خرید دریافت شده رندر می‌کند.
- */
-async function renderMiniCart() {
-    const miniCartContent = document.getElementById('mini-cart-items-container');
-    const miniCartEmptyMessage = document.getElementById('mini-cart-empty-message');
-    const miniCartTotalPriceElement = document.getElementById('mini-cart-total-price');
-    const miniCartTotalQuantityElement = document.getElementById('mini-cart-total-quantity');
-    const miniCartCountElement = document.getElementById('mini-cart-count');
-    const mobileCartCountElement = document.getElementById('mobile-cart-count');
-    const miniCartSummary = document.getElementById('mini-cart-summary');
-    const miniCartActions = document.getElementById('mini-cart-actions');
-
-    if (!miniCartContent || !miniCartTotalPriceElement || !miniCartEmptyMessage || !miniCartSummary || !miniCartActions || !miniCartTotalQuantityElement) {
-        console.error('Navbar_new.js: One or more essential mini cart DOM elements not found. Skipping mini cart rendering.');
-        console.error('Missing elements:', {
-            miniCartContent: miniCartContent ? 'Found' : 'Not Found',
-            miniCartTotalPriceElement: miniCartTotalPriceElement ? 'Found' : 'Not Found',
-            miniCartEmptyMessage: miniCartEmptyMessage ? 'Found' : 'Not Found',
-            miniCartSummary: miniCartSummary ? 'Found' : 'Not Found',
-            miniCartActions: miniCartActions ? 'Found' : 'Not Found',
-            miniCartTotalQuantityElement: miniCartTotalQuantityElement ? 'Found' : 'Not Found'
-        });
-        return;
-    }
-
-    try {
-        const currentJwtToken = localStorage.getItem('jwt_token');
-        console.log('DEBUG: renderMiniCart - JWT Token in localStorage before fetchCartContents:', currentJwtToken ? 'Found' : 'Not Found', currentJwtToken);
-
-        const response = await fetchCartContents();
-        const data = response.data;
-
-        const cartItems = data.items || [];
-        const totalPrice = data.summary ? data.summary.totalPrice : 0;
-        const totalItemsInCart = data.summary ? data.summary.totalQuantity : 0;
-
-        miniCartContent.innerHTML = '';
-
-        if (cartItems.length === 0) {
-            miniCartEmptyMessage.classList.remove('hidden');
-            miniCartContent.classList.add('hidden');
-            miniCartSummary.classList.add('hidden');
-            miniCartActions.classList.add('hidden');
-            miniCartTotalQuantityElement.classList.add('hidden');
-            miniCartTotalQuantityElement.textContent = '0';
-        } else {
-            miniCartEmptyMessage.classList.add('hidden');
-            miniCartContent.classList.remove('hidden');
-            miniCartSummary.classList.remove('hidden');
-            miniCartActions.classList.remove('hidden');
-            miniCartTotalQuantityElement.classList.remove('hidden');
-
-            cartItems.forEach(item => {
-                const cartItemDiv = document.createElement('div');
-                cartItemDiv.classList.add('flex', 'items-center', 'p-3', 'border-b', 'border-gray-100', 'last:border-b-0');
-                cartItemDiv.innerHTML = `
-                    <img src="${item.product.image_url || 'https://placehold.co/50x50/E5E7EB/4B5563?text=Product'}" alt="${item.product.name}" class="w-12 h-12 object-cover rounded-md ml-3">
-                    <div class="flex-1 text-right">
-                        <p class="text-sm font-semibold text-gray-800">${item.product.name}</p>
-                        <p class="text-xs text-gray-500">${Number(item.price).toLocaleString('fa-IR')} تومان</p>
-                    </div>
-                    <button class="remove-item-btn text-red-400 hover:text-red-600 transition-colors duration-200" data-id="${item.id}">
-                        <i class="fas fa-times text-sm"></i>
-                    </button>
-                `;
-                miniCartContent.appendChild(cartItemDiv);
-            });
-
-            miniCartTotalPriceElement.textContent = `${Number(totalPrice).toLocaleString('fa-IR')} تومان`;
-            miniCartTotalQuantityElement.textContent = totalItemsInCart;
-        }
-
-        if (miniCartCountElement) {
-            miniCartCountElement.textContent = totalItemsInCart;
-            if (totalItemsInCart > 0) {
-                miniCartCountElement.classList.remove('hidden');
-            } else {
-                miniCartCountElement.classList.add('hidden');
-            }
-        } else {
-            console.warn('Navbar_new.js: miniCartCountElement (desktop) not found. Cannot update item count badge.');
-        }
-
-        if (mobileCartCountElement) {
-            mobileCartCountElement.textContent = totalItemsInCart;
-            if (totalItemsInCart > 0) {
-                mobileCartCountElement.classList.remove('hidden');
-            } else {
-                mobileCartCountElement.classList.add('hidden');
-            }
-        } else {
-            console.warn('Navbar_new.js: mobileCartCountElement (mobile) not found. Cannot update item count badge.');
-        }
-
-    } catch (error) {
-        console.error('Error rendering mini cart:', error);
-    }
-}
+// === Mini Cart Logic Functions (REMOVED - NOW HANDLED BY REACT) ===
+// تابع renderMiniCart و منطق مربوط به آن به طور کامل حذف شده است،
+// زیرا رندر MiniCart و مدیریت آیتم‌ها اکنون توسط کامپوننت‌های React انجام می‌شود.
 
 // === User Status Logic Function ===
 export async function updateNavbarUserStatus() {
@@ -257,42 +160,15 @@ export async function updateNavbarUserStatus() {
 // === Main Initialization Function for Navbar and Mini-Cart ===
 export function initializeNavbarAndCart() {
     console.log('DEBUG: initializeNavbarAndCart function called.');
-    renderMiniCart();
+    // renderMiniCart(); // این خط را غیرفعال کردیم، چون MiniCart اکنون توسط React مدیریت می‌شود
     updateNavbarUserStatus();
 
-    const miniCartContent = document.getElementById('mini-cart-items-container');
+    // const miniCartContent = document.getElementById('mini-cart-items-container'); // این المنت دیگر توسط React مدیریت می‌شود
     const logoutButtons = document.querySelectorAll('.nav-link-dropdown-compact.text-red-500');
-    const addCartButtons = document.querySelectorAll('.add-to-cart-btn');
+    // const addCartButtons = document.querySelectorAll('.add-to-cart-btn'); // دکمه‌های افزودن به سبد خرید اکنون توسط React مدیریت می‌شوند
 
-    if (miniCartContent) {
-        miniCartContent.addEventListener('click', async function(event) {
-            const removeButton = event.target.closest('.remove-item-btn');
-            if (removeButton) {
-                const itemId = removeButton.dataset.id;
-                window.showConfirmationModal(
-                    'حذف محصول',
-                    'آیا مطمئن هستید که می‌خواهید این محصول را حذف کنید؟',
-                    async () => {
-                        try {
-                            const response = await removeCartItem(itemId);
-                            if (response.success) {
-                                window.showMessage(response.message || 'آیتم از سبد خرید حذف شد.', 'success');
-                                await renderMiniCart();
-                                if (window.location.pathname === '/cart' && typeof window.cartManager !== 'undefined' && typeof window.cartManager.loadAndRenderCart === 'function') {
-                                    window.cartManager.loadAndRenderCart();
-                                }
-                            } else {
-                                window.showMessage(response.message || 'خطا در حذف محصول.', 'error');
-                            }
-                        } catch (error) {
-                            console.error('Error removing cart item from mini cart:', error);
-                            window.showMessage('خطا در ارتباط با سرور.', 'error');
-                        }
-                    }
-                );
-            }
-        });
-    }
+    // بلوک کد مربوط به حذف آیتم از MiniCart قدیمی حذف شده است.
+    // بلوک کد مربوط به دکمه‌های افزودن به سبد خرید قدیمی حذف شده است.
 
     if (logoutButtons.length > 0) {
         logoutButtons.forEach(button => {
@@ -312,10 +188,4 @@ export function initializeNavbarAndCart() {
     } else {
         console.warn('No logout buttons found with selector ".nav-link-dropdown-compact.text-red-500" during navbar initialization.');
     }
-
-    addCartButtons.forEach(button => {
-        button.addEventListener('click', async function() {
-            renderMiniCart();
-        });
-    });
 }

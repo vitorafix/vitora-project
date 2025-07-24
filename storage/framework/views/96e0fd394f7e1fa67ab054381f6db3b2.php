@@ -140,37 +140,12 @@
                 </div>
 
                 <!-- Cart Icon (Desktop) -->
-                <div class="relative ml-4 group hidden lg:block">
-                    <a href="<?php echo e(route('cart.index')); ?>" class="nav-link relative" id="mini-cart-toggle">
-                        <i class="fas fa-shopping-cart text-xl text-amber-200 group-hover:text-white transition-colors duration-200"></i>
-                        <span id="mini-cart-count" class="absolute -top-2 -left-2 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-bold hidden z-10 px-1 leading-none" aria-label="تعداد محصولات در سبد خرید">0</span>
-                    </a>
-                    <!-- Mini Cart Dropdown -->
-                    <div id="mini-cart-dropdown" class="absolute top-full right-0 mt-3 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50 p-4 hidden">
-                        <h3 class="text-lg font-bold text-gray-800 mb-3 text-right">سبد خرید شما</h3>
-                        
-                        <div id="mini-cart-items-container" class="space-y-3 hidden">
-                            <!-- Cart items will be rendered here by JS -->
-                        </div>
-                        <div id="mini-cart-empty-message" class="text-center py-4">
-                            <i class="fas fa-box-open text-gray-400 text-4xl mb-2"></i>
-                            <p class="text-gray-600">سبد خرید شما خالی است.</p>
-                        </div>
-                        <div id="mini-cart-summary" class="mt-4 pt-4 border-t border-gray-200 hidden">
-                            <div class="flex justify-between items-center mb-3 text-right">
-                                <span class="text-gray-700 font-semibold">تعداد کل:</span>
-                                <span id="mini-cart-total-quantity" class="text-gray-700 font-bold text-lg">0</span>
-                            </div>
-                            <div class="flex justify-between items-center mb-3 text-right">
-                                <span class="text-gray-700 font-semibold">جمع کل:</span>
-                                <span id="mini-cart-total-price" class="text-green-700 font-bold text-lg">0 تومان</span>
-                            </div>
-                            <div id="mini-cart-actions" class="flex flex-col space-y-2">
-                                <a href="<?php echo e(route('cart.index')); ?>" class="btn-primary-outline w-full text-center">مشاهده سبد خرید</a>
-                                <a href="<?php echo e(route('checkout.index')); ?>" class="btn-primary w-full text-center">تسویه حساب</a>
-                            </div>
-                        </div>
-                    </div>
+                
+                
+                <div class="relative ml-4 group hidden lg:block" id="mini-cart-root">
+                    
+                    
+                    
                 </div>
 
                 <!-- User/Auth Section (Desktop) -->

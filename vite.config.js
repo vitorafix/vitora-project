@@ -1,84 +1,94 @@
 // vite.config.js
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
-import react from '@vitejs/plugin-react'; // این خط را اضافه کنید
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
     plugins: [
         laravel({
             input: [
                 'resources/css/app.css',
-                'resources/js/core/app.js', // مسیر اصلی فایل app.js شما
+                'resources/js/core/app.js', // مسیر اصلی فایل app.js شما (اگر هنوز از آن استفاده می‌کنید)
+                'resources/js/app.tsx',     // نقطه ورود اصلی React شما
             ],
             refresh: true,
         }),
-        react(), // این خط را به آرایه plugins اضافه کنید
+        react({
+            // تنظیمات برای حل مشکل preamble
+            include: "**/*.{jsx,tsx}", // اطمینان از پردازش فایل‌های JSX/TSX
+            exclude: "/node_modules/",   // نادیده گرفتن node_modules
+            // اگر نیاز به پلاگین‌های Babel خاصی دارید، اینجا اضافه کنید.
+            // در اکثر موارد، نیازی به تنظیمات اضافی Babel نیست.
+            babel: {
+                plugins: []
+            }
+        }),
     ],
+    server: {
+        port: 3000,
+        host: 'localhost', // تغییر از '0.0.0.0' به 'localhost' برای حل مشکل اتصال مرورگر
+        hmr: {
+            overlay: false // غیرفعال کردن overlay برای خطاهای HMR
+        }
+    },
     build: {
-        // این گزینه به Vite می‌گوید که فایل‌های خروجی را در چه مسیری قرار دهد
-        outDir: 'public/build',
-        // فعال کردن Code Splitting به صورت خودکار برای dynamic imports
-        // Vite به صورت پیش‌فرض این کار را برای `import()` انجام می‌دهد
-        // اما می‌توانید تنظیمات پیشرفته‌تری را اینجا اضافه کنید.
+        sourcemap: true,
+        outDir: 'public/build', // اطمینان از مسیر خروجی
         rollupOptions: {
             output: {
-                // این الگو به Vite می‌گوید که چانک‌های جاوااسکریپت را چگونه نام‌گذاری کند.
-                // [name] نام اصلی چانک را حفظ می‌کند (مثلاً 'cart', 'admin')
-                // [hash] یک هش منحصر به فرد اضافه می‌کند برای کشینگ بهتر
                 entryFileNames: `assets/[name]-[hash].js`,
                 chunkFileNames: `assets/[name]-[hash].js`,
                 assetFileNames: `assets/[name]-[hash].[ext]`,
-
-                // می‌توانید چانک‌های خاصی را به صورت دستی گروه‌بندی کنید (اختیاری)
-                // این کار برای کتابخانه‌های بزرگ یا ماژول‌های پرکاربرد مفید است.
                 manualChunks(id) {
-                    // مثال: جدا کردن کتابخانه‌های خارجی بزرگ مثل html2canvas یا jspdf
                     if (id.includes('node_modules')) {
-                        // می‌توانید کتابخانه‌های خاصی را به چانک‌های جداگانه تقسیم کنید
-                        // مثلاً 'vendor-html2canvas' یا 'vendor-jspdf'
                         if (id.includes('html2canvas')) {
                             return 'vendor-html2canvas';
                         }
                         if (id.includes('jspdf')) {
                             return 'vendor-jspdf';
                         }
-                        // اضافه کردن axios و charts به چانک‌های جداگانه
                         if (id.includes('axios')) {
                             return 'vendor-axios';
                         }
-                        if (id.includes('chart')) { // برای کتابخانه‌های نمودار مثل Chart.js
+                        if (id.includes('chart')) {
                             return 'vendor-charts';
                         }
-                        // اگر از React استفاده می‌کنید، آن را به یک چانک جداگانه منتقل کنید
                         if (id.includes('react') || id.includes('react-dom')) {
                             return 'vendor-react';
                         }
-                        // در غیر این صورت، همه node_modules را در یک چانک vendor قرار دهید
                         return 'vendor';
                     }
-                    // مثال: گروه‌بندی ماژول‌های UI در یک چانک جداگانه
                     if (id.includes('resources/js/ui')) {
                         return 'ui-components';
                     }
-                    // مثال: گروه‌بندی ماژول‌های auth در یک چانک جداگانه
                     if (id.includes('resources/js/auth')) {
                         return 'auth-modules';
                     }
-                    // گروه‌بندی ماژول‌های پنل ادمین در یک چانک جداگانه
                     if (id.includes('resources/js/admin')) {
                         return 'admin-panel';
                     }
-                    // گروه‌بندی ماژول‌های سبد خرید در یک چانک جداگانه
                     if (id.includes('resources/js/cart')) {
                         return 'shopping-cart';
                     }
-                    // گروه‌بندی ماژول‌های پرداخت در یک چانک جداگانه
                     if (id.includes('resources/js/checkout')) {
                         return 'payment-system';
                     }
-                    // اگر هیچ یک از شرط‌ها مطابقت نداشت، Vite خودش تصمیم می‌گیرد
                 },
             },
         },
     },
+    resolve: {
+        alias: {
+            // مطمئن شوید که این aliases به درستی به مسیرهای پروژه شما اشاره می‌کنند
+            // با توجه به ساختار Laravel، ممکن است نیاز به تنظیمات دقیق‌تری داشته باشند.
+            // مثلاً '@' به 'resources/js' یا 'resources/js/src'
+            '@': '/resources/js', // یا مسیر اصلی JS شما
+            '@components': '/resources/js/components',
+            '@utils': '/resources/js/utils'
+        }
+    },
+    optimizeDeps: {
+        include: ['react', 'react-dom', 'axios'],
+        exclude: ['@vitejs/plugin-react'] // این خط معمولاً نیازی نیست، اما اگر مشکل دارید نگه دارید
+    }
 });

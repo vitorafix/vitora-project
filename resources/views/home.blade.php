@@ -83,15 +83,10 @@
                         <h3 class="text-xl font-semibold text-brown-900 mb-2">{{ $product->title }}</h3>
                         <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ $product->description }}</p>
                         <div class="flex justify-between items-center mt-4">
+                            {{-- قیمت محصول --}}
                             <span class="text-green-700 text-2xl font-bold">{{ number_format($product->price) }} تومان</span>
-                            <button class="btn-primary add-to-cart-btn flex items-center"
-                                    data-product-id="{{ $product->id }}"
-                                    data-product-title="{{ $product->title }}"
-                                    data-product-price="{{ $product->price }}"
-                                    data-product-image="{{ $product->image_url }}">
-                                <i class="fas fa-cart-plus ml-2"></i>
-                                افزودن به سبد
-                            </button>
+                            {{-- نقطه اتصال برای دکمه افزودن به سبد خرید React --}}
+                            <div id="add-to-cart-root-{{ $product->id }}"></div>
                         </div>
                     </div>
                 </div>
@@ -126,15 +121,10 @@
                         <h3 class="text-xl font-semibold text-brown-900 mb-2">{{ $product->title }}</h3>
                         <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ $product->description }}</p>
                         <div class="flex justify-between items-center mt-4">
+                            {{-- قیمت محصول --}}
                             <span class="text-green-700 text-2xl font-bold">{{ number_format($product->price) }} تومان</span>
-                            <button class="btn-primary add-to-cart-btn flex items-center"
-                                    data-product-id="{{ $product->id }}"
-                                    data-product-title="{{ $product->title }}"
-                                    data-product-price="{{ $product->price }}"
-                                    data-product-image="{{ $product->image_url }}">
-                                <i class="fas fa-cart-plus ml-2"></i>
-                                افزودن به سبد
-                            </button>
+                            {{-- نقطه اتصال برای دکمه افزودن به سبد خرید React --}}
+                            <div id="add-to-cart-root-{{ $product->id }}"></div>
                         </div>
                     </div>
                 </div>

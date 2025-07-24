@@ -48,21 +48,14 @@
     </script>
 
     
-    
-    
+    <?php echo app('Illuminate\Foundation\Vite')->reactRefresh(); ?>
+
     
     <?php echo app('Illuminate\Foundation\Vite')([
         'resources/css/app.css',
         'resources/js/core/app.js',
         'resources/js/app.tsx', 
     ]); ?>
-
-    
-    
-    
-    
-    
-    
 
     <style>
         /* این استایل برای جلوگیری از نمایش لحظه‌ای المنت‌های x-cloak قبل از بارگذاری Alpine.js ضروری است */
@@ -172,57 +165,6 @@
             margin-top: 0.75rem; /* فاصله بین دکمه‌ها و از محتوای بالا */
         }
 
-        /* Custom styles for sidebar transitions - MOVED TO APP.CSS OR ADMIN.BLADE.PHP'S STYLE BLOCK */
-        /* .sidebar { ... } */
-        /* .sidebar-expanded { ... } */
-        /* .sidebar-collapsed { ... } */
-        /* .sidebar-collapsed .nav-text { ... } */
-        /* #main-content-wrapper { ... } */
-        /* .main-content-shifted { ... } */
-        /* .main-content-full { ... } */
-        .section-content {
-            display: none;
-        }
-        .section-content.active {
-            display: block;
-        }
-        /* Custom scrollbar for activity log - MOVED TO APP.CSS OR ADMIN.BLADE.PHP'S STYLE BLOCK */
-        /* .custom-scrollbar::-webkit-scrollbar { ... } */
-        /* .custom-scrollbar::-webkit-scrollbar-track { ... } */
-        /* .custom-scrollbar::-webkit-scrollbar-thumb { ... } */
-        /* .custom-scrollbar::-webkit-scrollbar-thumb:hover { ... } */
-        /* Custom styles for the new monthly sales chart - MOVED TO APP.CSS OR ADMIN.BLADE.PHP'S STYLE BLOCK */
-        /* .chart-container { ... } */
-        /* #monthlySalesChart { ... } */
-
-        /* Custom Button Styles (from your app.css, ensuring consistency) */
-        .btn-primary {
-            @apply bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-green-800 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg;
-        }
-
-        .btn-secondary {
-            @apply bg-white text-green-700 border border-green-700 font-semibold py-3 px-6 rounded-lg shadow-sm hover:bg-green-50 transition duration-300 ease-in-out;
-        }
-
-        .btn-disabled {
-            @apply bg-gray-300 text-gray-500 font-semibold py-3 px-6 rounded-lg cursor-not-allowed opacity-75;
-        }
-
-        /* Additional styles for card hover effects (from your app.css) */
-        .card-hover-effect {
-            @apply transform transition-transform duration-300 hover:scale-105 hover:shadow-xl;
-        }
-
-        /* Message Box Styles (from your app.js) */
-        .message-box {
-            opacity: 1;
-            transform: translate(-50%, 0);
-        }
-        .message-box.opacity-0 {
-            opacity: 0;
-            transform: translate(-50%, 100%);
-        }
-
         /* Custom CSS to ensure header is at the top and content is below it */
         body {
             display: flex;
@@ -254,7 +196,6 @@
 </head>
 <body>
     
-    
     <?php echo $__env->make('layouts.navigation', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
 
     
@@ -264,7 +205,7 @@
             <?php echo $__env->yieldContent('content'); ?>
             
             
-            <div id="cart-page-container" class="container mx-auto px-4 py-8 hidden">
+            <div id="cart-page-container" class="container mx-auto px-4 py-8 md:py-16 hidden">
                 <h2 class="text-3xl font-bold text-gray-800 mb-6">سبد خرید شما</h2>
                 <div id="cart-items-container" class="space-y-6">
                     
@@ -308,20 +249,12 @@
         </main>
 
         
-        
-        
-        <div id="mini-cart-root"></div>
-
-
-        
-        
         <?php echo $__env->make('layouts.footer', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
     </div>
 
     
     <?php echo $__env->yieldPushContent('scripts'); ?>
 
-    
     
     <div id="confirm-modal-overlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50 custom-modal-overlay">
         <div class="bg-white p-8 rounded-lg shadow-xl max-w-sm w-full text-center custom-modal-content">
@@ -346,121 +279,6 @@
                 const navHeight = navBar.offsetHeight;
                 document.documentElement.style.setProperty('--nav-height', `${navHeight}px`);
             }
-
-            // --- تغییر: منطق Hero Carousel به فایل resources/js/ui/hero.js منتقل شده است. ---
-            // بنابراین، کد زیر از اینجا حذف می‌شود.
-            // app.js مسئول dynamic import و فراخوانی initHeroCarousel است.
-            /*
-            const slides = document.querySelectorAll('.hero-slide');
-            const prevBtn = document.getElementById('hero-prev-btn');
-            const nextBtn = document.getElementById('hero-next-btn');
-            const indicatorsContainer = document.getElementById('hero-indicators');
-            let currentSlide = 0;
-            let slideInterval;
-
-            function showSlide(index) {
-                slides.forEach((slide, i) => {
-                    if (i === index) {
-                        slide.classList.remove('opacity-0');
-                        slide.classList.add('opacity-100');
-                    } else {
-                        slide.classList.remove('opacity-100');
-                        slide.classList.add('opacity-0');
-                    }
-                });
-                updateIndicators(index);
-            }
-
-            function nextSlide() {
-                currentSlide = (currentSlide + 1) % slides.length;
-                showSlide(currentSlide);
-            }
-
-            function prevSlide() {
-                currentSlide = (currentSlide - 1 + slides.length) % slides.length;
-                showSlide(currentSlide);
-            }
-
-            function startSlideShow() {
-                stopSlideShow(); // Ensure no multiple intervals
-                slideInterval = setInterval(nextSlide, 5000); // Next slide every 5 seconds
-            }
-
-            function stopSlideShow() {
-                    clearInterval(slideInterval);
-            }
-
-            function createIndicators() {
-                // Check for indicatorsContainer before manipulating it
-                if (!indicatorsContainer) {
-                    console.warn("Indicators container not found. Skipping indicator creation.");
-                    return;
-                }
-                indicatorsContainer.innerHTML = ''; // Clear previous indicators
-                slides.forEach((_, i) => {
-                    const indicator = document.createElement('div');
-                    indicator.classList.add('w-3', 'h-3', 'rounded-full', 'bg-gray-300', 'bg-opacity-50', 'cursor-pointer', 'mx-1', 'transition-all', 'duration-300');
-                    indicator.addEventListener('click', () => {
-                        stopSlideShow();
-                        showSlide(i);
-                        // Update current slide after clicking indicator
-                        currentSlide = i;
-                        startSlideShow();
-                    });
-                    indicatorsContainer.appendChild(indicator);
-                });
-                updateIndicators(currentSlide);
-            }
-
-            function updateIndicators(activeIndex) {
-                if (!indicatorsContainer) { // Add null check
-                    return;
-                }
-                const indicators = indicatorsContainer.querySelectorAll('div');
-                indicators.forEach((indicator, i) => {
-                    indicator.classList.remove('bg-gray-500', 'bg-opacity-100'); // Remove previous classes
-                    indicator.classList.add('bg-gray-300', 'bg-opacity-50');
-                    if (i === activeIndex) {
-                        indicator.classList.remove('bg-gray-300', 'bg-opacity-50'); // Remove previous classes
-                        indicator.classList.add('bg-gray-500', 'bg-opacity-100'); // Add active classes
-                    }
-                });
-            }
-
-            // Initialize slideshow
-            // Add slides.length > 0 check to prevent errors if no slides
-            if (slides.length > 0) {
-                createIndicators(); // Create indicators
-                showSlide(currentSlide); // Show first slide
-                startSlideShow(); // Start automatic slideshow
-
-                // Add Event Listeners for navigation buttons
-                if (prevBtn) {
-                    prevBtn.addEventListener('click', () => {
-                        stopSlideShow();
-                        prevSlide();
-                        startSlideShow();
-                    });
-                }
-                if (nextBtn) {
-                    nextBtn.addEventListener('click', () => {
-                        stopSlideShow();
-                        nextSlide();
-                        startSlideShow();
-                    });
-                }
-
-                // Optional: Pause slideshow on mouse hover
-                const heroCarousel = document.getElementById('hero-carousel');
-                if (heroCarousel) {
-                    heroCarousel.addEventListener('mouseenter', stopSlideShow);
-                    heroCarousel.addEventListener('mouseleave', startSlideShow);
-                }
-            } else {
-                console.warn("No hero slides found. Hero carousel will not be initialized.");
-            }
-            */
-            // --- پایان تغییر: منطق Hero Carousel حذف شد. ---
         });
     </script>
 

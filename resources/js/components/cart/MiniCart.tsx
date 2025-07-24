@@ -1,5 +1,5 @@
 // resources/js/components/cart/MiniCart.tsx
-import React from 'react';
+import React from 'react'; // این خط باید دقیقا اولین خط کد باشد
 import CartItem from './CartItem';
 import CartFooter from './CartFooter';
 import { useCart } from '../../hooks/useCart';
@@ -10,9 +10,8 @@ interface MiniCartProps {
 }
 
 const MiniCart: React.FC<MiniCartProps> = ({ isOpen, onClose }) => {
-    const { cartItems, cartTotal, removeFromCart, updateQuantity } = useCart();
+    const { cartItems, cartTotal, removeFromCart, updateQuantity, cartLoading } = useCart();
 
-    // اگر سبد خرید باز نیست، چیزی نمایش نده
     if (!isOpen) return null;
 
     return (
@@ -27,22 +26,26 @@ const MiniCart: React.FC<MiniCartProps> = ({ isOpen, onClose }) => {
                     <i className="fas fa-times"></i>
                 </button>
             </div>
-            <div className="max-h-80 overflow-y-auto custom-scrollbar">
-                {cartItems.length === 0 ? (
-                    <p className="text-center text-gray-500 py-8">سبد خرید شما خالی است.</p>
-                ) : (
-                    cartItems.map(item => (
-                        <CartItem
-                            key={item.id}
-                            item={item}
-                            onRemove={removeFromCart}
-                            onUpdateQuantity={updateQuantity}
-                        />
-                    ))
-                )}
-            </div>
+            {cartLoading ? (
+                <p className="text-center text-gray-500 py-8">در حال بارگذاری سبد خرید...</p>
+            ) : (
+                <div className="max-h-80 overflow-y-auto custom-scrollbar">
+                    {cartItems.length === 0 ? (
+                        <p className="text-center text-gray-500 py-8">سبد خرید شما خالی است.</p>
+                    ) : (
+                        cartItems.map(item => (
+                            <CartItem
+                                key={item.id}
+                                item={item}
+                                onRemove={removeFromCart}
+                                onUpdateQuantity={updateQuantity}
+                            />
+                        ))
+                    )}
+                </div>
+            )}
             {cartItems.length > 0 && (
-                <CartFooter total={cartTotal} />
+                <CartFooter total={cartTotal} loading={cartLoading} />
             )}
         </div>
     );

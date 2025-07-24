@@ -81,15 +81,10 @@
                         <h3 class="text-xl font-semibold text-brown-900 mb-2"><?php echo e($product->title); ?></h3>
                         <p class="text-gray-600 text-sm mb-4 line-clamp-2"><?php echo e($product->description); ?></p>
                         <div class="flex justify-between items-center mt-4">
+                            
                             <span class="text-green-700 text-2xl font-bold"><?php echo e(number_format($product->price)); ?> تومان</span>
-                            <button class="btn-primary add-to-cart-btn flex items-center"
-                                    data-product-id="<?php echo e($product->id); ?>"
-                                    data-product-title="<?php echo e($product->title); ?>"
-                                    data-product-price="<?php echo e($product->price); ?>"
-                                    data-product-image="<?php echo e($product->image_url); ?>">
-                                <i class="fas fa-cart-plus ml-2"></i>
-                                افزودن به سبد
-                            </button>
+                            
+                            <div id="add-to-cart-root-<?php echo e($product->id); ?>"></div>
                         </div>
                     </div>
                 </div>
@@ -124,15 +119,10 @@
                         <h3 class="text-xl font-semibold text-brown-900 mb-2"><?php echo e($product->title); ?></h3>
                         <p class="text-gray-600 text-sm mb-4 line-clamp-2"><?php echo e($product->description); ?></p>
                         <div class="flex justify-between items-center mt-4">
+                            
                             <span class="text-green-700 text-2xl font-bold"><?php echo e(number_format($product->price)); ?> تومان</span>
-                            <button class="btn-primary add-to-cart-btn flex items-center"
-                                    data-product-id="<?php echo e($product->id); ?>"
-                                    data-product-title="<?php echo e($product->title); ?>"
-                                    data-product-price="<?php echo e($product->price); ?>"
-                                    data-product-image="<?php echo e($product->image_url); ?>">
-                                <i class="fas fa-cart-plus ml-2"></i>
-                                افزودن به سبد
-                            </button>
+                            
+                            <div id="add-to-cart-root-<?php echo e($product->id); ?>"></div>
                         </div>
                     </div>
                 </div>
