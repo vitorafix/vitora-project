@@ -48,7 +48,7 @@ class CartController extends Controller
             // 1. اولویت با guest_uuid از کوکی
             $guestUuid = $request->cookie('guest_uuid');
 
-            // 2. اگر در کوکی نبود، از Session بگیرید (که ممکن است توسط GuestUuidMiddleware یا JS تنظیم شده باشد)
+            // 2. اگر در کوکی نبود، از Session بگیرید
             if (!$guestUuid) {
                 $guestUuid = $request->session()->get('guest_uuid');
             }
@@ -57,6 +57,7 @@ class CartController extends Controller
             if (!$guestUuid) {
                 $guestUuid = (string) Str::uuid();
                 $request->session()->put('guest_uuid', $guestUuid);
+                Log::debug('CartController::index: Generated new Guest UUID: ' . $guestUuid);
             }
 
             // DEBUG LOG: Check Auth::user(), Session::getId(), and guestUuid before calling getOrCreateCart
@@ -79,7 +80,7 @@ class CartController extends Controller
 
             // اگر guestUuid جدیدی تولید شده یا از Session گرفته شده و هنوز به عنوان کوکی تنظیم نشده، آن را تنظیم کنید.
             // این کار تضمین می‌کند که در درخواست‌های بعدی سرور، guestUuid از کوکی در دسترس باشد.
-            if (!$request->cookie('guest_uuid') && $guestUuid) {
+            if ($guestUuid && $request->cookie('guest_uuid') !== $guestUuid) { // فقط در صورتی تنظیم کنید که نیاز باشد
                 $response->cookie('guest_uuid', $guestUuid, 60 * 24 * 30); // 30 روز اعتبار
                 Log::debug('CartController::index: Setting guest_uuid cookie: ' . $guestUuid);
             }
@@ -156,7 +157,7 @@ class CartController extends Controller
         // دریافت guest_uuid از Request attributes (که توسط GuestUuidMiddleware تنظیم شده است)
         // یا از کوکی/Session اگر middleware آن را تنظیم نکرده باشد
         $guestUuid = $request->attributes->get('guest_uuid') ?? $request->cookie('guest_uuid') ?? $request->session()->get('guest_uuid');
-        $quantity = $request->input('quantity');
+
 
         // DEBUG LOG: Check Auth::user(), Session::getId(), and guestUuid before calling userOwnsCartItem
         Log::debug('CartController::update: Auth User ID: ' . ($user ? $user->id : 'NULL') . ', Session ID: ' . $sessionId . ', Guest UUID: ' . ($guestUuid ?? 'NULL'));
