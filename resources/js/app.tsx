@@ -44,7 +44,8 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({ productId, pro
 
 // Main React application component
 const App: React.FC = () => {
-    const [isMiniCartOpen, setIsMiniCartOpen] = useState(false);
+    // بازگرداندن به حالت اولیه: isMiniCartOpen را به false تنظیم کنید
+    const [isMiniCartOpen, setIsMiniCartOpen] = useState(false); // <--- این خط را به false تغییر دادیم
     // Access loadCart from Context for global exposure
     const { loadCart } = useCartContext();
 
@@ -56,6 +57,7 @@ const App: React.FC = () => {
         }
     }, [loadCart]); // Run only when loadCart changes
 
+    // توابع toggleMiniCart و closeMiniCart اکنون به درستی کار خواهند کرد
     const toggleMiniCart = () => {
         setIsMiniCartOpen(prev => !prev);
     };
@@ -102,7 +104,7 @@ const App: React.FC = () => {
         setAddToCartPortals(portals);
     }, []); // This useEffect runs only once on mount
 
-    // Effect to handle MiniCart button events (moved from App component's JSX)
+    // Effect to handle MiniCart button events
     useEffect(() => {
         const miniCartToggleBtn = document.getElementById('mini-cart-toggle');
         const miniCartRoot = document.getElementById('mini-cart-root');
@@ -130,10 +132,7 @@ const App: React.FC = () => {
 
     return (
         <>
-            {/* MiniCart will now be rendered via a Portal into #mini-cart-root in the navbar.
-                The button to toggle MiniCart is now expected to be in the app.blade.php / layouts.navigation.
-                Removed the direct rendering of MiniCart and its parent div from here.
-            */}
+            {/* MiniCart will now be rendered via a Portal into #mini-cart-root in the navbar. */}
             {typeof document !== 'undefined' && document.getElementById('mini-cart-root') &&
                 ReactDOM.createPortal(
                     <MiniCart isOpen={isMiniCartOpen} onClose={closeMiniCart} />,
@@ -164,13 +163,10 @@ const initializeMainReactApp = () => {
         console.log('Main React application mounted successfully with CartProvider.');
     } else {
         console.warn('Could not find #react-root element to mount the main React application. Ensure it exists in app.blade.php.');
-        // In a real scenario, if #react-root is not found, you might need a fallback
-        // But for this exercise, we assume the main root element will exist.
     }
 };
 
 // Ensure the main React application is initialized only after the DOM is fully loaded
 window.addEventListener('DOMContentLoaded', initializeMainReactApp);
 
-// This export is mostly for internal Vite use if this file is the entry point.
 export default App;

@@ -12,6 +12,12 @@ interface MiniCartProps {
 const MiniCart: React.FC<MiniCartProps> = ({ isOpen, onClose }) => {
     const { cartItems, cartTotal, removeFromCart, updateQuantity, cartLoading } = useCartContext();
 
+    // اضافه کردن این console.log ها برای بررسی وضعیت cartItems در MiniCart
+    console.log("MiniCart - cartItems (from context):", cartItems);
+    console.log("MiniCart - cartItems.length (from context):", cartItems.length);
+    console.log("MiniCart - cartLoading (from context):", cartLoading);
+
+
     if (!isOpen) return null;
 
     return (

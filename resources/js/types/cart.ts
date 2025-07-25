@@ -3,31 +3,27 @@
 // Define the structure of a product nested within a cart item
 export interface ProductInCart {
     id: number;
-    title: string; // This is the product name (e.g., "چای سیاه ممتاز لاهیجان")
+    name: string; // Changed from 'title' to 'name' based on logs
+    inStock: boolean; // Added based on logs
     slug: string | null;
-    description: string;
-    price: string; // Product's own price, as a string (e.g., "180000.00")
-    stock: number;
-    reserved_stock: number;
-    status: string;
     image: string | null; // Product image URL (can be null)
-    category_id: number;
-    // Add other product fields if needed based on your API response
+    stockQuantity: number; // Added based on logs
+    // Other product fields from your API response can be added here
 }
 
 // Define the structure of a single item in the cart
 export interface CartItem {
     id: string; // Cart item ID (e.g., "113")
-    cart_id: number;
-    product_id: number;
+    product_id: number; // Added based on logs
     quantity: number;
-    price: string; // The price of this specific item in the cart (per unit), as a string
-    created_at: string;
-    updated_at: string;
-    product_variant_id: string | null; // Can be string or null
-    user_id: string | null; // Can be string or null
+    unitPrice: number; // Changed from 'price: string' to 'unitPrice: number'
+    totalPrice: number; // Added based on logs
+    formattedUnitPrice: string; // Added for the already formatted price string
+    formattedTotalPrice: string; // Added for the already formatted total price string
+    addedAt: string; // Added based on logs
+    updatedAt: string; // Added based on logs
     product: ProductInCart; // Nested product details, MANDATORY
-    product_variant: any | null; // Can be null or any other type if variants are used
+    // Other fields like cart_id, product_variant_id, user_id can be added if needed
 }
 
 // Define the overall structure of the cart state

@@ -11,20 +11,22 @@ interface CartItemProps {
 
 const CartItem: React.FC<CartItemProps> = ({ item, onRemove, onUpdateQuantity }) => {
     // برای دیباگ کردن ساختار پراپ item
-    console.log("CartItem received item:", item);
+    console.log("CartItem received item (full content):", JSON.stringify(item, null, 2));
 
     const { cartLoading } = useCartContext();
 
-    // تبدیل رشته قیمت به عدد برای فرمت‌بندی.
-    // از optional chaining برای item.price استفاده می‌کنیم تا اگر به طور غیرمنتظره‌ای missing بود، کرش نکند.
-    // اگر item.price وجود نداشت، آن را 0 در نظر می‌گیریم.
-    const itemPrice = parseFloat(item?.price || '0');
-
-    // استفاده از optional chaining برای product و ویژگی‌های آن
-    // اگر product یا title وجود نداشت، "نامشخص" را نمایش می‌دهیم.
-    const productName = item.product?.title || 'نامشخص';
-    // اگر product یا image وجود نداشت، null خواهد بود.
+    // استفاده از item.product?.name برای نام محصول
+    const productName = item.product?.name || 'نامشخص';
+    // استفاده از item.product?.image برای تصویر محصول
     const productImage = item.product?.image;
+    // استفاده مستقیم از formattedUnitPrice که توسط بک‌اند فرمت شده است
+    const formattedPrice = item.formattedUnitPrice || 'قیمت نامعتبر';
+
+    // اضافه کردن لاگ‌های جدید برای بررسی مقادیر نهایی
+    console.log(`CartItem - Product Name: "${productName}"`);
+    console.log(`CartItem - Formatted Price: "${formattedPrice}"`);
+    console.log(`CartItem - Product Image: "${productImage}"`);
+
 
     const handleQuantityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newQuantity = parseInt(e.target.value, 10);
@@ -50,9 +52,9 @@ const CartItem: React.FC<CartItemProps> = ({ item, onRemove, onUpdateQuantity })
             {/* جزئیات محصول */}
             <div className="flex-grow">
                 <h4 className="text-sm font-medium text-gray-900 line-clamp-2">{productName}</h4>
-                {/* بررسی می‌کنیم که itemPrice یک عدد معتبر باشد قبل از فراخوانی toLocaleString */}
+                {/* استفاده مستقیم از formattedPrice */}
                 <p className="text-xs text-gray-500 mt-1">
-                    {isNaN(itemPrice) ? 'قیمت نامعتبر' : itemPrice.toLocaleString()} تومان
+                    {formattedPrice}
                 </p>
             </div>
 
