@@ -47,6 +47,27 @@
         }
     </script>
 
+    {{-- NEW: Current User Logic for Analytics --}}
+    {{-- این اسکریپت باید قبل از بارگذاری analytics.js باشد تا window.currentUser مقداردهی شود. --}}
+    @auth
+        <script>
+            window.currentUser = {
+                id: {{ Auth::user()->id }},
+                username: '{{ Auth::user()->name ?? 'Unknown User' }}', // فرض بر وجود فیلد name
+                email: '{{ Auth::user()->email ?? 'unknown@example.com' }}', // فرض بر وجود فیلد email
+                // می‌توانید فیلدهای دیگری را نیز اضافه کنید
+            };
+            console.log('Blade/Initial Load Current User: Authenticated user ID:', window.currentUser.id);
+        </script>
+    @endauth
+    @guest
+        <script>
+            window.currentUser = null;
+            console.log('Blade/Initial Load Current User: No authenticated user (guest).');
+        </script>
+    @endguest
+
+
     {{-- Vite React Refresh Directive - باید قبل از @vite اصلی باشد --}}
     @viteReactRefresh
 
@@ -55,6 +76,7 @@
         'resources/css/app.css',
         'resources/js/core/app.js',
         'resources/js/app.tsx', {{-- این خط برای بارگذاری React App است --}}
+        'resources/js/core/analytics.js', {{-- NEW: اضافه شدن فایل analytics.js --}}
     ])
 
     <style>

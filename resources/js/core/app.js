@@ -12,6 +12,9 @@ Alpine.start();
 import * as jalaali from 'jalaali-js';
 window.jalaali = jalaali;
 
+// NEW: Import the analytics module
+import './analytics.js'; // Import analytics.js from the same core folder
+
 // API functions - these are usually needed on all pages and are in the core folder
 import {
     fetchCartContents,
@@ -34,7 +37,14 @@ import './axiosInstance.js'; // axiosInstance.js is in the same core folder
 window.adminActivityLog = [
     { timestamp: new Date(), username: 'سیستم', action: 'راه‌اندازی پنل', details: 'سیستم آماده کار است.' }
 ];
-window.currentUser = { id: 1, username: 'admin', role: 'مدیر', lastLocation: '192.168.1.100' };
+
+// IMPORTANT: Initialize window.currentUser based on actual authentication status.
+// For demonstration, it's null by default. It should be set by your authentication logic
+// (e.g., after a successful login, or if user data is passed from Blade).
+window.currentUser = null; // Default to null (no authenticated user)
+// Example of how you might set it after a successful login:
+// window.currentUser = { id: loggedInUserId, username: '...', role: '...' };
+
 
 /**
  * Displays a temporary message box (toast notification) on the screen.

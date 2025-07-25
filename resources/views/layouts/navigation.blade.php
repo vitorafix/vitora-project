@@ -49,20 +49,29 @@
                     </a>
                 </div>
 
-                <!-- User/Auth Section (Desktop) - Moved to the left of the cart -->
-                <div class="relative ml-4 group hidden lg:block">
-                    <a href="#" class="nav-link flex items-center text-amber-200 hover:text-white transition-colors duration-200" onclick="return false;">
+                <!-- User/Auth Section (Desktop) - Modified for click-to-open dropdown -->
+                <!-- Added x-data to manage dropdown state and removed 'group' class -->
+                <div class="relative ml-4 hidden lg:block" x-data="{ userMenuOpen: false }" @click.away="userMenuOpen = false">
+                    <!-- User icon and text, now with @click to toggle dropdown -->
+                    <a href="#" class="nav-link flex items-center text-amber-200 hover:text-white transition-colors duration-200" @click.prevent="userMenuOpen = !userMenuOpen">
                         <i class="fas fa-user-circle text-xl ml-2"></i>
-                        <span id="desktop-user-status-display"></span>
                     </a>
-                    <div class="absolute top-full right-0 mt-3 w-48 bg-white rounded-xl shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50 p-4" dir="rtl" style="right: -50%;"> {{-- Changed right: -40%; to right: -50%; to move 10% more to the right --}}
+                    <!-- Dropdown content, now controlled by x-show and x-transition -->
+                    <div x-show="userMenuOpen"
+                         x-transition:enter="duration-200 ease-out"
+                         x-transition:enter-start="opacity-0 scale-95 transform -translate-y-2"
+                         x-transition:enter-end="opacity-100 scale-100 transform translate-y-0"
+                         x-transition:leave="duration-100 ease-in"
+                         x-transition:leave-start="opacity-100 scale-100 transform translate-y-0"
+                         x-transition:leave-end="opacity-0 scale-95 transform -translate-y-2"
+                         class="absolute top-[95%] right-0 w-48 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 p-4"
+                         dir="rtl"
+                         style="right: -120%; display: none;"> <!-- Adjusted top-full to top-[95%] and removed mt-3 -->
                         {{-- Both guest and logged-in states are rendered, JS will hide/show --}}
                         <div id="user-status-guest" class="space-y-2 hidden"> {{-- Initially hidden --}}
-                            {{-- Removed the "کاربر مهمان" text as requested --}}
-                            {{-- Changed to flex and applied ml-auto to icon and mr-[15%] to text for better positioning --}}
-                            <a href="{{ route('auth.mobile-login-form') }}" class="nav-link-dropdown flex items-center" id="login-register-link">
-                                <i class="fas fa-sign-in-alt ml-auto mr-2"></i>
-                                <span class="mr-[15%]">ورود / ثبت‌نام</span>
+                            <a href="{{ route('auth.mobile-login-form') }}" class="nav-link-dropdown flex items-center justify-end" id="login-register-link">
+                                <i class="fas fa-sign-in-alt mr-2"></i>
+                                <span>ورود / ثبت‌نام</span>
                             </a>
                         </div>
 
@@ -70,29 +79,29 @@
                             {{-- User Profile Summary at the top of the dropdown --}}
                             <div class="user-profile-header flex items-center justify-end">
                                 <span class="user-full-name text-right" id="logged-in-user-full-name"></span>
-                                <i class="fas fa-user-circle user-icon mr-2"></i> {{-- Moved icon after text and changed ml-2 to mr-2 --}}
+                                <i class="fas fa-user-circle user-icon mr-2"></i>
                                 <i class="fas fa-chevron-down text-gray-500 text-xs mr-auto"></i>
                             </div>
 
                             <a href="{{ route('profile.edit') }}" class="nav-link-dropdown-compact flex items-center justify-end">
-                                <span class="ml-auto">ویرایش پروفایل</span> {{-- Added ml-auto to push text to left --}}
-                                <i class="fas fa-user-cog mr-2"></i> {{-- Moved icon after text and changed ml-2 to mr-2 --}}
+                                <span class="ml-auto">ویرایش پروفایل</span>
+                                <i class="fas fa-user-cog mr-2"></i>
                             </a>
                             <a href="{{ route('orders.index') }}" class="nav-link-dropdown-compact flex items-center justify-end">
-                                <span class="ml-auto">سفارشات من</span> {{-- Added ml-auto to push text to left --}}
-                                <i class="fas fa-box-seam mr-2"></i> {{-- Moved icon after text and changed ml-2 to mr-2 --}}
+                                <span class="ml-auto">سفارشات من</span>
+                                <i class="fas fa-box-seam mr-2"></i>
                             </a>
                             <a href="{{ route('addresses.index') }}" class="nav-link-dropdown-compact flex items-center justify-end">
-                                <span class="ml-auto">آدرس‌ها</span> {{-- Added ml-auto to push text to left --}}
-                                <i class="fas fa-map-marker-alt mr-2"></i> {{-- Moved icon after text and changed ml-2 to mr-2 --}}
+                                <span class="ml-auto">آدرس‌ها</span>
+                                <i class="fas fa-map-marker-alt mr-2"></i>
                             </a>
                             <a href="#" class="nav-link-dropdown-compact flex items-center justify-end">
-                                <span class="ml-auto">لیست‌ها</span> {{-- Added ml-auto to push text to left --}}
-                                <i class="fas fa-list mr-2"></i> {{-- Moved icon after text and changed ml-2 to mr-2 --}}
+                                <span class="ml-auto">لیست‌ها</span>
+                                <i class="fas fa-list mr-2"></i>
                             </a>
                             <a href="#" class="nav-link-dropdown-compact flex items-center justify-end">
-                                <span class="ml-auto">دیدگاه‌ها و پرسش‌ها</span> {{-- Added ml-auto to push text to left --}}
-                                <i class="fas fa-comments mr-2"></i> {{-- Moved icon after text and changed ml-2 to mr-2 --}}
+                                <span class="ml-auto">دیدگاه‌ها و پرسش‌ها</span>
+                                <i class="fas fa-comments mr-2"></i>
                             </a>
                             <button type="button" id="logout-link" class="nav-link-dropdown-compact w-full text-right text-red-500 hover:bg-red-100 flex items-center justify-end">
                                 <span class="ml-auto">خروج از حساب</span>
@@ -162,15 +171,13 @@
         <div class="pt-4 pb-3 border-t border-green-700">
             {{-- Mobile User Status (controlled by JS) --}}
             <div id="mobile-user-status-guest" class="space-y-2 px-4 hidden"> {{-- Initially hidden --}}
-                {{-- Changed to flex and applied ml-auto to icon and mr-[15%] to text for better positioning --}}
-                <a href="{{ route('auth.mobile-login-form') }}" class="mobile-nav-link flex items-center">
-                    <i class="fas fa-sign-in-alt ml-auto mr-2"></i>
-                    <span class="mr-[15%]">ورود به حساب</span>
+                <a href="{{ route('auth.mobile-login-form') }}" class="mobile-nav-link flex items-center justify-end">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    <span>ورود به حساب</span>
                 </a>
-                {{-- Changed to flex and applied ml-auto to icon and mr-[15%] to text for better positioning --}}
-                <a href="{{ route('auth.register-form') }}" class="mobile-nav-link flex items-center">
-                    <i class="fas fa-user-plus ml-auto mr-2"></i>
-                    <span class="mr-[15%]">ثبت‌نام</span>
+                <a href="{{ route('auth.register-form') }}" class="mobile-nav-link flex items-center justify-end">
+                    <i class="fas fa-user-plus mr-2"></i>
+                    <span>ثبت‌نام</span>
                 </a>
             </div>
 
@@ -186,24 +193,24 @@
                 </div>
 
                 <div class="space-y-2">
-                    <a href="{{ route('profile.edit') }}" class="mobile-nav-link"> {{-- Removed pr-4 and justify-end --}}
+                    <a href="{{ route('profile.edit') }}" class="mobile-nav-link">
                         <i class="fas fa-user-cog mr-2"></i>
                         <span>ویرایش پروفایل</span>
                     </a>
-                    <a href="{{ route('orders.index') }}" class="mobile-nav-link"> {{-- Removed pr-4 and justify-end --}}
+                    <a href="{{ route('orders.index') }}" class="mobile-nav-link">
                         <i class="fas fa-box-seam mr-2"></i>
                         <span>سفارشات من</span>
                     </a>
-                    <a href="{{ route('addresses.index') }}" class="mobile-nav-link"> {{-- Removed pr-4 and justify-end --}}
+                    <a href="{{ route('addresses.index') }}" class="mobile-nav-link">
                         <i class="fas fa-map-marker-alt mr-2"></i>
                         <span>آدرس‌ها</span>
                     </a>
                     {{-- NEW: Added missing mobile menu items --}}
-                    <a href="#" class="mobile-nav-link"> {{-- Removed pr-4 and justify-end --}}
+                    <a href="#" class="mobile-nav-link">
                         <i class="fas fa-list mr-2"></i>
                         <span>لیست‌ها</span>
                     </a>
-                    <a href="#" class="mobile-nav-link"> {{-- Removed pr-4 and justify-end --}}
+                    <a href="#" class="mobile-nav-link">
                         <i class="fas fa-comments mr-2"></i>
                         <span>دیدگاه‌ها و پرسش‌ها</span>
                     </a>

@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\MobileAuthController;
 use App\Http\Controllers\Api\ApiCartController; // مطمئن شوید این ایمپورت شده است
 use App\Http\Controllers\OrderController; // مطمئن شوید این ایمپورت شده است
 use App\Http\Controllers\Auth\RegisterController; // NEW: ایمپورت کردن RegisterController
+use App\Http\Controllers\AnalyticsController; // NEW: Import AnalyticsController
 
 /*
 |--------------------------------------------------------------------------
@@ -70,3 +71,11 @@ Route::middleware('jwt.auth')->group(function () {
         return $request->user();
     });
 });
+
+// NEW: مسیر برای دریافت داده‌های تحلیلی
+// از middleware 'web' استفاده کنید تا به کوکی‌ها دسترسی داشته باشید.
+// اگر می‌خواهید اطلاعات کاربر لاگین شده را هم در analytics ذخیره کنید، می‌توانید middleware('jwt.auth') را هم اضافه کنید.
+Route::post('/analytics/track', [AnalyticsController::class, 'track'])->name('api.analytics.track');
+
+// NEW: مسیر Health Check برای سیستم آنالیتیکس
+Route::get('/analytics/health', [AnalyticsController::class, 'health'])->name('api.analytics.health');

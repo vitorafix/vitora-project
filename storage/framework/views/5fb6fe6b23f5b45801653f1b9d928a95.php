@@ -48,6 +48,27 @@
     </script>
 
     
+    
+    <?php if(auth()->guard()->check()): ?>
+        <script>
+            window.currentUser = {
+                id: <?php echo e(Auth::user()->id); ?>,
+                username: '<?php echo e(Auth::user()->name ?? 'Unknown User'); ?>', // فرض بر وجود فیلد name
+                email: '<?php echo e(Auth::user()->email ?? 'unknown@example.com'); ?>', // فرض بر وجود فیلد email
+                // می‌توانید فیلدهای دیگری را نیز اضافه کنید
+            };
+            console.log('Blade/Initial Load Current User: Authenticated user ID:', window.currentUser.id);
+        </script>
+    <?php endif; ?>
+    <?php if(auth()->guard()->guest()): ?>
+        <script>
+            window.currentUser = null;
+            console.log('Blade/Initial Load Current User: No authenticated user (guest).');
+        </script>
+    <?php endif; ?>
+
+
+    
     <?php echo app('Illuminate\Foundation\Vite')->reactRefresh(); ?>
 
     
@@ -55,6 +76,7 @@
         'resources/css/app.css',
         'resources/js/core/app.js',
         'resources/js/app.tsx', 
+        'resources/js/core/analytics.js', 
     ]); ?>
 
     <style>

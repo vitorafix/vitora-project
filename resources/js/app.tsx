@@ -5,6 +5,9 @@ import ReactDOM from 'react-dom'; // For using createPortal
 import MiniCart from './components/cart/MiniCart';
 import { CartProvider, useCartContext } from './context/CartContext';
 
+// NEW: Import the analytics module
+import './core/analytics.js'; // Import analytics.js from the core folder
+
 // Define the "Add to Cart" component that uses Context
 interface AddToCartButtonProps {
     productId: string;
