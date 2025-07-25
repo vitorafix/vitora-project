@@ -62,8 +62,7 @@
                         aria-expanded="false"
                         aria-haspopup="true"
                     >
-                        <i class="fas fa-shopping-cart ml-2"></i>
-                        سبد خرید <span class="mr-1 text-green-700 font-bold">(تست)</span>
+                        <i class="fas fa-shopping-cart"></i>
                     </button>
                     {{-- MiniCart React component will be rendered here via Portal --}}
                 </div>

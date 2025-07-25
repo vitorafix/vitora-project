@@ -12,13 +12,13 @@ interface MiniCartProps {
 const MiniCart: React.FC<MiniCartProps> = ({ isOpen, onClose }) => {
     const { cartItems, cartTotal, removeFromCart, updateQuantity, cartLoading } = useCartContext();
 
-    // اگر سبد خرید باز نباشد، چیزی نمایش داده نمی‌شود
+    // If the cart is not open, nothing is displayed
     if (!isOpen) return null;
 
     return (
         <div
-            className="absolute top-full right-0 mt-1 w-72 md:w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-[9999] overflow-hidden"
-            style={{ transform: 'translateY(-1.2vh)' }} // استایل برای بالا بردن کادر به اندازه 2 درصد (از 0.8vh به -1.2vh)
+            className="absolute top-full right-1/2 mt-1 w-72 md:w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-[9999] overflow-hidden"
+            style={{ transform: 'translate(30%, -1.2vh)' }} // Style to move the box up by 2% (from 0.8vh to -1.2vh) and position it slightly more to the left
         >
             <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-800">سبد خرید</h3>
@@ -48,7 +48,7 @@ const MiniCart: React.FC<MiniCartProps> = ({ isOpen, onClose }) => {
                     )}
                 </div>
             )}
-            {/* فوتر سبد خرید فقط زمانی نمایش داده می‌شود که آیتمی در سبد وجود داشته باشد */}
+            {/* Cart footer is only displayed when there is an item in the cart */}
             {cartItems.length > 0 && (
                 <CartFooter total={cartTotal} loading={cartLoading} />
             )}
