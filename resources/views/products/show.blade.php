@@ -4,7 +4,7 @@
 
 @section('content')
 <section class="container mx-auto px-4 py-8 md:py-16">
-    <div class="bg-white rounded-xl shadow-lg overflow-hidden md:flex md:items-center">
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden md:flex md::items-center">
         {{-- Product Image Section --}}
         <div class="md:w-1/2 p-6 md:p-8 flex justify-center items-center">
             <img src="{{ $product->image ?: 'https://placehold.co/600x600/E5E7EB/4B5563?text=Product' }}" alt="{{ $product->title }}" class="w-full max-w-md h-auto rounded-lg shadow-md object-cover transition-transform duration-300 hover:scale-105">
@@ -31,17 +31,22 @@
                 </p>
             </div>
 
-            {{-- Add to Cart Section --}}
+            {{-- Add to Cart Section (React Integration Point) --}}
+            {{-- این div نقطه اتصال برای کامپوننت React AddToCartButton است. --}}
+            {{-- data-attributes حاوی اطلاعات محصول برای استفاده در React هستند. --}}
             <div class="flex items-center justify-end space-x-4 space-x-reverse mt-6">
                 <input type="number" id="product-quantity" value="1" min="1" max="{{ $product->stock }}" class="w-20 p-2 border border-gray-300 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-green-700">
-                <button class="btn-primary add-to-cart-btn flex items-center"
-                        data-product-id="{{ $product->id }}"
-                        data-product-title="{{ $product->title }}"
-                        data-product-price="{{ $product->price }}"
-                        data-product-image="{{ $product->image ?: 'https://placehold.co/400x400/E5E7EB/4B5563?text=Product' }}">
-                    <i class="fas fa-cart-plus ml-2"></i>
-                    افزودن به سبد
-                </button>
+                {{-- المنت ریشه برای رندر کردن دکمه افزودن به سبد خرید توسط React --}}
+                <div id="add-to-cart-root-{{ $product->id }}"
+                     {{-- اطمینان حاصل کنید که $product->title و $product->price مقادیر معتبری دارند. --}}
+                     {{-- اگر این مقادیر از دیتابیس null یا خالی می‌آیند، باید در کنترلر یا مدل بررسی شوند. --}}
+                     {{-- از ?? '' برای اطمینان از اینکه همیشه یک رشته ارسال می‌شود، استفاده شده است. --}}
+                     data-product-name="{{ $product->title ?? '' }}"
+                     data-product-price="{{ $product->price ?? '0' }}"
+                     data-product-image="{{ $product->image ?: 'https://placehold.co/400x400/E5E7EB/4B5563?text=Product' }}"
+                     class="inline-block"> {{-- اضافه کردن inline-block برای جلوگیری از اشغال تمام عرض --}}
+                    {{-- کامپوننت React AddToCartButton در اینجا رندر خواهد شد --}}
+                </div>
             </div>
 
             {{-- Display message if out of stock --}}

@@ -86,7 +86,13 @@
                             {{-- قیمت محصول --}}
                             <span class="text-green-700 text-2xl font-bold">{{ number_format($product->price) }} تومان</span>
                             {{-- نقطه اتصال برای دکمه افزودن به سبد خرید React --}}
-                            <div id="add-to-cart-root-{{ $product->id }}"></div>
+                            {{-- اضافه کردن data-attributes برای React --}}
+                            <div id="add-to-cart-root-{{ $product->id }}"
+                                 data-product-name="{{ $product->title ?? '' }}"
+                                 data-product-price="{{ $product->price ?? '0' }}"
+                                 data-product-image="{{ $product->image_url ?: 'https://placehold.co/400x400/E5E7EB/4B5563?text=Product' }}"
+                                 class="inline-block">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -124,7 +130,13 @@
                             {{-- قیمت محصول --}}
                             <span class="text-green-700 text-2xl font-bold">{{ number_format($product->price) }} تومان</span>
                             {{-- نقطه اتصال برای دکمه افزودن به سبد خرید React --}}
-                            <div id="add-to-cart-root-{{ $product->id }}"></div>
+                            {{-- اضافه کردن data-attributes برای React --}}
+                            <div id="add-to-cart-root-{{ $product->id }}"
+                                 data-product-name="{{ $product->title ?? '' }}"
+                                 data-product-price="{{ $product->price ?? '0' }}"
+                                 data-product-image="{{ $product->image_url ?: 'https://placehold.co/400x400/E5E7EB/4B5563?text=Product' }}"
+                                 class="inline-block">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -153,67 +165,4 @@
                 <div class="bg-white p-8 rounded-xl shadow-md border border-gray-100 text-right">
                     <p class="text-gray-700 italic mb-6">"من عاشق دمنوش‌های میوه‌ای چای ابراهیم شدم. هر فنجانش یه دنیا آرامش میده."</p>
                     <div class="flex items-center justify-end">
-                        <span class="font-semibold text-brown-900 mr-4">علی قاسمی</span>
-                        <img src="https://placehold.co/60x60/F3F4F6/6B7280?text=AG" alt="علی قاسمی" class="w-12 h-12 rounded-full object-cover">
-                    </div>
-                </div>
-                <div class="bg-white p-8 rounded-xl shadow-md border border-gray-100 text-right">
-                    <p class="text-gray-700 italic mb-6">"کیفیت چای سیاهشون بی‌نظیره. همیشه از این برند خرید می‌کنم و راضی‌ام."</p>
-                    <div class="flex items-center justify-end">
-                        <span class="font-semibold text-brown-900 mr-4">زهرا کریمی</span>
-                        <img src="https://placehold.co/60x60/F3F4F6/6B7280?text=ZK" alt="زهرا کریمی" class="w-12 h-12 rounded-full object-cover">
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    {{-- Recent Articles --}}
-    <section class="container mx-auto px-4 py-16 text-center">
-        <h2 class="text-4xl font-extrabold text-brown-900 mb-12">
-            <i class="fas fa-newspaper text-red-500 ml-3"></i>
-            آخرین مقالات وبلاگ
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div class="bg-gray-50 rounded-xl shadow-md overflow-hidden card-hover-effect border border-gray-100">
-                <img src="https://placehold.co/400x250/F3F4F6/6B7280?text=تاریخچه+چای" alt="تاریخچه چای" class="w-full h-48 object-cover">
-                <div class="p-6">
-                    <h3 class="text-xl font-semibold text-brown-900 mb-2">تاریخچه شگفت‌انگیز چای در ایران</h3>
-                    <p class="text-gray-600 text-sm mb-4">کشف کنید چای چگونه وارد فرهنگ و زندگی مردم ایران شد.</p>
-                    <a href="{{ route('blog.show', 1) }}" class="text-green-800 hover:underline font-semibold">بیشتر بخوانید <i class="fas fa-arrow-left text-sm ml-1"></i></a>
-                </div>
-            </div>
-            <div class="bg-gray-50 rounded-xl shadow-md overflow-hidden card-hover-effect border border-gray-100">
-                <img src="https://placehold.co/400x250/F3F4F6/6B7280?text=فواید+چای+سبز" alt="فواید چای سبز" class="w-full h-48 object-cover">
-                <div class="p-6">
-                    <h3 class="text-xl font-semibold text-brown-900 mb-2">فواید بی‌شمار چای سبز برای سلامتی</h3>
-                    <p class="text-gray-600 text-sm mb-4">آشنایی با خواص آنتی‌اکسیدانی و درمانی چای سبز.</p>
-                    <a href="{{ route('blog.show', 2) }}" class="text-green-800 hover:underline font-semibold">بیشتر بخوانید <i class="fas fa-arrow-left text-sm ml-1"></i></a>
-                </div>
-            </div>
-            <div class="bg-gray-50 rounded-xl shadow-md overflow-hidden card-hover-effect border border-gray-100">
-                <img src="{{ asset('uploads/blog-image-3.jpg') }}" alt="آداب و رسوم سرو چای" class="w-full h-48 object-cover">
-                <div class="p-6">
-                    <h3 class="text-xl font-semibold text-brown-900 mb-2">آداب و رسوم سرو چای در ایران</h3>
-                    <p class="text-gray-600 text-sm mb-4">سفری به تاریخ و فرهنگ غنی چای‌نوشی در سرزمین ایران.</p>
-                    <a href="{{ route('blog.show', 3) }}" class="text-green-800 hover:underline font-semibold">بیشتر بخوانید <i class="fas fa-arrow-left text-sm ml-1"></i></a>
-                </div>
-            </div>
-        </div>
-        <div class="text-center mt-10">
-            <a href="{{ route('blog.index') }}" class="btn-secondary">مشاهده همه مقالات <i class="fas fa-arrow-left mr-2"></i></a>
-        </div>
-    </section>
-
-    {{-- Contact Us --}}
-    <section class="my-16 p-8 bg-brown-900 text-white rounded-2xl shadow-lg mx-auto max-w-6xl text-center">
-        <h2 class="text-3xl md:text-4xl font-bold mb-6">همین امروز با ما تماس بگیرید!</h2>
-        <p class="text-lg mb-8 max-w-2xl mx-auto">
-            سوال، پیشنهاد یا نیاز به مشاوره دارید؟ تیم پشتیبانی چای ابراهیم آماده پاسخگویی به شماست.
-        </p>
-        <a href="{{ route('contact') }}" class="btn-secondary bg-white text-brown-900 hover:bg-gray-100">
-            <i class="fas fa-phone-alt ml-2"></i>
-            تماس با ما
-        </a>
-    </section>
-@endsection
+                        <span clas

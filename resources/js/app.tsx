@@ -5,12 +5,12 @@ import MiniCart from './components/cart/MiniCart';
 import { CartProvider, useCartContext } from './context/CartContext';
 import { addToCart } from './core/api';
 
-// تعریف یک کامپوننت برای دکمه "افزودن به سبد خرید" که از Context استفاده می‌کند
+// Define a component for the "Add to Cart" button that uses Context
 interface AddToCartButtonProps {
     productId: string;
     productName: string;
     price: number;
-    // می‌توانید پراپ‌های دیگری مانند image را نیز اضافه کنید
+    // You can add other props like image here
 }
 
 export const AddToCartButton: React.FC<AddToCartButtonProps> = ({ productId, productName, price }) => {
@@ -31,18 +31,18 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({ productId, pro
             className={`btn-primary ${cartLoading ? 'btn-disabled' : ''} flex items-center`}
         >
             {cartLoading ? (
-                'در حال افزودن...'
+                'در حال افزودن...' // Adding...
             ) : (
                 <>
                     <i className="fas fa-cart-plus ml-2"></i>
-                    افزودن به سبد
+                    افزودن به سبد // Add to Cart
                 </>
             )}
         </button>
     );
 };
 
-// کامپوننت اصلی که MiniCart را شامل می‌شود
+// Main component that includes MiniCart
 const MiniCartApp: React.FC = () => {
     const [isMiniCartOpen, setIsMiniCartOpen] = React.useState(false);
 
@@ -65,7 +65,7 @@ const MiniCartApp: React.FC = () => {
                 aria-haspopup="true"
             >
                 <i className="fas fa-shopping-cart ml-2"></i>
-                سبد خرید <span className="mr-1 text-green-700 font-bold">(تست)</span>
+                سبد خرید <span className="mr-1 text-green-700 font-bold">(تست)</span> // Shopping Cart (Test)
             </button>
 
             {/* MiniCart React Component */}
@@ -74,45 +74,58 @@ const MiniCartApp: React.FC = () => {
     );
 };
 
-// پیدا کردن المنت ریشه برای رندر کردن برنامه React
-const miniCartRootElement = document.getElementById('mini-cart-root');
+// Function to initialize MiniCart and AddToCartButtons
+const initializeReactApps = () => {
+    // Find the root element for rendering the React application (MiniCart)
+    const miniCartRootElement = document.getElementById('mini-cart-root');
 
-if (miniCartRootElement) {
-    const root = createRoot(miniCartRootElement);
-    root.render(
-        <React.StrictMode>
-            <CartProvider>
-                <MiniCartApp />
-            </CartProvider>
-        </React.StrictMode>
-    );
-    console.log('React MiniCart application mounted successfully.');
-} else {
-    console.warn('Could not find #mini-cart-root element to mount React application.');
-}
-
-// برای رندر کردن دکمه‌های افزودن به سبد خرید در صفحات محصول
-document.querySelectorAll('[id^="add-to-cart-root-"]').forEach(rootElement => {
-    const productId = rootElement.id.replace('add-to-cart-root-', '');
-    // اطلاعات محصول را مستقیماً از data attributes روی div نقطه اتصال می‌خوانیم
-    const productName = rootElement.dataset.productName || 'نامشخص';
-    const price = parseFloat(rootElement.dataset.productPrice || '0');
-
-    if (productId && productName && price) {
-        const root = createRoot(rootElement);
+    if (miniCartRootElement) {
+        const root = createRoot(miniCartRootElement);
         root.render(
             <React.StrictMode>
                 <CartProvider>
-                    <AddToCartButton
-                        productId={productId}
-                        productName={productName}
-                        price={price}
-                    />
+                    <MiniCartApp />
                 </CartProvider>
             </React.StrictMode>
         );
-        console.log(`AddToCartButton mounted for product ${productId}`);
+        console.log('React MiniCart application mounted successfully.');
     } else {
-        console.warn(`Could not find product data for mounting AddToCartButton for root: ${rootElement.id}`);
+        console.warn('Could not find #mini-cart-root element to mount React application.');
     }
-});
+
+    // For rendering Add to Cart buttons on product pages
+    document.querySelectorAll('[id^="add-to-cart-root-"]').forEach(rootElement => {
+        const productId = rootElement.id.replace('add-to-cart-root-', '');
+        // Read product information directly from data attributes on the connection div
+        const productName = rootElement.dataset.productName; // No default 'نامشخص' to clearly identify missing data
+        const price = parseFloat(rootElement.dataset.productPrice || '0'); // Still parse as float, default to 0 if not a number
+
+        // Check if all necessary product data is present and valid
+        if (productId && productName && !isNaN(price) && price > 0) { // Added !isNaN(price) and price > 0 check
+            const root = createRoot(rootElement);
+            root.render(
+                <React.StrictMode>
+                    <CartProvider>
+                        <AddToCartButton
+                            productId={productId}
+                            productName={productName}
+                            price={price}
+                        />
+                    </CartProvider>
+                </React.StrictMode>
+            );
+            console.log(`AddToCartButton mounted for product ${productId}`);
+        } else {
+            // More specific warning message
+            let warningMessage = `Could not mount AddToCartButton for root: ${rootElement.id}. Missing/invalid data: `;
+            if (!productId) warningMessage += 'productId; ';
+            if (!productName) warningMessage += 'productName; ';
+            if (isNaN(price) || price <= 0) warningMessage += `price (${rootElement.dataset.productPrice}); `;
+            console.warn(warningMessage);
+        }
+    });
+};
+
+// Ensure the React applications are initialized only after the DOM is fully loaded
+window.addEventListener('DOMContentLoaded', initializeReactApps);
+
