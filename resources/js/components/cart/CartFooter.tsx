@@ -7,6 +7,9 @@ interface CartFooterProps {
 }
 
 const CartFooter: React.FC<CartFooterProps> = ({ total, loading = false }) => {
+    // اضافه کردن این console.log برای بررسی مقدار total دریافتی
+    console.log("CartFooter received total:", total);
+
     // بررسی اینکه آیا سبد خرید خالی است یا در حال بارگذاری
     const isDisabled = total === 0 || loading;
 
