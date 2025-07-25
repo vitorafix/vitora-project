@@ -121,7 +121,8 @@ class ApiCartController extends Controller
                 return (new CartResource($cartContentsResponse))
                     ->additional([
                         'success' => true,
-                        'message' => 'Product successfully added to cart.',
+                        // تغییر پیام موفقیت به فارسی و حذف نقطه
+                        'message' => 'محصول با موفقیت به سبد خرید اضافه شد',
                     ])
                     ->response()
                     ->setStatusCode(200);

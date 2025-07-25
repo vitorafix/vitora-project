@@ -115,7 +115,8 @@ class CartController extends Controller
             if ($response->isSuccess()) {
                 // کوکی guest_uuid توسط GuestService و GuestUuidMiddleware مدیریت و تنظیم می‌شود.
                 // نیازی به تنظیم مجدد آن در اینجا نیست.
-                return redirect()->route('cart.index')->with('success', 'Product successfully added to cart.');
+                // تغییر پیام موفقیت به فارسی
+                return redirect()->route('cart.index')->with('success', 'محصول با موفقیت به سبد خرید اضافه شد');
             } else {
                 return back()->with('error', $response->getMessage());
             }
