@@ -1,0 +1,1 @@
+1753446356O:22:"App\DTOs\CartTotalsDTO":5:{s:8:"subtotal";d:360000;s:8:"discount";d:0;s:8:"shipping";d:30000;s:3:"tax";d:32400;s:5:"total";d:422400;}

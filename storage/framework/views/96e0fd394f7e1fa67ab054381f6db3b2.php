@@ -145,8 +145,6 @@
                 
                 <div class="relative ml-4 group" id="mini-cart-root">
                     
-                    
-                    
                     <button
                         type="button"
                         id="mini-cart-toggle" 

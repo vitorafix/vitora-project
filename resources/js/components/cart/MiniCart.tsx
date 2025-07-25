@@ -1,8 +1,8 @@
 // resources/js/components/cart/MiniCart.tsx
 import React from 'react';
-import CartItem from './CartItem';
+import CartItem from './CartItem'; // مطمئن شوید که به CartItem واقعی اشاره دارد
 import CartFooter from './CartFooter';
-import { useCartContext } from '../../context/CartContext'; // Using useCartContext
+import { useCartContext } from '../../context/CartContext';
 
 interface MiniCartProps {
     isOpen: boolean;
@@ -10,15 +10,11 @@ interface MiniCartProps {
 }
 
 const MiniCart: React.FC<MiniCartProps> = ({ isOpen, onClose }) => {
-    // Now we are using useCartContext
     const { cartItems, cartTotal, removeFromCart, updateQuantity, cartLoading } = useCartContext();
 
     if (!isOpen) return null;
 
     return (
-        // Positioning adjusted for portal usage: `top-full` places it directly below the parent,
-        // `right-0` aligns its right edge with the parent's right edge (suitable for RTL dropdowns).
-        // `z-[9999]` ensures it's always on top.
         <div className="absolute top-full right-0 mt-1 w-72 md:w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-[9999] overflow-hidden">
             <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-800">سبد خرید</h3> {/* Shopping Cart */}
@@ -31,11 +27,15 @@ const MiniCart: React.FC<MiniCartProps> = ({ isOpen, onClose }) => {
                 </button>
             </div>
             {cartLoading ? (
-                <p className="text-center text-gray-500 py-8">در حال بارگذاری سبد خرید...</p> {/* Loading shopping cart... */}
+                <>
+                    <p className="text-center text-gray-500 py-8">در حال بارگذاری سبد خرید...</p> {/* Loading shopping cart... */}
+                </>
             ) : (
                 <div className="max-h-80 overflow-y-auto custom-scrollbar">
                     {cartItems.length === 0 ? (
-                        <p className="text-center text-gray-500 py-8">سبد خرید شما خالی است.</p> {/* Your shopping cart is empty. */}
+                        <>
+                            <p className="text-center text-gray-500 py-8">سبد خرید شما خالی است.</p> {/* Your shopping cart is empty. */}
+                        </>
                     ) : (
                         cartItems.map(item => (
                             <CartItem

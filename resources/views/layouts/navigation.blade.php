@@ -54,9 +54,7 @@
                 {{-- این div جایگزین Mini Cart Dropdown قدیمی می‌شود و مدیریت آن به React سپرده می‌شود --}}
                 {{-- Removed hidden lg:block from the parent div, as the button will be inside it and its visibility will be handled by React. --}}
                 <div class="relative ml-4 group" id="mini-cart-root">
-                    {{-- دکمه سبد خرید و MiniCart React اینجا رندر می‌شوند --}}
-                    {{-- محتوای این div توسط resources/js/app.tsx کنترل می‌شود --}}
-                    {{-- دکمه "سبد خرید (تست)" از app.tsx به اینجا منتقل شده است --}}
+                    {{-- دکمه سبد خرید اکنون مستقیماً داخل mini-cart-root قرار گرفته است --}}
                     <button
                         type="button"
                         id="mini-cart-toggle" {{-- اضافه کردن ID برای دکمه --}}

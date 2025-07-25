@@ -102,24 +102,44 @@ const App: React.FC = () => {
         setAddToCartPortals(portals);
     }, []); // This useEffect runs only once on mount
 
+    // Effect to handle MiniCart button events (moved from App component's JSX)
+    useEffect(() => {
+        const miniCartToggleBtn = document.getElementById('mini-cart-toggle');
+        const miniCartRoot = document.getElementById('mini-cart-root');
+
+        if (miniCartToggleBtn) {
+            miniCartToggleBtn.addEventListener('click', toggleMiniCart);
+            miniCartToggleBtn.addEventListener('mouseenter', () => setIsMiniCartOpen(true));
+        }
+
+        if (miniCartRoot) {
+            miniCartRoot.addEventListener('mouseleave', closeMiniCart);
+        }
+
+        return () => {
+            // Cleanup event listeners when component unmounts
+            if (miniCartToggleBtn) {
+                miniCartToggleBtn.removeEventListener('click', toggleMiniCart);
+                miniCartToggleBtn.removeEventListener('mouseenter', () => setIsMiniCartOpen(true));
+            }
+            if (miniCartRoot) {
+                miniCartRoot.removeEventListener('mouseleave', closeMiniCart);
+            }
+        };
+    }, [toggleMiniCart, closeMiniCart]); // Dependencies ensure effect re-runs if these functions change
+
     return (
         <>
-            {/* MiniCart section, assuming it's part of the main layout */}
-            {/* Added 'inline-block' to ensure the div wraps its content, helping with MiniCart positioning */}
-            <div className="mini-cart-dropdown relative inline-block" onMouseLeave={closeMiniCart}>
-                <button
-                    type="button"
-                    className="inline-flex justify-center items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    onClick={toggleMiniCart}
-                    onMouseEnter={() => setIsMiniCartOpen(true)}
-                    aria-expanded={isMiniCartOpen}
-                    aria-haspopup="true"
-                >
-                    <i className="fas fa-shopping-cart ml-2"></i>
-                    سبد خرید <span className="mr-1 text-green-700 font-bold">(تست)</span> // Shopping Cart (Test)
-                </button>
-                <MiniCart isOpen={isMiniCartOpen} onClose={closeMiniCart} />
-            </div>
+            {/* MiniCart will now be rendered via a Portal into #mini-cart-root in the navbar.
+                The button to toggle MiniCart is now expected to be in the app.blade.php / layouts.navigation.
+                Removed the direct rendering of MiniCart and its parent div from here.
+            */}
+            {typeof document !== 'undefined' && document.getElementById('mini-cart-root') &&
+                ReactDOM.createPortal(
+                    <MiniCart isOpen={isMiniCartOpen} onClose={closeMiniCart} />,
+                    document.getElementById('mini-cart-root') as HTMLElement
+                )
+            }
 
             {/* Render all AddToCartButton portals */}
             {addToCartPortals}
