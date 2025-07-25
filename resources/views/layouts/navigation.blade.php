@@ -40,7 +40,7 @@
                 </div>
             </div>
 
-            <!-- Left Side - Search, Cart, User -->
+            <!-- Left Side - Search, User, Cart -->
             <div class="flex items-center ml-auto pr-4">
                 <!-- Search Icon (Desktop) -->
                 <div class="hidden lg:flex items-center ml-4">
@@ -49,25 +49,7 @@
                     </a>
                 </div>
 
-                <!-- Cart Icon (Desktop) -->
-                {{-- تغییر: اضافه کردن div با id="mini-cart-root" برای رندر کردن MiniCart React --}}
-                {{-- این div جایگزین Mini Cart Dropdown قدیمی می‌شود و مدیریت آن به React سپرده می‌شود --}}
-                {{-- Removed hidden lg:block from the parent div, as the button will be inside it and its visibility will be handled by React. --}}
-                <div class="relative ml-4 group" id="mini-cart-root">
-                    {{-- دکمه سبد خرید اکنون مستقیماً داخل mini-cart-root قرار گرفته است --}}
-                    <button
-                        type="button"
-                        id="mini-cart-toggle" {{-- اضافه کردن ID برای دکمه --}}
-                        class="inline-flex justify-center items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                        aria-expanded="false"
-                        aria-haspopup="true"
-                    >
-                        <i class="fas fa-shopping-cart"></i>
-                    </button>
-                    {{-- MiniCart React component will be rendered here via Portal --}}
-                </div>
-
-                <!-- User/Auth Section (Desktop) -->
+                <!-- User/Auth Section (Desktop) - Moved to the left of the cart -->
                 <div class="relative ml-4 group hidden lg:block">
                     <a href="#" class="nav-link flex items-center text-amber-200 hover:text-white transition-colors duration-200" onclick="return false;">
                         <i class="fas fa-user-circle text-xl ml-2"></i>
@@ -118,6 +100,24 @@
                             </button>
                         </div>
                     </div>
+                </div>
+
+                <!-- Cart Icon (Desktop) - Moved to the right of the user section -->
+                {{-- تغییر: اضافه کردن div با id="mini-cart-root" برای رندر کردن MiniCart React --}}
+                {{-- این div جایگزین Mini Cart Dropdown قدیمی می‌شود و مدیریت آن به React سپرده می‌شود --}}
+                {{-- Removed hidden lg:block from the parent div, as the button will be inside it and its visibility will be handled by React. --}}
+                <div class="relative ml-4 group" id="mini-cart-root">
+                    {{-- دکمه سبد خرید اکنون مستقیماً داخل mini-cart-root قرار گرفته است --}}
+                    <button
+                        type="button"
+                        id="mini-cart-toggle" {{-- اضافه کردن ID برای دکمه --}}
+                        class="inline-flex justify-center items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        aria-expanded="false"
+                        aria-haspopup="true"
+                    >
+                        <i class="fas fa-shopping-cart"></i>
+                    </button>
+                    {{-- MiniCart React component will be rendered here via Portal --}}
                 </div>
 
                 <!-- Mobile Menu Button (Hamburger) -->

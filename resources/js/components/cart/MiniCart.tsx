@@ -18,7 +18,7 @@ const MiniCart: React.FC<MiniCartProps> = ({ isOpen, onClose }) => {
     return (
         <div
             className="absolute top-full right-1/2 mt-1 w-72 md:w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-[9999] overflow-hidden"
-            style={{ transform: 'translate(30%, -1.2vh)' }} // Style to move the box up by 2% (from 0.8vh to -1.2vh) and position it slightly more to the left
+            style={{ transform: 'translate(82.4%, -1.2vh)' }} // Style to move the box up by 2% (from 0.8vh to -1.2vh) and position it slightly more to the left
         >
             <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-800">سبد خرید</h3>
