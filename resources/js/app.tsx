@@ -1,5 +1,5 @@
 // resources/js/app.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import ReactDOM from 'react-dom'; // For using createPortal
 import MiniCart from './components/cart/MiniCart';
@@ -44,10 +44,12 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({ productId, pro
 
 // Main React application component
 const App: React.FC = () => {
-    // بازگرداندن به حالت اولیه: isMiniCartOpen را به false تنظیم کنید
-    const [isMiniCartOpen, setIsMiniCartOpen] = useState(false); // <--- این خط را به false تغییر دادیم
-    // Access loadCart from Context for global exposure
+    const [isMiniCartOpen, setIsMiniCartOpen] = useState(false);
     const { loadCart } = useCartContext();
+
+    // Ref for the mini-cart toggle button and the mini-cart dropdown container
+    const miniCartToggleRef = useRef<HTMLElement | null>(null);
+    const miniCartDropdownRef = useRef<HTMLElement | null>(null); // This will refer to #mini-cart-root
 
     // Expose loadCart globally for debugging or use by non-React code
     useEffect(() => {
@@ -55,16 +57,26 @@ const App: React.FC = () => {
             (window as any).loadCart = loadCart;
             console.log('window.loadCart exposed for debugging.');
         }
-    }, [loadCart]); // Run only when loadCart changes
+    }, [loadCart]);
 
-    // توابع toggleMiniCart و closeMiniCart اکنون به درستی کار خواهند کرد
-    const toggleMiniCart = () => {
+    const toggleMiniCart = useCallback(() => {
         setIsMiniCartOpen(prev => !prev);
-    };
+    }, []);
 
-    const closeMiniCart = () => {
+    const closeMiniCart = useCallback(() => {
         setIsMiniCartOpen(false);
-    };
+    }, []);
+
+    // Handle clicks outside the mini-cart area
+    const handleClickOutside = useCallback((event: MouseEvent) => {
+        // اگر کلیک روی دکمه باز و بسته کردن سبد خرید نبود و روی خود مینی سبد هم نبود، آن را ببند
+        if (
+            miniCartToggleRef.current && !miniCartToggleRef.current.contains(event.target as Node) &&
+            miniCartDropdownRef.current && !miniCartDropdownRef.current.contains(event.target as Node)
+        ) {
+            closeMiniCart();
+        }
+    }, [closeMiniCart]);
 
     // State to hold AddToCartButton portals
     const [addToCartPortals, setAddToCartPortals] = useState<JSX.Element[]>([]);
@@ -80,7 +92,6 @@ const App: React.FC = () => {
 
             if (productId && productName && !isNaN(price) && price > 0) {
                 portals.push(
-                    // Use ReactDOM.createPortal to render the component in another DOM Node
                     ReactDOM.createPortal(
                         <React.StrictMode>
                             <AddToCartButton
@@ -102,33 +113,73 @@ const App: React.FC = () => {
             }
         });
         setAddToCartPortals(portals);
-    }, []); // This useEffect runs only once on mount
+    }, []);
 
-    // Effect to handle MiniCart button events
+    // Effect to handle MiniCart button and dropdown events
     useEffect(() => {
         const miniCartToggleBtn = document.getElementById('mini-cart-toggle');
         const miniCartRoot = document.getElementById('mini-cart-root');
 
+        // Assign refs
+        miniCartToggleRef.current = miniCartToggleBtn;
+        miniCartDropdownRef.current = miniCartRoot;
+
+        // متغیر برای نگهداری تایمر mouseleave
+        let mouseLeaveTimeout: NodeJS.Timeout | null = null;
+
+        const handleMouseEnterToggle = () => {
+            // اگر تایمر فعال بود، آن را پاک کن تا از بسته شدن ناخواسته جلوگیری شود
+            if (mouseLeaveTimeout) {
+                clearTimeout(mouseLeaveTimeout);
+                mouseLeaveTimeout = null;
+            }
+            setIsMiniCartOpen(true);
+        };
+
+        const handleMouseLeaveToggleOrDropdown = () => {
+            // یک تاخیر کوتاه برای بسته شدن ایجاد می‌کنیم تا فرصت حرکت ماوس را بدهیم
+            mouseLeaveTimeout = setTimeout(() => {
+                // فقط اگر ماوس واقعا از هر دو عنصر خارج شده باشد، ببند
+                if (
+                    miniCartToggleRef.current && !miniCartToggleRef.current.contains(document.elementFromPoint(event.clientX, event.clientY)) &&
+                    miniCartDropdownRef.current && !miniCartDropdownRef.current.contains(document.elementFromPoint(event.clientX, event.clientY))
+                ) {
+                    closeMiniCart();
+                }
+            }, 100); // 100 میلی‌ثانیه تاخیر
+        };
+
         if (miniCartToggleBtn) {
             miniCartToggleBtn.addEventListener('click', toggleMiniCart);
-            miniCartToggleBtn.addEventListener('mouseenter', () => setIsMiniCartOpen(true));
+            miniCartToggleBtn.addEventListener('mouseenter', handleMouseEnterToggle);
+            miniCartToggleBtn.addEventListener('mouseleave', handleMouseLeaveToggleOrDropdown); // اضافه کردن mouseleave به دکمه
         }
 
         if (miniCartRoot) {
-            miniCartRoot.addEventListener('mouseleave', closeMiniCart);
+            miniCartRoot.addEventListener('mouseenter', handleMouseEnterToggle); // وقتی ماوس روی مینی‌سبد می‌رود، آن را باز نگه دار
+            miniCartRoot.addEventListener('mouseleave', handleMouseLeaveToggleOrDropdown); // وقتی ماوس از مینی‌سبد خارج می‌شود، با تاخیر ببند
         }
+
+        // Add click outside listener to the document
+        document.addEventListener('mousedown', handleClickOutside);
 
         return () => {
             // Cleanup event listeners when component unmounts
             if (miniCartToggleBtn) {
                 miniCartToggleBtn.removeEventListener('click', toggleMiniCart);
-                miniCartToggleBtn.removeEventListener('mouseenter', () => setIsMiniCartOpen(true));
+                miniCartToggleBtn.removeEventListener('mouseenter', handleMouseEnterToggle);
+                miniCartToggleBtn.removeEventListener('mouseleave', handleMouseLeaveToggleOrDropdown);
             }
             if (miniCartRoot) {
-                miniCartRoot.removeEventListener('mouseleave', closeMiniCart);
+                miniCartRoot.removeEventListener('mouseenter', handleMouseEnterToggle);
+                miniCartRoot.removeEventListener('mouseleave', handleMouseLeaveToggleOrDropdown);
+            }
+            document.removeEventListener('mousedown', handleClickOutside);
+            if (mouseLeaveTimeout) { // پاک کردن تایمر در هنگام unmount
+                clearTimeout(mouseLeaveTimeout);
             }
         };
-    }, [toggleMiniCart, closeMiniCart]); // Dependencies ensure effect re-runs if these functions change
+    }, [toggleMiniCart, closeMiniCart, handleClickOutside]); // Dependencies
 
     return (
         <>
