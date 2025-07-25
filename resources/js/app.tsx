@@ -140,13 +140,14 @@ const App: React.FC = () => {
             setIsMiniCartOpen(true);
         };
 
-        const handleMouseLeaveToggleOrDropdown = () => {
+        // حتما event را دریافت کن
+        const handleMouseLeaveToggleOrDropdown = (event: MouseEvent) => {
             // یک تاخیر کوتاه برای بسته شدن ایجاد می‌کنیم تا فرصت حرکت ماوس را بدهیم
             mouseLeaveTimeout = setTimeout(() => {
                 // فقط اگر ماوس واقعا از هر دو عنصر خارج شده باشد، ببند
                 if (
-                    miniCartToggleRef.current && !miniCartToggleRef.current.contains(document.elementFromPoint(event.clientX, event.clientY)) &&
-                    miniCartDropdownRef.current && !miniCartDropdownRef.current.contains(document.elementFromPoint(event.clientX, event.clientY))
+                    miniCartToggleRef.current && !miniCartToggleRef.current.contains(document.elementFromPoint(event.clientX, event.clientY)!) &&
+                    miniCartDropdownRef.current && !miniCartDropdownRef.current.contains(document.elementFromPoint(event.clientX, event.clientY)!)
                 ) {
                     closeMiniCart();
                 }

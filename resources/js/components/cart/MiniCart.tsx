@@ -16,7 +16,10 @@ const MiniCart: React.FC<MiniCartProps> = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="absolute top-full right-0 mt-1 w-72 md:w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-[9999] overflow-hidden">
+        <div
+            className="absolute top-full right-0 mt-1 w-72 md:w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-[9999] overflow-hidden"
+            style={{ transform: 'translateY(-1.2vh)' }} // استایل برای بالا بردن کادر به اندازه 2 درصد (از 0.8vh به -1.2vh)
+        >
             <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-800">سبد خرید</h3>
                 <button
@@ -30,10 +33,6 @@ const MiniCart: React.FC<MiniCartProps> = ({ isOpen, onClose }) => {
             {cartLoading ? (
                 <p className="text-center text-gray-500 py-8">در حال بارگذاری سبد خرید...</p>
             ) : (
-                // *** شروع تغییرات اصلی ***
-                // در این قسمت، حداکثر ارتفاع با max-h-60 (معادل 240px) تنظیم شده تا فضای کافی برای حدود ۳ آیتم فراهم شود.
-                // overflow-y-auto باعث می‌شود در صورت بیشتر بودن محتوا، اسکرول عمودی ظاهر شود.
-                // کلاس‌های scrollbar-* برای استایل‌دهی به نوار اسکرول با استفاده از Tailwind CSS هستند.
                 <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100">
                     {cartItems.length === 0 ? (
                         <p className="text-center text-gray-500 py-8">سبد خرید شما خالی است.</p>
@@ -48,7 +47,6 @@ const MiniCart: React.FC<MiniCartProps> = ({ isOpen, onClose }) => {
                         ))
                     )}
                 </div>
-                // *** پایان تغییرات اصلی ***
             )}
             {/* فوتر سبد خرید فقط زمانی نمایش داده می‌شود که آیتمی در سبد وجود داشته باشد */}
             {cartItems.length > 0 && (
