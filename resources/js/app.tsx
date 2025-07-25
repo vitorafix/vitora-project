@@ -13,29 +13,33 @@ interface AddToCartButtonProps {
 }
 
 export const AddToCartButton: React.FC<AddToCartButtonProps> = ({ productId, productName, price }) => {
-    // Now we are using useCartContext
-    const { addItem, cartLoading } = useCartContext();
+    const { addItem } = useCartContext();
+    // اضافه کردن وضعیت loading محلی برای هر دکمه
+    const [isLoading, setIsLoading] = useState(false); 
 
     const handleAddToCart = async () => {
+        setIsLoading(true); // شروع بارگذاری برای این دکمه خاص
         try {
             await addItem(productId, 1);
         } catch (error) {
             console.error("Failed to add item via button:", error);
+        } finally {
+            setIsLoading(false); // پایان بارگذاری برای این دکمه خاص
         }
     };
 
     return (
         <button
             onClick={handleAddToCart}
-            disabled={cartLoading}
-            className={`btn-primary ${cartLoading ? 'btn-disabled' : ''} flex items-center`}
+            disabled={isLoading} // استفاده از isLoading محلی
+            className={`btn-primary ${isLoading ? 'btn-disabled' : ''} flex items-center`}
         >
-            {cartLoading ? (
+            {isLoading ? (
                 'در حال افزودن...' // Adding...
             ) : (
                 <>
                     <i className="fas fa-cart-plus ml-2"></i>
-                    افزودن به سبد // Add to Cart
+                    افزودن به سبد
                 </>
             )}
         </button>
