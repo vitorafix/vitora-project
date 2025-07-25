@@ -1,11 +1,11 @@
 // resources/js/app.tsx
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import ReactDOM from 'react-dom'; // برای استفاده از createPortal
+import ReactDOM from 'react-dom'; // For using createPortal
 import MiniCart from './components/cart/MiniCart';
 import { CartProvider, useCartContext } from './context/CartContext';
 
-// تعریف کامپوننت "افزودن به سبد" که از Context استفاده می‌کند
+// Define the "Add to Cart" component that uses Context
 interface AddToCartButtonProps {
     productId: string;
     productName: string;
@@ -13,7 +13,7 @@ interface AddToCartButtonProps {
 }
 
 export const AddToCartButton: React.FC<AddToCartButtonProps> = ({ productId, productName, price }) => {
-    // اکنون از useCartContext استفاده می‌کنیم
+    // Now we are using useCartContext
     const { addItem, cartLoading } = useCartContext();
 
     const handleAddToCart = async () => {
@@ -42,19 +42,19 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({ productId, pro
     );
 };
 
-// کامپوننت اصلی اپلیکیشن React
+// Main React application component
 const App: React.FC = () => {
     const [isMiniCartOpen, setIsMiniCartOpen] = useState(false);
-    // دسترسی به loadCart از Context برای اکسپوز کردن سراسری
+    // Access loadCart from Context for global exposure
     const { loadCart } = useCartContext();
 
-    // اکسپوز کردن loadCart به صورت سراسری برای دیباگ یا استفاده توسط کدهای غیر React
+    // Expose loadCart globally for debugging or use by non-React code
     useEffect(() => {
         if (typeof window !== 'undefined') {
             (window as any).loadCart = loadCart;
             console.log('window.loadCart exposed for debugging.');
         }
-    }, [loadCart]); // فقط زمانی که loadCart تغییر کند، اجرا شود
+    }, [loadCart]); // Run only when loadCart changes
 
     const toggleMiniCart = () => {
         setIsMiniCartOpen(prev => !prev);
@@ -64,7 +64,7 @@ const App: React.FC = () => {
         setIsMiniCartOpen(false);
     };
 
-    // وضعیت برای نگهداری پورتال‌های AddToCartButton
+    // State to hold AddToCartButton portals
     const [addToCartPortals, setAddToCartPortals] = useState<JSX.Element[]>([]);
 
     useEffect(() => {
@@ -78,7 +78,7 @@ const App: React.FC = () => {
 
             if (productId && productName && !isNaN(price) && price > 0) {
                 portals.push(
-                    // استفاده از ReactDOM.createPortal برای رندر کردن کامپوننت در یک DOM Node دیگر
+                    // Use ReactDOM.createPortal to render the component in another DOM Node
                     ReactDOM.createPortal(
                         <React.StrictMode>
                             <AddToCartButton
@@ -100,12 +100,13 @@ const App: React.FC = () => {
             }
         });
         setAddToCartPortals(portals);
-    }, []); // این useEffect فقط یک بار در mount اجرا می‌شود
+    }, []); // This useEffect runs only once on mount
 
     return (
         <>
-            {/* بخش MiniCart، فرض بر این است که بخشی از layout اصلی است */}
-            <div className="mini-cart-dropdown relative" onMouseLeave={closeMiniCart}>
+            {/* MiniCart section, assuming it's part of the main layout */}
+            {/* Added 'inline-block' to ensure the div wraps its content, helping with MiniCart positioning */}
+            <div className="mini-cart-dropdown relative inline-block" onMouseLeave={closeMiniCart}>
                 <button
                     type="button"
                     className="inline-flex justify-center items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -120,15 +121,15 @@ const App: React.FC = () => {
                 <MiniCart isOpen={isMiniCartOpen} onClose={closeMiniCart} />
             </div>
 
-            {/* رندر کردن تمام پورتال‌های AddToCartButton */}
+            {/* Render all AddToCartButton portals */}
             {addToCartPortals}
         </>
     );
 };
 
-// تابع برای مقداردهی اولیه اپلیکیشن اصلی React
+// Function to initialize the main React application
 const initializeMainReactApp = () => {
-    // یک المنت ریشه واحد برای کل اپلیکیشن React
+    // A single root element for the entire React application
     const reactRootElement = document.getElementById('react-root');
 
     if (reactRootElement) {
@@ -143,13 +144,13 @@ const initializeMainReactApp = () => {
         console.log('Main React application mounted successfully with CartProvider.');
     } else {
         console.warn('Could not find #react-root element to mount the main React application. Ensure it exists in app.blade.php.');
-        // در سناریوی واقعی، اگر #react-root پیدا نشد، ممکن است نیاز به یک fallback داشته باشید
-        // اما برای این تمرین، فرض می‌کنیم که المنت ریشه اصلی وجود خواهد داشت.
+        // In a real scenario, if #react-root is not found, you might need a fallback
+        // But for this exercise, we assume the main root element will exist.
     }
 };
 
-// اطمینان حاصل کنید که اپلیکیشن اصلی React فقط پس از بارگذاری کامل DOM مقداردهی اولیه می‌شود
+// Ensure the main React application is initialized only after the DOM is fully loaded
 window.addEventListener('DOMContentLoaded', initializeMainReactApp);
 
-// این export بیشتر برای استفاده داخلی Vite است اگر این فایل نقطه ورود باشد.
+// This export is mostly for internal Vite use if this file is the entry point.
 export default App;

@@ -52,10 +52,22 @@
                 <!-- Cart Icon (Desktop) -->
                 {{-- تغییر: اضافه کردن div با id="mini-cart-root" برای رندر کردن MiniCart React --}}
                 {{-- این div جایگزین Mini Cart Dropdown قدیمی می‌شود و مدیریت آن به React سپرده می‌شود --}}
-                <div class="relative ml-4 group hidden lg:block" id="mini-cart-root">
+                {{-- Removed hidden lg:block from the parent div, as the button will be inside it and its visibility will be handled by React. --}}
+                <div class="relative ml-4 group" id="mini-cart-root">
                     {{-- دکمه سبد خرید و MiniCart React اینجا رندر می‌شوند --}}
                     {{-- محتوای این div توسط resources/js/app.tsx کنترل می‌شود --}}
-                    {{-- فعلاً، دکمه "سبد خرید (تست)" از app.tsx اینجا رندر خواهد شد --}}
+                    {{-- دکمه "سبد خرید (تست)" از app.tsx به اینجا منتقل شده است --}}
+                    <button
+                        type="button"
+                        id="mini-cart-toggle" {{-- اضافه کردن ID برای دکمه --}}
+                        class="inline-flex justify-center items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        aria-expanded="false"
+                        aria-haspopup="true"
+                    >
+                        <i class="fas fa-shopping-cart ml-2"></i>
+                        سبد خرید <span class="mr-1 text-green-700 font-bold">(تست)</span>
+                    </button>
+                    {{-- MiniCart React component will be rendered here via Portal --}}
                 </div>
 
                 <!-- User/Auth Section (Desktop) -->

@@ -113,57 +113,8 @@
         }
 
         /* استایل‌های جدید برای مینی سبد خرید هاور */
-        .mini-cart-dropdown {
-            position: relative; /* برای قرار دادن دراپ‌داون به صورت مطلق */
-            display: inline-block; /* برای اینکه عرض آن به اندازه محتوایش باشد */
-        }
-
-        .mini-cart-dropdown-content {
-            position: absolute;
-            right: 0; /* در سمت راست عنصر والد قرار می‌گیرد */
-            top: 100%; /* زیر عنصر والد قرار می‌گیرد */
-            margin-top: 0.5rem; /* فاصله از عنصر والد */
-            width: 18rem; /* عرض کادر را کوچکتر کردیم (قبلا 20rem بود) */
-            background-color: #fff;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* سایه ظریف */
-            border-radius: 0.5rem; /* گوشه‌های گرد */
-            z-index: 50; /* مطمئن شوید روی بقیه عناصر قرار می‌گیرد */
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px); /* برای انیمیشن ورودی */
-            transition: opacity 0.2s ease-out, transform 0.2s ease-out, visibility 0.2s ease-out;
-            border: 1px solid #e5e7eb; /* border-gray-200 */
-            overflow: hidden; /* برای اطمینان از اینکه محتوا از گوشه‌های گرد بیرون نزند */
-        }
-
-        .mini-cart-dropdown-content.active {
-            opacity: 1; /* هنگام فعال شدن کامل مرئی شود */
-            visibility: visible; /* هنگام فعال شدن قابل مشاهده شود */
-            transform: translateY(0); /* به موقعیت اصلی برگردد */
-        }
-
-        /* استایل‌های بهبود یافته برای آیتم‌های داخل مینی سبد خرید */
-        .mini-cart-dropdown-content .py-2 {
-            padding-top: 0.5rem;
-            padding-bottom: 0.5rem;
-        }
-
-        .mini-cart-dropdown-content .text-sm {
-            font-size: 0.875rem; /* 14px */
-        }
-
-        .mini-cart-dropdown-content .text-xs {
-            font-size: 0.75rem; /* 12px */
-        }
-
-        /* استایل برای دکمه‌های "ادامه جهت تکمیل سفارش" و "مشاهده سبد خرید" */
-        .mini-cart-dropdown-content .btn-primary,
-        .mini-cart-dropdown-content .btn-secondary {
-            padding-top: 0.6rem; /* کاهش پدینگ عمودی */
-            padding-bottom: 0.6rem; /* کاهش پدینگ عمودی */
-            font-size: 0.9rem; /* کمی کوچکتر کردن فونت دکمه‌ها */
-            margin-top: 0.75rem; /* فاصله بین دکمه‌ها و از محتوای بالا */
-        }
+        /* Removed .mini-cart-dropdown and .mini-cart-dropdown-content styles as they will be managed by React Portal */
+        /* and the MiniCart component itself will have its own positioning */
 
         /* Custom CSS to ensure header is at the top and content is below it */
         body {
@@ -196,6 +147,7 @@
 </head>
 <body>
     {{-- در اینجا ناوبری اصلی سایت (که شامل مینی‌سبد خرید است) را include می‌کنیم --}}
+    {{-- Assuming layouts.navigation contains the actual navbar structure --}}
     @include('layouts.navigation')
 
     {{-- این div برای محتوای اصلی و فوتر است تا با Flexbox به درستی چیده شوند --}}

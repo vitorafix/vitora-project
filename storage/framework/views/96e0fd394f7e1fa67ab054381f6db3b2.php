@@ -142,9 +142,21 @@
                 <!-- Cart Icon (Desktop) -->
                 
                 
-                <div class="relative ml-4 group hidden lg:block" id="mini-cart-root">
+                
+                <div class="relative ml-4 group" id="mini-cart-root">
                     
                     
+                    
+                    <button
+                        type="button"
+                        id="mini-cart-toggle" 
+                        class="inline-flex justify-center items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        aria-expanded="false"
+                        aria-haspopup="true"
+                    >
+                        <i class="fas fa-shopping-cart ml-2"></i>
+                        سبد خرید <span class="mr-1 text-green-700 font-bold">(تست)</span>
+                    </button>
                     
                 </div>
 
