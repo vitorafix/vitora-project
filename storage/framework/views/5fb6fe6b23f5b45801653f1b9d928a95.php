@@ -202,6 +202,9 @@
     <div class="main-content-wrapper">
         
         <main>
+            
+            <div id="react-root"></div>
+
             <?php echo $__env->yieldContent('content'); ?>
             
             

@@ -3,15 +3,16 @@
 @section('title', 'صفحه اصلی - چای ابراهیم')
 
 @section('hero_section')
+    {{-- بخش اسلایدشو قهرمان --}}
     <section id="hero-carousel" class="relative overflow-hidden flex flex-col items-center justify-center text-center text-white p-8" style="height: calc(100vh - var(--nav-height, 0px));">
-        {{-- Slide 1 --}}
+        {{-- اسلاید 1 --}}
         <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-100" style="background-image: url('{{ asset('uploads/hero-banner.jpg') }}');">
             <div class="absolute inset-0 bg-brown-900 opacity-60"></div>
             <div class="relative z-10 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center h-full">
-                <h1 class="text-4xl md:text-5xl lg::text-6xl font-extrabold mb-4 leading-tight animate-fade-in-up">
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 leading-tight animate-fade-in-up">
                     عطر و طعم اصیل <br> چای ایرانی
                 </h1>
-                <p class="text-lg md::text-xl mb-8 animate-fade-in-up animation-delay-300">
+                <p class="text-lg md:text-xl mb-8 animate-fade-in-up animation-delay-300">
                     با چای ابراهیم، لحظات خود را به تجربه‌ای بی‌نظیر تبدیل کنید.
                 </p>
                 <a href="{{ route('products.index') }}" class="btn-primary text-lg px-8 py-3 animate-fade-in-up animation-delay-600">
@@ -19,14 +20,14 @@
                 </a>
             </div>
         </div>
-        {{-- Slide 2 --}}
+        {{-- اسلاید 2 --}}
         <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-0" style="background-image: url('{{ asset('uploads/hero-banner2.jpg') }}');">
             <div class="absolute inset-0 bg-green-900 opacity-60"></div>
             <div class="relative z-10 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center h-full">
-                <h1 class="text-4xl md::text-5xl lg::text-6xl font-extrabold mb-4 leading-tight animate-fade-in-up">
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 leading-tight animate-fade-in-up">
                     انتخابی برای <br> هر سلیقه
                 </h1>
-                <p class="text-lg md::text-xl mb-8 animate-fade-in-up animation-delay-300">
+                <p class="text-lg md:text-xl mb-8 animate-fade-in-up animation-delay-300">
                     از چای سیاه کلاسیک تا دمنوش‌های گیاهی خاص، گشتی در دنیای طعم‌ها.
                 </p>
                 <a href="{{ route('products.index') }}" class="btn-primary text-lg px-8 py-3 animate-fade-in-up animation-delay-600">
@@ -34,14 +35,14 @@
                 </a>
             </div>
         </div>
-        {{-- Slide 3 --}}
+        {{-- اسلاید 3 --}}
         <div class="hero-slide absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out opacity-0" style="background-image: url('{{ asset('uploads/hero-banner3.jpg') }}');">
             <div class="absolute inset-0 bg-blue-900 opacity-60"></div>
             <div class="relative z-10 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center h-full">
-                <h1 class="text-4xl md::text-5xl lg::text-6xl font-extrabold mb-4 leading-tight animate-fade-in-up">
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 leading-tight animate-fade-in-up">
                     کیفیت بی‌نظیر <br> از قلب طبیعت
                 </h1>
-                <p class="text-lg md::text-xl mb-8 animate-fade-in-up animation-delay-300">
+                <p class="text-lg md:text-xl mb-8 animate-fade-in-up animation-delay-300">
                     ما بهترین برگ‌های چای را برای تجربه ای عالی برای شما فراهم می‌کنیم.
                 </p>
                 <a href="{{ route('about') }}" class="btn-primary text-lg px-8 py-3 animate-fade-in-up animation-delay-600">
@@ -49,7 +50,7 @@
                 </a>
             </div>
         </div>
-        {{-- Buttons and indicators --}}
+        {{-- دکمه‌ها و نشانگرها --}}
         <button id="hero-prev-btn" class="absolute top-1/2 right-4 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-3 rounded-full z-20 hover:bg-opacity-75 transition-colors duration-300">
             <i class="fas fa-chevron-right text-xl"></i>
         </button>
@@ -61,7 +62,7 @@
 @endsection
 
 @section('content')
-    {{-- Latest Products --}}
+    {{-- جدیدترین محصولات --}}
     <section class="container mx-auto px-4 py-8 md:py-16">
         <h2 class="text-4xl font-extrabold text-brown-900 mb-10 text-center">
             <i class="fas fa-star text-yellow-500 ml-3"></i>
@@ -105,7 +106,7 @@
         </div>
     </section>
 
-    {{-- Bestselling Products --}}
+    {{-- محصولات پرفروش --}}
     <section class="container mx-auto px-4 py-16 text-center">
         <h2 class="text-4xl font-extrabold text-brown-900 mb-12">
             <i class="fas fa-fire text-orange-500 ml-3"></i>
@@ -147,7 +148,7 @@
         </div>
     </section>
 
-    {{-- Customer Reviews --}}
+    {{-- نظرات مشتریان --}}
     <section class="bg-green-100 py-16 px-4">
         <div class="container mx-auto text-center">
             <h2 class="text-4xl font-extrabold text-brown-900 mb-12">
@@ -165,4 +166,18 @@
                 <div class="bg-white p-8 rounded-xl shadow-md border border-gray-100 text-right">
                     <p class="text-gray-700 italic mb-6">"من عاشق دمنوش‌های میوه‌ای چای ابراهیم شدم. هر فنجانش یه دنیا آرامش میده."</p>
                     <div class="flex items-center justify-end">
-                        <span clas
+                        <span class="font-semibold text-brown-900 mr-4">علی حسینی</span>
+                        <img src="https://placehold.co/60x60/F3F4F6/6B7280?text=AH" alt="علی حسینی" class="w-12 h-12 rounded-full object-cover">
+                    </div>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-md border border-gray-100 text-right">
+                    <p class="text-gray-700 italic mb-6">"کیفیت چای سبز ابراهیم فوق‌العاده‌ست. هر روز صبح باهاش شروع می‌کنم و انرژی میگیرم."</p>
+                    <div class="flex items-center justify-end">
+                        <span class="font-semibold text-brown-900 mr-4">مریم رضایی</span>
+                        <img src="https://placehold.co/60x60/F3F4F6/6B7280?text=MR" alt="مریم رضایی" class="w-12 h-12 rounded-full object-cover">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection

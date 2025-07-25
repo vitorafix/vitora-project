@@ -1,8 +1,8 @@
 // resources/js/components/cart/MiniCart.tsx
-import React from 'react'; // این خط باید دقیقا اولین خط کد باشد
+import React from 'react';
 import CartItem from './CartItem';
 import CartFooter from './CartFooter';
-import { useCart } from '../../hooks/useCart';
+import { useCartContext } from '../../context/CartContext'; // استفاده از useCartContext
 
 interface MiniCartProps {
     isOpen: boolean;
@@ -10,7 +10,8 @@ interface MiniCartProps {
 }
 
 const MiniCart: React.FC<MiniCartProps> = ({ isOpen, onClose }) => {
-    const { cartItems, cartTotal, removeFromCart, updateQuantity, cartLoading } = useCart();
+    // اکنون از useCartContext استفاده می‌کنیم
+    const { cartItems, cartTotal, removeFromCart, updateQuantity, cartLoading } = useCartContext();
 
     if (!isOpen) return null;
 
