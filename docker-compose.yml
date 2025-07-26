@@ -29,6 +29,10 @@ services:
       - "27017:27017"
     networks:
       - laravel
+    environment: # 🟢 جدید: اضافه کردن متغیرهای محیطی برای احراز هویت
+      MONGO_INITDB_ROOT_USERNAME: ariyadel12 # 👈 نام کاربری شما از فایل .env
+      MONGO_INITDB_ROOT_PASSWORD: 6Z7MT=fe%tr%zcE9 # 👈 رمز عبور شما از فایل .env
+      MONGO_INITDB_DATABASE: analytics_db # دیتابیس پیش‌فرض برای کاربر روت (اختیاری)
 
 networks:
   laravel:
