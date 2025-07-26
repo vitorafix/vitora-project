@@ -12,8 +12,8 @@ Alpine.start();
 import * as jalaali from 'jalaali-js';
 window.jalaali = jalaali;
 
-// NEW: Import the analytics module
-import './analytics.js'; // Import analytics.js from the same core folder
+// REMOVED: Import the analytics module here. It's now imported by app.tsx which is the main entry.
+// import './analytics.js';
 
 // API functions - these are usually needed on all pages and are in the core folder
 import {
