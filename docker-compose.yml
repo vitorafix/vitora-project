@@ -35,24 +35,24 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: 6Z7MT=fe%tr%zcE9
       MONGO_INITDB_DATABASE: analytics_db
 
-  # 🟢 سرویس MySQL با پورت به روز شده
+  # 🟢 سرویس MySQL با پورت و اطلاعات کاربری به روز شده
   mysql_db:
     image: mysql:8.0
     container_name: mysql_database
     ports:
-      - "3307:3306" # 🟢 تغییر: پورت هاست به 3307 تغییر یافت تا با XAMPP تداخل نداشته باشد
+      - "3307:3306" # پورت هاست به 3307 تغییر یافت تا با XAMPP تداخل نداشته باشد
     environment:
-      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_ROOT_PASSWORD: 6Z7MT=fe%tr%zcE9 # 🟢 تغییر: رمز عبور root به رمز دلخواه شما
       MYSQL_DATABASE: myshop_db
-      MYSQL_USER: root
-      MYSQL_PASSWORD: ""
+      MYSQL_USER: ariyadel12 # 🟢 تغییر: نام کاربری به ariyadel12
+      MYSQL_PASSWORD: 6Z7MT=fe%tr%zcE9 # 🟢 تغییر: رمز عبور کاربر به رمز دلخواه شما
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
       - laravel
     command: --default-authentication-plugin=mysql_native_password
 
-  # 🟢 سرویس PhpMyAdmin
+  # 🟢 سرویس PhpMyAdmin با اطلاعات کاربری به روز شده
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: phpmyadmin_interface
@@ -60,7 +60,7 @@ services:
       - "8081:80"
     environment:
       PMA_HOST: mysql_db
-      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_ROOT_PASSWORD: 6Z7MT=fe%tr%zcE9 # 🟢 تغییر: رمز عبور root به رمز دلخواه شما
     depends_on:
       - mysql_db
     networks:
