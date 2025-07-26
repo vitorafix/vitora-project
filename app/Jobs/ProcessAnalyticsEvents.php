@@ -7,9 +7,10 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\DB;
+// use Illuminate\Support\Facades\DB; // 🔴 حذف: دیگر نیازی به DB facade برای این عملیات نیست
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use App\Models\AnalyticsEvent; // 🟢 جدید: ایمپورت مدل AnalyticsEvent
 
 class ProcessAnalyticsEvents implements ShouldQueue
 {
@@ -26,6 +27,8 @@ class ProcessAnalyticsEvents implements ShouldQueue
     public function __construct(array $events)
     {
         $this->events = $events;
+        // 🟢 جدید: لاگ کردن تعداد رویدادهای دریافتی در زمان ساخت Job
+        Log::info('ProcessAnalyticsEvents Job: Initialized with ' . count($events) . ' events.');
     }
 
     /**
@@ -35,33 +38,43 @@ class ProcessAnalyticsEvents implements ShouldQueue
      */
     public function handle()
     {
-        // استفاده از Database Transaction برای اطمینان از اتمیک بودن بچ
-        DB::transaction(function () {
-            foreach ($this->events as $eventPayload) {
+        // 🔴 حذف: استفاده از Database Transaction برای MongoDB به این شکل لازم نیست
+        // DB::transaction(function () {
+            // 🟢 جدید: لاگ کردن شروع پردازش Job
+            Log::info('ProcessAnalyticsEvents Job: Starting handle method.');
+
+            foreach ($this->events as $index => $eventPayload) {
                 try {
+                    // 🟢 جدید: لاگ کردن هر رویداد قبل از درج
+                    Log::info('ProcessAnalyticsEvents Job: Processing event ' . ($index + 1) . ' - EventName: ' . ($eventPayload['eventName'] ?? 'N/A') . ', GuestUUID: ' . ($eventPayload['guest_uuid'] ?? 'N/A'));
+
                     // دریافت user_id از payload رویداد
                     $userId = $eventPayload['user_id'] ?? null;
 
-                    DB::table('analytics_events')->insert([
+                    // 🟢 تغییر اصلی: استفاده از مدل AnalyticsEvent برای ذخیره در MongoDB
+                    AnalyticsEvent::create([
                         'user_id' => $userId,
                         'guest_uuid' => $eventPayload['guest_uuid'],
                         'event_name' => $eventPayload['eventName'],
-                        'event_data' => json_encode($eventPayload['eventData'] ?? null),
-                        'screen_data' => json_encode($eventPayload['screenData'] ?? null),
+                        'event_data' => $eventPayload['eventData'] ?? [], // 🟢 تغییر: مستقیماً آرایه را ذخیره کنید
+                        'screen_data' => $eventPayload['screenData'] ?? [], // 🟢 تغییر: مستقیماً آرایه را ذخیره کنید
                         'traffic_source' => $eventPayload['trafficSource'] ?? null,
-                        'screen_views' => $eventPayload['screenViews'] ?? null,
-                        'screen_time' => $eventPayload['screenTime'] ?? null,
-                        'session_time' => $eventPayload['sessionTime'] ?? null,
+                        'screen_views' => $eventPayload['screenViews'] ?? 0, // 🟢 تغییر: مقدار پیش‌فرض 0 برای integer
+                        'screen_time' => $eventPayload['screenTime'] ?? 0,   // 🟢 تغییر: مقدار پیش‌فرض 0 برای integer
+                        'session_time' => $eventPayload['sessionTime'] ?? 0, // 🟢 تغییر: مقدار پیش‌فرض 0 برای integer
                         'current_url' => $eventPayload['currentUrl'] ?? null,
                         'page_title' => $eventPayload['pageTitle'] ?? null,
-                        'scroll_depth' => $eventPayload['scrollDepth'] ?? null,
-                        'device_info' => json_encode($eventPayload['deviceInfo'] ?? null),
-                        'performance_metrics' => json_encode($eventPayload['performanceMetrics'] ?? null),
-                        'interaction_details' => json_encode($eventPayload['interactionDetails'] ?? null),
+                        'scroll_depth' => $eventPayload['scrollDepth'] ?? 0, // 🟢 تغییر: مقدار پیش‌فرض 0 برای integer
+                        'device_info' => $eventPayload['deviceInfo'] ?? [], // 🟢 تغییر: مستقیماً آرایه را ذخیره کنید
+                        'performance_metrics' => $eventPayload['performanceMetrics'] ?? [], // 🟢 تغییر: مستقیماً آرایه را ذخیره کنید
+                        'interaction_details' => $eventPayload['interactionDetails'] ?? [], // 🟢 تغییر: مستقیماً آرایه را ذخیره کنید
                         'search_query' => $eventPayload['searchQuery'] ?? null,
                         'created_at' => Carbon::parse($eventPayload['timestamp']),
                         'updated_at' => now(),
                     ]);
+                    // 🟢 جدید: لاگ کردن موفقیت آمیز بودن درج
+                    Log::info('ProcessAnalyticsEvents Job: Successfully inserted event ' . ($index + 1) . '.');
+
                 } catch (\Throwable $e) {
                     // لاگ کردن خطاهای درج رویدادهای تکی
                     Log::error('ProcessAnalyticsEvents Job: Failed to insert individual event.', [
@@ -69,14 +82,11 @@ class ProcessAnalyticsEvents implements ShouldQueue
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString()
                     ]);
-                    // نکته: اگر تراکنش فعال باشد، این خطا باعث Rollback کل بچ خواهد شد.
-                    // اگر می‌خواهید بچ ادامه یابد و فقط رویداد خراب نادیده گرفته شود،
-                    // باید تراکنش را برای هر رویداد جداگانه مدیریت کنید (که کارایی را کاهش می‌دهد)
-                    // یا از یک سیستم صف (Queue) استفاده کنید.
                 }
             }
-        });
-
-        Log::info('ProcessAnalyticsEvents Job: Batch processed successfully.', ['events_count' => count($this->events)]);
+        // }); // 🔴 حذف: پایان تراکنش DB
+        // Log::info('ProcessAnalyticsEvents Job: Batch processed successfully.', ['events_count' => count($this->events)]); // 🔴 حذف: لاگینگ به دلیل تکرار زیاد و حجم بالا
+        // 🟢 جدید: لاگ کردن اتمام پردازش Job
+        Log::info('ProcessAnalyticsEvents Job: Finished processing all ' . count($this->events) . ' events.');
     }
 }

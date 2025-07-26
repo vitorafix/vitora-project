@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use App\Jobs\ProcessAnalyticsEvents; // 🟢 جدید: ایمپورت Job آنالیتیکس
+use Carbon\Carbon; // 🟢 جدید: ایمپورت Carbon برای timestamp
 
 class AuthService
 {
@@ -32,6 +34,33 @@ class AuthService
             'sub' => $user->id,
             'prv' => sha1($user->password),
         ];
+
+        // 🟢 جدید: ارسال Job آنالیتیکس برای رویداد ورود کاربر
+        // این Job به صف اضافه می‌شود و توسط Queue Worker پردازش خواهد شد.
+        ProcessAnalyticsEvents::dispatch([
+            [
+                'user_id' => $user->id,
+                'guest_uuid' => request()->cookie('guest_uuid') ?? (string) \Illuminate\Support\Str::uuid(), // از کوکی یا UUID جدید استفاده کنید
+                'eventName' => '[INT]_user_login',
+                'eventData' => [
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->header('User-Agent'),
+                ],
+                'screenData' => [], // اطلاعات صفحه در زمان لاگین (اگر نیاز دارید)
+                'trafficSource' => null,
+                'screenViews' => 0,
+                'screenTime' => 0,
+                'sessionTime' => 0,
+                'currentUrl' => request()->fullUrl(),
+                'pageTitle' => 'User Login',
+                'scrollDepth' => 0,
+                'deviceInfo' => [], // اطلاعات دستگاه (اگر نیاز دارید)
+                'performanceMetrics' => [],
+                'interactionDetails' => [],
+                'searchQuery' => null,
+                'timestamp' => Carbon::now()->toIso8601String(), // زمان دقیق رویداد
+            ]
+        ])->onQueue('default'); // Job را به صف 'default' ارسال می‌کند
 
         return JWT::encode($payload, $this->jwtSecret, 'HS256');
     }
