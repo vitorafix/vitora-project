@@ -19,7 +19,7 @@ Homestead.json
 /bootstrap/cache/*
 
 # Composer
-composer.lock
+
 
 # Node
 npm-debug.log*
@@ -51,6 +51,8 @@ desktop.ini
 # Cache
 .cache/
 .phpunit.result.cache
+
+*.sock
 
 # Others
 *.env
