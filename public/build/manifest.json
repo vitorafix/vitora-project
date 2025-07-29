@@ -1,0 +1,101 @@
+{
+  "_admin-panel-DfTYWkpc.js": {
+    "file": "assets/admin-panel-DfTYWkpc.js",
+    "name": "admin-panel",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vendor-DZtHqBjz.js"
+    ]
+  },
+  "_analytics-Ck74oY65.js": {
+    "file": "assets/analytics-Ck74oY65.js",
+    "name": "analytics"
+  },
+  "_auth-modules-Tx9inXK_.js": {
+    "file": "assets/auth-modules-Tx9inXK_.js",
+    "name": "auth-modules",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vendor-axios-xsH4HHeE.js",
+      "_ui-components-uVfRm-cR.js"
+    ]
+  },
+  "_ui-components-uVfRm-cR.js": {
+    "file": "assets/ui-components-uVfRm-cR.js",
+    "name": "ui-components",
+    "isDynamicEntry": true,
+    "imports": [
+      "_auth-modules-Tx9inXK_.js"
+    ]
+  },
+  "_vendor-DZtHqBjz.js": {
+    "file": "assets/vendor-DZtHqBjz.js",
+    "name": "vendor"
+  },
+  "_vendor-axios-xsH4HHeE.js": {
+    "file": "assets/vendor-axios-xsH4HHeE.js",
+    "name": "vendor-axios"
+  },
+  "_vendor-react-KHOBbFxj.js": {
+    "file": "assets/vendor-react-KHOBbFxj.js",
+    "name": "vendor-react",
+    "imports": [
+      "_vendor-DZtHqBjz.js"
+    ]
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-AI_FO2uN.css",
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/js/app.tsx": {
+    "file": "assets/app-w7vyctiH.js",
+    "name": "app",
+    "src": "resources/js/app.tsx",
+    "isEntry": true,
+    "imports": [
+      "_vendor-react-KHOBbFxj.js",
+      "_auth-modules-Tx9inXK_.js",
+      "_analytics-Ck74oY65.js",
+      "_vendor-DZtHqBjz.js",
+      "_vendor-axios-xsH4HHeE.js",
+      "_ui-components-uVfRm-cR.js"
+    ]
+  },
+  "resources/js/cart/export.js": {
+    "file": "assets/shopping-cart-DZ68Slzt.js",
+    "name": "shopping-cart",
+    "src": "resources/js/cart/export.js",
+    "isDynamicEntry": true
+  },
+  "resources/js/checkout/checkout.js": {
+    "file": "assets/payment-system-BGXqsU2m.js",
+    "name": "payment-system",
+    "src": "resources/js/checkout/checkout.js",
+    "isDynamicEntry": true
+  },
+  "resources/js/core/app.js": {
+    "file": "assets/app-B8fVK6C8.js",
+    "name": "app",
+    "src": "resources/js/core/app.js",
+    "isEntry": true,
+    "imports": [
+      "_auth-modules-Tx9inXK_.js",
+      "_vendor-DZtHqBjz.js",
+      "_analytics-Ck74oY65.js",
+      "_vendor-axios-xsH4HHeE.js",
+      "_ui-components-uVfRm-cR.js"
+    ],
+    "dynamicImports": [
+      "_auth-modules-Tx9inXK_.js",
+      "_auth-modules-Tx9inXK_.js",
+      "_ui-components-uVfRm-cR.js",
+      "_ui-components-uVfRm-cR.js",
+      "_admin-panel-DfTYWkpc.js",
+      "_admin-panel-DfTYWkpc.js",
+      "resources/js/checkout/checkout.js",
+      "_ui-components-uVfRm-cR.js",
+      "resources/js/cart/export.js"
+    ]
+  }
+}

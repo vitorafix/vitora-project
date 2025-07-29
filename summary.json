@@ -1,0 +1,317 @@
+{
+  "metrics": {
+    "http_req_blocked": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "min": 0,
+        "med": 0,
+        "max": 14.1782,
+        "p(90)": 0,
+        "p(95)": 0,
+        "avg": 0.05877228260869563
+      }
+    },
+    "http_req_duration": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 826.7759561141305,
+        "min": 348.2536,
+        "med": 764.12465,
+        "max": 1745.9761,
+        "p(90)": 1116.497,
+        "p(95)": 1173.17903
+      }
+    },
+    "http_req_duration{expected_response:true}": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 826.7759561141305,
+        "min": 348.2536,
+        "med": 764.12465,
+        "max": 1745.9761,
+        "p(90)": 1116.497,
+        "p(95)": 1173.17903
+      }
+    },
+    "vus": {
+      "type": "gauge",
+      "contains": "default",
+      "values": {
+        "value": 8,
+        "min": 8,
+        "max": 20
+      }
+    },
+    "http_reqs": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 1472,
+        "rate": 23.962147230432393
+      }
+    },
+    "http_req_tls_handshaking": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "p(90)": 0,
+        "p(95)": 0,
+        "avg": 0,
+        "min": 0,
+        "med": 0,
+        "max": 0
+      }
+    },
+    "data_sent": {
+      "type": "counter",
+      "contains": "data",
+      "values": {
+        "count": 850162,
+        "rate": 13839.474873450315
+      }
+    },
+    "http_req_failed": {
+      "type": "rate",
+      "contains": "default",
+      "values": {
+        "rate": 0,
+        "passes": 0,
+        "fails": 1472
+      }
+    },
+    "checks": {
+      "type": "rate",
+      "contains": "default",
+      "values": {
+        "fails": 642,
+        "rate": 0.12771739130434784,
+        "passes": 94
+      }
+    },
+    "http_req_sending": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "max": 7.5118,
+        "p(90)": 0.0084,
+        "p(95)": 0.512945,
+        "avg": 0.054915081521739156,
+        "min": 0,
+        "med": 0
+      }
+    },
+    "iteration_duration": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 1654.9777146739136,
+        "min": 1146.5962,
+        "med": 1715.4373,
+        "max": 2847.8589,
+        "p(90)": 1910.7404999999999,
+        "p(95)": 2040.1861999999999
+      }
+    },
+    "http_req_connecting": {
+      "values": {
+        "avg": 0.030328125,
+        "min": 0,
+        "med": 0,
+        "max": 7.018,
+        "p(90)": 0,
+        "p(95)": 0
+      },
+      "type": "trend",
+      "contains": "time"
+    },
+    "http_req_receiving": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "max": 15.3241,
+        "p(90)": 3.0803900000000017,
+        "p(95)": 4.111970000000002,
+        "avg": 1.133879415760869,
+        "min": 0,
+        "med": 0.5224
+      }
+    },
+    "vus_max": {
+      "type": "gauge",
+      "contains": "default",
+      "values": {
+        "value": 20,
+        "min": 20,
+        "max": 20
+      }
+    },
+    "iterations": {
+      "values": {
+        "count": 736,
+        "rate": 11.981073615216197
+      },
+      "type": "counter",
+      "contains": "default"
+    },
+    "data_received": {
+      "type": "counter",
+      "contains": "data",
+      "values": {
+        "count": 44983027,
+        "rate": 732262.1710900242
+      }
+    },
+    "http_req_waiting": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "med": 762.6668,
+        "max": 1745.4338,
+        "p(90)": 1115.44178,
+        "p(95)": 1170.572105,
+        "avg": 825.5871616168472,
+        "min": 344.6523
+      }
+    }
+  },
+  "root_group": {
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": [],
+    "checks": [
+        {
+          "name": "SQL Injection ('; EXEC xp_cmdshell(...) - Status is 400",
+          "path": "::SQL Injection ('; EXEC xp_cmdshell(...) - Status is 400",
+          "id": "de72d58f12899d9c48414ecfbf2fa720",
+          "passes": 0,
+          "fails": 49
+        },
+        {
+          "path": "::Large Payload - Status is 413",
+          "id": "4ab389538c55b32331acd7a39654c8b2",
+          "passes": 0,
+          "fails": 48,
+          "name": "Large Payload - Status is 413"
+        },
+        {
+          "passes": 0,
+          "fails": 49,
+          "name": "Missing Auth - Status is 401",
+          "path": "::Missing Auth - Status is 401",
+          "id": "c609e791f6e200aa45fee395c3d05831"
+        },
+        {
+          "passes": 0,
+          "fails": 42,
+          "name": "SQL Injection (UNION SELECT usernam...) - Status is 400",
+          "path": "::SQL Injection (UNION SELECT usernam...) - Status is 400",
+          "id": "514424aa4cc53ef6a45f73383becbb6e"
+        },
+        {
+          "path": "::Path Traversal - Status is 400",
+          "id": "3d123fe2d0c70e519355a3256040297f",
+          "passes": 0,
+          "fails": 45,
+          "name": "Path Traversal - Status is 400"
+        },
+        {
+          "path": "::Negative Values - Status is 400",
+          "id": "9803d9e1ff1f615539c270d03525eb91",
+          "passes": 0,
+          "fails": 49,
+          "name": "Negative Values - Status is 400"
+        },
+        {
+          "fails": 0,
+          "name": "CSRF Attempt - Status is 200",
+          "path": "::CSRF Attempt - Status is 200",
+          "id": "ffc8f80eeee944e8d4afb47e9ac7784c",
+          "passes": 50
+        },
+        {
+          "name": "SQL Injection (' OR 1=1 --...) - Status is 400",
+          "path": "::SQL Injection (' OR 1=1 --...) - Status is 400",
+          "id": "ced16e1d5c0dd755df7a6b37affe50b7",
+          "passes": 0,
+          "fails": 48
+        },
+        {
+          "name": "SQL Injection (' OR '1'='1...) - Status is 400",
+          "path": "::SQL Injection (' OR '1'='1...) - Status is 400",
+          "id": "f219edebf08c4be14cc3c12ada8af9c9",
+          "passes": 0,
+          "fails": 48
+        },
+        {
+          "name": "Invalid UUID - Status is 400",
+          "path": "::Invalid UUID - Status is 400",
+          "id": "d4ab61d0e104831971bdbe97e800be66",
+          "passes": 0,
+          "fails": 49
+        },
+        {
+          "name": "XSS Attempt - Status is 400",
+          "path": "::XSS Attempt - Status is 400",
+          "id": "6543a98d9cee97af896bc3cc5feea7f8",
+          "passes": 0,
+          "fails": 42
+        },
+        {
+          "name": "Missing Content-Type - Status is 400",
+          "path": "::Missing Content-Type - Status is 400",
+          "id": "11d1af6c55612278b57763390c021e3b",
+          "passes": 0,
+          "fails": 50
+        },
+        {
+          "id": "ca118df775bf38626f60d90f5d4a5dca",
+          "passes": 0,
+          "fails": 42,
+          "name": "Invalid JWT - Status is 401",
+          "path": "::Invalid JWT - Status is 401"
+        },
+        {
+          "name": "JWT Tampering - Status is 401",
+          "path": "::JWT Tampering - Status is 401",
+          "id": "6b0925f96a73ead47094895fc2d93a7b",
+          "passes": 0,
+          "fails": 43
+        },
+        {
+          "id": "9461a2f4eefdf5caa7abf83383fced0b",
+          "passes": 0,
+          "fails": 38,
+          "name": "Rate Limiting Expectation - Status is 429",
+          "path": "::Rate Limiting Expectation - Status is 429"
+        },
+        {
+          "id": "e46b3d0e6db9fe3626e491fdae87ee9e",
+          "passes": 44,
+          "fails": 0,
+          "name": "Valid Request - Status is 200",
+          "path": "::Valid Request - Status is 200"
+        }
+      ]
+  },
+  "options": {
+    "summaryTrendStats": [
+      "avg",
+      "min",
+      "med",
+      "max",
+      "p(90)",
+      "p(95)"
+    ],
+    "summaryTimeUnit": "",
+    "noColor": false
+  },
+  "state": {
+    "isStdOutTTY": true,
+    "isStdErrTTY": true,
+    "testRunDurationMs": 61430.221
+  }
+}

@@ -1,0 +1,213 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Button Styles (added for better reusability and consistency) */
+/* استایل‌های سفارشی دکمه (برای قابلیت استفاده مجدد و یکپارچگی بهتر اضافه شد) */
+@layer components {
+    .btn-primary {
+        @apply bg-green-700 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-green-800 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-lg;
+    }
+
+    .btn-secondary {
+        @apply bg-white text-green-700 border border-green-700 font-semibold py-3 px-6 rounded-lg shadow-sm hover:bg-green-50 transition duration-300 ease-in-out;
+    }
+
+    .btn-disabled {
+        @apply bg-gray-300 text-gray-500 font-semibold py-3 px-6 rounded-lg cursor-not-allowed opacity-75;
+    }
+
+    /* Additional styles for card hover effects */
+    .card-hover-effect {
+        @apply transform transition-transform duration-300 hover:scale-105 hover:shadow-xl;
+    }
+
+    /* Navigation Link Styles */
+    .nav-link {
+        @apply flex items-center px-3 py-2 text-white text-sm font-medium rounded-lg relative overflow-hidden
+               transition-all duration-300 ease-in-out
+               hover:text-amber-200 /* متن زرد در هاور */
+               border-b-2 border-transparent /* حاشیه شفاف پیش‌فرض */
+               hover:border-amber-400; /* حاشیه زرد در هاور */
+    }
+
+    .nav-link.active {
+        @apply text-amber-400 font-bold /* متن زرد برای لینک فعال */
+               border-b-2 border-amber-400; /* حاشیه زرد برای لینک فعال */
+        border-radius: 0; /* حذف گوشه‌های گرد برای خط زیرین صاف */
+    }
+
+    /* Dropdown Styles */
+    .dropdown-link {
+        @apply flex items-center px-3 py-2 text-gray-700 text-xs hover:bg-green-50 hover:text-green-700 rounded-lg transition-all duration-200;
+    }
+
+    /* User Dropdown Styles */
+    .user-dropdown-link {
+        @apply flex items-center justify-between px-4 py-3 text-gray-700 text-sm hover:bg-gray-50 transition-all duration-200;
+    }
+
+    /* Mobile Navigation Styles */
+    .mobile-nav-link {
+        @apply flex items-center space-x-3 space-x-reverse px-3 py-2 text-white text-sm rounded-lg
+               transition-all duration-300 ease-in-out
+               hover:text-amber-200
+               border-b-2 border-transparent
+               hover:border-amber-400;
+    }
+
+    .mobile-nav-link.active {
+        @apply text-amber-400 font-bold
+               border-b-2 border-amber-400;
+        border-radius: 0;
+    }
+
+    /* Ensure nav-link-dropdown uses flex for proper alignment */
+    .nav-link-dropdown {
+        @apply flex items-center px-4 py-2 text-gray-700 text-sm hover:bg-gray-100 rounded-md transition-colors duration-200;
+    }
+
+    /* NEW: Styles for the user profile header in the dropdown */
+    .user-profile-header {
+        @apply flex items-center justify-between pb-3 mb-3 border-b border-gray-200; /* Changed to justify-between */
+    }
+    .user-profile-header .user-icon {
+        @apply text-3xl text-green-600 ml-2; /* Adjusted size and margin */
+    }
+    .user-profile-header .user-full-name {
+        @apply font-semibold text-gray-800;
+    }
+
+    /* NEW: Styles for compact dropdown items */
+    .nav-link-dropdown-compact {
+        @apply flex items-center px-3 py-1.5 text-gray-700 text-sm hover:bg-gray-100 rounded-md transition-colors duration-200; /* Smaller padding */
+    }
+
+
+    /* Message Box Styles (from app.js, converted to @apply where possible) */
+    .message-box {
+        @apply opacity-100 transform -translate-x-1/2; /* Default state */
+    }
+    .message-box.opacity-0 {
+        opacity: 0; /* Changed from @apply opacity-0 to direct CSS to avoid circular dependency */
+        @apply translate-y-full; /* Transition state */
+    }
+
+    /* Error Container Styles (from app.css, converted to @apply where possible) */
+    .error-container {
+        @apply bg-red-50 border border-red-200 rounded-md p-4 mb-4;
+        transition: all 0.3s ease-in-out; /* Keep direct transition for finer control */
+    }
+}
+
+/* Pure CSS styles - Moved outside @layer components */
+/* استایل‌های خالص CSS - به بیرون از @layer components منتقل شدند */
+
+/* Custom Modal Styles (from app.blade.php, kept here as it's general purpose) */
+.custom-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: none; /* Added to ensure it's hidden by default */
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    backdrop-filter: blur(5px);
+}
+.custom-modal-overlay.active {
+    display: flex !important; /* Added !important to ensure override */
+    opacity: 1 !important; /* Added !important to ensure override */
+    visibility: visible !important; /* Added !important to ensure override */
+}
+.custom-modal-content {
+    background-color: #fff;
+    padding: 3rem;
+    border-radius: 1rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    max-width: 500px;
+    width: 90%;
+    position: relative;
+    transform: translateY(-20px);
+    transition: transform 0.3s ease;
+}
+.custom-modal-overlay.active .custom-modal-content {
+    transform: translateY(0);
+}
+.custom-modal-close-btn {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #6B7280;
+    transition: color 0.2s ease;
+}
+.custom-modal-close-btn:hover {
+    color: #EF4444;
+}
+
+/* Smooth animations */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.nav-link,
+.dropdown-link,
+.user-dropdown-link {
+    animation: slideIn 0.3s ease-out;
+}
+
+.error-container.fade-in {
+    animation: fadeIn 0.3s ease-in-out forwards;
+}
+
+/* Custom scrollbar for dropdown menus */
+.dropdown-menu::-webkit-scrollbar {
+    width: 4px;
+}
+
+.dropdown-menu::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 2px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* Specific styles for brown color from tailwind.config.js */
+.text-brown-900 {
+    color: #4a2c2a;
+}
+.focus\:ring-brown-500:focus {
+    --tw-ring-color: #6f4e37; /* brown-800 or brown-500 if defined */
+}
+.focus\:border-brown-500:focus {
+    border-color: #6f4e37; /* brown-800 or brown-500 if defined */
+}

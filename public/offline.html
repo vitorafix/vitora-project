@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شما آفلاین هستید - چای ابراهیم</title>
+    <!-- Tailwind CSS CDN (برای اطمینان از استایل‌دهی حتی در حالت آفلاین) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Vazirmatn Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background-color: #f3f4f6; /* bg-gray-100 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            color: #374151; /* text-gray-700 */
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 2.5rem; /* p-10 */
+            border-radius: 0.75rem; /* rounded-lg */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-xl */
+            max-width: 500px;
+            width: 90%;
+        }
+        h1 {
+            font-size: 2.25rem; /* text-4xl */
+            font-weight: 800; /* font-extrabold */
+            color: #1a202c; /* text-gray-900 */
+            margin-bottom: 1rem; /* mb-4 */
+        }
+        p {
+            font-size: 1.125rem; /* text-lg */
+            color: #4b5563; /* text-gray-600 */
+            margin-bottom: 1.5rem; /* mb-6 */
+        }
+        .btn-primary {
+            background-color: #10b981; /* bg-green-500 */
+            color: #ffffff;
+            font-weight: 700; /* font-bold */
+            padding: 0.75rem 1.5rem; /* py-3 px-6 */
+            border-radius: 0.5rem; /* rounded-lg */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #059669; /* hover:bg-green-600 */
+        }
+
+        /* Dark mode styles */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #111827; /* dark:bg-gray-900 */
+                color: #e5e7eb; /* dark:text-gray-200 */
+            }
+            .container {
+                background-color: #1f2937; /* dark:bg-gray-800 */
+                border-color: #374151; /* dark:border-gray-700 */
+            }
+            h1 {
+                color: #ffffff; /* dark:text-white */
+            }
+            p {
+                color: #9ca3af; /* dark:text-gray-400 */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>شما آفلاین هستید!</h1>
+        <p>به نظر می‌رسد اتصال اینترنت شما قطع شده است. لطفاً اتصال خود را بررسی کرده و دوباره تلاش کنید.</p>
+        <a href="/" class="btn-primary">تلاش مجدد</a>
+    </div>
+</body>
+</html>
